@@ -9,26 +9,22 @@ jobs:
   detect:
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    defaults:
+      run:
+        shell: bash -l {0}  # Required for conda activate to work
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up Conda
+        uses: conda-incubator/setup-miniconda@v3
         with:
-          python-version: '3.11'
-
-      - name: Cache pip dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+          environment-file: environment.yml
+          activate-environment: araripe
+          auto-activate-base: false
+          use-mamba: true            # mamba is much faster at solving
+          miniforge-version: latest
 
       - name: Run detection pipeline
         env:

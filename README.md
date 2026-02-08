@@ -34,8 +34,15 @@ Sentinel-2 / Landsat (STAC APIs)
 ## Quick Start
 
 ```bash
-# Install dependencies
+# Create and activate conda environment (recommended)
+conda env create -f environment.yml
+conda activate araripe
+
+# Or install via pip (requires system GDAL: brew install gdal / apt install gdal-bin)
 pip install -r requirements.txt
+
+# Copy env template and add your credentials
+cp .env.example .env
 
 # Run the dashboard locally
 streamlit run app.py
