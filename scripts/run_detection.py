@@ -1,0 +1,166 @@
+"""Weekly detection script: find recent imagery, detect changes, generate alerts.
+
+This script is designed to run in GitHub Actions on a weekly schedule.
+
+Usage:
+    python scripts/run_detection.py
+    python scripts/run_detection.py --days-back 30 --indices ndmi,nbr
+"""
+
+from __future__ import annotations
+
+import sys
+from datetime import datetime
+from pathlib import Path
+
+import click
+from loguru import logger
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from config.settings import (
+    ALERTS_DIR,
+    AOI_BBOX,
+    BASELINES_DIR,
+    MAX_CLOUD_COVER,
+    SEARCH_DAYS_BACK,
+)
+from src.acquisition.stac_client import search_sentinel2_with_fallback
+from src.acquisition.download import load_sentinel2_for_indices
+from src.detection.alerts import save_alerts, summarize_alerts, vectorize_alerts
+from src.detection.baseline import load_baseline_pair
+from src.detection.change_detect import detect_deforestation
+from src.processing.cloud_mask import compute_clear_percentage, mask_sentinel2
+from src.processing.indices import compute_all_indices
+from src.timeseries.builder import store_alert_stats, store_regional_stats
+
+
+@click.command()
+@click.option("--days-back", default=SEARCH_DAYS_BACK, help="Days to look back.")
+@click.option("--indices", default="ndmi,nbr,evi2", help="Comma-separated indices.")
+@click.option("--max-cloud", default=MAX_CLOUD_COVER, help="Max cloud cover %.")
+@click.option("--min-clear", default=50.0, help="Min clear pixel % to process scene.")
+def main(days_back: int, indices: str, max_cloud: int, min_clear: float) -> None:
+    """Run the weekly deforestation detection pipeline."""
+    index_list = [idx.strip() for idx in indices.split(",")]
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    current_month = datetime.utcnow().month
+
+    logger.info("=== Araripe Deforestation Detection ===")
+    logger.info("Date: {}, Looking back {} days", today, days_back)
+    logger.info("Indices: {}", index_list)
+
+    # Stage 1: Query recent imagery
+    logger.info("Stage 1: Querying recent imagery...")
+    items = search_sentinel2_with_fallback(
+        bbox=AOI_BBOX,
+        max_cloud_cover=max_cloud,
+    )
+
+    if len(items) == 0:
+        logger.warning("No cloud-free imagery found. Exiting.")
+        return
+
+    logger.info("Found {} candidate scenes", len(items))
+
+    # Sort by cloud cover (process clearest first)
+    items_sorted = sorted(
+        items,
+        key=lambda x: x.properties.get("eo:cloud_cover", 100),
+    )
+
+    # Stage 2-5: Process scenes
+    all_alerts = []
+
+    for item in items_sorted[:5]:  # Process up to 5 best scenes
+        scene_date = str(item.datetime)[:10]
+        cloud_pct = item.properties.get("eo:cloud_cover", "?")
+        logger.info("Processing {} (cloud: {}%)", item.id, cloud_pct)
+
+        try:
+            # Stage 2: Load and mask
+            ds = load_sentinel2_for_indices(item, index_list)
+            ds = mask_sentinel2(ds)
+
+            clear_pct = compute_clear_percentage(ds)
+            if clear_pct < min_clear:
+                logger.info("Only {:.1f}% clear, skipping", clear_pct)
+                continue
+
+            # Stage 3: Compute indices
+            idx_ds = compute_all_indices(ds, index_list, sensor="sentinel2")
+
+            # Store regional stats
+            for idx_name in index_list:
+                if idx_name in idx_ds:
+                    store_regional_stats(scene_date, idx_name, idx_ds[idx_name])
+
+            # Stage 4: Load baselines and compare
+            baseline_means = {}
+            baseline_stds = {}
+
+            for idx_name in index_list:
+                try:
+                    mean, std = load_baseline_pair(idx_name, current_month)
+                    baseline_means[idx_name] = mean
+                    baseline_stds[idx_name] = std
+                except FileNotFoundError:
+                    logger.warning("No baseline for {} month {}", idx_name, current_month)
+
+            if not baseline_means:
+                logger.warning("No baselines available, skipping detection")
+                continue
+
+            # Stage 5: Detect changes
+            detection = detect_deforestation(
+                current_indices=idx_ds,
+                baseline_means=baseline_means,
+                baseline_stds=baseline_stds,
+            )
+
+            # Vectorize alerts
+            alerts_gdf = vectorize_alerts(detection["confidence"])
+
+            if not alerts_gdf.empty:
+                # Save alerts
+                alert_path = save_alerts(alerts_gdf, scene_date)
+                all_alerts.append(alerts_gdf)
+
+                # Store alert stats
+                summary = summarize_alerts(alerts_gdf)
+                store_alert_stats(scene_date, summary)
+
+                logger.info(
+                    "Scene {}: {} alerts, {:.1f} ha",
+                    scene_date,
+                    summary["total_alerts"],
+                    summary["total_area_ha"],
+                )
+            else:
+                logger.info("Scene {}: no alerts", scene_date)
+
+        except Exception as e:
+            logger.error("Failed to process {}: {}", item.id, e)
+            continue
+
+    # Summary
+    if all_alerts:
+        import geopandas as gpd
+
+        combined = gpd.pd.concat(all_alerts, ignore_index=True)
+        total_summary = summarize_alerts(gpd.GeoDataFrame(combined))
+        logger.info("=== Detection Complete ===")
+        logger.info("Total alerts: {}", total_summary["total_alerts"])
+        logger.info("Total area: {:.1f} ha", total_summary["total_area_ha"])
+        logger.info(
+            "By confidence: high={}, medium={}, low={}",
+            total_summary["by_confidence"]["high"],
+            total_summary["by_confidence"]["medium"],
+            total_summary["by_confidence"]["low"],
+        )
+    else:
+        logger.info("=== No deforestation alerts detected ===")
+
+
+if __name__ == "__main__":
+    main()
