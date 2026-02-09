@@ -31,7 +31,11 @@ def median_composite(arrays: list[xr.DataArray], dim_name: str = "time") -> xr.D
     if not arrays:
         raise ValueError("Cannot create composite from empty list")
 
-    stacked = xr.concat(arrays, dim=dim_name)
+    # Compute() each lazy array first to avoid chunk fragmentation,
+    # then concat as in-memory arrays (much faster for compositing)
+    computed = [arr.compute() for arr in arrays]
+
+    stacked = xr.concat(computed, dim=dim_name, join="outer")
     composite = stacked.median(dim=dim_name, skipna=True)
     composite.attrs["composite_method"] = "median"
     composite.attrs["n_scenes"] = len(arrays)
@@ -44,7 +48,9 @@ def mean_composite(arrays: list[xr.DataArray], dim_name: str = "time") -> xr.Dat
     if not arrays:
         raise ValueError("Cannot create composite from empty list")
 
-    stacked = xr.concat(arrays, dim=dim_name)
+    computed = [arr.compute() for arr in arrays]
+
+    stacked = xr.concat(computed, dim=dim_name, join="outer")
     composite = stacked.mean(dim=dim_name, skipna=True)
     composite.attrs["composite_method"] = "mean"
     composite.attrs["n_scenes"] = len(arrays)
@@ -56,7 +62,9 @@ def std_composite(arrays: list[xr.DataArray], dim_name: str = "time") -> xr.Data
     if not arrays:
         raise ValueError("Cannot create composite from empty list")
 
-    stacked = xr.concat(arrays, dim=dim_name)
+    computed = [arr.compute() for arr in arrays]
+
+    stacked = xr.concat(computed, dim=dim_name, join="outer")
     composite = stacked.std(dim=dim_name, skipna=True)
     composite.attrs["composite_method"] = "std"
     composite.attrs["n_scenes"] = len(arrays)
