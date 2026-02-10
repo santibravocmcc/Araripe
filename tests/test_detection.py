@@ -10,12 +10,17 @@ from src.detection.change_detect import detect_deforestation
 
 def _make_array(values, name=None):
     """Create a 3x3 DataArray."""
+    arr = np.array(values, dtype=np.float64)
+    if arr.size < 9:
+        # Broadcast scalar / small arrays to 3x3
+        arr = np.full((3, 3), arr.flat[0], dtype=np.float64)
+    else:
+        arr = arr.reshape(3, 3)
     da = xr.DataArray(
-        np.array(values, dtype=np.float64).reshape(3, 3),
+        arr,
         dims=["y", "x"],
         attrs={"_FillValue": np.nan},
     )
-    da = da.rio.set_spatial_dims(x_dim="x", y_dim="y")
     if name:
         da.name = name
     return da

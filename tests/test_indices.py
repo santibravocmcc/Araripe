@@ -55,7 +55,7 @@ class TestNDVI:
         assert np.isnan(result.values[0, 0])  # 0/0 → NaN
 
     def test_name(self):
-        ds = _make_dataset(nir=[[0.5]] * 3, red=[[0.1]] * 3)
+        ds = _make_dataset(nir=[[0.5, 0.5, 0.5]] * 3, red=[[0.1, 0.1, 0.1]] * 3)
         result = ndvi(ds)
         assert result.name == "ndvi"
 
@@ -71,7 +71,7 @@ class TestNDMI:
         np.testing.assert_almost_equal(result.values[0, 0], 1 / 3)
 
     def test_name(self):
-        ds = _make_dataset(nir08=[[0.5]] * 3, swir16=[[0.1]] * 3)
+        ds = _make_dataset(nir08=[[0.5, 0.5, 0.5]] * 3, swir16=[[0.1, 0.1, 0.1]] * 3)
         result = ndmi(ds)
         assert result.name == "ndmi"
 
@@ -79,8 +79,8 @@ class TestNDMI:
 class TestNBR:
     def test_basic(self):
         ds = _make_dataset(
-            nir08=[[0.5]] * 3,
-            swir22=[[0.1]] * 3,
+            nir08=[[0.5, 0.5, 0.5]] * 3,
+            swir22=[[0.1, 0.1, 0.1]] * 3,
         )
         result = nbr(ds)
         expected = (0.5 - 0.1) / (0.5 + 0.1)
@@ -90,8 +90,8 @@ class TestNBR:
 class TestEVI2:
     def test_basic(self):
         ds = _make_dataset(
-            nir=[[0.5]] * 3,
-            red=[[0.1]] * 3,
+            nir=[[0.5, 0.5, 0.5]] * 3,
+            red=[[0.1, 0.1, 0.1]] * 3,
         )
         result = evi2(ds)
         expected = 2.5 * (0.5 - 0.1) / (0.5 + 2.4 * 0.1 + 1)
@@ -101,8 +101,8 @@ class TestEVI2:
 class TestSAVI:
     def test_basic(self):
         ds = _make_dataset(
-            nir=[[0.5]] * 3,
-            red=[[0.1]] * 3,
+            nir=[[0.5, 0.5, 0.5]] * 3,
+            red=[[0.1, 0.1, 0.1]] * 3,
         )
         result = savi(ds)
         expected = 1.5 * (0.5 - 0.1) / (0.5 + 0.1 + 0.5)
@@ -112,10 +112,10 @@ class TestSAVI:
 class TestBSI:
     def test_basic(self):
         ds = _make_dataset(
-            blue=[[0.1]] * 3,
-            red=[[0.2]] * 3,
-            nir=[[0.4]] * 3,
-            swir16=[[0.3]] * 3,
+            blue=[[0.1, 0.1, 0.1]] * 3,
+            red=[[0.2, 0.2, 0.2]] * 3,
+            nir=[[0.4, 0.4, 0.4]] * 3,
+            swir16=[[0.3, 0.3, 0.3]] * 3,
         )
         result = bsi(ds)
         num = (0.3 + 0.2) - (0.4 + 0.1)
@@ -126,28 +126,28 @@ class TestBSI:
 class TestComputeIndex:
     def test_dispatch_sentinel2(self):
         ds = _make_dataset(
-            nir=[[0.5]] * 3,
-            red=[[0.1]] * 3,
+            nir=[[0.5, 0.5, 0.5]] * 3,
+            red=[[0.1, 0.1, 0.1]] * 3,
         )
         result = compute_index(ds, "ndvi", sensor="sentinel2")
         assert result.name == "ndvi"
 
     def test_dispatch_landsat(self):
         ds = _make_dataset(
-            nir08=[[0.5]] * 3,
-            red=[[0.1]] * 3,
+            nir08=[[0.5, 0.5, 0.5]] * 3,
+            red=[[0.1, 0.1, 0.1]] * 3,
         )
         result = compute_index(ds, "ndvi", sensor="landsat")
         assert result.name == "ndvi"
 
     def test_compute_all(self):
         ds = _make_dataset(
-            nir=[[0.5]] * 3,
-            nir08=[[0.5]] * 3,
-            red=[[0.1]] * 3,
-            blue=[[0.05]] * 3,
-            swir16=[[0.2]] * 3,
-            swir22=[[0.15]] * 3,
+            nir=[[0.5, 0.5, 0.5]] * 3,
+            nir08=[[0.5, 0.5, 0.5]] * 3,
+            red=[[0.1, 0.1, 0.1]] * 3,
+            blue=[[0.05, 0.05, 0.05]] * 3,
+            swir16=[[0.2, 0.2, 0.2]] * 3,
+            swir22=[[0.15, 0.15, 0.15]] * 3,
         )
         result = compute_all_indices(ds, ["ndvi", "ndmi", "nbr", "evi2"])
         assert "ndvi" in result

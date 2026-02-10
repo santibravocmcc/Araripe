@@ -220,3 +220,10 @@ data/baselines/*.tiff
 
 # Log files
 logs/
+
+# Cached CHIRPS precipitation data (large GeoTIFFs, re-downloadable)
+data/chirps/*.tif
+data/chirps/*.tif.gz
+
+# Cached clipped scenes (NetCDF, reusable across runs)
+data/scene_cache/

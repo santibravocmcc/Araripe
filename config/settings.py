@@ -14,6 +14,7 @@ TIMESERIES_DIR = DATA_DIR / "timeseries"
 # Chapada do Araripe bounding box: ~7–8°S, 39–40°W
 AOI_BBOX = [-40.0, -8.0, -39.0, -7.0]  # [west, south, east, north]
 AOI_GEOJSON = AOI_DIR / "chapada_araripe.geojson"
+AOI_GEOPACKAGE = AOI_DIR / "chapada_araripe.gpkg"
 
 # ─── STAC API endpoints ──────────────────────────────────────────────────────
 ELEMENT84_URL = "https://earth-search.aws.element84.com/v1"
@@ -69,6 +70,20 @@ DROUGHT_Z_ADJUSTMENT = 0.5  # add this to z thresholds during drought
 # ─── NDFI thresholds (INPE standard) ─────────────────────────────────────────
 NDFI_INTACT_FOREST = 0.75
 NDFI_DEGRADED_MIN = 0.0
+
+# ─── CHIRPS precipitation data ────────────────────────────────────────────────
+CHIRPS_BASE_URL = "https://data.chc.ucsb.edu/products/CHIRPS-2.0/global_monthly/tifs"
+CHIRPS_CACHE_DIR = DATA_DIR / "chirps"
+
+# ─── Baseline quality filters ────────────────────────────────────────────────
+MIN_CLEAR_PERCENTAGE_BASELINE = 10.0  # skip scenes with <10% clear pixels
+
+# Months where Caatinga deciduous trees are leafless (Aug-Oct)
+# Baselines for these months are less reliable for greenness indices
+CAATINGA_LEAFOFF_MONTHS = [8, 9, 10]
+
+# ─── Scene cache (clipped scenes saved to disk for reuse) ───────────────────
+SCENE_CACHE_DIR = DATA_DIR / "scene_cache"
 
 # ─── Cloudflare R2 ───────────────────────────────────────────────────────────
 R2_BUCKET_NAME = "araripe-cogs"

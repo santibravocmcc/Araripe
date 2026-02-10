@@ -23,8 +23,10 @@ from config.settings import (
     AOI_BBOX,
     BASELINES_DIR,
     MAX_CLOUD_COVER,
+    SCENE_CACHE_DIR,
     SEARCH_DAYS_BACK,
 )
+from src.acquisition.aoi import clip_dataset_to_aoi, get_aoi_bbox_wgs84, load_aoi_polygon
 from src.acquisition.stac_client import search_sentinel2_with_fallback
 from src.acquisition.download import load_sentinel2_for_indices
 from src.detection.alerts import save_alerts, summarize_alerts, vectorize_alerts
@@ -40,7 +42,25 @@ from src.timeseries.builder import store_alert_stats, store_regional_stats
 @click.option("--indices", default="ndmi,nbr,evi2", help="Comma-separated indices.")
 @click.option("--max-cloud", default=MAX_CLOUD_COVER, help="Max cloud cover %.")
 @click.option("--min-clear", default=50.0, help="Min clear pixel % to process scene.")
-def main(days_back: int, indices: str, max_cloud: int, min_clear: float) -> None:
+@click.option(
+    "--cache/--no-cache",
+    default=False,
+    help="Cache clipped scenes to disk for reuse.",
+)
+@click.option(
+    "--aoi",
+    default=None,
+    type=click.Path(exists=False),
+    help="Path to AOI polygon (GeoJSON or GeoPackage).",
+)
+def main(
+    days_back: int,
+    indices: str,
+    max_cloud: int,
+    min_clear: float,
+    cache: bool,
+    aoi: str | None,
+) -> None:
     """Run the weekly deforestation detection pipeline."""
     index_list = [idx.strip() for idx in indices.split(",")]
     today = datetime.utcnow().strftime("%Y-%m-%d")
@@ -50,10 +70,39 @@ def main(days_back: int, indices: str, max_cloud: int, min_clear: float) -> None
     logger.info("Date: {}, Looking back {} days", today, days_back)
     logger.info("Indices: {}", index_list)
 
+    # ─── AOI polygon for clipping ─────────────────────────────────────────
+    aoi_path = Path(aoi) if aoi else None
+    aoi_gdf = load_aoi_polygon(path=aoi_path)
+    aoi_bbox = get_aoi_bbox_wgs84(path=aoi_path)
+    logger.info("AOI bbox: {}", aoi_bbox)
+
+    # ─── Scene cache setup ────────────────────────────────────────────────
+    cache_dir = None
+    if cache:
+        cache_dir = SCENE_CACHE_DIR
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        logger.info("Scene caching enabled: {}", cache_dir)
+
+    # Fetch current drought status via CHIRPS/SPI
+    spi_value = None
+    try:
+        from src.processing.spi import get_current_spi
+
+        spi_value = get_current_spi(aoi_bbox)
+        logger.info("Current 3-month SPI: {:.2f}", spi_value)
+        if spi_value < -1.0:
+            logger.warning(
+                "Drought conditions detected (SPI={:.2f}). "
+                "Z-score thresholds will be widened to reduce false positives.",
+                spi_value,
+            )
+    except Exception as e:
+        logger.warning("Could not compute SPI (CHIRPS unavailable): {}. Proceeding without drought adjustment.", e)
+
     # Stage 1: Query recent imagery
     logger.info("Stage 1: Querying recent imagery...")
     items = search_sentinel2_with_fallback(
-        bbox=AOI_BBOX,
+        bbox=aoi_bbox,
         max_cloud_cover=max_cloud,
     )
 
@@ -78,9 +127,33 @@ def main(days_back: int, indices: str, max_cloud: int, min_clear: float) -> None
         logger.info("Processing {} (cloud: {}%)", item.id, cloud_pct)
 
         try:
-            # Stage 2: Load and mask
-            ds = load_sentinel2_for_indices(item, index_list)
-            ds = mask_sentinel2(ds)
+            # Stage 2: Load, mask, and clip to AOI
+            import xarray as xr
+
+            cache_file = cache_dir / f"{item.id.replace('/', '_')}.nc" if cache_dir else None
+
+            if cache_file and cache_file.exists():
+                logger.info("Cache hit: loading {} from disk", cache_file.name)
+                ds = xr.open_dataset(str(cache_file))
+            else:
+                ds = load_sentinel2_for_indices(item, index_list)
+                ds = mask_sentinel2(ds)
+
+                # Clip to AOI polygon
+                try:
+                    ds = clip_dataset_to_aoi(ds, aoi_gdf=aoi_gdf)
+                except Exception as clip_err:
+                    logger.warning("Clipping failed: {}, using unclipped", clip_err)
+
+                # Cache clipped scene for future reuse
+                if cache_file:
+                    try:
+                        ds_computed = ds.compute()
+                        ds_computed.to_netcdf(str(cache_file))
+                        logger.info("Cached scene: {}", cache_file.name)
+                        ds = ds_computed
+                    except Exception as cache_err:
+                        logger.warning("Failed to cache: {}", cache_err)
 
             clear_pct = compute_clear_percentage(ds)
             if clear_pct < min_clear:
@@ -111,11 +184,12 @@ def main(days_back: int, indices: str, max_cloud: int, min_clear: float) -> None
                 logger.warning("No baselines available, skipping detection")
                 continue
 
-            # Stage 5: Detect changes
+            # Stage 5: Detect changes (with drought adjustment if SPI available)
             detection = detect_deforestation(
                 current_indices=idx_ds,
                 baseline_means=baseline_means,
                 baseline_stds=baseline_stds,
+                spi_3month=spi_value,
             )
 
             # Vectorize alerts

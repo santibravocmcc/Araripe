@@ -25,7 +25,15 @@ from loguru import logger
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from config.settings import AOI_BBOX, BASELINES_DIR, BASELINE_YEARS, MAX_CLOUD_COVER
+from config.settings import (
+    AOI_BBOX,
+    BASELINES_DIR,
+    BASELINE_YEARS,
+    CAATINGA_LEAFOFF_MONTHS,
+    MAX_CLOUD_COVER,
+    MIN_CLEAR_PERCENTAGE_BASELINE,
+    SCENE_CACHE_DIR,
+)
 
 
 def setup_logging(output_dir: Path) -> Path:
@@ -101,17 +109,43 @@ def check_existing_baselines(
     help="Maximum cloud cover percentage.",
 )
 @click.option(
+    "--min-clear",
+    default=MIN_CLEAR_PERCENTAGE_BASELINE,
+    help="Minimum clear pixel % to include a scene (default 10%).",
+)
+@click.option(
     "--force",
     is_flag=True,
     default=False,
     help="Rebuild all baselines even if they exist on disk.",
 )
-def main(years: int, indices: str, output_dir: str, max_cloud: int, force: bool) -> None:
+@click.option(
+    "--cache/--no-cache",
+    default=False,
+    help="Cache clipped scenes to disk for reuse in future runs.",
+)
+@click.option(
+    "--aoi",
+    default=None,
+    type=click.Path(exists=False),
+    help="Path to AOI polygon (GeoJSON or GeoPackage). Uses default if not set.",
+)
+def main(
+    years: int,
+    indices: str,
+    output_dir: str,
+    max_cloud: int,
+    min_clear: float,
+    force: bool,
+    cache: bool,
+    aoi: str | None,
+) -> None:
     """Build monthly baselines from historical Sentinel-2 imagery."""
+    from src.acquisition.aoi import clip_dataset_to_aoi, get_aoi_bbox_wgs84, load_aoi_polygon
     from src.acquisition.download import load_sentinel2_for_indices
     from src.acquisition.stac_client import search_element84
     from src.detection.baseline import build_baselines, save_baseline_cog
-    from src.processing.cloud_mask import mask_sentinel2
+    from src.processing.cloud_mask import compute_clear_percentage, mask_sentinel2
     from src.processing.composite import monthly_composite
     from src.processing.indices import compute_all_indices
 
@@ -120,6 +154,19 @@ def main(years: int, indices: str, output_dir: str, max_cloud: int, force: bool)
     output_path.mkdir(parents=True, exist_ok=True)
 
     log_path = setup_logging(output_path)
+
+    # ─── AOI polygon for clipping ─────────────────────────────────────────
+    aoi_path = Path(aoi) if aoi else None
+    aoi_gdf = load_aoi_polygon(path=aoi_path)
+    aoi_bbox = get_aoi_bbox_wgs84(path=aoi_path)
+    logger.info("AOI bbox for STAC query: {}", aoi_bbox)
+
+    # ─── Scene cache setup ────────────────────────────────────────────────
+    cache_dir = None
+    if cache:
+        cache_dir = SCENE_CACHE_DIR
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        logger.info("Scene caching enabled: {}", cache_dir)
 
     # ─── Check what still needs to be built ───────────────────────────────
     if force:
@@ -160,7 +207,7 @@ def main(years: int, indices: str, output_dir: str, max_cloud: int, force: bool)
     logger.info("Querying imagery from {}", datetime_range)
 
     items = search_element84(
-        bbox=AOI_BBOX,
+        bbox=aoi_bbox,
         datetime_range=datetime_range,
         max_cloud_cover=max_cloud,
         max_items=500,
@@ -199,11 +246,48 @@ def main(years: int, indices: str, output_dir: str, max_cloud: int, force: bool)
             continue
 
         try:
-            # Load bands ONCE for all indices
-            ds = load_sentinel2_for_indices(item, index_list)
+            # ─── Try loading from cache first ─────────────────────────
+            import xarray as xr
 
-            # Apply cloud mask
-            ds = mask_sentinel2(ds)
+            cache_file = cache_dir / f"{item.id.replace('/', '_')}.nc" if cache_dir else None
+            loaded_from_cache = False
+
+            if cache_file and cache_file.exists():
+                logger.info("Cache hit: loading {} from disk", cache_file.name)
+                ds = xr.open_dataset(str(cache_file))
+                loaded_from_cache = True
+            else:
+                # Load bands ONCE for all indices (streams from cloud)
+                ds = load_sentinel2_for_indices(item, index_list)
+
+                # Apply cloud mask
+                ds = mask_sentinel2(ds)
+
+                # Clip to AOI polygon (reduces data size dramatically)
+                try:
+                    ds = clip_dataset_to_aoi(ds, aoi_gdf=aoi_gdf)
+                except Exception as clip_err:
+                    logger.warning("Clipping failed for {}: {}, using unclipped", item.id, clip_err)
+
+                # Save clipped scene to cache for future reuse
+                if cache_file:
+                    try:
+                        ds_computed = ds.compute()
+                        ds_computed.to_netcdf(str(cache_file))
+                        logger.info("Cached clipped scene: {} ({:.1f} MB)",
+                                    cache_file.name, cache_file.stat().st_size / 1e6)
+                        ds = ds_computed
+                    except Exception as cache_err:
+                        logger.warning("Failed to cache {}: {}", item.id, cache_err)
+
+            # Skip scenes with too few clear pixels
+            clear_pct = compute_clear_percentage(ds)
+            if clear_pct < min_clear:
+                logger.info(
+                    "Scene {}: only {:.1f}% clear, skipping (threshold: {}%)",
+                    item.id, clear_pct, min_clear,
+                )
+                continue
 
             # Compute ALL indices from the same loaded bands
             idx_ds = compute_all_indices(ds, index_list, sensor="sentinel2")
@@ -256,6 +340,15 @@ def main(years: int, indices: str, output_dir: str, max_cloud: int, force: bool)
                 "Building {}_month{:02d} from {} scenes...",
                 idx_name, month, n_scenes,
             )
+
+            # Seasonal quality warning for Caatinga leaf-off months
+            if month in CAATINGA_LEAFOFF_MONTHS:
+                logger.warning(
+                    "Month {} baselines may be less reliable for deciduous "
+                    "Caatinga (leaf-off period, Aug-Oct). Greenness indices "
+                    "(NDVI, EVI2) are especially affected.",
+                    month,
+                )
 
             try:
                 import numpy as np

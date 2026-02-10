@@ -112,6 +112,28 @@ def load_bands(
             target_resolution=target_resolution,
         )
 
+    # ─── Align all bands to a common pixel grid ──────────────────────
+    # Bands from different native resolutions (e.g., S2 B8=10m vs
+    # B8A/B11/B12/SCL=20m) produce slightly different x/y coordinates
+    # after reprojection, even at the same target resolution.  This
+    # causes xarray .where() to broadcast NaN into mismatched pixels.
+    # Fix: snap all bands to one reference grid using nearest-neighbor
+    # reindexing with a tolerance of one pixel width.
+    if arrays:
+        ref_name = "scl" if "scl" in arrays else next(iter(arrays))
+        ref = arrays[ref_name]
+        tolerance = target_resolution if target_resolution else 30.0
+        for name in list(arrays.keys()):
+            if name != ref_name:
+                arrays[name] = arrays[name].reindex_like(
+                    ref, method="nearest", tolerance=tolerance,
+                )
+        logger.debug(
+            "Aligned {} bands to '{}' grid ({}x{} pixels)",
+            len(arrays), ref_name,
+            ref.sizes.get("y", "?"), ref.sizes.get("x", "?"),
+        )
+
     ds = xr.Dataset(arrays)
     ds.attrs["item_id"] = item.id
     ds.attrs["datetime"] = str(item.datetime)
