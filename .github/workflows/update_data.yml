@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Set up Conda
         uses: conda-incubator/setup-miniconda@v3
@@ -35,7 +37,7 @@ jobs:
         run: python scripts/run_detection.py
 
       - name: Upload COGs to Cloudflare R2
-        if: success()
+        if: success() && secrets.R2_ENDPOINT_URL != ''
         env:
           R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL }}
           R2_ACCESS_KEY: ${{ secrets.R2_ACCESS_KEY }}
