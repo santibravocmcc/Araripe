@@ -37,7 +37,7 @@ jobs:
         run: python scripts/run_detection.py
 
       - name: Upload COGs to Cloudflare R2
-        if: success() && secrets.R2_ENDPOINT_URL != ''
+        if: success() && env.R2_ENDPOINT_URL != ''
         env:
           R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL }}
           R2_ACCESS_KEY: ${{ secrets.R2_ACCESS_KEY }}
