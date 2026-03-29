@@ -100,6 +100,12 @@ def add_alert_layer(
             "weight": 3,
         }
 
+    # Convert datetime columns to strings for JSON serialization
+    for col in alerts_gdf.columns:
+        if hasattr(alerts_gdf[col], "dt") or alerts_gdf[col].dtype.name.startswith("datetime"):
+            alerts_gdf = alerts_gdf.copy()
+            alerts_gdf[col] = alerts_gdf[col].astype(str)
+
     # Build popup content
     geojson_data = alerts_gdf.__geo_interface__
 

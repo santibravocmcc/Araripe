@@ -55,3 +55,21 @@ jobs:
           git add data/alerts/ data/timeseries/
           git diff --staged --quiet || git commit -m "chore: update alerts $(date +%Y-%m-%d)"
           git push
+
+      - name: Sync to Hugging Face Space
+        if: success()
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          python -c "
+          from huggingface_hub import HfApi
+          api = HfApi()
+          api.upload_folder(
+              folder_path='.',
+              repo_id='santibravo/araripe-monitor',
+              repo_type='space',
+              delete_patterns='*',
+              ignore_patterns=['.git/*', '.github/*', 'data/baselines/*', 'data/chirps/*', '.DS_Store', '__pycache__'],
+          )
+          print('HF Space synced successfully')
+          "
