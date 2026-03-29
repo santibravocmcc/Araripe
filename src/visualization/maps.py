@@ -100,11 +100,16 @@ def add_alert_layer(
             "weight": 3,
         }
 
-    # Convert datetime columns to strings for JSON serialization
+    # Convert all non-geometry columns to JSON-safe Python types
+    # (geopandas parses date strings as Timestamps, numpy ints/floats
+    #  are also not natively JSON-serializable)
+    alerts_gdf = alerts_gdf.copy()
     for col in alerts_gdf.columns:
-        if hasattr(alerts_gdf[col], "dt") or alerts_gdf[col].dtype.name.startswith("datetime"):
-            alerts_gdf = alerts_gdf.copy()
-            alerts_gdf[col] = alerts_gdf[col].astype(str)
+        if col == "geometry":
+            continue
+        alerts_gdf[col] = alerts_gdf[col].apply(
+            lambda v: str(v) if hasattr(v, 'isoformat') else v
+        )
 
     # Build popup content
     geojson_data = alerts_gdf.__geo_interface__
