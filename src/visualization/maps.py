@@ -101,20 +101,17 @@ def add_alert_layer(
             "weight": 3,
         }
 
-    # Force-convert every non-geometry column to native Python types.
-    # geopandas parses GeoJSON date strings as Timestamps, and neither
-    # __geo_interface__ nor to_json() handle them.
+    # Convert to plain Python types to avoid JSON serialization failures.
+    # geopandas parses date strings as Timestamps on load, and both
+    # __geo_interface__ and to_json() choke on them.
     alerts_gdf = alerts_gdf.copy()
     for col in alerts_gdf.columns:
         if col == "geometry":
             continue
-        alerts_gdf[col] = [
-            v.isoformat() if hasattr(v, "isoformat") else
-            int(v) if hasattr(v, "item") and isinstance(v.item(), int) else
-            float(v) if hasattr(v, "item") and isinstance(v.item(), float) else
-            v
-            for v in alerts_gdf[col]
-        ]
+        if alerts_gdf[col].dtype.kind == "M":  # datetime64
+            alerts_gdf[col] = alerts_gdf[col].dt.strftime("%Y-%m-%d")
+        elif alerts_gdf[col].dtype.kind == "m":  # timedelta
+            alerts_gdf[col] = alerts_gdf[col].astype(str)
     geojson_data = json.loads(alerts_gdf.to_json())
 
     geojson_layer = folium.GeoJson(

@@ -37,8 +37,6 @@ from src.visualization.dashboard import (
 )
 from src.visualization.maps import (
     add_alert_layer,
-    add_aoi_boundary,
-    add_legend,
     create_base_map,
 )
 
@@ -117,17 +115,11 @@ with tab_map:
 
     m = create_base_map()
 
-    # Add AOI boundary
-    if AOI_GEOJSON.exists():
-        add_aoi_boundary(m, str(AOI_GEOJSON))
-
     # Add alerts
     if alerts_gdf is not None and not alerts_gdf.empty:
         filtered = alerts_gdf[alerts_gdf["confidence"] >= filters["min_confidence"]]
         if not filtered.empty:
             add_alert_layer(m, filtered)
-
-    add_legend(m)
 
     # Render map
     try:
