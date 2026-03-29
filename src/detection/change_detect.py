@@ -110,16 +110,19 @@ def detect_deforestation(
             high_d = high_d & (results[f"delta_{idx_name}"] < DELTA_THRESHOLD_HIGH)
         confidence = confidence.where(~(high_z & high_d), other=3)
 
-    # Medium confidence: z < -2.5 OR delta < -0.15 in at least one moisture index
+    # Medium confidence: z < -2.5 AND delta < -0.15 in at least one moisture index
+    # Both conditions required to avoid flagging normal inter-annual variation
     for idx_name in moisture_indices:
         z_med_flag = results[f"z_{idx_name}"] < z_med
         d_med_flag = results[f"delta_{idx_name}"] < DELTA_THRESHOLD_MEDIUM
-        med_flag = z_med_flag | d_med_flag
+        med_flag = z_med_flag & d_med_flag
         confidence = confidence.where(~((confidence < 2) & med_flag), other=2)
 
-    # Low confidence: z < -2.0 in any single index
+    # Low confidence: z < -2.0 AND delta < -0.10 in any single index
     for idx_name in all_indices:
-        low_flag = results[f"z_{idx_name}"] < z_low
+        low_z = results[f"z_{idx_name}"] < z_low
+        low_d = results[f"delta_{idx_name}"] < DELTA_THRESHOLD_LOW
+        low_flag = low_z & low_d
         confidence = confidence.where(~((confidence < 1) & low_flag), other=1)
 
     confidence.name = "confidence"

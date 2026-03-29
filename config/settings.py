@@ -52,7 +52,7 @@ Z_THRESHOLD_LOW = -2.0
 # Delta thresholds (absolute change from baseline mean)
 DELTA_THRESHOLD_HIGH = -0.20
 DELTA_THRESHOLD_MEDIUM = -0.15
-DELTA_THRESHOLD_LOW = -0.10
+DELTA_THRESHOLD_LOW = -0.15
 
 # Minimum alert area in hectares (patches smaller than this are filtered out)
 MIN_ALERT_AREA_HA = 1.0

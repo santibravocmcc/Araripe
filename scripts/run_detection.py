@@ -64,7 +64,6 @@ def main(
     """Run the weekly deforestation detection pipeline."""
     index_list = [idx.strip() for idx in indices.split(",")]
     today = datetime.utcnow().strftime("%Y-%m-%d")
-    current_month = datetime.utcnow().month
 
     logger.info("=== Araripe Deforestation Detection ===")
     logger.info("Date: {}, Looking back {} days", today, days_back)
@@ -101,8 +100,13 @@ def main(
 
     # Stage 1: Query recent imagery
     logger.info("Stage 1: Querying recent imagery...")
+    from src.acquisition.stac_client import _build_datetime_range
+
+    datetime_range = _build_datetime_range(days_back=days_back)
+    logger.info("Search window: {}", datetime_range)
     items = search_sentinel2_with_fallback(
         bbox=aoi_bbox,
+        datetime_range=datetime_range,
         max_cloud_cover=max_cloud,
     )
 
@@ -121,10 +125,11 @@ def main(
     # Stage 2-5: Process scenes
     all_alerts = []
 
-    for item in items_sorted[:5]:  # Process up to 5 best scenes
+    for item in items_sorted[:20]:  # Process up to 20 best scenes
         scene_date = str(item.datetime)[:10]
+        scene_month = item.datetime.month
         cloud_pct = item.properties.get("eo:cloud_cover", "?")
-        logger.info("Processing {} (cloud: {}%)", item.id, cloud_pct)
+        logger.info("Processing {} (cloud: {}%, month: {})", item.id, cloud_pct, scene_month)
 
         try:
             # Stage 2: Load, mask, and clip to AOI
@@ -139,11 +144,19 @@ def main(
                 ds = load_sentinel2_for_indices(item, index_list)
                 ds = mask_sentinel2(ds)
 
-                # Clip to AOI polygon
+                # Check clear percentage BEFORE clipping (clipping can
+                # reset NaN pixels and inflate the clear percentage).
+                clear_pct = compute_clear_percentage(ds)
+                if clear_pct < min_clear:
+                    logger.info("Only {:.1f}% clear pixels, skipping", clear_pct)
+                    continue
+
+                # Clip to AOI polygon — skip tile if it doesn't overlap
                 try:
                     ds = clip_dataset_to_aoi(ds, aoi_gdf=aoi_gdf)
                 except Exception as clip_err:
-                    logger.warning("Clipping failed: {}, using unclipped", clip_err)
+                    logger.warning("Tile does not overlap AOI ({}), skipping", clip_err)
+                    continue
 
                 # Cache clipped scene for future reuse
                 if cache_file:
@@ -154,11 +167,6 @@ def main(
                         ds = ds_computed
                     except Exception as cache_err:
                         logger.warning("Failed to cache: {}", cache_err)
-
-            clear_pct = compute_clear_percentage(ds)
-            if clear_pct < min_clear:
-                logger.info("Only {:.1f}% clear, skipping", clear_pct)
-                continue
 
             # Stage 3: Compute indices
             idx_ds = compute_all_indices(ds, index_list, sensor="sentinel2")
@@ -174,11 +182,19 @@ def main(
 
             for idx_name in index_list:
                 try:
-                    mean, std = load_baseline_pair(idx_name, current_month)
+                    mean, std = load_baseline_pair(idx_name, scene_month)
+                    # Align baseline grid to current scene grid.
+                    # Baselines were built from merged tiles and may have
+                    # pixel centers that don't exactly match STAC scene
+                    # grids.  reindex_like with nearest-neighbor and a
+                    # 10 m tolerance avoids NaN from coordinate mismatch.
+                    ref_var = list(idx_ds.data_vars)[0]
+                    mean = mean.reindex_like(idx_ds[ref_var], method="nearest", tolerance=10)
+                    std = std.reindex_like(idx_ds[ref_var], method="nearest", tolerance=10)
                     baseline_means[idx_name] = mean
                     baseline_stds[idx_name] = std
                 except FileNotFoundError:
-                    logger.warning("No baseline for {} month {}", idx_name, current_month)
+                    logger.warning("No baseline for {} month {}", idx_name, scene_month)
 
             if not baseline_means:
                 logger.warning("No baselines available, skipping detection")

@@ -58,6 +58,12 @@ def load_band(
     if "band" in da.dims and da.sizes["band"] == 1:
         da = da.squeeze("band", drop=True)
 
+    # Convert to float32 to avoid unsigned integer underflow in index
+    # computations (e.g., NDMI = (NIR - SWIR) / (NIR + SWIR) where the
+    # subtraction wraps around in uint16).
+    if da.dtype != np.float32:
+        da = da.astype(np.float32)
+
     # Reproject if needed
     if da.rio.crs and str(da.rio.crs) != target_crs:
         da = da.rio.reproject(
