@@ -140,7 +140,7 @@ def render_trend_indicator(trend_result: dict) -> None:
 
 def render_info_expander() -> None:
     """Render an expandable section with methodology information."""
-    with st.expander("About this monitoring system"):
+    with st.expander("About this monitoring system", expanded=True):
         st.markdown("""
         **Araripe Deforestation Monitor** detects vegetation loss across
         Chapada do Araripe using satellite imagery from Sentinel-2 and Landsat.

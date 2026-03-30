@@ -374,16 +374,34 @@ with tab_alerts:
             fig = cumulative_area_chart(alert_ts)
             st.plotly_chart(fig, use_container_width=True)
 
-        # Full alert records table
+        # Full alert records table — formatted consistently with Map tab
         st.markdown("---")
         st.subheader("All Alert Records")
+        st.caption(
+            f"Showing all {len(alerts_gdf)} alerts across all dates "
+            f"(sidebar date filter applies to charts above, not this table)"
+        )
         if alerts_gdf is not None and not alerts_gdf.empty:
-            full_display = alerts_gdf.drop(columns=["geometry"], errors="ignore")
-            # Convert datetime columns for display
+            full_display = alerts_gdf.copy()
+            # Convert datetime columns
             for col in full_display.columns:
                 if full_display[col].dtype.kind == "M":
-                    full_display[col] = full_display[col].dt.strftime("%Y-%m-%d %H:%M")
-            st.dataframe(full_display, use_container_width=True)
+                    full_display[col] = full_display[col].dt.strftime("%Y-%m-%d")
+            # Drop redundant/internal columns
+            drop_cols = ["geometry", "confidence", "created_at"]
+            full_display = full_display.drop(
+                columns=[c for c in drop_cols if c in full_display.columns]
+            )
+            full_display = full_display.rename(columns={
+                "detection_date": "Date",
+                "confidence_label": "Confidence",
+                "area_ha": "Area (ha)",
+            })
+            st.dataframe(
+                full_display.sort_values("Area (ha)", ascending=False).reset_index(drop=True),
+                use_container_width=True,
+                height=400,
+            )
     else:
         st.info("No alert history data available yet.")
 
@@ -417,9 +435,16 @@ with tab_about:
 - Automation: GitHub Actions (weekly cron)
     """)
 
+    # Show last data update
+    alert_files = sorted(ALERTS_DIR.glob("alerts_*.geojson"))
+    if alert_files:
+        last_file = alert_files[-1].stem.replace("alerts_", "")
+        st.info(f"Last detection run: **{last_file}** | {len(alert_files)} detection files")
+
     st.markdown("---")
     st.caption(
         "Araripe Deforestation Monitor | "
+        "[GitHub](https://github.com/santibravocmcc/Araripe) | "
         "Open source | "
         "Data: ESA Sentinel-2, USGS Landsat, NASA HLS"
     )
