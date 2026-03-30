@@ -70,7 +70,7 @@ def render_metrics(summary: dict) -> None:
     summary : dict
         Alert summary from alerts.summarize_alerts().
     """
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
 
     with col1:
         st.metric(
@@ -81,11 +81,12 @@ def render_metrics(summary: dict) -> None:
     with col2:
         st.metric(
             label="Total Area (ha)",
-            value=f"{summary.get('total_area_ha', 0):.1f}",
+            value=f"{summary.get('total_area_ha', 0):,.1f}",
         )
 
+    by_conf = summary.get("by_confidence", {})
+
     with col3:
-        by_conf = summary.get("by_confidence", {})
         st.metric(
             label="High Confidence",
             value=by_conf.get("high", 0),
@@ -95,6 +96,12 @@ def render_metrics(summary: dict) -> None:
         st.metric(
             label="Medium Confidence",
             value=by_conf.get("medium", 0),
+        )
+
+    with col5:
+        st.metric(
+            label="Low Confidence",
+            value=by_conf.get("low", 0),
         )
 
 

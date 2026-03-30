@@ -51,34 +51,47 @@ st.set_page_config(
 # ─── Custom theme / CSS ──────────────────────────────────────────────────────
 st.markdown("""
 <style>
-    /* Tighter metric cards */
+    /* Metric cards with visible borders */
     [data-testid="stMetric"] {
-        background: rgba(28, 131, 225, 0.05);
-        border: 1px solid rgba(28, 131, 225, 0.1);
+        background: rgba(28, 131, 225, 0.08);
+        border: 1px solid rgba(28, 131, 225, 0.25);
         border-radius: 8px;
-        padding: 12px 16px;
+        padding: 14px 16px;
     }
     [data-testid="stMetricValue"] {
         font-size: 1.8rem;
+        font-weight: 700;
     }
-    /* Tab styling */
+    [data-testid="stMetricLabel"] {
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+    /* Tab styling — green accent instead of red */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
     }
     .stTabs [data-baseweb="tab"] {
-        padding: 8px 20px;
-        border-radius: 6px 6px 0 0;
+        padding: 10px 24px;
+        font-size: 0.95rem;
+        font-weight: 500;
+    }
+    /* Spacing between metrics and tabs */
+    .stTabs {
+        margin-top: 1rem;
     }
     /* Index info cards */
     .index-card {
-        background: rgba(255,255,255,0.03);
-        border: 1px solid rgba(255,255,255,0.08);
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.12);
         border-radius: 8px;
-        padding: 12px 16px;
+        padding: 14px 16px;
         margin-bottom: 8px;
     }
-    .index-card h4 { margin: 0 0 4px 0; }
-    .index-card p { margin: 0; font-size: 0.85rem; opacity: 0.8; }
+    .index-card h4 { margin: 0 0 6px 0; font-size: 1.1rem; }
+    .index-card p { margin: 0 0 4px 0; font-size: 0.85rem; opacity: 0.85; line-height: 1.4; }
+    .index-card code { font-size: 0.8rem; background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; }
 </style>
 """, unsafe_allow_html=True)
 
