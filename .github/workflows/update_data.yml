@@ -61,6 +61,7 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
+          pip install -q huggingface_hub
           python -c "
           from huggingface_hub import HfApi
           api = HfApi()

@@ -23,11 +23,12 @@ def render_sidebar() -> dict:
 
     st.sidebar.markdown("---")
 
-    # Date range filter
+    # Date range filter — default to last 90 days
     st.sidebar.subheader("Date Range")
+    default_start = pd.Timestamp.now() - pd.Timedelta(days=90)
     col1, col2 = st.sidebar.columns(2)
     with col1:
-        start_date = st.date_input("Start", value=pd.Timestamp("2024-01-01"))
+        start_date = st.date_input("Start", value=default_start)
     with col2:
         end_date = st.date_input("End", value=pd.Timestamp.now())
 
