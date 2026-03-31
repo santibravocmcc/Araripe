@@ -14,9 +14,9 @@ from config.settings import DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM, MAP_HEIGHT
 
 # ─── Alert confidence color scheme ───────────────────────────────────────────
 CONFIDENCE_COLORS = {
-    1: "#FFC107",  # Low: amber
-    2: "#FF9800",  # Medium: orange
-    3: "#F44336",  # High: red
+    1: "#FFEE58",  # Low: bright yellow
+    2: "#FB8C00",  # Medium: orange
+    3: "#E53935",  # High: red
 }
 
 CONFIDENCE_LABELS = {
@@ -86,13 +86,20 @@ def add_alert_layer(
     if alerts_gdf.crs and str(alerts_gdf.crs) != "EPSG:4326":
         alerts_gdf = alerts_gdf.to_crs("EPSG:4326")
 
+    # Darker border colors matching each confidence fill
+    border_colors = {
+        1: "#F9A825",  # Low: dark yellow
+        2: "#E65100",  # Medium: dark orange
+        3: "#B71C1C",  # High: dark red
+    }
+
     def style_function(feature):
         conf = feature["properties"].get("confidence", 1)
         return {
-            "fillColor": CONFIDENCE_COLORS.get(conf, "#FFC107"),
-            "color": "#000000",
-            "weight": 1,
-            "fillOpacity": 0.6,
+            "fillColor": CONFIDENCE_COLORS.get(conf, "#FFEE58"),
+            "color": border_colors.get(conf, "#000000"),
+            "weight": 1.5,
+            "fillOpacity": 0.55,
         }
 
     def highlight_function(feature):
@@ -237,9 +244,9 @@ def add_aoi_boundary(
 def add_legend(m: leafmap.Map) -> leafmap.Map:
     """Add a deforestation alert confidence legend to the map."""
     legend_dict = {
-        "High Confidence": "#F44336",
-        "Medium Confidence": "#FF9800",
-        "Low Confidence": "#FFC107",
+        "High Confidence": "#E53935",
+        "Medium Confidence": "#FB8C00",
+        "Low Confidence": "#FFEE58",
         "Study Area": "#2196F3",
     }
     m.add_legend(title="Alert Confidence", legend_dict=legend_dict)

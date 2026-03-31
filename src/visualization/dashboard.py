@@ -13,17 +13,20 @@ from config.settings import AOI_GEOJSON
 def render_sidebar() -> dict:
     """Render the sidebar with filter controls.
 
+    All filters immediately affect the table, metrics, and charts.
+    The map only updates when the user presses **View on Map**.
+
     Returns
     -------
     dict
-        Filter values: date_range, selected_indices, min_confidence.
+        Filter values including ``view_on_map`` (bool) flag.
     """
     st.sidebar.title("Araripe Monitor")
     st.sidebar.markdown("Deforestation monitoring for Chapada do Araripe")
 
     st.sidebar.markdown("---")
 
-    # Date range filter — default to last 90 days
+    # ── Date range (default: last 90 days) ─────────────────────────────
     st.sidebar.subheader("Date Range")
     default_start = pd.Timestamp.now() - pd.Timedelta(days=90)
     col1, col2 = st.sidebar.columns(2)
@@ -34,20 +37,53 @@ def render_sidebar() -> dict:
 
     st.sidebar.markdown("---")
 
-    # Confidence filter
+    # ── Alert confidence (multiselect, default Medium + High) ──────────
     st.sidebar.subheader("Alert Confidence")
-    min_confidence = st.sidebar.select_slider(
-        "Minimum confidence",
-        options=["Low", "Medium", "High"],
-        value="Low",
+    confidence_selection = st.sidebar.multiselect(
+        "Select confidence levels",
+        options=["High", "Medium", "Low"],
+        default=["High", "Medium"],
+        help="Choose which confidence levels to include.",
+    )
+    # Map labels to numeric values used in the data
+    confidence_map = {"Low": 1, "Medium": 2, "High": 3}
+    selected_confidence_values = [
+        confidence_map[c] for c in confidence_selection
+    ]
+
+    st.sidebar.markdown("---")
+
+    # ── Minimum area ───────────────────────────────────────────────────
+    st.sidebar.subheader("Minimum Area")
+    min_area = st.sidebar.number_input(
+        "Min area (ha)",
+        min_value=0.0,
+        value=0.0,
+        step=1.0,
+        help="Exclude alerts smaller than this area.",
     )
 
-    confidence_map = {"Low": 1, "Medium": 2, "High": 3}
+    st.sidebar.markdown("---")
+
+    # ── View on Map button ─────────────────────────────────────────────
+    view_on_map = st.sidebar.button(
+        "View on Map",
+        type="primary",
+        use_container_width=True,
+        help="Apply current filters to the map and zoom to fit.",
+    )
+
+    st.sidebar.caption(
+        "Filters update the table and metrics instantly. "
+        "Press **View on Map** to refresh the map."
+    )
 
     return {
         "start_date": str(start_date),
         "end_date": str(end_date),
-        "min_confidence": confidence_map[min_confidence],
+        "confidence_values": selected_confidence_values,
+        "min_area": min_area,
+        "view_on_map": view_on_map,
     }
 
 
