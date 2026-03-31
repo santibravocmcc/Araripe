@@ -8,6 +8,33 @@ import pandas as pd
 import streamlit as st
 
 from config.settings import AOI_GEOJSON
+from src.visualization.i18n import t
+
+
+def render_language_selector() -> None:
+    """Render flag-based language selector at the top of the sidebar."""
+    if "language" not in st.session_state:
+        st.session_state["language"] = "pt"
+
+    col1, col2 = st.sidebar.columns(2)
+    with col1:
+        if st.button(
+            "Portugues",
+            use_container_width=True,
+            type="primary" if st.session_state["language"] == "pt" else "secondary",
+            key="lang_pt",
+        ):
+            st.session_state["language"] = "pt"
+            st.rerun()
+    with col2:
+        if st.button(
+            "English",
+            use_container_width=True,
+            type="primary" if st.session_state["language"] == "en" else "secondary",
+            key="lang_en",
+        ):
+            st.session_state["language"] = "en"
+            st.rerun()
 
 
 def render_sidebar() -> dict:
@@ -21,62 +48,68 @@ def render_sidebar() -> dict:
     dict
         Filter values including ``view_on_map`` (bool) flag.
     """
-    st.sidebar.title("Araripe Monitor")
-    st.sidebar.markdown("Deforestation monitoring for Chapada do Araripe")
+    # Language selector first
+    render_language_selector()
+
+    st.sidebar.markdown("---")
+
+    st.sidebar.title(t("sidebar_title"))
+    st.sidebar.markdown(t("sidebar_caption"))
 
     st.sidebar.markdown("---")
 
     # ── Date range (default: last 90 days) ─────────────────────────────
-    st.sidebar.subheader("Date Range")
+    st.sidebar.subheader(t("date_range"))
     default_start = pd.Timestamp.now() - pd.Timedelta(days=90)
     col1, col2 = st.sidebar.columns(2)
     with col1:
-        start_date = st.date_input("Start", value=default_start)
+        start_date = st.date_input(t("start"), value=default_start)
     with col2:
-        end_date = st.date_input("End", value=pd.Timestamp.now())
+        end_date = st.date_input(t("end"), value=pd.Timestamp.now())
 
     st.sidebar.markdown("---")
 
     # ── Alert confidence (multiselect, default Medium + High) ──────────
-    st.sidebar.subheader("Alert Confidence")
+    st.sidebar.subheader(t("alert_confidence"))
+
+    # Display labels in current language, map back to internal values
+    conf_options = [t("high"), t("medium"), t("low")]
+    conf_defaults = [t("high"), t("medium")]
     confidence_selection = st.sidebar.multiselect(
-        "Select confidence levels",
-        options=["High", "Medium", "Low"],
-        default=["High", "Medium"],
-        help="Choose which confidence levels to include.",
+        t("select_confidence"),
+        options=conf_options,
+        default=conf_defaults,
+        help=t("confidence_help"),
     )
-    # Map labels to numeric values used in the data
-    confidence_map = {"Low": 1, "Medium": 2, "High": 3}
+    # Map display labels → numeric values
+    label_to_val = {t("low"): 1, t("medium"): 2, t("high"): 3}
     selected_confidence_values = [
-        confidence_map[c] for c in confidence_selection
+        label_to_val[c] for c in confidence_selection if c in label_to_val
     ]
 
     st.sidebar.markdown("---")
 
     # ── Minimum area ───────────────────────────────────────────────────
-    st.sidebar.subheader("Minimum Area")
+    st.sidebar.subheader(t("min_area_label"))
     min_area = st.sidebar.number_input(
-        "Min area (ha)",
+        t("min_area_input"),
         min_value=0.0,
         value=0.0,
         step=1.0,
-        help="Exclude alerts smaller than this area.",
+        help=t("min_area_help"),
     )
 
     st.sidebar.markdown("---")
 
     # ── View on Map button ─────────────────────────────────────────────
     view_on_map = st.sidebar.button(
-        "View on Map",
+        t("view_on_map"),
         type="primary",
         use_container_width=True,
-        help="Apply current filters to the map and zoom to fit.",
+        help=t("view_on_map_help"),
     )
 
-    st.sidebar.caption(
-        "Filters update the table and metrics instantly. "
-        "Press **View on Map** to refresh the map."
-    )
+    st.sidebar.caption(t("sidebar_filter_note"))
 
     return {
         "start_date": str(start_date),
@@ -99,13 +132,13 @@ def render_metrics(summary: dict) -> None:
 
     with col1:
         st.metric(
-            label="Total Alerts",
+            label=t("total_alerts"),
             value=summary.get("total_alerts", 0),
         )
 
     with col2:
         st.metric(
-            label="Total Area (ha)",
+            label=t("total_area_ha"),
             value=f"{summary.get('total_area_ha', 0):,.1f}",
         )
 
@@ -113,19 +146,19 @@ def render_metrics(summary: dict) -> None:
 
     with col3:
         st.metric(
-            label="High Confidence",
+            label=t("high_confidence"),
             value=by_conf.get("high", 0),
         )
 
     with col4:
         st.metric(
-            label="Medium Confidence",
+            label=t("medium_confidence"),
             value=by_conf.get("medium", 0),
         )
 
     with col5:
         st.metric(
-            label="Low Confidence",
+            label=t("low_confidence"),
             value=by_conf.get("low", 0),
         )
 
@@ -145,18 +178,18 @@ def render_trend_indicator(trend_result: dict) -> None:
 
     if trend == "decreasing":
         delta_color = "inverse"
-        icon = "Decreasing"
+        icon = t("ts_decreasing")
     elif trend == "increasing":
         delta_color = "normal"
-        icon = "Increasing"
+        icon = t("ts_increasing")
     else:
         delta_color = "off"
-        icon = "No trend"
+        icon = t("ts_no_trend")
 
-    sig_text = " (significant)" if significant else " (not significant)"
+    sig_text = t("ts_significant") if significant else t("ts_not_significant")
 
     st.metric(
-        label="Vegetation Trend",
+        label=t("ts_trend"),
         value=icon,
         delta=f"{slope:+.4f}/year{sig_text}",
         delta_color=delta_color,
@@ -165,23 +198,5 @@ def render_trend_indicator(trend_result: dict) -> None:
 
 def render_info_expander() -> None:
     """Render an expandable section with methodology information."""
-    with st.expander("About this monitoring system", expanded=True):
-        st.markdown("""
-        **Araripe Deforestation Monitor** detects vegetation loss across
-        Chapada do Araripe using satellite imagery from Sentinel-2 and Landsat.
-
-        **Key features:**
-        - Weekly automated processing via GitHub Actions
-        - Moisture-based indices (NDMI, NBR) for reliable detection in
-          seasonally deciduous Caatinga/Cerrado vegetation
-        - Z-score anomaly detection against monthly baselines
-        - Multi-index confirmation for confidence classification
-        - Drought-adjusted thresholds using SPI rainfall data
-
-        **Data sources:**
-        - Sentinel-2 L2A (10–20m resolution, 5-day revisit)
-        - Landsat 8/9 Collection 2 (30m resolution)
-        - NASA HLS (harmonized 30m, 2–3 day revisit)
-
-        **Coverage:** ~7–8°S, 39–40°W (Chapada do Araripe, CE/PE/PI, Brazil)
-        """)
+    with st.expander(t("about_expander"), expanded=True):
+        st.markdown(t("about_body"))

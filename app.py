@@ -35,6 +35,7 @@ from src.visualization.dashboard import (
     render_sidebar,
     render_trend_indicator,
 )
+from src.visualization.i18n import t
 from src.visualization.maps import (
     add_alert_layer,
     create_base_map,
@@ -95,7 +96,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ─── Sidebar ──────────────────────────────────────────────────────────────────
+# ─── Sidebar (includes language selector at top) ────────────────────────────
 filters = render_sidebar()
 
 
@@ -127,46 +128,40 @@ def get_alert_timeseries(start_date, end_date):
         return None
 
 
-# ─── Vegetation index descriptions ──────────────────────────────────────────
-INDEX_INFO = {
-    "ndmi": {
-        "name": "NDMI",
-        "full_name": "Normalized Difference Moisture Index",
-        "formula": "(NIR - SWIR1) / (NIR + SWIR1)",
-        "description": "Sensitive to canopy water content. Best for detecting "
-                       "early-stage deforestation where trees are cut but stumps remain. "
-                       "Primary index for this monitoring system.",
-        "color": "#2196F3",
-        "use": "Primary detection index",
-    },
-    "nbr": {
-        "name": "NBR",
-        "full_name": "Normalized Burn Ratio",
-        "formula": "(NIR - SWIR2) / (NIR + SWIR2)",
-        "description": "Responds to both fire damage and clearing. Strong signal for "
-                       "burned areas and complete canopy removal. Confirms NDMI detections.",
-        "color": "#9C27B0",
-        "use": "Confirmation index (fire + clearing)",
-    },
-    "evi2": {
-        "name": "EVI2",
-        "full_name": "Enhanced Vegetation Index 2",
-        "formula": "2.5 * (NIR - RED) / (NIR + 2.4 * RED + 1)",
-        "description": "Measures green vegetation vigor with reduced soil background influence. "
-                       "Less affected by atmospheric conditions than NDVI. "
-                       "Useful for detecting gradual degradation.",
-        "color": "#FF9800",
-        "use": "Degradation tracking",
-    },
-}
+# ─── Vegetation index descriptions (bilingual) ──────────────────────────────
+def _get_index_info() -> dict:
+    """Return index descriptions in the current language."""
+    return {
+        "ndmi": {
+            "name": "NDMI",
+            "full_name": "Normalized Difference Moisture Index",
+            "formula": "(NIR - SWIR1) / (NIR + SWIR1)",
+            "description": t("ndmi_desc"),
+            "color": "#2196F3",
+            "use": t("ndmi_use"),
+        },
+        "nbr": {
+            "name": "NBR",
+            "full_name": "Normalized Burn Ratio",
+            "formula": "(NIR - SWIR2) / (NIR + SWIR2)",
+            "description": t("nbr_desc"),
+            "color": "#9C27B0",
+            "use": t("nbr_use"),
+        },
+        "evi2": {
+            "name": "EVI2",
+            "full_name": "Enhanced Vegetation Index 2",
+            "formula": "2.5 * (NIR - RED) / (NIR + 2.4 * RED + 1)",
+            "description": t("evi2_desc"),
+            "color": "#FF9800",
+            "use": t("evi2_use"),
+        },
+    }
 
 
 # ─── Main content ─────────────────────────────────────────────────────────────
-st.title("Araripe Deforestation Monitor")
-st.caption(
-    "Satellite-based weekly deforestation monitoring for "
-    "Chapada do Araripe (CE/PE/PI, Brazil)"
-)
+st.title(t("main_title"))
+st.caption(t("main_caption"))
 
 # Load data
 alerts_gdf = get_alerts()
@@ -202,12 +197,9 @@ else:
     }
 
 # ─── Handle "View on Map" button ─────────────────────────────────────────────
-# When pressed, snapshot the current filtered alert indices for the map.
-# The map only re-renders with new data when this button is pressed.
 if filters["view_on_map"] and filtered_alerts is not None and not filtered_alerts.empty:
     st.session_state["map_alert_idx"] = filtered_alerts.index.tolist()
 elif "map_alert_idx" not in st.session_state:
-    # First load — show all filtered alerts on map
     if filtered_alerts is not None and not filtered_alerts.empty:
         st.session_state["map_alert_idx"] = filtered_alerts.index.tolist()
 
@@ -215,19 +207,16 @@ elif "map_alert_idx" not in st.session_state:
 render_metrics(summary)
 
 if alerts_gdf is None or alerts_gdf.empty:
-    st.info(
-        "No alert data available yet. Run the detection pipeline first: "
-        "`python scripts/run_detection.py`"
-    )
+    st.info(t("no_data"))
 
 # ─── Tabs ─────────────────────────────────────────────────────────────────────
 tab_map, tab_timeseries, tab_alerts, tab_about = st.tabs(
-    ["Map", "Time Series", "Alert History", "About"]
+    [t("tab_map"), t("tab_timeseries"), t("tab_alerts"), t("tab_about")]
 )
 
 # ─── Tab 1: Interactive Map + Alert Explorer ─────────────────────────────────
 with tab_map:
-    # ─── Build table with IDs (needed for display) ──────────────────────
+    # ─── Build table with IDs ───────────────────────────────────────────
     _table_df = None
     if filtered_alerts is not None and not filtered_alerts.empty:
         _display_df = filtered_alerts.copy()
@@ -251,29 +240,27 @@ with tab_map:
         ]
         show_cols = [c for c in show_cols if c in _display_df.columns]
         _table_df = _display_df[show_cols].rename(columns={
-            "alert_id": "ID",
-            "detection_date": "Date",
-            "confidence_label": "Confidence",
-            "area_ha": "Area (ha)",
-            "latitude": "Lat",
-            "longitude": "Lon",
+            "alert_id": t("col_id"),
+            "detection_date": t("col_date"),
+            "confidence_label": t("col_confidence"),
+            "area_ha": t("col_area"),
+            "latitude": t("col_lat"),
+            "longitude": t("col_lon"),
         })
 
     # ─── Map ────────────────────────────────────────────────────────────
-    st.subheader("Deforestation Alert Map")
+    st.subheader(t("map_title"))
 
     # Resolve which alerts to render on map (from session_state snapshot)
     map_idx = st.session_state.get("map_alert_idx")
     if map_idx is not None and alerts_gdf is not None:
-        map_alerts_gdf = alerts_gdf.loc[
-            alerts_gdf.index.isin(map_idx)
-        ]
+        map_alerts_gdf = alerts_gdf.loc[alerts_gdf.index.isin(map_idx)]
         if map_alerts_gdf.crs and str(map_alerts_gdf.crs) != "EPSG:4326":
             map_alerts_gdf = map_alerts_gdf.to_crs("EPSG:4326")
         n_map = len(map_alerts_gdf)
+        s_suffix = "s" if n_map != 1 else ""
         st.caption(
-            f"Showing **{n_map}** alert{'s' if n_map != 1 else ''} on map. "
-            f"Change filters in the sidebar and press **View on Map** to update."
+            t("map_showing_n").format(n=n_map, s=s_suffix)
         )
     else:
         map_alerts_gdf = None
@@ -281,13 +268,24 @@ with tab_map:
     # Compute bounds for zoom-to-fit
     _map_bounds = None
     if map_alerts_gdf is not None and not map_alerts_gdf.empty:
-        bounds = map_alerts_gdf.total_bounds  # [minx, miny, maxx, maxy]
+        bounds = map_alerts_gdf.total_bounds
         _map_bounds = [[bounds[1], bounds[0]], [bounds[3], bounds[2]]]
 
     m = create_base_map()
 
+    # Build translated legend labels
+    legend_labels = {
+        3: t("legend_high"),
+        2: t("legend_medium"),
+        1: t("legend_low"),
+    }
+
     if map_alerts_gdf is not None and not map_alerts_gdf.empty:
-        add_alert_layer(m, map_alerts_gdf)
+        add_alert_layer(
+            m, map_alerts_gdf,
+            legend_labels=legend_labels,
+            legend_title=t("legend_title"),
+        )
 
     if _map_bounds is not None:
         m.fit_bounds(_map_bounds, padding=[30, 30])
@@ -297,19 +295,14 @@ with tab_map:
 
         st_folium(m, width=None, height=600, returned_objects=[])
     except ImportError:
-        st.warning(
-            "Install `streamlit-folium` for interactive maps: "
-            "`pip install streamlit-folium`"
-        )
+        st.warning(t("install_folium"))
 
-    # ─── Alert Explorer (table — filters are in the sidebar) ──────────
+    # ─── Alert Explorer ─────────────────────────────────────────────────
     if _table_df is not None and not _table_df.empty:
         st.markdown("---")
-        st.subheader("Alert Explorer")
+        st.subheader(t("alert_explorer"))
         st.caption(
-            f"Showing **{len(_table_df)}** alerts matching current filters. "
-            f"Adjust filters in the sidebar, then press **View on Map** to "
-            f"update the map."
+            t("alert_explorer_caption").format(n=len(_table_df))
         )
 
         st.dataframe(
@@ -317,38 +310,41 @@ with tab_map:
             use_container_width=True,
             height=400,
             column_config={
-                "ID": st.column_config.NumberColumn("ID", width="small"),
-                "Date": st.column_config.TextColumn("Date", width="small"),
-                "Confidence": st.column_config.TextColumn(
-                    "Confidence", width="small"
+                t("col_id"): st.column_config.NumberColumn(
+                    t("col_id"), width="small"
                 ),
-                "Area (ha)": st.column_config.NumberColumn(
-                    "Area (ha)", format="%.2f", width="small"
+                t("col_date"): st.column_config.TextColumn(
+                    t("col_date"), width="small"
                 ),
-                "Lat": st.column_config.NumberColumn(
-                    "Lat", format="%.5f", width="small"
+                t("col_confidence"): st.column_config.TextColumn(
+                    t("col_confidence"), width="small"
                 ),
-                "Lon": st.column_config.NumberColumn(
-                    "Lon", format="%.5f", width="small"
+                t("col_area"): st.column_config.NumberColumn(
+                    t("col_area"), format="%.2f", width="small"
+                ),
+                t("col_lat"): st.column_config.NumberColumn(
+                    t("col_lat"), format="%.5f", width="small"
+                ),
+                t("col_lon"): st.column_config.NumberColumn(
+                    t("col_lon"), format="%.5f", width="small"
                 ),
             },
         )
 
         st.caption(
-            f"Total area: {_table_df['Area (ha)'].sum():,.1f} ha"
+            t("total_area_caption").format(
+                area=f"{_table_df[t('col_area')].sum():,.1f}"
+            )
         )
 
 # ─── Tab 2: Time Series ──────────────────────────────────────────────────────
 with tab_timeseries:
-    st.subheader("Vegetation Index Time Series")
+    INDEX_INFO = _get_index_info()
+    st.subheader(t("ts_title"))
 
     # ─── Index explanation ───────────────────────────────────────────────
-    with st.expander("What are these indices? Which should I use?", expanded=False):
-        st.markdown(
-            "These spectral indices are computed from satellite bands and measure "
-            "different vegetation properties. **For deforestation monitoring, enable "
-            "all three** — they complement each other:"
-        )
+    with st.expander(t("ts_expander"), expanded=False):
+        st.markdown(t("ts_expander_intro"))
         cols = st.columns(3)
         for i, idx_key in enumerate(["ndmi", "nbr", "evi2"]):
             info = INDEX_INFO[idx_key]
@@ -359,24 +355,23 @@ with tab_timeseries:
                     f'<p><b>{info["full_name"]}</b></p>'
                     f'<p><code>{info["formula"]}</code></p>'
                     f'<p>{info["description"]}</p>'
-                    f'<p><b>Role:</b> {info["use"]}</p>'
+                    f'<p><b>{t("role_label")}:</b> {info["use"]}</p>'
                     f'</div>',
                     unsafe_allow_html=True,
                 )
 
-    # Index selector — lives in this tab since it only affects time series
+    # Index selector
     selected_indices = st.multiselect(
-        "Select indices to display",
+        t("ts_select_indices"),
         options=["NDMI", "NBR", "EVI2"],
         default=["NDMI", "NBR", "EVI2"],
-        help="These are the three indices computed by the detection pipeline.",
+        help=t("ts_select_help"),
     )
     selected_indices = [idx.lower() for idx in selected_indices]
 
     if not selected_indices:
-        st.info("Select at least one index above.")
+        st.info(t("ts_select_empty"))
     else:
-        # Load time series for each selected index
         ts_data = {}
         for idx_name in selected_indices:
             df = get_timeseries(idx_name, filters["start_date"], filters["end_date"])
@@ -384,33 +379,27 @@ with tab_timeseries:
                 ts_data[idx_name] = df
 
         if ts_data:
-            # Multi-index comparison chart
             fig = multi_index_chart(ts_data)
             st.plotly_chart(fig, use_container_width=True)
 
-            # Individual index charts with confidence bands
             st.markdown("---")
-            st.subheader("Individual Index Details")
+            st.subheader(t("ts_individual"))
 
             for idx_name, df in ts_data.items():
                 fig = timeseries_chart(df, idx_name)
                 st.plotly_chart(fig, use_container_width=True)
 
-                # Trend analysis
                 if len(df) >= 10:
                     from src.timeseries.trends import analyze_trend
 
                     trend = analyze_trend(df)
                     render_trend_indicator(trend)
         else:
-            st.info(
-                "No time series data available. Run the detection pipeline to "
-                "build up observation history."
-            )
+            st.info(t("ts_no_data"))
 
 # ─── Tab 3: Alert History ────────────────────────────────────────────────────
 with tab_alerts:
-    st.subheader("Alert Statistics Over Time")
+    st.subheader(t("ah_title"))
 
     if alert_ts is not None and not alert_ts.empty:
         col1, col2 = st.columns(2)
@@ -423,77 +412,49 @@ with tab_alerts:
             fig = cumulative_area_chart(alert_ts)
             st.plotly_chart(fig, use_container_width=True)
 
-        # Full alert records table — formatted consistently with Map tab
         st.markdown("---")
-        st.subheader("All Alert Records")
+        st.subheader(t("ah_all_records"))
         st.caption(
-            f"Showing all {len(alerts_gdf)} alerts across all dates "
-            f"(sidebar date filter applies to charts above, not this table)"
+            t("ah_caption").format(n=len(alerts_gdf))
         )
         if alerts_gdf is not None and not alerts_gdf.empty:
             full_display = alerts_gdf.copy()
-            # Convert datetime columns
             for col in full_display.columns:
                 if full_display[col].dtype.kind == "M":
                     full_display[col] = full_display[col].dt.strftime("%Y-%m-%d")
-            # Drop redundant/internal columns
             drop_cols = ["geometry", "confidence", "created_at"]
             full_display = full_display.drop(
                 columns=[c for c in drop_cols if c in full_display.columns]
             )
             full_display = full_display.rename(columns={
-                "detection_date": "Date",
-                "confidence_label": "Confidence",
-                "area_ha": "Area (ha)",
+                "detection_date": t("col_date"),
+                "confidence_label": t("col_confidence"),
+                "area_ha": t("col_area"),
             })
             st.dataframe(
-                full_display.sort_values("Area (ha)", ascending=False).reset_index(drop=True),
+                full_display.sort_values(
+                    t("col_area"), ascending=False
+                ).reset_index(drop=True),
                 use_container_width=True,
                 height=400,
             )
     else:
-        st.info("No alert history data available yet.")
+        st.info(t("ah_no_data"))
 
 # ─── Tab 4: About ────────────────────────────────────────────────────────────
 with tab_about:
     render_info_expander()
 
     st.markdown("---")
-    st.subheader("System Architecture")
-    st.markdown("""
-**Data Pipeline:**
-1. Weekly GitHub Actions cron job queries Sentinel-2 imagery
-2. Cloud masking via SCL band removes clouds, shadows, cirrus
-3. NDMI, NBR, EVI2 indices computed from reflectance bands
-4. Z-score comparison against monthly baselines (3-5yr history)
-5. Anomalous pixels vectorized into alert polygons
-6. Results committed to GitHub and COGs uploaded to Cloudflare R2
+    st.subheader(t("architecture_title"))
+    st.markdown(t("architecture_body"))
 
-**Detection Method:**
-- Primary: NDMI z-score < -2.0 AND delta < -0.15
-- Confirmation: Multi-index agreement (NDMI + NBR)
-- Drought adjustment: SPI-based threshold widening
-- Confidence levels: High (z < -3.0), Medium (z < -2.5), Low (z < -2.0)
-
-**Technical Stack:**
-- Satellite data: Element84 STAC, Planetary Computer, NASA HLS
-- Processing: rasterio, xarray, dask, scipy
-- Visualization: Streamlit, Leafmap, Folium, Plotly
-- Hosting: Hugging Face Spaces (free tier)
-- Storage: Cloudflare R2 (10 GB free, zero egress)
-- Automation: GitHub Actions (weekly cron)
-    """)
-
-    # Show last data update
     alert_files = sorted(ALERTS_DIR.glob("alerts_*.geojson"))
     if alert_files:
         last_file = alert_files[-1].stem.replace("alerts_", "")
-        st.info(f"Last detection run: **{last_file}** | {len(alert_files)} detection files")
+        st.info(
+            t("last_detection").format(date=last_file, n=len(alert_files))
+        )
 
     st.markdown("---")
-    st.caption(
-        "Araripe Deforestation Monitor | "
-        "[GitHub](https://github.com/santibravocmcc/Araripe) | "
-        "Open source | "
-        "Data: ESA Sentinel-2, USGS Landsat, NASA HLS"
-    )
+    st.caption(t("footer"))

@@ -8,15 +8,23 @@ from typing import Optional
 import folium
 import geopandas as gpd
 import leafmap.foliumap as leafmap
+from branca.element import MacroElement, Template
 from loguru import logger
 
 from config.settings import DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM, MAP_HEIGHT
 
 # ─── Alert confidence color scheme ───────────────────────────────────────────
+# Maximally distinct hues: red, blue, yellow-green
 CONFIDENCE_COLORS = {
-    1: "#FFEE58",  # Low: bright yellow
-    2: "#FB8C00",  # Medium: orange
-    3: "#E53935",  # High: red
+    1: "#00E676",  # Low: vivid green
+    2: "#2979FF",  # Medium: vivid blue
+    3: "#FF1744",  # High: vivid red
+}
+
+CONFIDENCE_BORDER_COLORS = {
+    1: "#00C853",  # Low: darker green
+    2: "#0D47A1",  # Medium: darker blue
+    3: "#B71C1C",  # High: darker red
 }
 
 CONFIDENCE_LABELS = {
@@ -24,6 +32,63 @@ CONFIDENCE_LABELS = {
     2: "Medium",
     3: "High",
 }
+
+
+def _build_legend_html(
+    title: str = "Alert Confidence",
+    labels: dict[int, str] | None = None,
+) -> str:
+    """Return HTML for a compact, styled map legend.
+
+    Parameters
+    ----------
+    title : str
+        Legend heading.
+    labels : dict
+        Mapping ``{confidence_int: display_label}``.
+    """
+    if labels is None:
+        labels = CONFIDENCE_LABELS
+
+    items = ""
+    for conf_val in (3, 2, 1):  # high → low
+        color = CONFIDENCE_COLORS[conf_val]
+        border = CONFIDENCE_BORDER_COLORS[conf_val]
+        label = labels.get(conf_val, CONFIDENCE_LABELS[conf_val])
+        items += (
+            f'<li style="margin:4px 0;display:flex;align-items:center;">'
+            f'<span style="display:inline-block;width:18px;height:18px;'
+            f"background:{color};border:2px solid {border};border-radius:3px;"
+            f'margin-right:8px;flex-shrink:0;"></span>'
+            f'<span style="font-size:13px;">{label}</span>'
+            f"</li>"
+        )
+
+    return f"""
+    <div id="map-legend" style="
+        position:absolute;bottom:30px;right:10px;z-index:1000;
+        background:rgba(255,255,255,0.92);padding:10px 14px;
+        border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.25);
+        font-family:Arial,sans-serif;max-width:180px;">
+        <div style="font-weight:700;font-size:13px;margin-bottom:6px;
+                    color:#333;">{title}</div>
+        <ul style="list-style:none;margin:0;padding:0;">
+            {items}
+        </ul>
+    </div>
+    """
+
+
+class _LegendControl(MacroElement):
+    """Inject a custom HTML legend into a Folium/Leafmap map."""
+
+    _template = Template("")
+
+    def __init__(self, html: str):
+        super().__init__()
+        self._template = Template(
+            "{% macro html(this, kwargs) %}" + html + "{% endmacro %}"
+        )
 
 
 def create_base_map(
@@ -61,6 +126,8 @@ def add_alert_layer(
     m: leafmap.Map,
     alerts_gdf: gpd.GeoDataFrame,
     layer_name: str = "Deforestation Alerts",
+    legend_labels: dict[int, str] | None = None,
+    legend_title: str = "Alert Confidence",
 ) -> leafmap.Map:
     """Add alert polygons to the map with confidence-based styling.
 
@@ -72,6 +139,10 @@ def add_alert_layer(
         Alert polygons (must be in EPSG:4326).
     layer_name : str
         Layer name in the layer control.
+    legend_labels : dict, optional
+        Custom legend labels per confidence level.
+    legend_title : str
+        Legend heading text.
 
     Returns
     -------
@@ -86,31 +157,22 @@ def add_alert_layer(
     if alerts_gdf.crs and str(alerts_gdf.crs) != "EPSG:4326":
         alerts_gdf = alerts_gdf.to_crs("EPSG:4326")
 
-    # Darker border colors matching each confidence fill
-    border_colors = {
-        1: "#F9A825",  # Low: dark yellow
-        2: "#E65100",  # Medium: dark orange
-        3: "#B71C1C",  # High: dark red
-    }
-
     def style_function(feature):
         conf = feature["properties"].get("confidence", 1)
         return {
-            "fillColor": CONFIDENCE_COLORS.get(conf, "#FFEE58"),
-            "color": border_colors.get(conf, "#000000"),
+            "fillColor": CONFIDENCE_COLORS.get(conf, "#00E676"),
+            "color": CONFIDENCE_BORDER_COLORS.get(conf, "#000000"),
             "weight": 1.5,
-            "fillOpacity": 0.55,
+            "fillOpacity": 0.6,
         }
 
     def highlight_function(feature):
         return {
-            "fillOpacity": 0.8,
+            "fillOpacity": 0.85,
             "weight": 3,
         }
 
     # Convert to plain Python types to avoid JSON serialization failures.
-    # geopandas parses date strings as Timestamps on load, and both
-    # __geo_interface__ and to_json() choke on them.
     alerts_gdf = alerts_gdf.copy()
     for col in alerts_gdf.columns:
         if col == "geometry":
@@ -134,6 +196,14 @@ def add_alert_layer(
     )
 
     geojson_layer.add_to(m)
+
+    # Add custom HTML legend
+    legend_html = _build_legend_html(
+        title=legend_title, labels=legend_labels
+    )
+    legend = _LegendControl(legend_html)
+    m.get_root().html.add_child(legend)
+
     return m
 
 
@@ -244,9 +314,9 @@ def add_aoi_boundary(
 def add_legend(m: leafmap.Map) -> leafmap.Map:
     """Add a deforestation alert confidence legend to the map."""
     legend_dict = {
-        "High Confidence": "#E53935",
-        "Medium Confidence": "#FB8C00",
-        "Low Confidence": "#FFEE58",
+        "High Confidence": CONFIDENCE_COLORS[3],
+        "Medium Confidence": CONFIDENCE_COLORS[2],
+        "Low Confidence": CONFIDENCE_COLORS[1],
         "Study Area": "#2196F3",
     }
     m.add_legend(title="Alert Confidence", legend_dict=legend_dict)
