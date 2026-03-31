@@ -208,24 +208,77 @@ tab_map, tab_timeseries, tab_alerts, tab_about = st.tabs(
     ["Map", "Time Series", "Alert History", "About"]
 )
 
-# ─── Tab 1: Interactive Map + Alert Table ────────────────────────────────────
+# ─── Tab 1: Interactive Map + Alert Explorer ─────────────────────────────────
 with tab_map:
+    # ─── Build full table and assign IDs early (needed for map + table) ──
+    _table_df = None
+    _display_df = None
+    if filtered_alerts is not None and not filtered_alerts.empty:
+        _display_df = filtered_alerts.copy()
+        if _display_df.crs and str(_display_df.crs) != "EPSG:4326":
+            _display_df = _display_df.to_crs("EPSG:4326")
+        centroids = _display_df.geometry.centroid
+        _display_df["latitude"] = centroids.y.round(5)
+        _display_df["longitude"] = centroids.x.round(5)
+        if "detection_date" in _display_df.columns:
+            _display_df["_date_parsed"] = pd.to_datetime(
+                _display_df["detection_date"], errors="coerce"
+            )
+            _display_df["detection_date"] = _display_df["_date_parsed"].dt.strftime(
+                "%Y-%m-%d"
+            )
+        _display_df = _display_df.sort_values("area_ha", ascending=False).reset_index(
+            drop=True
+        )
+        _display_df["alert_id"] = range(1, len(_display_df) + 1)
+
+        show_cols = [
+            "alert_id", "detection_date", "confidence_label", "area_ha",
+            "latitude", "longitude",
+        ]
+        show_cols = [c for c in show_cols if c in _display_df.columns]
+        _table_df = _display_df[show_cols].rename(columns={
+            "alert_id": "ID",
+            "detection_date": "Date",
+            "confidence_label": "Confidence",
+            "area_ha": "Area (ha)",
+            "latitude": "Lat",
+            "longitude": "Lon",
+        })
+
+    # ─── Map ────────────────────────────────────────────────────────────
     st.subheader("Deforestation Alert Map")
 
-    # Show date range context
-    st.caption(
-        f"Showing {summary['total_alerts']} alerts from "
-        f"{filters['start_date']} to {filters['end_date']} "
-        f"(confidence >= {['', 'Low', 'Medium', 'High'][filters['min_confidence']]})"
-    )
+    # Determine which alerts to show on map
+    map_ids = st.session_state.get("map_alert_ids", None)
+    if map_ids is not None and _display_df is not None:
+        map_alerts = _display_df[_display_df["alert_id"].isin(map_ids)]
+        st.caption(
+            f"Showing **{len(map_alerts)}** selected alerts on map "
+            f"(filtered via Alert Explorer below)"
+        )
+    else:
+        map_alerts = _display_df
+        st.caption(
+            f"Showing {summary['total_alerts']} alerts from "
+            f"{filters['start_date']} to {filters['end_date']} "
+            f"(confidence >= {['', 'Low', 'Medium', 'High'][filters['min_confidence']]})"
+        )
+
+    # Compute bounds for zoom-to-fit
+    _map_bounds = None
+    if map_alerts is not None and not map_alerts.empty:
+        bounds = map_alerts.total_bounds  # [minx, miny, maxx, maxy]
+        _map_bounds = [[bounds[1], bounds[0]], [bounds[3], bounds[2]]]
 
     m = create_base_map()
 
-    # Add filtered alerts to map
-    if filtered_alerts is not None and not filtered_alerts.empty:
-        add_alert_layer(m, filtered_alerts)
+    if map_alerts is not None and not map_alerts.empty:
+        add_alert_layer(m, map_alerts)
 
-    # Render map
+    if _map_bounds is not None:
+        m.fit_bounds(_map_bounds, padding=[30, 30])
+
     try:
         from streamlit_folium import st_folium
 
@@ -236,75 +289,100 @@ with tab_map:
             "`pip install streamlit-folium`"
         )
 
-    # ─── Alert Table as filter ──────────────────────────────────────────
-    if filtered_alerts is not None and not filtered_alerts.empty:
+    # ─── Alert Explorer (table + filters → map) ───────────────────────
+    if _table_df is not None and not _table_df.empty:
         st.markdown("---")
-        st.subheader("Alert Details")
+        st.subheader("Alert Explorer")
+        st.caption(
+            "Filter alerts below, then click **View on Map** to display "
+            "only those alerts and zoom to their location."
+        )
 
-        # Build display dataframe with lat/lon
-        display_df = filtered_alerts.copy()
-        if display_df.crs and str(display_df.crs) != "EPSG:4326":
-            display_df = display_df.to_crs("EPSG:4326")
-        centroids = display_df.geometry.centroid
-        display_df["latitude"] = centroids.y.round(5)
-        display_df["longitude"] = centroids.x.round(5)
-        if "detection_date" in display_df.columns:
-            display_df["detection_date"] = pd.to_datetime(
-                display_df["detection_date"], errors="coerce"
-            ).dt.strftime("%Y-%m-%d")
-
-        show_cols = ["detection_date", "confidence_label", "area_ha", "latitude", "longitude"]
-        show_cols = [c for c in show_cols if c in display_df.columns]
-        table_df = display_df[show_cols].rename(columns={
-            "detection_date": "Date",
-            "confidence_label": "Confidence",
-            "area_ha": "Area (ha)",
-            "latitude": "Lat",
-            "longitude": "Lon",
-        })
-        table_df = table_df.sort_values("Area (ha)", ascending=False).reset_index(drop=True)
-
-        # Filter controls for the table
-        filter_col1, filter_col2, filter_col3 = st.columns([1, 1, 2])
+        # Filter controls
+        filter_col1, filter_col2, filter_col3, filter_col4 = st.columns(
+            [1, 1, 1, 1]
+        )
         with filter_col1:
             min_area = st.number_input(
                 "Min area (ha)", min_value=0.0, value=0.0, step=1.0,
-                help="Filter alerts by minimum area"
+                help="Filter alerts by minimum area",
             )
         with filter_col2:
             conf_filter = st.multiselect(
-                "Confidence", options=["high", "medium", "low"],
+                "Confidence",
+                options=["high", "medium", "low"],
                 default=["high", "medium", "low"],
             )
         with filter_col3:
-            st.markdown("")  # spacer
+            # Date range within the already-filtered alerts
+            dates_available = pd.to_datetime(_table_df["Date"], errors="coerce").dropna()
+            if not dates_available.empty:
+                tbl_date_min = dates_available.min().date()
+                tbl_date_max = dates_available.max().date()
+            else:
+                tbl_date_min = pd.Timestamp(filters["start_date"]).date()
+                tbl_date_max = pd.Timestamp(filters["end_date"]).date()
+            tbl_start = st.date_input(
+                "From date", value=tbl_date_min, min_value=tbl_date_min,
+                max_value=tbl_date_max, key="tbl_date_start",
+            )
+        with filter_col4:
+            tbl_end = st.date_input(
+                "To date", value=tbl_date_max, min_value=tbl_date_min,
+                max_value=tbl_date_max, key="tbl_date_end",
+            )
 
         # Apply table filters
-        mask = table_df["Area (ha)"] >= min_area
+        mask = _table_df["Area (ha)"] >= min_area
         if conf_filter:
-            mask = mask & table_df["Confidence"].isin(conf_filter)
-        table_filtered = table_df[mask]
+            mask = mask & _table_df["Confidence"].isin(conf_filter)
+        tbl_dates = pd.to_datetime(_table_df["Date"], errors="coerce")
+        mask = mask & (tbl_dates >= pd.Timestamp(tbl_start))
+        mask = mask & (tbl_dates <= pd.Timestamp(tbl_end))
+        table_filtered = _table_df[mask]
 
         st.dataframe(
             table_filtered,
             use_container_width=True,
             height=400,
             column_config={
+                "ID": st.column_config.NumberColumn("ID", width="small"),
                 "Date": st.column_config.TextColumn("Date", width="small"),
-                "Confidence": st.column_config.TextColumn("Confidence", width="small"),
+                "Confidence": st.column_config.TextColumn(
+                    "Confidence", width="small"
+                ),
                 "Area (ha)": st.column_config.NumberColumn(
                     "Area (ha)", format="%.2f", width="small"
                 ),
-                "Lat": st.column_config.NumberColumn("Lat", format="%.5f", width="small"),
-                "Lon": st.column_config.NumberColumn("Lon", format="%.5f", width="small"),
+                "Lat": st.column_config.NumberColumn(
+                    "Lat", format="%.5f", width="small"
+                ),
+                "Lon": st.column_config.NumberColumn(
+                    "Lon", format="%.5f", width="small"
+                ),
             },
         )
 
         st.caption(
-            f"Showing {len(table_filtered)} of {len(table_df)} alerts | "
-            f"{table_filtered['Area (ha)'].sum():,.1f} ha | "
-            f"Tip: copy coordinates to search in Google Maps"
+            f"Showing {len(table_filtered)} of {len(_table_df)} alerts | "
+            f"{table_filtered['Area (ha)'].sum():,.1f} ha total"
         )
+
+        # Action buttons
+        btn_col1, btn_col2, _ = st.columns([1, 1, 3])
+        with btn_col1:
+            if st.button(
+                "View on Map",
+                type="primary",
+                help="Show only these alerts on the map and zoom to fit",
+            ):
+                st.session_state["map_alert_ids"] = table_filtered["ID"].tolist()
+                st.rerun()
+        with btn_col2:
+            if map_ids is not None:
+                if st.button("Reset Map", help="Show all alerts again"):
+                    st.session_state.pop("map_alert_ids", None)
+                    st.rerun()
 
 # ─── Tab 2: Time Series ──────────────────────────────────────────────────────
 with tab_timeseries:
