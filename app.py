@@ -236,32 +236,23 @@ with tab_map:
             "`pip install streamlit-folium`"
         )
 
-    # ─── Interactive Alert Table below map ───────────────────────────────
+    # ─── Alert Table as filter ──────────────────────────────────────────
     if filtered_alerts is not None and not filtered_alerts.empty:
         st.markdown("---")
         st.subheader("Alert Details")
-        st.caption(
-            "Click on a column header to sort. "
-            "Use the map above to locate alerts spatially."
-        )
 
-        # Build display dataframe
+        # Build display dataframe with lat/lon
         display_df = filtered_alerts.copy()
-
-        # Compute centroid for lat/lon display
         if display_df.crs and str(display_df.crs) != "EPSG:4326":
             display_df = display_df.to_crs("EPSG:4326")
         centroids = display_df.geometry.centroid
         display_df["latitude"] = centroids.y.round(5)
         display_df["longitude"] = centroids.x.round(5)
-
-        # Format detection_date
         if "detection_date" in display_df.columns:
             display_df["detection_date"] = pd.to_datetime(
                 display_df["detection_date"], errors="coerce"
             ).dt.strftime("%Y-%m-%d")
 
-        # Select and rename columns for display
         show_cols = ["detection_date", "confidence_label", "area_ha", "latitude", "longitude"]
         show_cols = [c for c in show_cols if c in display_df.columns]
         table_df = display_df[show_cols].rename(columns={
@@ -271,12 +262,31 @@ with tab_map:
             "latitude": "Lat",
             "longitude": "Lon",
         })
-
-        # Sort by area descending (largest alerts first)
         table_df = table_df.sort_values("Area (ha)", ascending=False).reset_index(drop=True)
 
+        # Filter controls for the table
+        filter_col1, filter_col2, filter_col3 = st.columns([1, 1, 2])
+        with filter_col1:
+            min_area = st.number_input(
+                "Min area (ha)", min_value=0.0, value=0.0, step=1.0,
+                help="Filter alerts by minimum area"
+            )
+        with filter_col2:
+            conf_filter = st.multiselect(
+                "Confidence", options=["high", "medium", "low"],
+                default=["high", "medium", "low"],
+            )
+        with filter_col3:
+            st.markdown("")  # spacer
+
+        # Apply table filters
+        mask = table_df["Area (ha)"] >= min_area
+        if conf_filter:
+            mask = mask & table_df["Confidence"].isin(conf_filter)
+        table_filtered = table_df[mask]
+
         st.dataframe(
-            table_df,
+            table_filtered,
             use_container_width=True,
             height=400,
             column_config={
@@ -291,8 +301,8 @@ with tab_map:
         )
 
         st.caption(
-            f"Total: {len(table_df)} alerts | "
-            f"{table_df['Area (ha)'].sum():.1f} ha | "
+            f"Showing {len(table_filtered)} of {len(table_df)} alerts | "
+            f"{table_filtered['Area (ha)'].sum():,.1f} ha | "
             f"Tip: copy coordinates to search in Google Maps"
         )
 
@@ -305,7 +315,7 @@ with tab_timeseries:
         st.markdown(
             "These spectral indices are computed from satellite bands and measure "
             "different vegetation properties. **For deforestation monitoring, enable "
-            "all three** - they complement each other:"
+            "all three** — they complement each other:"
         )
         cols = st.columns(3)
         for i, idx_key in enumerate(["ndmi", "nbr", "evi2"]):
@@ -322,10 +332,17 @@ with tab_timeseries:
                     unsafe_allow_html=True,
                 )
 
-    selected_indices = filters["selected_indices"]
+    # Index selector — lives in this tab since it only affects time series
+    selected_indices = st.multiselect(
+        "Select indices to display",
+        options=["NDMI", "NBR", "EVI2"],
+        default=["NDMI", "NBR", "EVI2"],
+        help="These are the three indices computed by the detection pipeline.",
+    )
+    selected_indices = [idx.lower() for idx in selected_indices]
 
     if not selected_indices:
-        st.info("Select at least one index from the sidebar.")
+        st.info("Select at least one index above.")
     else:
         # Load time series for each selected index
         ts_data = {}

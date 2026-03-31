@@ -34,16 +34,6 @@ def render_sidebar() -> dict:
 
     st.sidebar.markdown("---")
 
-    # Index selection
-    st.sidebar.subheader("Vegetation Indices")
-    selected_indices = st.sidebar.multiselect(
-        "Select indices to display",
-        options=["NDMI", "NBR", "EVI2", "NDVI", "SAVI", "BSI"],
-        default=["NDMI", "NBR", "EVI2"],
-    )
-
-    st.sidebar.markdown("---")
-
     # Confidence filter
     st.sidebar.subheader("Alert Confidence")
     min_confidence = st.sidebar.select_slider(
@@ -57,7 +47,6 @@ def render_sidebar() -> dict:
     return {
         "start_date": str(start_date),
         "end_date": str(end_date),
-        "selected_indices": [idx.lower() for idx in selected_indices],
         "min_confidence": confidence_map[min_confidence],
     }
 
