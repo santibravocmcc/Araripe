@@ -19,9 +19,9 @@ INDEX_COLORS = {
 }
 
 CONFIDENCE_COLORS = {
-    "high": "#F44336",
-    "medium": "#FF9800",
-    "low": "#FFC107",
+    "high": "#FF1744",
+    "medium": "#2979FF",
+    "low": "#FFD600",
 }
 
 
@@ -33,6 +33,7 @@ def timeseries_chart(
     date_col: str = "date",
     title: Optional[str] = None,
     show_confidence_bands: bool = True,
+    xaxis_title: str = "Date",
 ) -> go.Figure:
     """Create an interactive time series chart with confidence bands.
 
@@ -52,6 +53,8 @@ def timeseries_chart(
         Chart title.
     show_confidence_bands : bool
         Whether to show ±1σ and ±2σ bands.
+    xaxis_title : str
+        X-axis label.
 
     Returns
     -------
@@ -111,7 +114,7 @@ def timeseries_chart(
 
     fig.update_layout(
         title=title,
-        xaxis_title="Date",
+        xaxis_title=xaxis_title,
         yaxis_title=index_name.upper(),
         template="plotly_white",
         hovermode="x unified",
@@ -127,6 +130,8 @@ def multi_index_chart(
     value_col: str = "mean",
     date_col: str = "date",
     title: str = "Vegetation Indices Over Time",
+    xaxis_title: str = "Date",
+    yaxis_title: str = "Index Value",
 ) -> go.Figure:
     """Plot multiple vegetation indices on the same chart.
 
@@ -134,6 +139,12 @@ def multi_index_chart(
     ----------
     dfs : dict[str, pd.DataFrame]
         Mapping of index name → DataFrame.
+    title : str
+        Chart title.
+    xaxis_title : str
+        X-axis label.
+    yaxis_title : str
+        Y-axis label.
     """
     fig = go.Figure()
 
@@ -151,8 +162,8 @@ def multi_index_chart(
 
     fig.update_layout(
         title=title,
-        xaxis_title="Date",
-        yaxis_title="Index Value",
+        xaxis_title=xaxis_title,
+        yaxis_title=yaxis_title,
         template="plotly_white",
         hovermode="x unified",
         xaxis=dict(rangeslider=dict(visible=True)),
@@ -205,6 +216,9 @@ def seasonal_decomposition_chart(
 def alert_summary_chart(
     df: pd.DataFrame,
     title: str = "Deforestation Alerts Over Time",
+    xaxis_title: str = "Date",
+    yaxis_title: str = "Number of Alerts",
+    legend_labels: Optional[dict[str, str]] = None,
 ) -> go.Figure:
     """Create a stacked bar chart of alerts by confidence level.
 
@@ -213,8 +227,19 @@ def alert_summary_chart(
     df : pd.DataFrame
         Alert statistics with columns: date, high_confidence,
         medium_confidence, low_confidence.
+    title : str
+        Chart title.
+    xaxis_title : str
+        X-axis label.
+    yaxis_title : str
+        Y-axis label.
+    legend_labels : dict, optional
+        Mapping of confidence level → display name.
     """
     fig = go.Figure()
+
+    if legend_labels is None:
+        legend_labels = {level: level.capitalize() for level in CONFIDENCE_COLORS}
 
     for level, color in CONFIDENCE_COLORS.items():
         col = f"{level}_confidence"
@@ -223,15 +248,15 @@ def alert_summary_chart(
                 go.Bar(
                     x=df["date"],
                     y=df[col],
-                    name=level.capitalize(),
+                    name=legend_labels.get(level, level.capitalize()),
                     marker_color=color,
                 )
             )
 
     fig.update_layout(
         title=title,
-        xaxis_title="Date",
-        yaxis_title="Number of Alerts",
+        xaxis_title=xaxis_title,
+        yaxis_title=yaxis_title,
         barmode="stack",
         template="plotly_white",
         height=350,
@@ -243,6 +268,9 @@ def alert_summary_chart(
 def cumulative_area_chart(
     df: pd.DataFrame,
     title: str = "Cumulative Deforested Area",
+    xaxis_title: str = "Date",
+    yaxis_title: str = "Area (hectares)",
+    legend_name: str = "Cumulative Area (ha)",
 ) -> go.Figure:
     """Line chart showing cumulative deforested area over time.
 
@@ -250,6 +278,14 @@ def cumulative_area_chart(
     ----------
     df : pd.DataFrame
         Alert statistics with columns: date, total_area_ha.
+    title : str
+        Chart title.
+    xaxis_title : str
+        X-axis label.
+    yaxis_title : str
+        Y-axis label.
+    legend_name : str
+        Legend entry name.
     """
     df = df.sort_values("date")
     df["cumulative_ha"] = df["total_area_ha"].cumsum()
@@ -262,14 +298,14 @@ def cumulative_area_chart(
             fill="tozeroy",
             fillcolor="rgba(244, 67, 54, 0.2)",
             line=dict(color="#F44336", width=2),
-            name="Cumulative Area (ha)",
+            name=legend_name,
         )
     )
 
     fig.update_layout(
         title=title,
-        xaxis_title="Date",
-        yaxis_title="Area (hectares)",
+        xaxis_title=xaxis_title,
+        yaxis_title=yaxis_title,
         template="plotly_white",
         height=350,
     )

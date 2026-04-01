@@ -96,7 +96,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ─── Sidebar (includes language selector at top) ────────────────────────────
+# ─── Sidebar ──────────────────────────────────────────────────────────────────
 filters = render_sidebar()
 
 
@@ -379,14 +379,23 @@ with tab_timeseries:
                 ts_data[idx_name] = df
 
         if ts_data:
-            fig = multi_index_chart(ts_data)
+            fig = multi_index_chart(
+                ts_data,
+                title=t("chart_multi_title"),
+                xaxis_title=t("chart_date_axis"),
+                yaxis_title=t("chart_index_value"),
+            )
             st.plotly_chart(fig, use_container_width=True)
 
             st.markdown("---")
             st.subheader(t("ts_individual"))
 
             for idx_name, df in ts_data.items():
-                fig = timeseries_chart(df, idx_name)
+                fig = timeseries_chart(
+                    df, idx_name,
+                    title=t("chart_ts_title").format(index=idx_name.upper()),
+                    xaxis_title=t("chart_date_axis"),
+                )
                 st.plotly_chart(fig, use_container_width=True)
 
                 if len(df) >= 10:
@@ -402,14 +411,33 @@ with tab_alerts:
     st.subheader(t("ah_title"))
 
     if alert_ts is not None and not alert_ts.empty:
+        # Translated legend labels for confidence levels in charts
+        _chart_conf_labels = {
+            "high": t("high"),
+            "medium": t("medium"),
+            "low": t("low"),
+        }
+
         col1, col2 = st.columns(2)
 
         with col1:
-            fig = alert_summary_chart(alert_ts)
+            fig = alert_summary_chart(
+                alert_ts,
+                title=t("chart_alerts_title"),
+                xaxis_title=t("chart_date_axis"),
+                yaxis_title=t("chart_num_alerts"),
+                legend_labels=_chart_conf_labels,
+            )
             st.plotly_chart(fig, use_container_width=True)
 
         with col2:
-            fig = cumulative_area_chart(alert_ts)
+            fig = cumulative_area_chart(
+                alert_ts,
+                title=t("chart_cumulative_title"),
+                xaxis_title=t("chart_date_axis"),
+                yaxis_title=t("chart_area_axis"),
+                legend_name=t("chart_cumulative_legend"),
+            )
             st.plotly_chart(fig, use_container_width=True)
 
         st.markdown("---")

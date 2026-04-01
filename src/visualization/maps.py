@@ -14,15 +14,15 @@ from loguru import logger
 from config.settings import DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM, MAP_HEIGHT
 
 # ─── Alert confidence color scheme ───────────────────────────────────────────
-# Maximally distinct hues: red, blue, yellow-green
+# Maximally distinct hues: red, blue, amber/yellow
 CONFIDENCE_COLORS = {
-    1: "#00E676",  # Low: vivid green
+    1: "#FFD600",  # Low: vivid amber-yellow
     2: "#2979FF",  # Medium: vivid blue
     3: "#FF1744",  # High: vivid red
 }
 
 CONFIDENCE_BORDER_COLORS = {
-    1: "#00C853",  # Low: darker green
+    1: "#F9A825",  # Low: darker amber
     2: "#0D47A1",  # Medium: darker blue
     3: "#B71C1C",  # High: darker red
 }

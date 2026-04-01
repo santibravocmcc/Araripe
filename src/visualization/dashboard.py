@@ -11,15 +11,17 @@ from config.settings import AOI_GEOJSON
 from src.visualization.i18n import t
 
 
-def render_language_selector() -> None:
-    """Render flag-based language selector at the top of the sidebar."""
+def _render_language_selector() -> None:
+    """Render flag-based language selector at the bottom of the sidebar."""
     if "language" not in st.session_state:
         st.session_state["language"] = "pt"
+
+    st.sidebar.markdown("---")
 
     col1, col2 = st.sidebar.columns(2)
     with col1:
         if st.button(
-            "Portugues",
+            "Português",
             use_container_width=True,
             type="primary" if st.session_state["language"] == "pt" else "secondary",
             key="lang_pt",
@@ -48,10 +50,9 @@ def render_sidebar() -> dict:
     dict
         Filter values including ``view_on_map`` (bool) flag.
     """
-    # Language selector first
-    render_language_selector()
-
-    st.sidebar.markdown("---")
+    # Ensure language is initialised before any t() call
+    if "language" not in st.session_state:
+        st.session_state["language"] = "pt"
 
     st.sidebar.title(t("sidebar_title"))
     st.sidebar.markdown(t("sidebar_caption"))
@@ -72,7 +73,6 @@ def render_sidebar() -> dict:
     # ── Alert confidence (multiselect, default Medium + High) ──────────
     st.sidebar.subheader(t("alert_confidence"))
 
-    # Display labels in current language, map back to internal values
     conf_options = [t("high"), t("medium"), t("low")]
     conf_defaults = [t("high"), t("medium")]
     confidence_selection = st.sidebar.multiselect(
@@ -81,7 +81,6 @@ def render_sidebar() -> dict:
         default=conf_defaults,
         help=t("confidence_help"),
     )
-    # Map display labels → numeric values
     label_to_val = {t("low"): 1, t("medium"): 2, t("high"): 3}
     selected_confidence_values = [
         label_to_val[c] for c in confidence_selection if c in label_to_val
@@ -110,6 +109,9 @@ def render_sidebar() -> dict:
     )
 
     st.sidebar.caption(t("sidebar_filter_note"))
+
+    # ── Language selector at the bottom ────────────────────────────────
+    _render_language_selector()
 
     return {
         "start_date": str(start_date),

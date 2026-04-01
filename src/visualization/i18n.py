@@ -21,14 +21,14 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "Chapada do Araripe (CE/PE/PI, Brazil)"
         ),
         "pt": (
-            "Monitoramento semanal de desmatamento por satelite na "
+            "Monitoramento semanal de desmatamento por satélite na "
             "Chapada do Araripe (CE/PE/PI, Brasil)"
         ),
     },
     # ── Sidebar ───────────────────────────────────────────────────────────
     "sidebar_title": {
         "en": "Araripe Monitor",
-        "pt": "Monitor Araripe",
+        "pt": "Monitoramento do Araripe",
     },
     "sidebar_caption": {
         "en": "Deforestation monitoring for Chapada do Araripe",
@@ -36,11 +36,11 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     },
     "date_range": {
         "en": "Date Range",
-        "pt": "Periodo",
+        "pt": "Período",
     },
     "start": {
         "en": "Start",
-        "pt": "Inicio",
+        "pt": "Início",
     },
     "end": {
         "en": "End",
@@ -48,15 +48,15 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     },
     "alert_confidence": {
         "en": "Alert Confidence",
-        "pt": "Confianca do Alerta",
+        "pt": "Confiança do Alerta",
     },
     "select_confidence": {
         "en": "Select confidence levels",
-        "pt": "Selecione os niveis de confianca",
+        "pt": "Selecione os níveis de confiança",
     },
     "confidence_help": {
         "en": "Choose which confidence levels to include.",
-        "pt": "Escolha quais niveis de confianca incluir.",
+        "pt": "Escolha quais níveis de confiança incluir.",
     },
     "high": {
         "en": "High",
@@ -64,7 +64,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     },
     "medium": {
         "en": "Medium",
-        "pt": "Media",
+        "pt": "Média",
     },
     "low": {
         "en": "Low",
@@ -72,15 +72,15 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     },
     "min_area_label": {
         "en": "Minimum Area",
-        "pt": "Area Minima",
+        "pt": "Área Mínima",
     },
     "min_area_input": {
         "en": "Min area (ha)",
-        "pt": "Area min. (ha)",
+        "pt": "Área mín. (ha)",
     },
     "min_area_help": {
         "en": "Exclude alerts smaller than this area.",
-        "pt": "Excluir alertas menores que esta area.",
+        "pt": "Excluir alertas menores que esta área.",
     },
     "view_on_map": {
         "en": "View on Map",
@@ -96,7 +96,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "Press **View on Map** to refresh the map."
         ),
         "pt": (
-            "Os filtros atualizam a tabela e metricas instantaneamente. "
+            "Os filtros atualizam a tabela e métricas instantaneamente. "
             "Pressione **Ver no Mapa** para atualizar o mapa."
         ),
     },
@@ -107,19 +107,19 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     },
     "total_area_ha": {
         "en": "Total Area (ha)",
-        "pt": "Area Total (ha)",
+        "pt": "Área Total (ha)",
     },
     "high_confidence": {
         "en": "High Confidence",
-        "pt": "Alta Confianca",
+        "pt": "Alta Confiança",
     },
     "medium_confidence": {
         "en": "Medium Confidence",
-        "pt": "Media Confianca",
+        "pt": "Média Confiança",
     },
     "low_confidence": {
         "en": "Low Confidence",
-        "pt": "Baixa Confianca",
+        "pt": "Baixa Confiança",
     },
     # ── Tabs ──────────────────────────────────────────────────────────────
     "tab_map": {
@@ -128,11 +128,11 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     },
     "tab_timeseries": {
         "en": "Time Series",
-        "pt": "Series Temporais",
+        "pt": "Séries Temporais",
     },
     "tab_alerts": {
         "en": "Alert History",
-        "pt": "Historico de Alertas",
+        "pt": "Histórico de Alertas",
     },
     "tab_about": {
         "en": "About",
@@ -167,23 +167,23 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     },
     "total_area_caption": {
         "en": "Total area: {area} ha",
-        "pt": "Area total: {area} ha",
+        "pt": "Área total: {area} ha",
     },
     # ── Table columns ─────────────────────────────────────────────────────
     "col_id": {"en": "ID", "pt": "ID"},
     "col_date": {"en": "Date", "pt": "Data"},
-    "col_confidence": {"en": "Confidence", "pt": "Confianca"},
-    "col_area": {"en": "Area (ha)", "pt": "Area (ha)"},
+    "col_confidence": {"en": "Confidence", "pt": "Confiança"},
+    "col_area": {"en": "Area (ha)", "pt": "Área (ha)"},
     "col_lat": {"en": "Lat", "pt": "Lat"},
     "col_lon": {"en": "Lon", "pt": "Lon"},
     # ── Time series tab ───────────────────────────────────────────────────
     "ts_title": {
         "en": "Vegetation Index Time Series",
-        "pt": "Series Temporais de Indices de Vegetacao",
+        "pt": "Séries Temporais de Índices de Vegetação",
     },
     "ts_expander": {
         "en": "What are these indices? Which should I use?",
-        "pt": "O que sao esses indices? Qual devo usar?",
+        "pt": "O que são esses índices? Qual devo usar?",
     },
     "ts_expander_intro": {
         "en": (
@@ -192,26 +192,26 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "all three** — they complement each other:"
         ),
         "pt": (
-            "Estes indices espectrais sao calculados a partir de bandas de satelite e medem "
-            "diferentes propriedades da vegetacao. **Para monitoramento de desmatamento, ative "
-            "todos os tres** — eles se complementam:"
+            "Estes índices espectrais são calculados a partir de bandas de satélite e medem "
+            "diferentes propriedades da vegetação. **Para monitoramento de desmatamento, ative "
+            "todos os três** — eles se complementam:"
         ),
     },
     "ts_select_indices": {
         "en": "Select indices to display",
-        "pt": "Selecione os indices para exibir",
+        "pt": "Selecione os índices para exibir",
     },
     "ts_select_help": {
         "en": "These are the three indices computed by the detection pipeline.",
-        "pt": "Estes sao os tres indices calculados pelo pipeline de deteccao.",
+        "pt": "Estes são os três índices calculados pelo pipeline de detecção.",
     },
     "ts_select_empty": {
         "en": "Select at least one index above.",
-        "pt": "Selecione pelo menos um indice acima.",
+        "pt": "Selecione pelo menos um índice acima.",
     },
     "ts_individual": {
         "en": "Individual Index Details",
-        "pt": "Detalhes por Indice",
+        "pt": "Detalhes por Índice",
     },
     "ts_no_data": {
         "en": (
@@ -219,19 +219,19 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "build up observation history."
         ),
         "pt": (
-            "Sem dados de series temporais. Execute o pipeline de deteccao "
-            "para acumular historico de observacoes."
+            "Sem dados de séries temporais. Execute o pipeline de detecção "
+            "para acumular histórico de observações."
         ),
     },
     "ts_trend": {
         "en": "Vegetation Trend",
-        "pt": "Tendencia da Vegetacao",
+        "pt": "Tendência da Vegetação",
     },
     "ts_decreasing": {"en": "Decreasing", "pt": "Decrescente"},
     "ts_increasing": {"en": "Increasing", "pt": "Crescente"},
-    "ts_no_trend": {"en": "No trend", "pt": "Sem tendencia"},
+    "ts_no_trend": {"en": "No trend", "pt": "Sem tendência"},
     "ts_significant": {"en": " (significant)", "pt": " (significativo)"},
-    "ts_not_significant": {"en": " (not significant)", "pt": " (nao significativo)"},
+    "ts_not_significant": {"en": " (not significant)", "pt": " (não significativo)"},
     # ── Index descriptions ────────────────────────────────────────────────
     "ndmi_desc": {
         "en": (
@@ -240,14 +240,14 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "Primary index for this monitoring system."
         ),
         "pt": (
-            "Sensivel ao conteudo de agua do dossel. Ideal para detectar "
-            "desmatamento em estagio inicial, onde as arvores sao cortadas mas os tocos permanecem. "
-            "Indice principal deste sistema de monitoramento."
+            "Sensível ao conteúdo de água do dossel. Ideal para detectar "
+            "desmatamento em estágio inicial, onde as árvores são cortadas mas os tocos permanecem. "
+            "Índice principal deste sistema de monitoramento."
         ),
     },
     "ndmi_use": {
         "en": "Primary detection index",
-        "pt": "Indice principal de deteccao",
+        "pt": "Índice principal de detecção",
     },
     "nbr_desc": {
         "en": (
@@ -256,12 +256,12 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         ),
         "pt": (
             "Responde tanto a danos por fogo quanto a desmatamento. Forte sinal para "
-            "areas queimadas e remocao completa do dossel. Confirma deteccoes do NDMI."
+            "áreas queimadas e remoção completa do dossel. Confirma detecções do NDMI."
         ),
     },
     "nbr_use": {
         "en": "Confirmation index (fire + clearing)",
-        "pt": "Indice de confirmacao (fogo + corte)",
+        "pt": "Índice de confirmação (fogo + corte)",
     },
     "evi2_desc": {
         "en": (
@@ -270,23 +270,23 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "Useful for detecting gradual degradation."
         ),
         "pt": (
-            "Mede o vigor da vegetacao verde com menor influencia do solo. "
-            "Menos afetado por condicoes atmosfericas que o NDVI. "
-            "Util para detectar degradacao gradual."
+            "Mede o vigor da vegetação verde com menor influência do solo. "
+            "Menos afetado por condições atmosféricas que o NDVI. "
+            "Útil para detectar degradação gradual."
         ),
     },
     "evi2_use": {
         "en": "Degradation tracking",
-        "pt": "Rastreamento de degradacao",
+        "pt": "Rastreamento de degradação",
     },
     "role_label": {
         "en": "Role",
-        "pt": "Funcao",
+        "pt": "Função",
     },
     # ── Alert history tab ─────────────────────────────────────────────────
     "ah_title": {
         "en": "Alert Statistics Over Time",
-        "pt": "Estatisticas de Alertas ao Longo do Tempo",
+        "pt": "Estatísticas de Alertas ao Longo do Tempo",
     },
     "ah_all_records": {
         "en": "All Alert Records",
@@ -299,12 +299,12 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         ),
         "pt": (
             "Exibindo todos os {n} alertas em todas as datas "
-            "(o filtro de data da barra lateral se aplica aos graficos acima, nao a esta tabela)"
+            "(o filtro de data da barra lateral se aplica aos gráficos acima, não a esta tabela)"
         ),
     },
     "ah_no_data": {
         "en": "No alert history data available yet.",
-        "pt": "Nenhum historico de alertas disponivel ainda.",
+        "pt": "Nenhum histórico de alertas disponível ainda.",
     },
     # ── About tab ─────────────────────────────────────────────────────────
     "about_expander": {
@@ -332,23 +332,23 @@ Chapada do Araripe using satellite imagery from Sentinel-2 and Landsat.
 **Coverage:** ~7-8 S, 39-40 W (Chapada do Araripe, CE/PE/PI, Brazil)
         """,
         "pt": """
-O **Monitor de Desmatamento do Araripe** detecta perda de vegetacao na
-Chapada do Araripe usando imagens de satelite do Sentinel-2 e Landsat.
+O **Monitor de Desmatamento do Araripe** detecta perda de vegetação na
+Chapada do Araripe usando imagens de satélite do Sentinel-2 e Landsat.
 
 **Principais funcionalidades:**
 - Processamento automatizado semanal via GitHub Actions
-- Indices baseados em umidade (NDMI, NBR) para deteccao confiavel em
-  vegetacao sazonalmente decidua de Caatinga/Cerrado
-- Deteccao de anomalias por z-score contra linhas de base mensais
-- Confirmacao multi-indice para classificacao de confianca
-- Limiares ajustados por seca usando dados de precipitacao SPI
+- Índices baseados em umidade (NDMI, NBR) para detecção confiável em
+  vegetação sazonalmente decídua de Caatinga/Cerrado
+- Detecção de anomalias por z-score contra linhas de base mensais
+- Confirmação multi-índice para classificação de confiança
+- Limiares ajustados por seca usando dados de precipitação SPI
 
 **Fontes de dados:**
-- Sentinel-2 L2A (resolucao 10-20m, revisita de 5 dias)
-- Landsat 8/9 Collection 2 (resolucao 30m)
+- Sentinel-2 L2A (resolução 10-20m, revisita de 5 dias)
+- Landsat 8/9 Collection 2 (resolução 30m)
 - NASA HLS (harmonizado 30m, revisita de 2-3 dias)
 
-**Cobertura:** ~7-8 S, 39-40 O (Chapada do Araripe, CE/PE/PI, Brasil)
+**Cobertura:** ~7-8°S, 39-40°O (Chapada do Araripe, CE/PE/PI, Brasil)
         """,
     },
     "architecture_title": {
@@ -383,29 +383,29 @@ Chapada do Araripe usando imagens de satelite do Sentinel-2 e Landsat.
 **Pipeline de Dados:**
 1. Cron job semanal do GitHub Actions consulta imagens Sentinel-2
 2. Mascaramento de nuvens via banda SCL remove nuvens, sombras, cirrus
-3. Indices NDMI, NBR, EVI2 calculados a partir de bandas de reflectancia
-4. Comparacao de z-score com linhas de base mensais (historico de 3-5 anos)
-5. Pixels anomalos vetorizados em poligonos de alerta
+3. Índices NDMI, NBR, EVI2 calculados a partir de bandas de reflectância
+4. Comparação de z-score com linhas de base mensais (histórico de 3-5 anos)
+5. Pixels anômalos vetorizados em polígonos de alerta
 6. Resultados commitados no GitHub e COGs carregados no Cloudflare R2
 
-**Metodo de Deteccao:**
+**Método de Detecção:**
 - Principal: z-score NDMI < -2.0 E delta < -0.15
-- Confirmacao: Concordancia multi-indice (NDMI + NBR)
-- Ajuste de seca: Ampliacao de limiares baseada no SPI
-- Niveis de confianca: Alta (z < -3.0), Media (z < -2.5), Baixa (z < -2.0)
+- Confirmação: Concordância multi-índice (NDMI + NBR)
+- Ajuste de seca: Ampliação de limiares baseada no SPI
+- Níveis de confiança: Alta (z < -3.0), Média (z < -2.5), Baixa (z < -2.0)
 
-**Stack Tecnico:**
-- Dados de satelite: Element84 STAC, Planetary Computer, NASA HLS
+**Stack Técnico:**
+- Dados de satélite: Element84 STAC, Planetary Computer, NASA HLS
 - Processamento: rasterio, xarray, dask, scipy
-- Visualizacao: Streamlit, Leafmap, Folium, Plotly
+- Visualização: Streamlit, Leafmap, Folium, Plotly
 - Hospedagem: Hugging Face Spaces (gratuito)
 - Armazenamento: Cloudflare R2 (10 GB gratuitos, zero egress)
-- Automacao: GitHub Actions (cron semanal)
+- Automação: GitHub Actions (cron semanal)
         """,
     },
     "last_detection": {
         "en": "Last detection run: **{date}** | {n} detection files",
-        "pt": "Ultima deteccao: **{date}** | {n} arquivos de deteccao",
+        "pt": "Última detecção: **{date}** | {n} arquivos de detecção",
     },
     "footer": {
         "en": (
@@ -417,7 +417,7 @@ Chapada do Araripe usando imagens de satelite do Sentinel-2 e Landsat.
         "pt": (
             "Monitor de Desmatamento do Araripe | "
             "[GitHub](https://github.com/santibravocmcc/Araripe) | "
-            "Codigo aberto | "
+            "Código aberto | "
             "Dados: ESA Sentinel-2, USGS Landsat, NASA HLS"
         ),
     },
@@ -428,18 +428,55 @@ Chapada do Araripe usando imagens de satelite do Sentinel-2 e Landsat.
             "`python scripts/run_detection.py`"
         ),
         "pt": (
-            "Nenhum dado de alerta disponivel ainda. Execute o pipeline de deteccao: "
+            "Nenhum dado de alerta disponível ainda. Execute o pipeline de detecção: "
             "`python scripts/run_detection.py`"
         ),
     },
     # ── Map legend labels ─────────────────────────────────────────────────
     "legend_title": {
         "en": "Alert Confidence",
-        "pt": "Confianca do Alerta",
+        "pt": "Confiança do Alerta",
     },
     "legend_high": {"en": "High", "pt": "Alta"},
-    "legend_medium": {"en": "Medium", "pt": "Media"},
+    "legend_medium": {"en": "Medium", "pt": "Média"},
     "legend_low": {"en": "Low", "pt": "Baixa"},
+    # ── Chart titles & axis labels ────────────────────────────────────────
+    "chart_ts_title": {
+        "en": "{index} Time Series",
+        "pt": "Série Temporal — {index}",
+    },
+    "chart_multi_title": {
+        "en": "Vegetation Indices Over Time",
+        "pt": "Índices de Vegetação ao Longo do Tempo",
+    },
+    "chart_date_axis": {
+        "en": "Date",
+        "pt": "Data",
+    },
+    "chart_index_value": {
+        "en": "Index Value",
+        "pt": "Valor do Índice",
+    },
+    "chart_alerts_title": {
+        "en": "Deforestation Alerts Over Time",
+        "pt": "Alertas de Desmatamento ao Longo do Tempo",
+    },
+    "chart_num_alerts": {
+        "en": "Number of Alerts",
+        "pt": "Número de Alertas",
+    },
+    "chart_cumulative_title": {
+        "en": "Cumulative Deforested Area",
+        "pt": "Área Desmatada Acumulada",
+    },
+    "chart_area_axis": {
+        "en": "Area (hectares)",
+        "pt": "Área (hectares)",
+    },
+    "chart_cumulative_legend": {
+        "en": "Cumulative Area (ha)",
+        "pt": "Área Acumulada (ha)",
+    },
 }
 
 
