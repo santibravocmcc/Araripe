@@ -477,6 +477,52 @@ Chapada do Araripe usando imagens de satélite do Sentinel-2 e Landsat.
         "en": "Cumulative Area (ha)",
         "pt": "Área Acumulada (ha)",
     },
+    # ── Confidence explanation (plain language) ───────────────────────────
+    "confidence_explanation": {
+        "en": """
+**What do the confidence levels mean?**
+
+The system compares recent satellite images with what the area normally looks like. When the vegetation appears significantly different from normal, an alert is generated.
+
+- **High confidence** — The change is very clear and confirmed by multiple indicators. Very likely to be a real change on the ground.
+- **Medium confidence** — The change is noticeable, but could also be caused by dry season, clouds, or shadows. Worth checking.
+- **Low confidence** — A small change was detected. Could be a real early-stage change, but could also be natural variation. Needs local verification.
+
+By default, only **high confidence** alerts are shown. Use the sidebar filters to include medium and low confidence alerts.
+        """,
+        "pt": """
+**O que significam os níveis de confiança?**
+
+O sistema compara imagens recentes de satélite com a aparência normal da área. Quando a vegetação aparece significativamente diferente do normal, um alerta é gerado.
+
+- **Alta confiança** — A mudança é muito clara e confirmada por múltiplos indicadores. Muito provável que seja uma mudança real no terreno.
+- **Média confiança** — A mudança é perceptível, mas também pode ser causada por seca, nuvens ou sombras. Vale a pena verificar.
+- **Baixa confiança** — Uma pequena mudança foi detectada. Pode ser uma mudança real em estágio inicial, mas também pode ser variação natural. Necessita verificação local.
+
+Por padrão, apenas alertas de **alta confiança** são exibidos. Use os filtros na barra lateral para incluir alertas de média e baixa confiança.
+        """,
+    },
+    # ── Disclaimer ────────────────────────────────────────────────────────
+    "disclaimer": {
+        "en": (
+            "**Important:** This platform detects vegetation changes using satellite "
+            "imagery. It does **not** determine whether a change is legal or illegal — "
+            "that determination is the responsibility of the competent environmental "
+            "authorities (IBAMA, ICMBio, state agencies). Results may contain errors "
+            "due to cloud cover, seasonal variation, or sensor limitations. "
+            "**Local field validation is strongly recommended** before any conclusions "
+            "are drawn."
+        ),
+        "pt": (
+            "**Importante:** Esta plataforma detecta mudanças na vegetação usando imagens "
+            "de satélite. Ela **não** determina se uma mudança é legal ou ilegal — "
+            "essa atribuição é responsabilidade das autoridades ambientais competentes "
+            "(IBAMA, ICMBio, órgãos estaduais). Os resultados podem conter erros "
+            "devido à cobertura de nuvens, variação sazonal ou limitações dos sensores. "
+            "**A validação local em campo é fortemente recomendada** antes de qualquer "
+            "conclusão."
+        ),
+    },
 }
 
 

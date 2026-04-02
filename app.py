@@ -163,6 +163,13 @@ def _get_index_info() -> dict:
 st.title(t("main_title"))
 st.caption(t("main_caption"))
 
+# Disclaimer
+st.info(t("disclaimer"))
+
+# Confidence explanation
+with st.expander(t("confidence_explanation").strip().split("\n")[1].strip("* "), expanded=False):
+    st.markdown(t("confidence_explanation"))
+
 # Load data
 alerts_gdf = get_alerts()
 alert_ts = get_alert_timeseries(filters["start_date"], filters["end_date"])

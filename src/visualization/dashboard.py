@@ -74,7 +74,7 @@ def render_sidebar() -> dict:
     st.sidebar.subheader(t("alert_confidence"))
 
     conf_options = [t("high"), t("medium"), t("low")]
-    conf_defaults = [t("high"), t("medium")]
+    conf_defaults = [t("high")]
     confidence_selection = st.sidebar.multiselect(
         t("select_confidence"),
         options=conf_options,
