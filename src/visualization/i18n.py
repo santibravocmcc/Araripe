@@ -478,6 +478,10 @@ Chapada do Araripe usando imagens de satélite do Sentinel-2 e Landsat.
         "pt": "Área Acumulada (ha)",
     },
     # ── Confidence explanation (plain language) ───────────────────────────
+    "confidence_explanation_title": {
+        "en": "What do the confidence levels mean?",
+        "pt": "O que significam os níveis de confiança?",
+    },
     "confidence_explanation": {
         "en": """
 **What do the confidence levels mean?**
@@ -501,6 +505,173 @@ O sistema compara imagens recentes de satélite com a aparência normal da área
 
 Por padrão, apenas alertas de **alta confiança** são exibidos. Use os filtros na barra lateral para incluir alertas de média e baixa confiança.
         """,
+    },
+    # ── Export Mode ─────────────────────────────────────────────────────────
+    "export_mode": {
+        "en": "Export Mode",
+        "pt": "Modo de Exportação",
+    },
+    "exit_export_mode": {
+        "en": "Exit Export Mode",
+        "pt": "Sair do Modo de Exportação",
+    },
+    "export_mode_instructions": {
+        "en": (
+            "Draw a **rectangle** or **polygon** on the map to select alerts "
+            "for export. Use the drawing tools on the left side of the map."
+        ),
+        "pt": (
+            "Desenhe um **retângulo** ou **polígono** no mapa para selecionar alertas "
+            "para exportação. Use as ferramentas de desenho no lado esquerdo do mapa."
+        ),
+    },
+    "export_selected": {
+        "en": "Selected Alerts for Export",
+        "pt": "Alertas Selecionados para Exportação",
+    },
+    "export_n_selected": {
+        "en": "**{n}** alert{s} selected within the drawn area.",
+        "pt": "**{n}** alerta{s} selecionado{s} dentro da área desenhada.",
+    },
+    "export_no_selection": {
+        "en": "Draw a shape on the map above to select alerts for export.",
+        "pt": "Desenhe uma forma no mapa acima para selecionar alertas para exportação.",
+    },
+    "export_csv": {
+        "en": "Download CSV",
+        "pt": "Baixar CSV",
+    },
+    "export_geojson": {
+        "en": "Download GeoJSON",
+        "pt": "Baixar GeoJSON",
+    },
+    "export_google_maps": {
+        "en": "Open in Google Maps",
+        "pt": "Abrir no Google Maps",
+    },
+    "col_google_maps": {
+        "en": "Google Maps",
+        "pt": "Google Maps",
+    },
+    # ── Step-by-step workflow ─────────────────────────────────────────────
+    "workflow_steps": {
+        "en": (
+            "**How to use this dashboard:**\n"
+            "1. **Filter** — Use the sidebar to set date range, confidence, and minimum area\n"
+            "2. **View on Map** — Press the button in the sidebar to update the map\n"
+            "3. **Explore** — Browse the Alert Explorer table below the map\n"
+            "4. **Export** — Press **Export Mode** above the map to select and download alerts"
+        ),
+        "pt": (
+            "**Como usar este painel:**\n"
+            "1. **Filtrar** — Use a barra lateral para definir período, confiança e área mínima\n"
+            "2. **Ver no Mapa** — Pressione o botão na barra lateral para atualizar o mapa\n"
+            "3. **Explorar** — Navegue pela tabela do Explorador de Alertas abaixo do mapa\n"
+            "4. **Exportar** — Pressione **Modo de Exportação** acima do mapa para selecionar e baixar alertas"
+        ),
+    },
+    # ── Guide / Instructions tab ─────────────────────────────────────────
+    "tab_guide": {
+        "en": "Guide",
+        "pt": "Guia",
+    },
+    "guide_title": {
+        "en": "User Guide",
+        "pt": "Guia do Usuário",
+    },
+    "guide_body": {
+        "en": """
+## How to Use the Araripe Deforestation Monitor
+
+This dashboard lets you explore, filter, and export deforestation alerts detected by satellite imagery across Chapada do Araripe.
+
+### Step 1: Filter Alerts
+
+Use the **sidebar** (left panel) to narrow down alerts:
+
+- **Date Range** — Select the start and end dates for alerts you want to see.
+- **Alert Confidence** — Choose confidence levels (High, Medium, Low). High-confidence alerts are the most reliable.
+- **Minimum Area** — Exclude small alerts below a certain size in hectares.
+
+As you change filters, the **metrics** (top of the page) and the **Alert Explorer table** update instantly.
+
+### Step 2: View on Map
+
+Press the **View on Map** button in the sidebar. This refreshes the map to show only the alerts matching your current filters and zooms to fit them.
+
+> **Why a button?** Rendering the map is expensive. Updating it on every filter change would make the app slow. The button lets you fine-tune your filters first, then update the map once.
+
+### Step 3: Explore the Alert Table
+
+Below the map you will find the **Alert Explorer** — a sortable table showing all filtered alerts with:
+- Alert ID, detection date, confidence level
+- Area in hectares
+- Latitude/longitude coordinates
+
+### Step 4: Export Mode (Select & Download)
+
+Once you are satisfied with your filtered alerts on the map:
+
+1. Press the **Export Mode** button (top-right corner of the map section).
+2. The map reloads with **drawing tools** on the left side.
+3. Use the **rectangle** or **polygon** tool to draw an area on the map.
+4. All alerts **inside your drawn area** appear in a table below.
+5. Download the selected alerts as **CSV** or **GeoJSON**.
+6. Each alert row includes a **Google Maps link** — click it to see the exact location in Google Maps for field navigation.
+
+### Tips
+
+- **Start broad, then narrow down.** Use filters to remove noise first, then use Export Mode to pick a specific region.
+- **Google Maps links** work on mobile too — great for field teams navigating to alert locations.
+- **GeoJSON export** can be opened in QGIS, Google Earth, or any GIS software for further analysis.
+- **CSV export** can be opened in Excel or Google Sheets.
+""",
+        "pt": """
+## Como Usar o Monitor de Desmatamento do Araripe
+
+Este painel permite explorar, filtrar e exportar alertas de desmatamento detectados por imagens de satélite na Chapada do Araripe.
+
+### Passo 1: Filtrar Alertas
+
+Use a **barra lateral** (painel esquerdo) para refinar os alertas:
+
+- **Período** — Selecione as datas de início e fim dos alertas que deseja ver.
+- **Confiança do Alerta** — Escolha os níveis de confiança (Alta, Média, Baixa). Alertas de alta confiança são os mais confiáveis.
+- **Área Mínima** — Exclua alertas menores que um certo tamanho em hectares.
+
+Ao alterar os filtros, as **métricas** (topo da página) e a **tabela do Explorador de Alertas** se atualizam instantaneamente.
+
+### Passo 2: Ver no Mapa
+
+Pressione o botão **Ver no Mapa** na barra lateral. Isso atualiza o mapa para mostrar apenas os alertas dos filtros atuais e ajusta o zoom.
+
+> **Por que um botão?** Renderizar o mapa é pesado. Atualizá-lo a cada mudança de filtro deixaria o app lento. O botão permite ajustar os filtros primeiro e atualizar o mapa uma só vez.
+
+### Passo 3: Explorar a Tabela de Alertas
+
+Abaixo do mapa você encontrará o **Explorador de Alertas** — uma tabela ordenável com todos os alertas filtrados:
+- ID do alerta, data de detecção, nível de confiança
+- Área em hectares
+- Coordenadas de latitude/longitude
+
+### Passo 4: Modo de Exportação (Selecionar e Baixar)
+
+Quando estiver satisfeito com os alertas filtrados no mapa:
+
+1. Pressione o botão **Modo de Exportação** (canto superior direito da seção do mapa).
+2. O mapa recarrega com **ferramentas de desenho** no lado esquerdo.
+3. Use a ferramenta de **retângulo** ou **polígono** para desenhar uma área no mapa.
+4. Todos os alertas **dentro da área desenhada** aparecem em uma tabela abaixo.
+5. Baixe os alertas selecionados como **CSV** ou **GeoJSON**.
+6. Cada linha de alerta inclui um **link do Google Maps** — clique para ver a localização exata no Google Maps para navegação em campo.
+
+### Dicas
+
+- **Comece amplo, depois refine.** Use os filtros para remover ruído primeiro, depois use o Modo de Exportação para selecionar uma região específica.
+- **Links do Google Maps** funcionam no celular também — ótimo para equipes de campo navegando até os locais de alerta.
+- **Exportação GeoJSON** pode ser aberta no QGIS, Google Earth ou qualquer software GIS para análise adicional.
+- **Exportação CSV** pode ser aberta no Excel ou Google Sheets.
+""",
     },
     # ── Disclaimer ────────────────────────────────────────────────────────
     "disclaimer": {

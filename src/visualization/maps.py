@@ -311,6 +311,109 @@ def add_aoi_boundary(
     return m
 
 
+def create_export_map(
+    alerts_gdf: gpd.GeoDataFrame,
+    legend_labels: dict[int, str] | None = None,
+    legend_title: str = "Alert Confidence",
+) -> folium.Map:
+    """Create a Folium map with drawing tools for export selection.
+
+    This map uses plain Folium (not Leafmap) so it works with
+    ``streamlit-folium``'s ``st_folium`` which returns drawn shapes.
+
+    Parameters
+    ----------
+    alerts_gdf : gpd.GeoDataFrame
+        Alert polygons already filtered by the user.
+    legend_labels : dict, optional
+        Custom confidence labels.
+    legend_title : str
+        Legend heading.
+
+    Returns
+    -------
+    folium.Map
+        Folium map with Draw plugin and alert layer.
+    """
+    from folium.plugins import Draw
+
+    # Determine bounds for initial view
+    if alerts_gdf is not None and not alerts_gdf.empty:
+        if alerts_gdf.crs and str(alerts_gdf.crs) != "EPSG:4326":
+            alerts_gdf = alerts_gdf.to_crs("EPSG:4326")
+        bounds = alerts_gdf.total_bounds  # [minx, miny, maxx, maxy]
+        center = [(bounds[1] + bounds[3]) / 2, (bounds[0] + bounds[2]) / 2]
+    else:
+        center = DEFAULT_MAP_CENTER
+
+    m = folium.Map(location=center, zoom_start=DEFAULT_MAP_ZOOM, tiles=None)
+
+    # Basemaps
+    folium.TileLayer(
+        tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        attr="Esri",
+        name="Esri Satellite",
+    ).add_to(m)
+    folium.TileLayer("OpenStreetMap", name="OpenStreetMap").add_to(m)
+
+    # Draw plugin — only rectangle and polygon
+    Draw(
+        export=False,
+        draw_options={
+            "polyline": False,
+            "circle": False,
+            "circlemarker": False,
+            "marker": False,
+            "polygon": {"allowIntersection": False, "shapeOptions": {"color": "#00BCD4", "weight": 3}},
+            "rectangle": {"shapeOptions": {"color": "#00BCD4", "weight": 3}},
+        },
+        edit_options={"edit": False},
+    ).add_to(m)
+
+    # Add alert polygons
+    if alerts_gdf is not None and not alerts_gdf.empty:
+        def style_fn(feature):
+            conf = feature["properties"].get("confidence", 1)
+            return {
+                "fillColor": CONFIDENCE_COLORS.get(conf, "#00E676"),
+                "color": CONFIDENCE_BORDER_COLORS.get(conf, "#000000"),
+                "weight": 1.5,
+                "fillOpacity": 0.6,
+            }
+
+        alerts_clean = alerts_gdf.copy()
+        for col in alerts_clean.columns:
+            if col == "geometry":
+                continue
+            if alerts_clean[col].dtype.kind == "M":
+                alerts_clean[col] = alerts_clean[col].dt.strftime("%Y-%m-%d")
+            elif alerts_clean[col].dtype.kind == "m":
+                alerts_clean[col] = alerts_clean[col].astype(str)
+        geojson_data = json.loads(alerts_clean.to_json())
+
+        folium.GeoJson(
+            geojson_data,
+            name="Alerts",
+            style_function=style_fn,
+            tooltip=folium.GeoJsonTooltip(
+                fields=["area_ha", "confidence_label", "detection_date"],
+                aliases=["Area (ha):", "Confidence:", "Date:"],
+                style="font-size: 12px;",
+            ),
+        ).add_to(m)
+
+        # Fit bounds
+        m.fit_bounds([[bounds[1], bounds[0]], [bounds[3], bounds[2]]], padding=[30, 30])
+
+    # Legend
+    legend_html = _build_legend_html(title=legend_title, labels=legend_labels)
+    legend_ctrl = _LegendControl(legend_html)
+    m.get_root().html.add_child(legend_ctrl)
+
+    folium.LayerControl().add_to(m)
+    return m
+
+
 def add_legend(m: leafmap.Map) -> leafmap.Map:
     """Add a deforestation alert confidence legend to the map."""
     legend_dict = {

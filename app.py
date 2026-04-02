@@ -39,6 +39,7 @@ from src.visualization.i18n import t
 from src.visualization.maps import (
     add_alert_layer,
     create_base_map,
+    create_export_map,
 )
 
 # ─── Page config ──────────────────────────────────────────────────────────────
@@ -167,7 +168,7 @@ st.caption(t("main_caption"))
 st.info(t("disclaimer"))
 
 # Confidence explanation
-with st.expander(t("confidence_explanation").strip().split("\n")[1].strip("* "), expanded=False):
+with st.expander(t("confidence_explanation_title"), expanded=False):
     st.markdown(t("confidence_explanation"))
 
 # Load data
@@ -217,14 +218,18 @@ if alerts_gdf is None or alerts_gdf.empty:
     st.info(t("no_data"))
 
 # ─── Tabs ─────────────────────────────────────────────────────────────────────
-tab_map, tab_timeseries, tab_alerts, tab_about = st.tabs(
-    [t("tab_map"), t("tab_timeseries"), t("tab_alerts"), t("tab_about")]
+tab_map, tab_timeseries, tab_alerts, tab_guide, tab_about = st.tabs(
+    [t("tab_map"), t("tab_timeseries"), t("tab_alerts"), t("tab_guide"), t("tab_about")]
 )
 
 # ─── Tab 1: Interactive Map + Alert Explorer ─────────────────────────────────
 with tab_map:
+    # ─── Step-by-step workflow reminder ─────────────────────────────────
+    st.info(t("workflow_steps"))
+
     # ─── Build table with IDs ───────────────────────────────────────────
     _table_df = None
+    _display_df = None
     if filtered_alerts is not None and not filtered_alerts.empty:
         _display_df = filtered_alerts.copy()
         if _display_df.crs and str(_display_df.crs) != "EPSG:4326":
@@ -255,29 +260,46 @@ with tab_map:
             "longitude": t("col_lon"),
         })
 
-    # ─── Map (cached HTML to avoid expensive re-renders) ─────────────────
-    st.subheader(t("map_title"))
+    # ─── Export Mode toggle ─────────────────────────────────────────────
+    if "export_mode" not in st.session_state:
+        st.session_state["export_mode"] = False
 
-    # Determine whether the map needs rebuilding
-    _need_map_rebuild = filters["view_on_map"] or "map_html" not in st.session_state
-
-    map_idx = st.session_state.get("map_alert_idx")
-
-    if _need_map_rebuild:
-        # Build the map from scratch
-        if map_idx is not None and alerts_gdf is not None:
-            map_alerts_gdf = alerts_gdf.loc[alerts_gdf.index.isin(map_idx)]
-            if map_alerts_gdf.crs and str(map_alerts_gdf.crs) != "EPSG:4326":
-                map_alerts_gdf = map_alerts_gdf.to_crs("EPSG:4326")
+    # Header row: title + Export Mode button
+    _header_col1, _header_col2 = st.columns([3, 1])
+    with _header_col1:
+        st.subheader(t("map_title"))
+    with _header_col2:
+        if st.session_state["export_mode"]:
+            if st.button(
+                t("exit_export_mode"),
+                type="secondary",
+                use_container_width=True,
+                key="btn_exit_export",
+            ):
+                st.session_state["export_mode"] = False
+                st.rerun()
         else:
-            map_alerts_gdf = None
+            if st.button(
+                t("export_mode"),
+                type="primary",
+                use_container_width=True,
+                key="btn_export_mode",
+            ):
+                st.session_state["export_mode"] = True
+                st.rerun()
 
-        _map_bounds = None
-        if map_alerts_gdf is not None and not map_alerts_gdf.empty:
-            bounds = map_alerts_gdf.total_bounds
-            _map_bounds = [[bounds[1], bounds[0]], [bounds[3], bounds[2]]]
+    # ─── EXPORT MODE ────────────────────────────────────────────────────
+    if st.session_state["export_mode"]:
+        st.info(t("export_mode_instructions"))
 
-        m = create_base_map()
+        # Get the currently-mapped alerts
+        map_idx = st.session_state.get("map_alert_idx")
+        if map_idx is not None and alerts_gdf is not None:
+            export_gdf = alerts_gdf.loc[alerts_gdf.index.isin(map_idx)].copy()
+            if export_gdf.crs and str(export_gdf.crs) != "EPSG:4326":
+                export_gdf = export_gdf.to_crs("EPSG:4326")
+        else:
+            export_gdf = filtered_alerts
 
         legend_labels = {
             3: t("legend_high"),
@@ -285,33 +307,212 @@ with tab_map:
             1: t("legend_low"),
         }
 
-        if map_alerts_gdf is not None and not map_alerts_gdf.empty:
-            add_alert_layer(
-                m, map_alerts_gdf,
-                legend_labels=legend_labels,
-                legend_title=t("legend_title"),
-            )
-
-        if _map_bounds is not None:
-            m.fit_bounds(_map_bounds, padding=[30, 30])
-
-        # Cache the rendered HTML
-        st.session_state["map_html"] = m._repr_html_()
-        st.session_state["map_n_alerts"] = (
-            len(map_alerts_gdf) if map_alerts_gdf is not None else 0
+        export_map = create_export_map(
+            export_gdf,
+            legend_labels=legend_labels,
+            legend_title=t("legend_title"),
         )
 
-    # Display cached map HTML (no re-serialization on filter changes)
-    n_map = st.session_state.get("map_n_alerts", 0)
-    if n_map > 0:
-        s_suffix = "s" if n_map != 1 else ""
-        st.caption(t("map_showing_n").format(n=n_map, s=s_suffix))
+        from streamlit_folium import st_folium
 
-    import streamlit.components.v1 as components
+        map_data = st_folium(
+            export_map,
+            height=620,
+            width=None,
+            returned_objects=["all_drawings"],
+            key="export_folium_map",
+        )
 
-    components.html(st.session_state["map_html"], height=620, scrolling=False)
+        # ─── Process drawn selection ───────────────────────────────────
+        from shapely.geometry import shape as shapely_shape
 
-    # ─── Alert Explorer ─────────────────────────────────────────────────
+        drawn_features = (map_data or {}).get("all_drawings") or []
+
+        if drawn_features and export_gdf is not None and not export_gdf.empty:
+            # Combine all drawn shapes into one selection area
+            import geopandas as gpd
+            from shapely.ops import unary_union
+
+            drawn_geoms = []
+            for feat in drawn_features:
+                try:
+                    geom = shapely_shape(feat["geometry"])
+                    drawn_geoms.append(geom)
+                except Exception:
+                    continue
+
+            if drawn_geoms:
+                selection_area = unary_union(drawn_geoms)
+
+                # Find alerts that intersect the selection
+                selected_mask = export_gdf.geometry.intersects(selection_area)
+                selected_alerts = export_gdf[selected_mask].copy()
+
+                if not selected_alerts.empty:
+                    st.markdown("---")
+                    st.subheader(t("export_selected"))
+
+                    n_sel = len(selected_alerts)
+                    s_suffix = "s" if n_sel != 1 else ""
+                    st.success(
+                        t("export_n_selected").format(n=n_sel, s=s_suffix)
+                    )
+
+                    # Prepare export dataframe
+                    sel_export = selected_alerts.copy()
+                    centroids = sel_export.geometry.centroid
+                    sel_export["latitude"] = centroids.y.round(5)
+                    sel_export["longitude"] = centroids.x.round(5)
+                    if "detection_date" in sel_export.columns:
+                        sel_export["detection_date"] = pd.to_datetime(
+                            sel_export["detection_date"], errors="coerce"
+                        ).dt.strftime("%Y-%m-%d")
+
+                    # Google Maps links
+                    sel_export["google_maps_url"] = sel_export.apply(
+                        lambda r: f"https://www.google.com/maps?q={r['latitude']},{r['longitude']}", axis=1
+                    )
+
+                    # Display table
+                    export_show_cols = [
+                        "detection_date", "confidence_label", "area_ha",
+                        "latitude", "longitude", "google_maps_url",
+                    ]
+                    export_show_cols = [c for c in export_show_cols if c in sel_export.columns]
+                    export_display = sel_export[export_show_cols].reset_index(drop=True)
+                    export_display.index = range(1, len(export_display) + 1)
+                    export_display = export_display.rename(columns={
+                        "detection_date": t("col_date"),
+                        "confidence_label": t("col_confidence"),
+                        "area_ha": t("col_area"),
+                        "latitude": t("col_lat"),
+                        "longitude": t("col_lon"),
+                        "google_maps_url": t("col_google_maps"),
+                    })
+
+                    st.dataframe(
+                        export_display,
+                        use_container_width=True,
+                        height=min(400, 40 + 35 * len(export_display)),
+                        column_config={
+                            t("col_google_maps"): st.column_config.LinkColumn(
+                                t("col_google_maps"),
+                                display_text=t("export_google_maps"),
+                            ),
+                            t("col_area"): st.column_config.NumberColumn(
+                                t("col_area"), format="%.2f",
+                            ),
+                            t("col_lat"): st.column_config.NumberColumn(
+                                t("col_lat"), format="%.5f",
+                            ),
+                            t("col_lon"): st.column_config.NumberColumn(
+                                t("col_lon"), format="%.5f",
+                            ),
+                        },
+                    )
+
+                    # ─── Download buttons ──────────────────────────────
+                    dl_col1, dl_col2 = st.columns(2)
+
+                    # CSV
+                    csv_cols = [
+                        "detection_date", "confidence_label", "area_ha",
+                        "latitude", "longitude", "google_maps_url",
+                    ]
+                    csv_cols = [c for c in csv_cols if c in sel_export.columns]
+                    csv_data = sel_export[csv_cols].to_csv(index=False)
+
+                    with dl_col1:
+                        st.download_button(
+                            label=t("export_csv"),
+                            data=csv_data,
+                            file_name="araripe_alerts_export.csv",
+                            mime="text/csv",
+                            use_container_width=True,
+                        )
+
+                    # GeoJSON
+                    geojson_export = selected_alerts.copy()
+                    for col in geojson_export.columns:
+                        if col == "geometry":
+                            continue
+                        if geojson_export[col].dtype.kind == "M":
+                            geojson_export[col] = geojson_export[col].dt.strftime("%Y-%m-%d")
+                        elif geojson_export[col].dtype.kind == "m":
+                            geojson_export[col] = geojson_export[col].astype(str)
+                    geojson_data = geojson_export.to_json()
+
+                    with dl_col2:
+                        st.download_button(
+                            label=t("export_geojson"),
+                            data=geojson_data,
+                            file_name="araripe_alerts_export.geojson",
+                            mime="application/geo+json",
+                            use_container_width=True,
+                        )
+                else:
+                    st.warning(t("export_no_selection"))
+            else:
+                st.info(t("export_no_selection"))
+        else:
+            st.info(t("export_no_selection"))
+
+    # ─── NORMAL MAP MODE ────────────────────────────────────────────────
+    else:
+        # Determine whether the map needs rebuilding
+        _need_map_rebuild = filters["view_on_map"] or "map_html" not in st.session_state
+
+        map_idx = st.session_state.get("map_alert_idx")
+
+        if _need_map_rebuild:
+            # Build the map from scratch
+            if map_idx is not None and alerts_gdf is not None:
+                map_alerts_gdf = alerts_gdf.loc[alerts_gdf.index.isin(map_idx)]
+                if map_alerts_gdf.crs and str(map_alerts_gdf.crs) != "EPSG:4326":
+                    map_alerts_gdf = map_alerts_gdf.to_crs("EPSG:4326")
+            else:
+                map_alerts_gdf = None
+
+            _map_bounds = None
+            if map_alerts_gdf is not None and not map_alerts_gdf.empty:
+                bounds = map_alerts_gdf.total_bounds
+                _map_bounds = [[bounds[1], bounds[0]], [bounds[3], bounds[2]]]
+
+            m = create_base_map()
+
+            legend_labels = {
+                3: t("legend_high"),
+                2: t("legend_medium"),
+                1: t("legend_low"),
+            }
+
+            if map_alerts_gdf is not None and not map_alerts_gdf.empty:
+                add_alert_layer(
+                    m, map_alerts_gdf,
+                    legend_labels=legend_labels,
+                    legend_title=t("legend_title"),
+                )
+
+            if _map_bounds is not None:
+                m.fit_bounds(_map_bounds, padding=[30, 30])
+
+            # Cache the rendered HTML
+            st.session_state["map_html"] = m._repr_html_()
+            st.session_state["map_n_alerts"] = (
+                len(map_alerts_gdf) if map_alerts_gdf is not None else 0
+            )
+
+        # Display cached map HTML (no re-serialization on filter changes)
+        n_map = st.session_state.get("map_n_alerts", 0)
+        if n_map > 0:
+            s_suffix = "s" if n_map != 1 else ""
+            st.caption(t("map_showing_n").format(n=n_map, s=s_suffix))
+
+        import streamlit.components.v1 as components
+
+        components.html(st.session_state["map_html"], height=620, scrolling=False)
+
+    # ─── Alert Explorer (shown in both modes) ──────────────────────────
     if _table_df is not None and not _table_df.empty:
         st.markdown("---")
         st.subheader(t("alert_explorer"))
@@ -483,7 +684,12 @@ with tab_alerts:
     else:
         st.info(t("ah_no_data"))
 
-# ─── Tab 4: About ────────────────────────────────────────────────────────────
+# ─── Tab 4: Guide ────────────────────────────────────────────────────────────
+with tab_guide:
+    st.subheader(t("guide_title"))
+    st.markdown(t("guide_body"))
+
+# ─── Tab 5: About ────────────────────────────────────────────────────────────
 with tab_about:
     render_info_expander()
 
