@@ -248,54 +248,61 @@ with tab_map:
             "longitude": t("col_lon"),
         })
 
-    # ─── Map ────────────────────────────────────────────────────────────
+    # ─── Map (cached HTML to avoid expensive re-renders) ─────────────────
     st.subheader(t("map_title"))
 
-    # Resolve which alerts to render on map (from session_state snapshot)
+    # Determine whether the map needs rebuilding
+    _need_map_rebuild = filters["view_on_map"] or "map_html" not in st.session_state
+
     map_idx = st.session_state.get("map_alert_idx")
-    if map_idx is not None and alerts_gdf is not None:
-        map_alerts_gdf = alerts_gdf.loc[alerts_gdf.index.isin(map_idx)]
-        if map_alerts_gdf.crs and str(map_alerts_gdf.crs) != "EPSG:4326":
-            map_alerts_gdf = map_alerts_gdf.to_crs("EPSG:4326")
-        n_map = len(map_alerts_gdf)
+
+    if _need_map_rebuild:
+        # Build the map from scratch
+        if map_idx is not None and alerts_gdf is not None:
+            map_alerts_gdf = alerts_gdf.loc[alerts_gdf.index.isin(map_idx)]
+            if map_alerts_gdf.crs and str(map_alerts_gdf.crs) != "EPSG:4326":
+                map_alerts_gdf = map_alerts_gdf.to_crs("EPSG:4326")
+        else:
+            map_alerts_gdf = None
+
+        _map_bounds = None
+        if map_alerts_gdf is not None and not map_alerts_gdf.empty:
+            bounds = map_alerts_gdf.total_bounds
+            _map_bounds = [[bounds[1], bounds[0]], [bounds[3], bounds[2]]]
+
+        m = create_base_map()
+
+        legend_labels = {
+            3: t("legend_high"),
+            2: t("legend_medium"),
+            1: t("legend_low"),
+        }
+
+        if map_alerts_gdf is not None and not map_alerts_gdf.empty:
+            add_alert_layer(
+                m, map_alerts_gdf,
+                legend_labels=legend_labels,
+                legend_title=t("legend_title"),
+            )
+
+        if _map_bounds is not None:
+            m.fit_bounds(_map_bounds, padding=[30, 30])
+
+        # Cache the rendered HTML
+        st.session_state["map_html"] = m._repr_html_()
+        st.session_state["map_n_alerts"] = (
+            len(map_alerts_gdf) if map_alerts_gdf is not None else 0
+        )
+
+    # Display cached map HTML (no re-serialization on filter changes)
+    n_map = st.session_state.get("map_n_alerts", 0)
+    if n_map > 0:
         s_suffix = "s" if n_map != 1 else ""
-        st.caption(
-            t("map_showing_n").format(n=n_map, s=s_suffix)
-        )
-    else:
-        map_alerts_gdf = None
+        st.caption(t("map_showing_n").format(n=n_map, s=s_suffix))
 
-    # Compute bounds for zoom-to-fit
-    _map_bounds = None
-    if map_alerts_gdf is not None and not map_alerts_gdf.empty:
-        bounds = map_alerts_gdf.total_bounds
-        _map_bounds = [[bounds[1], bounds[0]], [bounds[3], bounds[2]]]
+    import streamlit.components.v1 as components
 
-    m = create_base_map()
-
-    # Build translated legend labels
-    legend_labels = {
-        3: t("legend_high"),
-        2: t("legend_medium"),
-        1: t("legend_low"),
-    }
-
-    if map_alerts_gdf is not None and not map_alerts_gdf.empty:
-        add_alert_layer(
-            m, map_alerts_gdf,
-            legend_labels=legend_labels,
-            legend_title=t("legend_title"),
-        )
-
-    if _map_bounds is not None:
-        m.fit_bounds(_map_bounds, padding=[30, 30])
-
-    try:
-        from streamlit_folium import st_folium
-
-        st_folium(m, width=None, height=600, returned_objects=[])
-    except ImportError:
-        st.warning(t("install_folium"))
+    components.html(st.session_state["map_html"], height=620, scrolling=False)
 
     # ─── Alert Explorer ─────────────────────────────────────────────────
     if _table_df is not None and not _table_df.empty:
