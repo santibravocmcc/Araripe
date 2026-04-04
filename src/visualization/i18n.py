@@ -25,6 +25,19 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "Chapada do Araripe (CE/PE/PI, Brasil)"
         ),
     },
+    # ── Latest scan ──────────────────────────────────────────────────────
+    "latest_scan_btn": {
+        "en": "Latest Scan Only",
+        "pt": "Apenas Última Varredura",
+    },
+    "latest_scan_info": {
+        "en": "**Last scan:** {run_date} | **Imagery from:** {image_date}",
+        "pt": "**Última varredura:** {run_date} | **Imagem de:** {image_date}",
+    },
+    "latest_scan_help": {
+        "en": "Show only alerts from the most recent detection run.",
+        "pt": "Mostrar apenas alertas da detecção mais recente.",
+    },
     # ── Sidebar ───────────────────────────────────────────────────────────
     "sidebar_title": {
         "en": "Araripe Monitor",

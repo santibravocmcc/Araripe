@@ -7,7 +7,7 @@ from typing import Optional
 import pandas as pd
 import streamlit as st
 
-from config.settings import AOI_GEOJSON
+from config.settings import ALERTS_DIR, AOI_GEOJSON
 from src.visualization.i18n import t
 
 
@@ -59,14 +59,61 @@ def render_sidebar() -> dict:
 
     st.sidebar.markdown("---")
 
+    # ── Latest scan info + quick-filter button ─────────────────────────
+    # Derive latest detection date from alert filenames
+    alert_files = sorted(ALERTS_DIR.glob("alerts_*.geojson"))
+    latest_image_date: str | None = None
+    latest_run_date: str | None = None
+    if alert_files:
+        latest_image_date = alert_files[-1].stem.replace("alerts_", "")
+        # Try to get created_at from the most recent file
+        try:
+            import json as _json
+
+            with open(alert_files[-1]) as _f:
+                _feats = _json.load(_f).get("features", [])
+            if _feats:
+                _ca = _feats[0].get("properties", {}).get("created_at", "")
+                latest_run_date = _ca[:10] if _ca else None
+        except Exception:
+            pass
+
+    if latest_image_date:
+        st.sidebar.caption(
+            t("latest_scan_info").format(
+                run_date=latest_run_date or "—",
+                image_date=latest_image_date,
+            )
+        )
+
+    latest_scan_clicked = False
+    if latest_image_date:
+        latest_scan_clicked = st.sidebar.button(
+            t("latest_scan_btn"),
+            use_container_width=True,
+            help=t("latest_scan_help"),
+            key="btn_latest_scan",
+        )
+
+    st.sidebar.markdown("---")
+
     # ── Date range (default: last 90 days) ─────────────────────────────
     st.sidebar.subheader(t("date_range"))
     default_start = pd.Timestamp.now() - pd.Timedelta(days=90)
+
+    # If "Latest Scan Only" is pressed, override dates to the latest detection
+    if latest_scan_clicked and latest_image_date:
+        _latest_dt = pd.Timestamp(latest_image_date)
+        default_start = _latest_dt
+        default_end = _latest_dt
+    else:
+        default_end = pd.Timestamp.now()
+
     col1, col2 = st.sidebar.columns(2)
     with col1:
         start_date = st.date_input(t("start"), value=default_start)
     with col2:
-        end_date = st.date_input(t("end"), value=pd.Timestamp.now())
+        end_date = st.date_input(t("end"), value=default_end)
 
     st.sidebar.markdown("---")
 
@@ -118,7 +165,7 @@ def render_sidebar() -> dict:
         "end_date": str(end_date),
         "confidence_values": selected_confidence_values,
         "min_area": min_area,
-        "view_on_map": view_on_map,
+        "view_on_map": view_on_map or latest_scan_clicked,
     }
 
 

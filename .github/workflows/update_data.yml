@@ -2,7 +2,7 @@ name: Weekly Deforestation Detection
 
 on:
   schedule:
-    - cron: '0 6 * * 1'  # Every Monday 6:00 UTC
+    - cron: '0 6 * * 1,4'  # Monday & Thursday 6:00 UTC
   workflow_dispatch:       # Manual trigger
 
 permissions:
