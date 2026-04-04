@@ -9,9 +9,9 @@
 
 ## 1. Resumo Executivo
 
-O Sistema de Monitoramento de Desmatamento do Araripe é um pipeline de detecção de mudanças em tempo quase real, projetado para gerar alertas semanais de desmatamento e degradação para a região da Chapada do Araripe, no nordeste do Brasil. O sistema ingere imagens multiespectrais de satélite (Sentinel-2 L2A, Landsat 8/9 Collection 2, NASA HLS) via APIs STAC abertas, calcula índices espectrais sensíveis à umidade e à vegetação (NDMI, NBR, EVI2) e detecta perda anômala de vegetação por meio de desvio z-score em relação a baselines mensais construídos ao longo de um período de referência de 4 anos (2023--2026).
+O Sistema de Monitoramento de Desmatamento do Araripe é um pipeline de detecção de mudanças em tempo quase real, projetado para gerar alertas bissemanais (duas vezes por semana) de desmatamento e degradação para a região da Chapada do Araripe, no nordeste do Brasil. O sistema ingere imagens multiespectrais de satélite (Sentinel-2 L2A, Landsat 8/9 Collection 2, NASA HLS) via APIs STAC abertas, calcula índices espectrais sensíveis à umidade e à vegetação (NDMI, NBR, EVI2) e detecta perda anômala de vegetação por meio de desvio z-score em relação a baselines mensais construídos ao longo de um período de referência de 4 anos (2023--2026).
 
-O sistema foi projetado para operar com custo recorrente zero, utilizando GitHub Actions para automação semanal, Hugging Face Spaces para o painel Streamlit e Cloudflare R2 para armazenamento de Cloud Optimized GeoTIFF (COG). As saídas de detecção são polígonos de alerta vetorizados em formato GeoJSON, classificados em três níveis de confiança (alto, médio, baixo) com unidade mínima de mapeamento de 1 hectare.
+O sistema foi projetado para operar com custo recorrente zero, utilizando GitHub Actions para automação bisemanal (duas vezes por semana), Hugging Face Spaces para o painel Streamlit e Cloudflare R2 para armazenamento de Cloud Optimized GeoTIFF (COG). As saídas de detecção são polígonos de alerta vetorizados em formato GeoJSON, classificados em três níveis de confiança (alto, médio, baixo) com unidade mínima de mapeamento de 1 hectare.
 
 **Status operacional atual:** O código-fonte completo está implementado e funcional. Os baselines mensais (72 arquivos COG) foram produzidos para todos os 12 meses em três índices espectrais. Cinco arquivos de alerta foram gerados cobrindo o período de novembro de 2025 a fevereiro de 2026, contendo um total de 8.924 polígonos de alerta. Os dados de precipitação CHIRPS para ajuste de seca ainda não foram preenchidos. O pipeline de automação semanal e o painel público estão configurados, mas ainda não implantados em produção.
 
@@ -452,8 +452,8 @@ Esses alertas ainda não foram validados contra dados de referência independent
 
 | Componente | Configuração | Status |
 |------------|-------------|--------|
-| Cron semanal do GitHub Actions | `.github/workflows/update_data.yml`, segundas-feiras às 06:00 UTC | Configurado, ainda não ativo |
-| Painel Streamlit | `app.py` com Leafmap/Plotly, layout de 4 abas | Implementado |
+| Cron bisemanal do GitHub Actions | `.github/workflows/update_data.yml`, segundas e quintas-feiras às 06:00 UTC | Configurado, ainda não ativo |
+| Painel Streamlit | `app.py` com Leafmap/Plotly, layout de 5 abas (Mapa, Séries Temporais, Histórico de Alertas, Guia, Sobre) | Implementado |
 | Hospedagem no Hugging Face Spaces | Configurado para implantação no HF Spaces | Ainda não implantado |
 | Armazenamento COG no Cloudflare R2 | Bucket `araripe-cogs`, upload via `scripts/upload_to_r2.py` | Configurado, URL do endpoint não definida |
 

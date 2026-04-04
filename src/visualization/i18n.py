@@ -17,11 +17,11 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     },
     "main_caption": {
         "en": (
-            "Satellite-based weekly deforestation monitoring for "
+            "Satellite-based twice-weekly deforestation monitoring for "
             "Chapada do Araripe (CE/PE/PI, Brazil)"
         ),
         "pt": (
-            "Monitoramento semanal de desmatamento por satélite na "
+            "Monitoramento bisemanal de desmatamento por satélite na "
             "Chapada do Araripe (CE/PE/PI, Brasil)"
         ),
     },
@@ -330,7 +330,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
 Chapada do Araripe using satellite imagery from Sentinel-2 and Landsat.
 
 **Key features:**
-- Weekly automated processing via GitHub Actions
+- Twice-weekly automated processing via GitHub Actions
 - Moisture-based indices (NDMI, NBR) for reliable detection in
   seasonally deciduous Caatinga/Cerrado vegetation
 - Z-score anomaly detection against monthly baselines
@@ -349,7 +349,7 @@ O **Monitor de Desmatamento do Araripe** detecta perda de vegetação na
 Chapada do Araripe usando imagens de satélite do Sentinel-2 e Landsat.
 
 **Principais funcionalidades:**
-- Processamento automatizado semanal via GitHub Actions
+- Processamento automatizado bisemanal via GitHub Actions
 - Índices baseados em umidade (NDMI, NBR) para detecção confiável em
   vegetação sazonalmente decídua de Caatinga/Cerrado
 - Detecção de anomalias por z-score contra linhas de base mensais
@@ -371,7 +371,7 @@ Chapada do Araripe usando imagens de satélite do Sentinel-2 e Landsat.
     "architecture_body": {
         "en": """
 **Data Pipeline:**
-1. Weekly GitHub Actions cron job queries Sentinel-2 imagery
+1. Twice-weekly GitHub Actions cron job queries Sentinel-2 imagery
 2. Cloud masking via SCL band removes clouds, shadows, cirrus
 3. NDMI, NBR, EVI2 indices computed from reflectance bands
 4. Z-score comparison against monthly baselines (3-5yr history)
@@ -390,11 +390,11 @@ Chapada do Araripe usando imagens de satélite do Sentinel-2 e Landsat.
 - Visualization: Streamlit, Leafmap, Folium, Plotly
 - Hosting: Hugging Face Spaces (free tier)
 - Storage: Cloudflare R2 (10 GB free, zero egress)
-- Automation: GitHub Actions (weekly cron)
+- Automation: GitHub Actions (twice-weekly cron)
         """,
         "pt": """
 **Pipeline de Dados:**
-1. Cron job semanal do GitHub Actions consulta imagens Sentinel-2
+1. Cron job bisemanal do GitHub Actions consulta imagens Sentinel-2
 2. Mascaramento de nuvens via banda SCL remove nuvens, sombras, cirrus
 3. Índices NDMI, NBR, EVI2 calculados a partir de bandas de reflectância
 4. Comparação de z-score com linhas de base mensais (histórico de 3-5 anos)
@@ -413,7 +413,7 @@ Chapada do Araripe usando imagens de satélite do Sentinel-2 e Landsat.
 - Visualização: Streamlit, Leafmap, Folium, Plotly
 - Hospedagem: Hugging Face Spaces (gratuito)
 - Armazenamento: Cloudflare R2 (10 GB gratuitos, zero egress)
-- Automação: GitHub Actions (cron semanal)
+- Automação: GitHub Actions (cron bisemanal)
         """,
     },
     "last_detection": {

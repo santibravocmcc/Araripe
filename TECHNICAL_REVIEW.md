@@ -9,9 +9,9 @@
 
 ## 1. Executive Summary
 
-The Araripe Deforestation Monitoring System is a near-real-time change detection pipeline designed to generate weekly deforestation and degradation alerts for the Chapada do Araripe region in northeastern Brazil. The system ingests multispectral satellite imagery (Sentinel-2 L2A, Landsat 8/9 Collection 2, NASA HLS) via open STAC APIs, computes moisture- and vegetation-sensitive spectral indices (NDMI, NBR, EVI2), and detects anomalous vegetation loss through z-score deviation from monthly baselines constructed over a 4-year reference period (2023--2026).
+The Araripe Deforestation Monitoring System is a near-real-time change detection pipeline designed to generate twice-weekly deforestation and degradation alerts for the Chapada do Araripe region in northeastern Brazil. The system ingests multispectral satellite imagery (Sentinel-2 L2A, Landsat 8/9 Collection 2, NASA HLS) via open STAC APIs, computes moisture- and vegetation-sensitive spectral indices (NDMI, NBR, EVI2), and detects anomalous vegetation loss through z-score deviation from monthly baselines constructed over a 4-year reference period (2023--2026).
 
-The system is designed to operate at zero recurring cost, using GitHub Actions for weekly automation, Hugging Face Spaces for the Streamlit dashboard, and Cloudflare R2 for Cloud Optimized GeoTIFF (COG) storage. Detection outputs are vectorized alert polygons in GeoJSON format, classified into three confidence tiers (high, medium, low) with a minimum mapping unit of 1 hectare.
+The system is designed to operate at zero recurring cost, using GitHub Actions for twice-weekly automation, Hugging Face Spaces for the Streamlit dashboard, and Cloudflare R2 for Cloud Optimized GeoTIFF (COG) storage. Detection outputs are vectorized alert polygons in GeoJSON format, classified into three confidence tiers (high, medium, low) with a minimum mapping unit of 1 hectare.
 
 **Current operational status:** The full codebase is implemented and functional. Monthly baselines (72 COG files) have been produced for all 12 months across three spectral indices. Five alert files have been generated covering the period November 2025 through February 2026, containing a total of 8,924 alert polygons. The CHIRPS precipitation data for drought adjustment has not yet been populated. The weekly automation pipeline and public dashboard are configured but not yet deployed in production.
 
@@ -452,8 +452,8 @@ These alerts have not yet been validated against independent reference data (e.g
 
 | Component | Configuration | Status |
 |-----------|--------------|--------|
-| GitHub Actions weekly cron | `.github/workflows/update_data.yml`, Mondays at 06:00 UTC | Configured, not yet active |
-| Streamlit dashboard | `app.py` with Leafmap/Plotly, 4-tab layout | Implemented |
+| GitHub Actions twice-weekly cron | `.github/workflows/update_data.yml`, Mondays & Thursdays at 06:00 UTC | Configured, not yet active |
+| Streamlit dashboard | `app.py` with Leafmap/Plotly, 5-tab layout (Map, Time Series, Alert History, Guide, About) | Implemented |
 | Hugging Face Spaces hosting | Configured for HF Spaces deployment | Not yet deployed |
 | Cloudflare R2 COG storage | Bucket `araripe-cogs`, upload via `scripts/upload_to_r2.py` | Configured, endpoint URL not set |
 
