@@ -588,6 +588,32 @@ Por padrão, apenas alertas de **alta confiança** são exibidos. Use os filtros
         "en": "Guide",
         "pt": "Guia",
     },
+    "tab_docs": {
+        "en": "Documentation",
+        "pt": "Documentação",
+    },
+    "docs_title": {
+        "en": "Technical Documentation",
+        "pt": "Documentação Técnica",
+    },
+    "docs_caption": {
+        "en": (
+            "Full technical review of the Araripe Deforestation Monitoring System — "
+            "satellite data sources, detection methodology, validation results, and known limitations."
+        ),
+        "pt": (
+            "Revisão técnica completa do Sistema de Monitoramento de Desmatamento do Araripe — "
+            "fontes de dados satelitais, metodologia de detecção, resultados de validação e limitações conhecidas."
+        ),
+    },
+    "docs_download": {
+        "en": "Download PDF",
+        "pt": "Baixar PDF",
+    },
+    "docs_download_caption": {
+        "en": "Download the technical review as a formatted PDF document.",
+        "pt": "Baixe a revisão técnica como documento PDF formatado.",
+    },
     "guide_title": {
         "en": "User Guide",
         "pt": "Guia do Usuário",

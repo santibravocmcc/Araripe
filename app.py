@@ -218,8 +218,8 @@ if alerts_gdf is None or alerts_gdf.empty:
     st.info(t("no_data"))
 
 # ─── Tabs ─────────────────────────────────────────────────────────────────────
-tab_map, tab_timeseries, tab_alerts, tab_guide, tab_about = st.tabs(
-    [t("tab_map"), t("tab_timeseries"), t("tab_alerts"), t("tab_guide"), t("tab_about")]
+tab_map, tab_timeseries, tab_alerts, tab_guide, tab_docs, tab_about = st.tabs(
+    [t("tab_map"), t("tab_timeseries"), t("tab_alerts"), t("tab_guide"), t("tab_docs"), t("tab_about")]
 )
 
 # ─── Tab 1: Interactive Map + Alert Explorer ─────────────────────────────────
@@ -689,7 +689,40 @@ with tab_guide:
     st.subheader(t("guide_title"))
     st.markdown(t("guide_body"))
 
-# ─── Tab 5: About ────────────────────────────────────────────────────────────
+# ─── Tab 5: Documentation ────────────────────────────────────────────────────
+with tab_docs:
+    st.subheader(t("docs_title"))
+    st.caption(t("docs_caption"))
+
+    # Load the correct language markdown file
+    _lang = st.session_state.get("language", "pt")
+    _doc_file = (
+        Path(__file__).parent / "REVISAO_TECNICA.md"
+        if _lang == "pt"
+        else Path(__file__).parent / "TECHNICAL_REVIEW.md"
+    )
+
+    # PDF download button (top of tab, before content)
+    _pdf_file = Path(__file__).parent / "REVISAO_TECNICA.pdf"
+    if _pdf_file.exists():
+        st.download_button(
+            label=t("docs_download"),
+            data=_pdf_file.read_bytes(),
+            file_name="REVISAO_TECNICA.pdf" if _lang == "pt" else "TECHNICAL_REVIEW.pdf",
+            mime="application/pdf",
+            help=t("docs_download_caption"),
+        )
+
+    st.markdown("---")
+
+    # Render the markdown document
+    if _doc_file.exists():
+        _doc_text = _doc_file.read_text(encoding="utf-8")
+        st.markdown(_doc_text, unsafe_allow_html=False)
+    else:
+        st.warning(f"Documentation file not found: {_doc_file.name}")
+
+# ─── Tab 6: About ────────────────────────────────────────────────────────────
 with tab_about:
     render_info_expander()
 
