@@ -8,12 +8,12 @@ import streamlit as st
 TRANSLATIONS: dict[str, dict[str, str]] = {
     # ── Page / header ─────────────────────────────────────────────────────
     "page_title": {
-        "en": "Araripe Deforestation Monitor",
-        "pt": "Monitor de Desmatamento do Araripe",
+        "en": "Chapada do Araripe Deforestation Monitor",
+        "pt": "Monitor de Desmatamento da Chapada do Araripe",
     },
     "main_title": {
-        "en": "Araripe Deforestation Monitor",
-        "pt": "Monitor de Desmatamento do Araripe",
+        "en": "Chapada do Araripe Deforestation Monitor",
+        "pt": "Monitor de Desmatamento da Chapada do Araripe",
     },
     "main_caption": {
         "en": (
@@ -83,17 +83,41 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "en": "Low",
         "pt": "Baixa",
     },
-    "min_area_label": {
-        "en": "Minimum Area",
-        "pt": "Área Mínima",
+    # ── Recent activity (replaces minimum-area filter) ───────────────────
+    "recent_section": {
+        "en": "Recent Activity",
+        "pt": "Atividade Recente",
     },
-    "min_area_input": {
-        "en": "Min area (ha)",
-        "pt": "Área mín. (ha)",
+    "recent_n_label": {
+        "en": "Recent runs (N)",
+        "pt": "Últimas execuções (N)",
     },
-    "min_area_help": {
-        "en": "Exclude alerts smaller than this area.",
-        "pt": "Excluir alertas menores que esta área.",
+    "recent_n_help": {
+        "en": (
+            "Alerts from the last N detection runs are highlighted on the "
+            "map and table. Detection runs twice a week, so 4 ≈ 2 weeks."
+        ),
+        "pt": (
+            "Alertas das últimas N execuções de detecção são destacados no "
+            "mapa e na tabela. A detecção roda duas vezes por semana, "
+            "então 4 ≈ 2 semanas."
+        ),
+    },
+    "recent_only_label": {
+        "en": "Show only recent",
+        "pt": "Mostrar apenas recentes",
+    },
+    "recent_only_help": {
+        "en": "Hide all alerts except those from the last N detection runs.",
+        "pt": "Ocultar todos os alertas exceto os das últimas N execuções.",
+    },
+    "col_recent": {
+        "en": "New",
+        "pt": "Novo",
+    },
+    "legend_recent": {
+        "en": "New (last {n} runs)",
+        "pt": "Novo (últimas {n} execuções)",
     },
     "view_on_map": {
         "en": "View on Map",
@@ -106,11 +130,15 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     "sidebar_filter_note": {
         "en": (
             "Filters update the table and metrics instantly. "
-            "Press **View on Map** to refresh the map."
+            "Press **View on Map** to refresh the map. The full alert "
+            "history is shown by default — recent runs are highlighted "
+            "in magenta."
         ),
         "pt": (
             "Os filtros atualizam a tabela e métricas instantaneamente. "
-            "Pressione **Ver no Mapa** para atualizar o mapa."
+            "Pressione **Ver no Mapa** para atualizar o mapa. O histórico "
+            "completo de alertas é exibido por padrão — execuções recentes "
+            "ficam destacadas em magenta."
         ),
     },
     # ── Metrics ───────────────────────────────────────────────────────────
@@ -326,7 +354,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
     },
     "about_body": {
         "en": """
-**Araripe Deforestation Monitor** detects vegetation loss across
+**Chapada do Araripe Deforestation Monitor** detects vegetation loss across
 Chapada do Araripe using satellite imagery from Sentinel-2 and Landsat.
 
 **Key features:**
@@ -345,7 +373,7 @@ Chapada do Araripe using satellite imagery from Sentinel-2 and Landsat.
 **Coverage:** ~7-8 S, 39-40 W (Chapada do Araripe, CE/PE/PI, Brazil)
         """,
         "pt": """
-O **Monitor de Desmatamento do Araripe** detecta perda de vegetação na
+O **Monitor de Desmatamento da Chapada do Araripe** detecta perda de vegetação na
 Chapada do Araripe usando imagens de satélite do Sentinel-2 e Landsat.
 
 **Principais funcionalidades:**
@@ -422,13 +450,13 @@ Chapada do Araripe usando imagens de satélite do Sentinel-2 e Landsat.
     },
     "footer": {
         "en": (
-            "Araripe Deforestation Monitor | "
+            "Chapada do Araripe Deforestation Monitor | "
             "[GitHub](https://github.com/santibravocmcc/Araripe) | "
             "Open source | "
             "Data: ESA Sentinel-2, USGS Landsat, NASA HLS"
         ),
         "pt": (
-            "Monitor de Desmatamento do Araripe | "
+            "Monitor de Desmatamento da Chapada do Araripe | "
             "[GitHub](https://github.com/santibravocmcc/Araripe) | "
             "Código aberto | "
             "Dados: ESA Sentinel-2, USGS Landsat, NASA HLS"
@@ -570,17 +598,19 @@ Por padrão, apenas alertas de **alta confiança** são exibidos. Use os filtros
     "workflow_steps": {
         "en": (
             "**How to use this dashboard:**\n"
-            "1. **Filter** — Use the sidebar to set date range, confidence, and minimum area\n"
-            "2. **View on Map** — Press the button in the sidebar to update the map\n"
-            "3. **Explore** — Browse the Alert Explorer table below the map\n"
-            "4. **Export** — Press **Export Mode** above the map to select and download alerts"
+            "1. **Filter** — Use the sidebar to choose confidence levels and how many recent runs count as 'new'\n"
+            "2. **View on Map** — Press the button in the sidebar to update the map (full history is shown by default)\n"
+            "3. **Spot what's new** — Alerts from the last N detection runs are outlined in magenta and tagged 🆕 in the table\n"
+            "4. **Explore** — Browse the Alert Explorer table below the map\n"
+            "5. **Export** — Press **Export Mode** above the map to select and download alerts"
         ),
         "pt": (
             "**Como usar este painel:**\n"
-            "1. **Filtrar** — Use a barra lateral para definir período, confiança e área mínima\n"
-            "2. **Ver no Mapa** — Pressione o botão na barra lateral para atualizar o mapa\n"
-            "3. **Explorar** — Navegue pela tabela do Explorador de Alertas abaixo do mapa\n"
-            "4. **Exportar** — Pressione **Modo de Exportação** acima do mapa para selecionar e baixar alertas"
+            "1. **Filtrar** — Use a barra lateral para escolher níveis de confiança e quantas execuções contam como 'recentes'\n"
+            "2. **Ver no Mapa** — Pressione o botão na barra lateral para atualizar o mapa (todo o histórico é exibido por padrão)\n"
+            "3. **Identificar novidades** — Alertas das últimas N execuções aparecem com contorno magenta e marca 🆕 na tabela\n"
+            "4. **Explorar** — Navegue pela tabela do Explorador de Alertas abaixo do mapa\n"
+            "5. **Exportar** — Pressione **Modo de Exportação** acima do mapa para selecionar e baixar alertas"
         ),
     },
     # ── Guide / Instructions tab ─────────────────────────────────────────
@@ -620,17 +650,17 @@ Por padrão, apenas alertas de **alta confiança** são exibidos. Use os filtros
     },
     "guide_body": {
         "en": """
-## How to Use the Araripe Deforestation Monitor
+## How to Use the Chapada do Araripe Deforestation Monitor
 
 This dashboard lets you explore, filter, and export deforestation alerts detected by satellite imagery across Chapada do Araripe.
 
 ### Step 1: Filter Alerts
 
-Use the **sidebar** (left panel) to narrow down alerts:
+The dashboard always loads the **full alert history** so you can compare new detections with everything that came before. Use the **sidebar** (left panel) to refine the view:
 
-- **Date Range** — Select the start and end dates for alerts you want to see.
 - **Alert Confidence** — Choose confidence levels (High, Medium, Low). High-confidence alerts are the most reliable.
-- **Minimum Area** — Exclude small alerts below a certain size in hectares.
+- **Recent Activity → Recent runs (N)** — Alerts from the last *N* detection runs are highlighted with a magenta outline on the map and a 🆕 badge in the table. Detection runs twice a week, so 4 ≈ two weeks.
+- **Recent Activity → Show only recent** — Hide everything except those last *N* runs when you only care about new detections.
 
 As you change filters, the **metrics** (top of the page) and the **Alert Explorer table** update instantly.
 
@@ -666,17 +696,17 @@ Once you are satisfied with your filtered alerts on the map:
 - **CSV export** can be opened in Excel or Google Sheets.
 """,
         "pt": """
-## Como Usar o Monitor de Desmatamento do Araripe
+## Como Usar o Monitor de Desmatamento da Chapada do Araripe
 
 Este painel permite explorar, filtrar e exportar alertas de desmatamento detectados por imagens de satélite na Chapada do Araripe.
 
 ### Passo 1: Filtrar Alertas
 
-Use a **barra lateral** (painel esquerdo) para refinar os alertas:
+O painel carrega sempre o **histórico completo de alertas** para que você possa comparar novas detecções com tudo o que veio antes. Use a **barra lateral** (painel esquerdo) para refinar a visualização:
 
-- **Período** — Selecione as datas de início e fim dos alertas que deseja ver.
 - **Confiança do Alerta** — Escolha os níveis de confiança (Alta, Média, Baixa). Alertas de alta confiança são os mais confiáveis.
-- **Área Mínima** — Exclua alertas menores que um certo tamanho em hectares.
+- **Atividade Recente → Últimas execuções (N)** — Alertas das últimas *N* execuções de detecção aparecem com contorno magenta no mapa e um selo 🆕 na tabela. A detecção roda duas vezes por semana, então 4 ≈ duas semanas.
+- **Atividade Recente → Mostrar apenas recentes** — Esconde tudo exceto essas últimas *N* execuções, quando você só quer ver as novidades.
 
 Ao alterar os filtros, as **métricas** (topo da página) e a **tabela do Explorador de Alertas** se atualizam instantaneamente.
 

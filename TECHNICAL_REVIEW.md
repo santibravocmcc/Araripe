@@ -1,15 +1,14 @@
-# Technical Review: Araripe Deforestation Monitoring System
+# Technical Review: Chapada do Araripe Deforestation Monitoring System
 
-**Version:** 1.0
-**Date:** 2026-04-01
+**Version:** 1.1
+**Date:** 2026-04-25
 **Prepared for:** Specialist peer review (remote sensing, environmental monitoring)
-**System repository:** `/Users/sbravo/Documents/Projetos/Araripe/`
 
 ---
 
 ## 1. Executive Summary
 
-The Araripe Deforestation Monitoring System is a near-real-time change detection pipeline designed to generate twice-weekly deforestation and degradation alerts for the Chapada do Araripe region in northeastern Brazil. The system ingests multispectral satellite imagery (Sentinel-2 L2A, Landsat 8/9 Collection 2, NASA HLS) via open STAC APIs, computes moisture- and vegetation-sensitive spectral indices (NDMI, NBR, EVI2), and detects anomalous vegetation loss through z-score deviation from monthly baselines constructed over a 4-year reference period (2023--2026).
+The Chapada do Araripe Deforestation Monitoring System is a near-real-time change detection pipeline designed to generate twice-weekly deforestation and degradation alerts for the Chapada do Araripe region in northeastern Brazil. The system ingests multispectral satellite imagery (Sentinel-2 L2A, Landsat 8/9 Collection 2, NASA HLS) via open STAC APIs, computes moisture- and vegetation-sensitive spectral indices (NDMI, NBR, EVI2), and detects anomalous vegetation loss through z-score deviation from monthly baselines built from a fixed 3-year reference window (2023--2025). The 2026 calendar year onwards is reserved exclusively for the detection stage, ensuring a clean comparison against a frozen baseline.
 
 The system is designed to operate at zero recurring cost, using GitHub Actions for twice-weekly automation, Hugging Face Spaces for the Streamlit dashboard, and Cloudflare R2 for Cloud Optimized GeoTIFF (COG) storage. Detection outputs are vectorized alert polygons in GeoJSON format, classified into three confidence tiers (high, medium, low) with a minimum mapping unit of 1 hectare.
 
@@ -213,13 +212,15 @@ The detection system uses a per-month baseline approach: for each of the 12 cale
 
 ### 5.2 Source Data
 
-Baselines were built from downloaded Sentinel-2 L2A scenes using the script `scripts/build_baseline_from_downloads.py`. The source data consisted of:
+Baselines were built from downloaded Sentinel-2 L2A scenes using the script `scripts/build_baseline_from_downloads.py`. The reference window is **fixed at 2023--2025**: the `--max-year 2025` flag excludes any 2026-or-later scenes so the baseline stays frozen and 2026 onwards is used only for detection. The source data consisted of:
 
-- **106 GeoTIFF files per month** (January as reference), each containing 3 bands (NDMI, NBR, EVI2)
+- **GeoTIFFs per month** downloaded by the partner team, each containing 3 bands (NDMI, NBR, EVI2)
 - **7 UTM tiles** covering the AOI: 24MTS, 24MTT, 24MUS, 24MUT, 24MVS, 24MVT, 24MWS
-- **3 satellite platforms:** Sentinel-2A (40 scenes), Sentinel-2B (40 scenes), Sentinel-2C (26 scenes)
-- **4 years of coverage:** 2023 (22 scenes), 2024 (30 scenes), 2025 (16 scenes), 2026 (38 scenes)
+- **3 satellite platforms:** Sentinel-2A, Sentinel-2B, and Sentinel-2C (2023--2025 scenes)
+- **3 years of effective coverage:** 2023, 2024, and 2025 (any 2026-dated scenes still on disk are filtered out by `--max-year 2025`)
 - **CRS:** EPSG:32724 (UTM zone 24S), **Resolution:** 20 m
+
+> **Note on 2026 scenes.** Although the `temp_month_01/` and `temp_month_02/` folders on the external drive contain real Sentinel-2C scenes dated January/February 2026 (verified via GeoTIFF metadata: `datetime` and STAC `item_id`), they are **not** used in the baseline. They remain available for the detection stage, where each 2026 scene is compared against the historical statistic for the matching month.
 
 ### 5.3 Processing Pipeline
 
@@ -244,7 +245,11 @@ All 72 baseline files have been successfully produced and are stored in `data/ba
 
 ### 5.5 Temporal Depth
 
-The configuration specifies a target of 5 years of history (`BASELINE_YEARS = 5`), but the current baselines are constructed from **4 years** (2023--2026). While this exceeds the minimum of 3 years considered adequate for baseline statistics, it may not fully capture extreme inter-annual variability (e.g., strong El Nino / La Nina cycles).
+The configuration specifies a target of 5 years of history (`BASELINE_YEARS = 5`), but the current baselines are constructed from **3 years** (2023--2025), with 2026 reserved for the detection stage. This meets the minimum of 3 years considered adequate for baseline statistics, but it may not fully capture extreme inter-annual variability (e.g., strong El Nino / La Nina cycles). It is recommended to extend the window as additional 2022 and earlier scenes are acquired.
+
+### 5.6 Visual Inspection of Baselines
+
+For quick verification of spatial coverage and the phenological cycle, the script `scripts/plot_baselines.py` produces 4×3 grid figures (one per index and statistic) under `data/baselines/plots/`. Each panel shows the monthly index distribution with the APA Chapada do Araripe (yellow) and FLONA Araripe-Apodi (green) contours overlaid, plus the percentage of valid pixels in the title. These files are not deployed to the Hugging Face Space (the `data/baselines/` folder is excluded from sync) and are intended only for internal baseline auditing.
 
 ---
 
@@ -453,9 +458,20 @@ These alerts have not yet been validated against independent reference data (e.g
 | Component | Configuration | Status |
 |-----------|--------------|--------|
 | GitHub Actions twice-weekly cron | `.github/workflows/update_data.yml`, Mondays & Thursdays at 06:00 UTC | Configured, not yet active |
-| Streamlit dashboard | `app.py` with Leafmap/Plotly, 5-tab layout (Map, Time Series, Alert History, Guide, About) | Implemented |
-| Hugging Face Spaces hosting | Configured for HF Spaces deployment | Not yet deployed |
+| Streamlit dashboard | `app.py` with Leafmap/Plotly, 6-tab layout (Map, Time Series, Alert History, Guide, Documentation, About) | Implemented |
+| Hugging Face Spaces hosting | Auto-sync to `huggingface.co/spaces/santibravo/araripe-monitor` via `huggingface_hub` at end of workflow | Deployed |
 | Cloudflare R2 COG storage | Bucket `araripe-cogs`, upload via `scripts/upload_to_r2.py` | Configured, endpoint URL not set |
+
+### 9.4 Web Dashboard — Visualization Layer
+
+The web interface (`app.py` + `src/visualization/`) was reworked in version 1.1 to reflect how the system is actually used in the field:
+
+- **Switchable basemaps** — every map view (normal mode and export mode) exposes three layers in the layer control: Google Satellite Hybrid (default), Esri Satellite, and OpenStreetMap.
+- **Protected-area contours** — the APA Chapada do Araripe (yellow line) and FLONA Araripe-Apodi (green line) boundaries are overlaid on every map automatically, read from `data/aoi/APA_chapada_araripe.gpkg` and `data/aoi/FLONA_araripe.gpkg` (both EPSG:4326).
+- **Full alert history by default** — the date-range filter and the minimum-area filter were removed. The complete detection history is shown on the map and table so older detections do not disappear from view.
+- **Recent-runs highlighting** — alerts from the last *N* detection runs (default N = 4 ≈ 2 weeks, configurable from 1 to 20 in the sidebar) are drawn with a thick magenta outline (#E91E63) over the confidence colour and tagged 🆕 in the table. A **Show only recent** checkbox filters the view to those alerts.
+- **"Recent" definition** — the set of the last *N* detection-run dates, derived from the lexicographically-sorted file names `data/alerts/alerts_YYYY-MM-DD.geojson`. A feature is flagged as recent when its `detection_date` field is in that set.
+- **Bilingual Documentation tab** — exposes `REVISAO_TECNICA.md` (PT) and `TECHNICAL_REVIEW.md` (EN); the download button serves the PDF matching the active language (`REVISAO_TECNICA.pdf` or `TECHNICAL_REVIEW.pdf`), generated by `scripts/md_to_pdf.py`.
 
 ---
 
@@ -463,7 +479,7 @@ These alerts have not yet been validated against independent reference data (e.g
 
 ### 10.1 Phenological Confounding
 
-The deciduous phenology of Caatinga vegetation remains the most significant source of potential commission error. During the dry season (August--October, defined as `CAATINGA_LEAFOFF_MONTHS = [8, 9, 10]`), natural leaf-off can produce spectral signatures that overlap with deforestation signals, even in moisture-based indices like NDMI. The monthly baseline approach mitigates this by comparing against same-month historical distributions, but the baseline may not capture the full range of inter-annual phenological variability, especially given only 4 years of reference data.
+The deciduous phenology of Caatinga vegetation remains the most significant source of potential commission error. During the dry season (August--October, defined as `CAATINGA_LEAFOFF_MONTHS = [8, 9, 10]`), natural leaf-off can produce spectral signatures that overlap with deforestation signals, even in moisture-based indices like NDMI. The monthly baseline approach mitigates this by comparing against same-month historical distributions, but the baseline may not capture the full range of inter-annual phenological variability, especially given only 3 years of reference data.
 
 ### 10.2 Cloud Cover
 
@@ -475,9 +491,9 @@ As documented in Section 8, EVI2 is more sensitive to residual thin cirrus conta
 
 ### 10.4 Baseline Temporal Depth
 
-The current baselines span 4 years (2023--2026), short of the 5-year target. This may not capture the full range of climate-driven inter-annual variability. In particular:
+The current baselines span **3 years (2023--2025)**, short of the 5-year target. The 2026 calendar year is intentionally excluded from the baseline so it can serve as a detection year against a fixed reference. This may not capture the full range of climate-driven inter-annual variability. In particular:
 
-- If 2023--2026 includes an anomalously wet or dry period, the baseline will be biased accordingly.
+- If 2023--2025 includes an anomalously wet or dry period, the baseline will be biased accordingly.
 - Rare events (e.g., extreme El Nino) may not be represented, leading to false positives during similar future events.
 
 ### 10.5 Drought Adjustment Not Yet Operational

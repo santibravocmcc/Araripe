@@ -71,19 +71,28 @@ def compute_target_grid(aoi_gdf: gpd.GeoDataFrame) -> tuple:
     return transform, width, height, (minx, miny, maxx, maxy)
 
 
-def group_files_by_date(month_dir: Path) -> dict[str, list[Path]]:
+def group_files_by_date(
+    month_dir: Path,
+    min_year: int | None = None,
+    max_year: int | None = None,
+) -> dict[str, list[Path]]:
     """Group .tif files by acquisition date (first 8 chars of filename).
 
     Skips macOS resource fork files (._*) and any file whose name doesn't
-    start with a valid 8-digit date.
+    start with a valid 8-digit date. Optionally filters by year so the
+    baseline is built only from the requested calendar window.
     """
     groups = defaultdict(list)
     for f in sorted(month_dir.glob("*.tif")):
-        # Skip macOS resource forks and non-date filenames
         if f.name.startswith("._") or f.name.startswith("."):
             continue
         date_str = f.name[:8]
         if not date_str.isdigit():
+            continue
+        year = int(date_str[:4])
+        if min_year is not None and year < min_year:
+            continue
+        if max_year is not None and year > max_year:
             continue
         groups[date_str].append(f)
     return dict(groups)
@@ -197,8 +206,25 @@ def save_cog(data: np.ndarray, path: Path, transform: rasterio.Affine,
     "--months", type=str, default="",
     help="Comma-separated months to process (e.g., '1,2,3'). Empty = all available.",
 )
+@click.option(
+    "--min-year", type=int, default=None,
+    help="Only include scenes from this year onwards (inclusive).",
+)
+@click.option(
+    "--max-year", type=int, default=None,
+    help="Only include scenes up to this year (inclusive). Useful to lock the "
+         "baseline to a fixed window (e.g. 2025) before a new monitoring year.",
+)
 @click.option("--dry-run", is_flag=True, help="Show what would be done without processing.")
-def main(input_dir: Path, output_dir: Path, aoi_dir: Path, months: str, dry_run: bool):
+def main(
+    input_dir: Path,
+    output_dir: Path,
+    aoi_dir: Path,
+    months: str,
+    min_year: int | None,
+    max_year: int | None,
+    dry_run: bool,
+):
     """Build monthly baseline COGs from downloaded per-scene data."""
 
     # Discover available month directories
@@ -219,9 +245,12 @@ def main(input_dir: Path, output_dir: Path, aoi_dir: Path, months: str, dry_run:
     aoi_gdf = load_aoi(aoi_dir)
     transform, width, height, target_bounds = compute_target_grid(aoi_gdf)
 
+    if min_year is not None or max_year is not None:
+        print(f"Year filter: min={min_year}, max={max_year}")
+
     if dry_run:
         for md in month_dirs:
-            groups = group_files_by_date(md)
+            groups = group_files_by_date(md, min_year=min_year, max_year=max_year)
             print(f"\n{md.name}: {len(groups)} dates, {sum(len(v) for v in groups.values())} files")
             for date, files in sorted(groups.items()):
                 print(f"  {date}: {len(files)} tiles")
@@ -235,7 +264,7 @@ def main(input_dir: Path, output_dir: Path, aoi_dir: Path, months: str, dry_run:
         print(f"Processing month {month_num:02d} ({md.name})")
         print(f"{'='*60}")
 
-        date_groups = group_files_by_date(md)
+        date_groups = group_files_by_date(md, min_year=min_year, max_year=max_year)
         n_dates = len(date_groups)
         print(f"  {n_dates} acquisition dates, {sum(len(v) for v in date_groups.values())} total files")
 

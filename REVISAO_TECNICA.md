@@ -1,15 +1,14 @@
-# Revisão Técnica: Sistema de Monitoramento de Desmatamento do Araripe
+# Revisão Técnica: Sistema de Monitoramento de Desmatamento da Chapada do Araripe
 
-**Versão:** 1.0
-**Data:** 01/04/2026
+**Versão:** 1.1
+**Data:** 25/04/2026
 **Preparado para:** Revisão por pares especialistas (sensoriamento remoto, monitoramento ambiental)
-**Repositório do sistema:** `/Users/sbravo/Documents/Projetos/Araripe/`
 
 ---
 
 ## 1. Resumo Executivo
 
-O Sistema de Monitoramento de Desmatamento do Araripe é um pipeline de detecção de mudanças em tempo quase real, projetado para gerar alertas bissemanais (duas vezes por semana) de desmatamento e degradação para a região da Chapada do Araripe, no nordeste do Brasil. O sistema ingere imagens multiespectrais de satélite (Sentinel-2 L2A, Landsat 8/9 Collection 2, NASA HLS) via APIs STAC abertas, calcula índices espectrais sensíveis à umidade e à vegetação (NDMI, NBR, EVI2) e detecta perda anômala de vegetação por meio de desvio z-score em relação a baselines mensais construídos ao longo de um período de referência de 4 anos (2023--2026).
+O Sistema de Monitoramento de Desmatamento da Chapada do Araripe é um pipeline de detecção de mudanças em tempo quase real, projetado para gerar alertas bissemanais (duas vezes por semana) de desmatamento e degradação para a região da Chapada do Araripe, no nordeste do Brasil. O sistema ingere imagens multiespectrais de satélite (Sentinel-2 L2A, Landsat 8/9 Collection 2, NASA HLS) via APIs STAC abertas, calcula índices espectrais sensíveis à umidade e à vegetação (NDMI, NBR, EVI2) e detecta perda anômala de vegetação por meio de desvio z-score em relação a baselines mensais construídos a partir de uma janela fixa de referência de 3 anos (2023--2025). O calendário 2026 em diante é reservado exclusivamente para a etapa de detecção, garantindo uma comparação clara contra um baseline congelado.
 
 O sistema foi projetado para operar com custo recorrente zero, utilizando GitHub Actions para automação bisemanal (duas vezes por semana), Hugging Face Spaces para o painel Streamlit e Cloudflare R2 para armazenamento de Cloud Optimized GeoTIFF (COG). As saídas de detecção são polígonos de alerta vetorizados em formato GeoJSON, classificados em três níveis de confiança (alto, médio, baixo) com unidade mínima de mapeamento de 1 hectare.
 
@@ -213,13 +212,15 @@ O sistema de detecção utiliza uma abordagem de baseline por mês: para cada um
 
 ### 5.2 Dados de Origem
 
-Os baselines foram construídos a partir de cenas Sentinel-2 L2A baixadas utilizando o script `scripts/build_baseline_from_downloads.py`. Os dados de origem consistiam em:
+Os baselines foram construídos a partir de cenas Sentinel-2 L2A baixadas utilizando o script `scripts/build_baseline_from_downloads.py`. A janela de referência é **fixada em 2023--2025**: a flag `--max-year 2025` exclui qualquer cena de 2026 ou posterior, de modo que o baseline permaneça congelado e o ano de 2026 em diante seja usado apenas para detecção. Os dados de origem consistiam em:
 
-- **106 arquivos GeoTIFF por mês** (janeiro como referência), cada um contendo 3 bandas (NDMI, NBR, EVI2)
+- **GeoTIFFs por mês** baixados pela equipe parceira, cada um com 3 bandas (NDMI, NBR, EVI2)
 - **7 tiles UTM** cobrindo a AOI: 24MTS, 24MTT, 24MUS, 24MUT, 24MVS, 24MVT, 24MWS
-- **3 plataformas de satélite:** Sentinel-2A (40 cenas), Sentinel-2B (40 cenas), Sentinel-2C (26 cenas)
-- **4 anos de cobertura:** 2023 (22 cenas), 2024 (30 cenas), 2025 (16 cenas), 2026 (38 cenas)
+- **3 plataformas de satélite:** Sentinel-2A, Sentinel-2B e Sentinel-2C (cenas 2023--2025)
+- **3 anos de cobertura efetiva:** 2023, 2024 e 2025 (cenas datadas 2026 retidas no disco mas filtradas pelo `--max-year 2025`)
 - **SRC:** EPSG:32724 (UTM zona 24S), **Resolução:** 20 m
+
+> **Nota sobre as cenas de 2026.** Embora as pastas `temp_month_01/` e `temp_month_02/` no disco externo contenham cenas Sentinel-2C reais datadas de janeiro/fevereiro de 2026 (verificado via metadados GeoTIFF: `datetime` e `item_id` STAC), elas **não** entram no baseline. Ficam disponíveis para a fase de detecção, em que cada cena de 2026 é comparada com a estatística histórica do mês correspondente.
 
 ### 5.3 Pipeline de Processamento
 
@@ -244,7 +245,11 @@ Todos os 72 arquivos de baseline foram produzidos com sucesso e estão armazenad
 
 ### 5.5 Profundidade Temporal
 
-A configuração especifica um objetivo de 5 anos de histórico (`BASELINE_YEARS = 5`), mas os baselines atuais são construídos a partir de **4 anos** (2023--2026). Embora isso exceda o mínimo de 3 anos considerado adequado para estatísticas de baseline, pode não capturar totalmente a variabilidade interanual extrema (por exemplo, ciclos fortes de El Niño / La Niña).
+A configuração especifica um objetivo de 5 anos de histórico (`BASELINE_YEARS = 5`), mas os baselines atuais são construídos a partir de **3 anos** (2023--2025), com o ano de 2026 reservado para a etapa de detecção. Isso atende ao mínimo de 3 anos considerado adequado para estatísticas de baseline, mas pode não capturar totalmente a variabilidade interanual extrema (por exemplo, ciclos fortes de El Niño / La Niña). Recomenda-se estender a janela conforme cenas adicionais de 2022 e anteriores sejam adquiridas.
+
+### 5.6 Inspeção Visual dos Baselines
+
+Para verificação rápida da cobertura espacial e do ciclo fenológico, o script `scripts/plot_baselines.py` gera figuras 4×3 (uma por índice e estatística) em `data/baselines/plots/`. Cada painel mostra a distribuição mensal do índice com os contornos da APA Chapada do Araripe (amarelo) e da FLONA Araripe-Apodi (verde) sobrepostos, além do percentual de pixels válidos no título. Esses arquivos não vão para a Hugging Face Space (a pasta `data/baselines/` é ignorada na sincronização) e servem somente para auditoria interna do baseline.
 
 ---
 
@@ -453,9 +458,20 @@ Esses alertas ainda não foram validados contra dados de referência independent
 | Componente | Configuração | Status |
 |------------|-------------|--------|
 | Cron bisemanal do GitHub Actions | `.github/workflows/update_data.yml`, segundas e quintas-feiras às 06:00 UTC | Configurado, ainda não ativo |
-| Painel Streamlit | `app.py` com Leafmap/Plotly, layout de 5 abas (Mapa, Séries Temporais, Histórico de Alertas, Guia, Sobre) | Implementado |
-| Hospedagem no Hugging Face Spaces | Configurado para implantação no HF Spaces | Ainda não implantado |
+| Painel Streamlit | `app.py` com Leafmap/Plotly, layout de 6 abas (Mapa, Séries Temporais, Histórico de Alertas, Guia, Documentação, Sobre) | Implementado |
+| Hospedagem no Hugging Face Spaces | Sincronização automática para `huggingface.co/spaces/santibravo/araripe-monitor` via `huggingface_hub` ao final do workflow | Implantado |
 | Armazenamento COG no Cloudflare R2 | Bucket `araripe-cogs`, upload via `scripts/upload_to_r2.py` | Configurado, URL do endpoint não definida |
+
+### 9.4 Painel Web — Camada de Visualização
+
+A interface web (`app.py` + `src/visualization/`) foi atualizada na versão 1.1 para refletir a forma como o sistema é usado em campo:
+
+- **Basemaps configuráveis** — todas as visualizações de mapa (modo normal e modo de exportação) oferecem três camadas selecionáveis: Google Satellite Hybrid (padrão), Esri Satellite e OpenStreetMap.
+- **Contornos de áreas protegidas** — os limites da APA Chapada do Araripe (linha amarela) e da FLONA Araripe-Apodi (linha verde) são sobrepostos automaticamente em todos os mapas, lidos de `data/aoi/APA_chapada_araripe.gpkg` e `data/aoi/FLONA_araripe.gpkg` (ambos em EPSG:4326).
+- **Histórico completo de alertas por padrão** — o filtro de intervalo de datas e o filtro de área mínima foram removidos. Todo o histórico de detecção é exibido no mapa e na tabela, evitando que detecções antigas se tornem invisíveis ao usuário.
+- **Destaque para execuções recentes** — alertas das últimas *N* execuções de detecção (padrão N = 4 ≈ 2 semanas, configurável de 1 a 20 na barra lateral) são desenhados com contorno magenta espesso (#E91E63) sobre a cor de confiança e recebem o selo 🆕 na tabela. Um checkbox **Mostrar apenas recentes** filtra a visualização para esses alertas.
+- **Identificação de "recente"** — definido como o conjunto das últimas *N* datas de execução, derivadas dos nomes dos arquivos `data/alerts/alerts_YYYY-MM-DD.geojson` ordenados lexicograficamente. Cada feature é marcada como recente quando seu campo `detection_date` pertence a esse conjunto.
+- **Aba Documentação bilíngue** — expõe `REVISAO_TECNICA.md` (PT) e `TECHNICAL_REVIEW.md` (EN); o botão de download entrega o PDF correspondente ao idioma ativo (`REVISAO_TECNICA.pdf` ou `TECHNICAL_REVIEW.pdf`), gerados por `scripts/md_to_pdf.py`.
 
 ---
 
@@ -463,7 +479,7 @@ Esses alertas ainda não foram validados contra dados de referência independent
 
 ### 10.1 Confundimento Fenológico
 
-A fenologia decídua da vegetação da Caatinga permanece como a fonte mais significativa de erro potencial de comissão. Durante a estação seca (agosto--outubro, definida como `CAATINGA_LEAFOFF_MONTHS = [8, 9, 10]`), a queda foliar natural pode produzir assinaturas espectrais que se sobrepõem aos sinais de desmatamento, mesmo em índices baseados em umidade como o NDMI. A abordagem de baseline mensal mitiga isso comparando com distribuições históricas do mesmo mês, mas o baseline pode não capturar toda a faixa de variabilidade fenológica interanual, especialmente com apenas 4 anos de dados de referência.
+A fenologia decídua da vegetação da Caatinga permanece como a fonte mais significativa de erro potencial de comissão. Durante a estação seca (agosto--outubro, definida como `CAATINGA_LEAFOFF_MONTHS = [8, 9, 10]`), a queda foliar natural pode produzir assinaturas espectrais que se sobrepõem aos sinais de desmatamento, mesmo em índices baseados em umidade como o NDMI. A abordagem de baseline mensal mitiga isso comparando com distribuições históricas do mesmo mês, mas o baseline pode não capturar toda a faixa de variabilidade fenológica interanual, especialmente com apenas 3 anos de dados de referência.
 
 ### 10.2 Cobertura de Nuvens
 
@@ -475,9 +491,9 @@ Conforme documentado na Seção 8, o EVI2 é mais sensível à contaminação re
 
 ### 10.4 Profundidade Temporal do Baseline
 
-Os baselines atuais abrangem 4 anos (2023--2026), aquém do objetivo de 5 anos. Isso pode não capturar toda a faixa de variabilidade interanual direcionada pelo clima. Em particular:
+Os baselines atuais abrangem **3 anos (2023--2025)**, aquém do objetivo de 5 anos. O ano de 2026 foi deliberadamente excluído do baseline para que sirva como ano de detecção contra uma referência fixa. Isso pode não capturar toda a faixa de variabilidade interanual direcionada pelo clima. Em particular:
 
-- Se 2023--2026 inclui um período anomalamente úmido ou seco, o baseline estará enviesado de acordo.
+- Se 2023--2025 inclui um período anomalamente úmido ou seco, o baseline estará enviesado de acordo.
 - Eventos raros (por exemplo, El Niño extremo) podem não estar representados, levando a falso-positivos durante eventos futuros similares.
 
 ### 10.5 Ajuste de Seca Ainda Não Operacional

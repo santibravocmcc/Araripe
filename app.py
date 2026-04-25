@@ -44,7 +44,7 @@ from src.visualization.maps import (
 
 # ─── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Araripe Deforestation Monitor",
+    page_title="Chapada do Araripe Deforestation Monitor",
     page_icon="🌳",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -175,26 +175,22 @@ with st.expander(t("confidence_explanation_title"), expanded=False):
 alerts_gdf = get_alerts()
 alert_ts = get_alert_timeseries(filters["start_date"], filters["end_date"])
 
-# ─── Filter alerts by sidebar controls (date, confidence, min area) ──────────
+# ─── Filter alerts by sidebar controls (confidence, recent-only) ─────────────
+recent_dates: set[str] = filters.get("recent_dates", set())
 if alerts_gdf is not None and not alerts_gdf.empty:
-    # Date filter
-    if "detection_date" in alerts_gdf.columns:
-        date_col = pd.to_datetime(alerts_gdf["detection_date"], errors="coerce")
-        start = pd.Timestamp(filters["start_date"])
-        end = pd.Timestamp(filters["end_date"])
-        date_mask = (date_col >= start) & (date_col <= end)
-    else:
-        date_mask = pd.Series(True, index=alerts_gdf.index)
-
     # Confidence filter (multiselect → list of ints)
     conf_mask = alerts_gdf["confidence"].isin(filters["confidence_values"])
 
-    # Min area filter
-    area_mask = pd.Series(True, index=alerts_gdf.index)
-    if "area_ha" in alerts_gdf.columns and filters["min_area"] > 0:
-        area_mask = alerts_gdf["area_ha"] >= filters["min_area"]
+    # Recent-only filter
+    if filters.get("recent_only") and "detection_date" in alerts_gdf.columns:
+        date_str = pd.to_datetime(
+            alerts_gdf["detection_date"], errors="coerce"
+        ).dt.strftime("%Y-%m-%d")
+        recent_mask = date_str.isin(recent_dates)
+    else:
+        recent_mask = pd.Series(True, index=alerts_gdf.index)
 
-    filtered_alerts = alerts_gdf[date_mask & conf_mask & area_mask]
+    filtered_alerts = alerts_gdf[conf_mask & recent_mask]
     summary = summarize_alerts(filtered_alerts)
 else:
     filtered_alerts = None
@@ -241,18 +237,30 @@ with tab_map:
             _display_df["detection_date"] = pd.to_datetime(
                 _display_df["detection_date"], errors="coerce"
             ).dt.strftime("%Y-%m-%d")
+        # Tag rows that come from the most recent N detection runs.
+        if "detection_date" in _display_df.columns and recent_dates:
+            _display_df["is_recent"] = _display_df["detection_date"].isin(
+                recent_dates
+            )
+        else:
+            _display_df["is_recent"] = False
+        # Recent first, then largest by area
         _display_df = _display_df.sort_values(
-            "area_ha", ascending=False
+            ["is_recent", "area_ha"], ascending=[False, False]
         ).reset_index(drop=True)
         _display_df["alert_id"] = range(1, len(_display_df) + 1)
+        _display_df["recent_badge"] = _display_df["is_recent"].map(
+            {True: "🆕", False: ""}
+        )
 
         show_cols = [
-            "alert_id", "detection_date", "confidence_label", "area_ha",
-            "latitude", "longitude",
+            "alert_id", "recent_badge", "detection_date", "confidence_label",
+            "area_ha", "latitude", "longitude",
         ]
         show_cols = [c for c in show_cols if c in _display_df.columns]
         _table_df = _display_df[show_cols].rename(columns={
             "alert_id": t("col_id"),
+            "recent_badge": t("col_recent"),
             "detection_date": t("col_date"),
             "confidence_label": t("col_confidence"),
             "area_ha": t("col_area"),
@@ -311,6 +319,8 @@ with tab_map:
             export_gdf,
             legend_labels=legend_labels,
             legend_title=t("legend_title"),
+            recent_dates=recent_dates,
+            recent_label=t("legend_recent").format(n=filters.get("recent_n", 4)),
         )
 
         from streamlit_folium import st_folium
@@ -491,6 +501,10 @@ with tab_map:
                     m, map_alerts_gdf,
                     legend_labels=legend_labels,
                     legend_title=t("legend_title"),
+                    recent_dates=recent_dates,
+                    recent_label=t("legend_recent").format(
+                        n=filters.get("recent_n", 4)
+                    ),
                 )
 
             if _map_bounds is not None:
@@ -527,6 +541,9 @@ with tab_map:
             column_config={
                 t("col_id"): st.column_config.NumberColumn(
                     t("col_id"), width="small"
+                ),
+                t("col_recent"): st.column_config.TextColumn(
+                    t("col_recent"), width="small"
                 ),
                 t("col_date"): st.column_config.TextColumn(
                     t("col_date"), width="small"
@@ -702,13 +719,17 @@ with tab_docs:
         else Path(__file__).parent / "TECHNICAL_REVIEW.md"
     )
 
-    # PDF download button (top of tab, before content)
-    _pdf_file = Path(__file__).parent / "REVISAO_TECNICA.pdf"
+    # PDF download button (top of tab, before content) — language-aware
+    _pdf_file = (
+        Path(__file__).parent / "REVISAO_TECNICA.pdf"
+        if _lang == "pt"
+        else Path(__file__).parent / "TECHNICAL_REVIEW.pdf"
+    )
     if _pdf_file.exists():
         st.download_button(
             label=t("docs_download"),
             data=_pdf_file.read_bytes(),
-            file_name="REVISAO_TECNICA.pdf" if _lang == "pt" else "TECHNICAL_REVIEW.pdf",
+            file_name=_pdf_file.name,
             mime="application/pdf",
             help=t("docs_download_caption"),
         )

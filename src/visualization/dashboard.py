@@ -97,27 +97,7 @@ def render_sidebar() -> dict:
 
     st.sidebar.markdown("---")
 
-    # ── Date range (default: last 90 days) ─────────────────────────────
-    st.sidebar.subheader(t("date_range"))
-    default_start = pd.Timestamp.now() - pd.Timedelta(days=90)
-
-    # If "Latest Scan Only" is pressed, override dates to the latest detection
-    if latest_scan_clicked and latest_image_date:
-        _latest_dt = pd.Timestamp(latest_image_date)
-        default_start = _latest_dt
-        default_end = _latest_dt
-    else:
-        default_end = pd.Timestamp.now()
-
-    col1, col2 = st.sidebar.columns(2)
-    with col1:
-        start_date = st.date_input(t("start"), value=default_start)
-    with col2:
-        end_date = st.date_input(t("end"), value=default_end)
-
-    st.sidebar.markdown("---")
-
-    # ── Alert confidence (multiselect, default Medium + High) ──────────
+    # ── Alert confidence (multiselect, default High only) ──────────────
     st.sidebar.subheader(t("alert_confidence"))
 
     conf_options = [t("high"), t("medium"), t("low")]
@@ -135,14 +115,21 @@ def render_sidebar() -> dict:
 
     st.sidebar.markdown("---")
 
-    # ── Minimum area ───────────────────────────────────────────────────
-    st.sidebar.subheader(t("min_area_label"))
-    min_area = st.sidebar.number_input(
-        t("min_area_input"),
-        min_value=0.0,
-        value=0.0,
-        step=1.0,
-        help=t("min_area_help"),
+    # ── Recent activity ────────────────────────────────────────────────
+    # Detection runs every Monday & Thursday → 4 runs ≈ 2 weeks
+    st.sidebar.subheader(t("recent_section"))
+    recent_n = int(st.sidebar.number_input(
+        t("recent_n_label"),
+        min_value=1,
+        max_value=20,
+        value=4,
+        step=1,
+        help=t("recent_n_help"),
+    ))
+    recent_only = st.sidebar.checkbox(
+        t("recent_only_label"),
+        value=False,
+        help=t("recent_only_help"),
     )
 
     st.sidebar.markdown("---")
@@ -160,11 +147,25 @@ def render_sidebar() -> dict:
     # ── Language selector at the bottom ────────────────────────────────
     _render_language_selector()
 
+    # Compute the set of detection-date strings that count as "recent".
+    recent_dates: set[str] = set()
+    if alert_files:
+        recent_files = alert_files[-recent_n:]
+        recent_dates = {p.stem.replace("alerts_", "") for p in recent_files}
+
+    # If "Latest Scan Only" was clicked, keep only the very last run.
+    if latest_scan_clicked and latest_image_date:
+        recent_dates = {latest_image_date}
+        recent_only = True
+
     return {
-        "start_date": str(start_date),
-        "end_date": str(end_date),
+        # Wide internal range — date filter UI removed; full history shown.
+        "start_date": "2020-01-01",
+        "end_date": "2099-12-31",
         "confidence_values": selected_confidence_values,
-        "min_area": min_area,
+        "recent_n": recent_n,
+        "recent_only": recent_only,
+        "recent_dates": recent_dates,
         "view_on_map": view_on_map or latest_scan_clicked,
     }
 

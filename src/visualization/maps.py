@@ -11,7 +11,85 @@ import leafmap.foliumap as leafmap
 from branca.element import MacroElement, Template
 from loguru import logger
 
-from config.settings import DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM, MAP_HEIGHT
+from config.settings import (
+    AOI_DIR,
+    DEFAULT_MAP_CENTER,
+    DEFAULT_MAP_ZOOM,
+    MAP_HEIGHT,
+)
+
+# ─── Basemap providers ───────────────────────────────────────────────────────
+# (label, tile URL, attribution). Google hybrid is default.
+BASEMAPS: list[tuple[str, str, str]] = [
+    (
+        "Google Satellite Hybrid",
+        "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
+        "Google",
+    ),
+    (
+        "Esri Satellite",
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        "Esri",
+    ),
+    (
+        "OpenStreetMap",
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        "OpenStreetMap",
+    ),
+]
+
+# ─── Protected-area boundaries (always added to every map) ───────────────────
+PROTECTED_AREAS: list[tuple[str, str, str]] = [
+    ("APA Chapada do Araripe", "APA_chapada_araripe.gpkg", "#FFD600"),
+    ("FLONA Araripe-Apodi", "FLONA_araripe.gpkg", "#00E676"),
+]
+
+
+def _add_basemaps_folium(m: folium.Map) -> None:
+    """Add the standard set of basemaps to a Folium map (first = default)."""
+    for label, url, attr in BASEMAPS:
+        folium.TileLayer(tiles=url, attr=attr, name=label, overlay=False, control=True).add_to(m)
+
+
+def _load_protected_areas() -> list[tuple[str, gpd.GeoDataFrame, str]]:
+    """Load each protected-area gpkg as a WGS84 GeoDataFrame.
+
+    Returns
+    -------
+    list of (display_name, gdf_wgs84, color)
+    """
+    out: list[tuple[str, gpd.GeoDataFrame, str]] = []
+    for name, fname, color in PROTECTED_AREAS:
+        path = AOI_DIR / fname
+        if not path.exists():
+            continue
+        try:
+            gdf = gpd.read_file(str(path))
+            if gdf.crs and str(gdf.crs) != "EPSG:4326":
+                gdf = gdf.to_crs("EPSG:4326")
+            out.append((name, gdf, color))
+        except Exception as exc:
+            logger.warning(f"Failed to load {fname}: {exc}")
+    return out
+
+
+def add_protected_areas(m) -> None:
+    """Add APA and FLONA contours (no fill) to a Folium/Leafmap map."""
+    for name, gdf, color in _load_protected_areas():
+        # Strip non-serializable columns and ensure clean GeoJSON
+        clean = gdf[["geometry"]].copy()
+        gj = json.loads(clean.to_json())
+        folium.GeoJson(
+            gj,
+            name=name,
+            tooltip=name,
+            style_function=lambda _f, c=color: {
+                "fillColor": "transparent",
+                "fillOpacity": 0,
+                "color": c,
+                "weight": 2.5,
+            },
+        ).add_to(m)
 
 # ─── Alert confidence color scheme ───────────────────────────────────────────
 # Maximally distinct hues: red, blue, amber/yellow
@@ -33,10 +111,16 @@ CONFIDENCE_LABELS = {
     3: "High",
 }
 
+# Visual emphasis for alerts detected in the last few runs.
+RECENT_BORDER_COLOR = "#E91E63"  # vivid magenta
+RECENT_BORDER_WEIGHT = 4.0
+NORMAL_BORDER_WEIGHT = 1.5
+
 
 def _build_legend_html(
     title: str = "Alert Confidence",
     labels: dict[int, str] | None = None,
+    recent_label: str | None = None,
 ) -> str:
     """Return HTML for a compact, styled map legend.
 
@@ -61,6 +145,17 @@ def _build_legend_html(
             f"background:{color};border:2px solid {border};border-radius:3px;"
             f'margin-right:8px;flex-shrink:0;"></span>'
             f'<span style="font-size:13px;">{label}</span>'
+            f"</li>"
+        )
+
+    if recent_label:
+        items += (
+            f'<li style="margin:6px 0 0 0;display:flex;align-items:center;'
+            f'border-top:1px solid #ddd;padding-top:6px;">'
+            f'<span style="display:inline-block;width:18px;height:18px;'
+            f"background:#FFD600;border:3px solid {RECENT_BORDER_COLOR};"
+            f'border-radius:3px;margin-right:8px;flex-shrink:0;"></span>'
+            f'<span style="font-size:13px;">{recent_label}</span>'
             f"</li>"
         )
 
@@ -94,31 +189,33 @@ class _LegendControl(MacroElement):
 def create_base_map(
     center: list[float] = DEFAULT_MAP_CENTER,
     zoom: int = DEFAULT_MAP_ZOOM,
-    basemap: str = "Esri.WorldImagery",
 ) -> leafmap.Map:
-    """Create a base Leafmap instance with satellite imagery basemap.
+    """Create the dashboard base map.
 
-    Parameters
-    ----------
-    center : list[float]
-        Map center [lat, lon].
-    zoom : int
-        Initial zoom level.
-    basemap : str
-        Basemap name from leafmap/leaflet providers.
-
-    Returns
-    -------
-    leafmap.Map
-        Configured map instance.
+    Default basemap is Google Satellite Hybrid; Esri Satellite and
+    OpenStreetMap are also available via the layer control. The APA
+    Chapada do Araripe and FLONA Araripe-Apodi contours are added
+    automatically.
     """
     m = leafmap.Map(
         center=center,
         zoom=zoom,
         height=f"{MAP_HEIGHT}px",
+        draw_control=False,
+        measure_control=False,
+        fullscreen_control=True,
+        attribution_control=True,
     )
-    m.add_basemap(basemap)
-    m.add_basemap("OpenStreetMap")
+
+    # Remove every TileLayer leafmap added by default so our basemap order
+    # (Google Hybrid first → default) is respected.
+    for child_key in list(m._children):
+        child = m._children[child_key]
+        if isinstance(child, folium.raster_layers.TileLayer):
+            del m._children[child_key]
+
+    _add_basemaps_folium(m)
+    add_protected_areas(m)
     return m
 
 
@@ -128,6 +225,8 @@ def add_alert_layer(
     layer_name: str = "Deforestation Alerts",
     legend_labels: dict[int, str] | None = None,
     legend_title: str = "Alert Confidence",
+    recent_dates: set[str] | None = None,
+    recent_label: str | None = None,
 ) -> leafmap.Map:
     """Add alert polygons to the map with confidence-based styling.
 
@@ -157,19 +256,27 @@ def add_alert_layer(
     if alerts_gdf.crs and str(alerts_gdf.crs) != "EPSG:4326":
         alerts_gdf = alerts_gdf.to_crs("EPSG:4326")
 
+    recent_dates = recent_dates or set()
+
     def style_function(feature):
-        conf = feature["properties"].get("confidence", 1)
+        props = feature["properties"]
+        conf = props.get("confidence", 1)
+        is_recent = props.get("detection_date") in recent_dates
         return {
             "fillColor": CONFIDENCE_COLORS.get(conf, "#00E676"),
-            "color": CONFIDENCE_BORDER_COLORS.get(conf, "#000000"),
-            "weight": 1.5,
+            "color": (
+                RECENT_BORDER_COLOR
+                if is_recent
+                else CONFIDENCE_BORDER_COLORS.get(conf, "#000000")
+            ),
+            "weight": RECENT_BORDER_WEIGHT if is_recent else NORMAL_BORDER_WEIGHT,
             "fillOpacity": 0.6,
         }
 
     def highlight_function(feature):
         return {
             "fillOpacity": 0.85,
-            "weight": 3,
+            "weight": RECENT_BORDER_WEIGHT + 1,
         }
 
     # Convert to plain Python types to avoid JSON serialization failures.
@@ -199,7 +306,7 @@ def add_alert_layer(
 
     # Add custom HTML legend
     legend_html = _build_legend_html(
-        title=legend_title, labels=legend_labels
+        title=legend_title, labels=legend_labels, recent_label=recent_label
     )
     legend = _LegendControl(legend_html)
     m.get_root().html.add_child(legend)
@@ -315,6 +422,8 @@ def create_export_map(
     alerts_gdf: gpd.GeoDataFrame,
     legend_labels: dict[int, str] | None = None,
     legend_title: str = "Alert Confidence",
+    recent_dates: set[str] | None = None,
+    recent_label: str | None = None,
 ) -> folium.Map:
     """Create a Folium map with drawing tools for export selection.
 
@@ -348,13 +457,11 @@ def create_export_map(
 
     m = folium.Map(location=center, zoom_start=DEFAULT_MAP_ZOOM, tiles=None)
 
-    # Basemaps
-    folium.TileLayer(
-        tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-        attr="Esri",
-        name="Esri Satellite",
-    ).add_to(m)
-    folium.TileLayer("OpenStreetMap", name="OpenStreetMap").add_to(m)
+    # Basemaps (first = default = Google Satellite Hybrid)
+    _add_basemaps_folium(m)
+
+    # Protected-area boundaries
+    add_protected_areas(m)
 
     # Draw plugin — only rectangle and polygon
     Draw(
@@ -371,13 +478,20 @@ def create_export_map(
     ).add_to(m)
 
     # Add alert polygons
+    _recent = recent_dates or set()
     if alerts_gdf is not None and not alerts_gdf.empty:
         def style_fn(feature):
-            conf = feature["properties"].get("confidence", 1)
+            props = feature["properties"]
+            conf = props.get("confidence", 1)
+            is_recent = props.get("detection_date") in _recent
             return {
                 "fillColor": CONFIDENCE_COLORS.get(conf, "#00E676"),
-                "color": CONFIDENCE_BORDER_COLORS.get(conf, "#000000"),
-                "weight": 1.5,
+                "color": (
+                    RECENT_BORDER_COLOR
+                    if is_recent
+                    else CONFIDENCE_BORDER_COLORS.get(conf, "#000000")
+                ),
+                "weight": RECENT_BORDER_WEIGHT if is_recent else NORMAL_BORDER_WEIGHT,
                 "fillOpacity": 0.6,
             }
 
@@ -406,7 +520,9 @@ def create_export_map(
         m.fit_bounds([[bounds[1], bounds[0]], [bounds[3], bounds[2]]], padding=[30, 30])
 
     # Legend
-    legend_html = _build_legend_html(title=legend_title, labels=legend_labels)
+    legend_html = _build_legend_html(
+        title=legend_title, labels=legend_labels, recent_label=recent_label
+    )
     legend_ctrl = _LegendControl(legend_html)
     m.get_root().html.add_child(legend_ctrl)
 

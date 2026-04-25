@@ -227,3 +227,16 @@ data/chirps/*.tif.gz
 
 # Cached clipped scenes (NetCDF, reusable across runs)
 data/scene_cache/
+
+# Local pre-cutoff backup of baselines (only used to roll back the 2025 cutoff)
+data/baselines/_pre_2026cutoff_backup/
+
+# macOS metadata
+.DS_Store
+**/.DS_Store
+
+# Cloudflare Wrangler local state
+.wrangler/
+
+# Claude / agent harness local state
+.claude/
