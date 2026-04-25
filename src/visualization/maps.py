@@ -19,17 +19,18 @@ from config.settings import (
 )
 
 # ─── Basemap providers ───────────────────────────────────────────────────────
-# (label, tile URL, attribution). Google hybrid is default.
+# (label, tile URL, attribution). Order matters: the FIRST entry is the
+# basemap shown by default when the map loads.
 BASEMAPS: list[tuple[str, str, str]] = [
-    (
-        "Google Satellite Hybrid",
-        "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
-        "Google",
-    ),
     (
         "Esri Satellite",
         "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
         "Esri",
+    ),
+    (
+        "Google Satellite Hybrid",
+        "https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}",
+        "Google",
     ),
     (
         "OpenStreetMap",
@@ -46,9 +47,38 @@ PROTECTED_AREAS: list[tuple[str, str, str]] = [
 
 
 def _add_basemaps_folium(m: folium.Map) -> None:
-    """Add the standard set of basemaps to a Folium map (first = default)."""
-    for label, url, attr in BASEMAPS:
-        folium.TileLayer(tiles=url, attr=attr, name=label, overlay=False, control=True).add_to(m)
+    """Add the standard set of basemaps to a Folium map.
+
+    The first entry in ``BASEMAPS`` is shown by default; the remaining entries
+    are added with ``show=False`` so only one base layer is visible at a time
+    (otherwise Leaflet stacks them all on top of each other).
+    """
+    for i, (label, url, attr) in enumerate(BASEMAPS):
+        folium.TileLayer(
+            tiles=url,
+            attr=attr,
+            name=label,
+            overlay=False,
+            control=True,
+            show=(i == 0),
+        ).add_to(m)
+
+
+def finalize_map(m: folium.Map, collapsed: bool = False) -> folium.Map:
+    """Add the layer-control widget to ``m``.
+
+    Must be called *after* every layer (basemaps, contours, alerts, …) has
+    been added — otherwise Folium emits the ``L.control.layers(...)`` JS
+    call before the GeoJSON variables it references are defined, and the
+    control silently fails to render.
+    """
+    # Avoid duplicates when called twice on the same map.
+    for key in list(m._children):
+        child = m._children[key]
+        if isinstance(child, folium.LayerControl):
+            del m._children[key]
+    folium.LayerControl(collapsed=collapsed, position="topright").add_to(m)
+    return m
 
 
 def _load_protected_areas() -> list[tuple[str, gpd.GeoDataFrame, str]]:
@@ -111,9 +141,7 @@ CONFIDENCE_LABELS = {
     3: "High",
 }
 
-# Visual emphasis for alerts detected in the last few runs.
-RECENT_BORDER_COLOR = "#E91E63"  # vivid magenta
-RECENT_BORDER_WEIGHT = 4.0
+# Default polygon stroke weight for alert features.
 NORMAL_BORDER_WEIGHT = 1.5
 
 
@@ -148,16 +176,10 @@ def _build_legend_html(
             f"</li>"
         )
 
-    if recent_label:
-        items += (
-            f'<li style="margin:6px 0 0 0;display:flex;align-items:center;'
-            f'border-top:1px solid #ddd;padding-top:6px;">'
-            f'<span style="display:inline-block;width:18px;height:18px;'
-            f"background:#FFD600;border:3px solid {RECENT_BORDER_COLOR};"
-            f'border-radius:3px;margin-right:8px;flex-shrink:0;"></span>'
-            f'<span style="font-size:13px;">{recent_label}</span>'
-            f"</li>"
-        )
+    # ``recent_label`` parameter is accepted for API stability but no longer
+    # rendered — the magenta-border highlight was removed at the user's
+    # request, so there's nothing to legend.
+    _ = recent_label  # noqa: F841
 
     return f"""
     <div id="map-legend" style="
@@ -189,33 +211,30 @@ class _LegendControl(MacroElement):
 def create_base_map(
     center: list[float] = DEFAULT_MAP_CENTER,
     zoom: int = DEFAULT_MAP_ZOOM,
-) -> leafmap.Map:
+) -> folium.Map:
     """Create the dashboard base map.
 
-    Default basemap is Google Satellite Hybrid; Esri Satellite and
-    OpenStreetMap are also available via the layer control. The APA
-    Chapada do Araripe and FLONA Araripe-Apodi contours are added
-    automatically.
+    Built on plain Folium (not Leafmap) so the same layer-control widget the
+    Export-mode map uses is also available here. Esri Satellite is the
+    default basemap; Google Satellite Hybrid and OpenStreetMap are also
+    available via the layer control. APA Chapada do Araripe and FLONA
+    Araripe-Apodi contours are added automatically.
+
+    The caller is expected to add any alert layer with ``add_alert_layer``;
+    the layer-control widget added here picks up those layers at render
+    time, so the user can toggle them on the page.
     """
-    m = leafmap.Map(
-        center=center,
-        zoom=zoom,
-        height=f"{MAP_HEIGHT}px",
-        draw_control=False,
-        measure_control=False,
-        fullscreen_control=True,
-        attribution_control=True,
+    m = folium.Map(
+        location=center,
+        zoom_start=zoom,
+        height=MAP_HEIGHT,
+        tiles=None,
+        control_scale=True,
     )
-
-    # Remove every TileLayer leafmap added by default so our basemap order
-    # (Google Hybrid first → default) is respected.
-    for child_key in list(m._children):
-        child = m._children[child_key]
-        if isinstance(child, folium.raster_layers.TileLayer):
-            del m._children[child_key]
-
     _add_basemaps_folium(m)
     add_protected_areas(m)
+    # NB: ``finalize_map`` must be called by the caller AFTER any alert
+    # layer is added, otherwise the layer control breaks (see docstring).
     return m
 
 
@@ -256,27 +275,25 @@ def add_alert_layer(
     if alerts_gdf.crs and str(alerts_gdf.crs) != "EPSG:4326":
         alerts_gdf = alerts_gdf.to_crs("EPSG:4326")
 
-    recent_dates = recent_dates or set()
+    # ``recent_dates`` is still accepted so callers don't have to change,
+    # but the magenta border highlight has been removed at the user's
+    # request — recent alerts are still surfaced via the 🆕 badge in the
+    # table and the "Show only recent" sidebar filter.
+    _ = recent_dates  # noqa: F841 — kept for API stability
 
     def style_function(feature):
-        props = feature["properties"]
-        conf = props.get("confidence", 1)
-        is_recent = props.get("detection_date") in recent_dates
+        conf = feature["properties"].get("confidence", 1)
         return {
             "fillColor": CONFIDENCE_COLORS.get(conf, "#00E676"),
-            "color": (
-                RECENT_BORDER_COLOR
-                if is_recent
-                else CONFIDENCE_BORDER_COLORS.get(conf, "#000000")
-            ),
-            "weight": RECENT_BORDER_WEIGHT if is_recent else NORMAL_BORDER_WEIGHT,
+            "color": CONFIDENCE_BORDER_COLORS.get(conf, "#000000"),
+            "weight": NORMAL_BORDER_WEIGHT,
             "fillOpacity": 0.6,
         }
 
     def highlight_function(feature):
         return {
             "fillOpacity": 0.85,
-            "weight": RECENT_BORDER_WEIGHT + 1,
+            "weight": 3,
         }
 
     # Convert to plain Python types to avoid JSON serialization failures.
@@ -478,20 +495,13 @@ def create_export_map(
     ).add_to(m)
 
     # Add alert polygons
-    _recent = recent_dates or set()
     if alerts_gdf is not None and not alerts_gdf.empty:
         def style_fn(feature):
-            props = feature["properties"]
-            conf = props.get("confidence", 1)
-            is_recent = props.get("detection_date") in _recent
+            conf = feature["properties"].get("confidence", 1)
             return {
                 "fillColor": CONFIDENCE_COLORS.get(conf, "#00E676"),
-                "color": (
-                    RECENT_BORDER_COLOR
-                    if is_recent
-                    else CONFIDENCE_BORDER_COLORS.get(conf, "#000000")
-                ),
-                "weight": RECENT_BORDER_WEIGHT if is_recent else NORMAL_BORDER_WEIGHT,
+                "color": CONFIDENCE_BORDER_COLORS.get(conf, "#000000"),
+                "weight": NORMAL_BORDER_WEIGHT,
                 "fillOpacity": 0.6,
             }
 
@@ -526,7 +536,7 @@ def create_export_map(
     legend_ctrl = _LegendControl(legend_html)
     m.get_root().html.add_child(legend_ctrl)
 
-    folium.LayerControl().add_to(m)
+    finalize_map(m, collapsed=False)
     return m
 
 

@@ -38,6 +38,27 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "en": "Show only alerts from the most recent detection run.",
         "pt": "Mostrar apenas alertas da detecção mais recente.",
     },
+    "latest_scan_help_tooltip": {
+        "en": (
+            "**Last scan** — the date the automated detection job ran on "
+            "GitHub Actions.\n\n"
+            "**Imagery from** — the acquisition date of the satellite scene "
+            "that detection job analyzed (the most recent cloud-free Sentinel-2 "
+            "image available at the time the job ran). The two dates can "
+            "differ by days or weeks because Sentinel-2 only revisits the "
+            "area every 5 days and many passes are too cloudy to use."
+        ),
+        "pt": (
+            "**Última varredura** — a data em que o pipeline automatizado "
+            "de detecção foi executado no GitHub Actions.\n\n"
+            "**Imagem de** — a data de aquisição da cena de satélite que "
+            "esse pipeline analisou (a imagem Sentinel-2 mais recente sem "
+            "nuvens disponível no momento da execução). As duas datas podem "
+            "diferir em dias ou semanas porque o Sentinel-2 revisita a área "
+            "apenas a cada 5 dias e muitas passagens estão muito nubladas "
+            "para serem usadas."
+        ),
+    },
     # ── Sidebar ───────────────────────────────────────────────────────────
     "sidebar_title": {
         "en": "Araripe Monitor",
@@ -598,19 +619,21 @@ Por padrão, apenas alertas de **alta confiança** são exibidos. Use os filtros
     "workflow_steps": {
         "en": (
             "**How to use this dashboard:**\n"
-            "1. **Filter** — Use the sidebar to choose confidence levels and how many recent runs count as 'new'\n"
+            "1. **Filter** — In the sidebar, pick confidence levels and how many recent runs count as 'new' (default N = 1)\n"
             "2. **View on Map** — Press the button in the sidebar to update the map (full history is shown by default)\n"
-            "3. **Spot what's new** — Alerts from the last N detection runs are outlined in magenta and tagged 🆕 in the table\n"
-            "4. **Explore** — Browse the Alert Explorer table below the map\n"
-            "5. **Export** — Press **Export Mode** above the map to select and download alerts"
+            "3. **Pick a basemap** — Use the layer-control widget at the top-right of the map to switch between Esri Satellite (default), Google Hybrid, or OpenStreetMap, or to toggle the APA / FLONA contours\n"
+            "4. **Spot what's new** — Alerts from the last N detection runs carry a 🆕 badge in the table and are sorted first; the **Show only recent** checkbox filters the view to just those\n"
+            "5. **Explore** — Browse the Alert Explorer table below the map\n"
+            "6. **Export** — Press **Export Mode** above the map to select and download alerts"
         ),
         "pt": (
             "**Como usar este painel:**\n"
-            "1. **Filtrar** — Use a barra lateral para escolher níveis de confiança e quantas execuções contam como 'recentes'\n"
+            "1. **Filtrar** — Na barra lateral, escolha os níveis de confiança e quantas execuções contam como 'recentes' (padrão N = 1)\n"
             "2. **Ver no Mapa** — Pressione o botão na barra lateral para atualizar o mapa (todo o histórico é exibido por padrão)\n"
-            "3. **Identificar novidades** — Alertas das últimas N execuções aparecem com contorno magenta e marca 🆕 na tabela\n"
-            "4. **Explorar** — Navegue pela tabela do Explorador de Alertas abaixo do mapa\n"
-            "5. **Exportar** — Pressione **Modo de Exportação** acima do mapa para selecionar e baixar alertas"
+            "3. **Escolher o basemap** — Use o controle de camadas no canto superior direito do mapa para alternar entre Esri Satellite (padrão), Google Hybrid ou OpenStreetMap, ou para ligar/desligar os contornos APA / FLONA\n"
+            "4. **Identificar novidades** — Alertas das últimas N execuções recebem o selo 🆕 na tabela e aparecem primeiro; o checkbox **Mostrar apenas recentes** filtra a visualização\n"
+            "5. **Explorar** — Navegue pela tabela do Explorador de Alertas abaixo do mapa\n"
+            "6. **Exportar** — Pressione **Modo de Exportação** acima do mapa para selecionar e baixar alertas"
         ),
     },
     # ── Guide / Instructions tab ─────────────────────────────────────────
@@ -659,7 +682,7 @@ This dashboard lets you explore, filter, and export deforestation alerts detecte
 The dashboard always loads the **full alert history** so you can compare new detections with everything that came before. Use the **sidebar** (left panel) to refine the view:
 
 - **Alert Confidence** — Choose confidence levels (High, Medium, Low). High-confidence alerts are the most reliable.
-- **Recent Activity → Recent runs (N)** — Alerts from the last *N* detection runs are highlighted with a magenta outline on the map and a 🆕 badge in the table. Detection runs twice a week, so 4 ≈ two weeks.
+- **Recent Activity → Recent runs (N)** — Alerts from the last *N* detection runs get a 🆕 badge in the table and are sorted first. Detection runs twice a week, so N = 1 ≈ a few days, N = 4 ≈ two weeks.
 - **Recent Activity → Show only recent** — Hide everything except those last *N* runs when you only care about new detections.
 
 As you change filters, the **metrics** (top of the page) and the **Alert Explorer table** update instantly.
@@ -705,7 +728,7 @@ Este painel permite explorar, filtrar e exportar alertas de desmatamento detecta
 O painel carrega sempre o **histórico completo de alertas** para que você possa comparar novas detecções com tudo o que veio antes. Use a **barra lateral** (painel esquerdo) para refinar a visualização:
 
 - **Confiança do Alerta** — Escolha os níveis de confiança (Alta, Média, Baixa). Alertas de alta confiança são os mais confiáveis.
-- **Atividade Recente → Últimas execuções (N)** — Alertas das últimas *N* execuções de detecção aparecem com contorno magenta no mapa e um selo 🆕 na tabela. A detecção roda duas vezes por semana, então 4 ≈ duas semanas.
+- **Atividade Recente → Últimas execuções (N)** — Alertas das últimas *N* execuções de detecção recebem um selo 🆕 na tabela e aparecem primeiro. A detecção roda duas vezes por semana, então N = 1 ≈ alguns dias, N = 4 ≈ duas semanas.
 - **Atividade Recente → Mostrar apenas recentes** — Esconde tudo exceto essas últimas *N* execuções, quando você só quer ver as novidades.
 
 Ao alterar os filtros, as **métricas** (topo da página) e a **tabela do Explorador de Alertas** se atualizam instantaneamente.

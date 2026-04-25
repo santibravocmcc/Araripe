@@ -40,6 +40,7 @@ from src.visualization.maps import (
     add_alert_layer,
     create_base_map,
     create_export_map,
+    finalize_map,
 )
 
 # ─── Page config ──────────────────────────────────────────────────────────────
@@ -509,6 +510,9 @@ with tab_map:
 
             if _map_bounds is not None:
                 m.fit_bounds(_map_bounds, padding=[30, 30])
+
+            # Add the layer-control widget after every layer is in place.
+            finalize_map(m)
 
             # Cache the rendered HTML
             st.session_state["map_html"] = m._repr_html_()

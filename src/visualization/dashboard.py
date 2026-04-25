@@ -54,46 +54,7 @@ def render_sidebar() -> dict:
     if "language" not in st.session_state:
         st.session_state["language"] = "pt"
 
-    st.sidebar.title(t("sidebar_title"))
-    st.sidebar.markdown(t("sidebar_caption"))
-
-    st.sidebar.markdown("---")
-
-    # ── Latest scan info + quick-filter button ─────────────────────────
-    # Derive latest detection date from alert filenames
-    alert_files = sorted(ALERTS_DIR.glob("alerts_*.geojson"))
-    latest_image_date: str | None = None
-    latest_run_date: str | None = None
-    if alert_files:
-        latest_image_date = alert_files[-1].stem.replace("alerts_", "")
-        # Try to get created_at from the most recent file
-        try:
-            import json as _json
-
-            with open(alert_files[-1]) as _f:
-                _feats = _json.load(_f).get("features", [])
-            if _feats:
-                _ca = _feats[0].get("properties", {}).get("created_at", "")
-                latest_run_date = _ca[:10] if _ca else None
-        except Exception:
-            pass
-
-    if latest_image_date:
-        st.sidebar.caption(
-            t("latest_scan_info").format(
-                run_date=latest_run_date or "—",
-                image_date=latest_image_date,
-            )
-        )
-
-    latest_scan_clicked = False
-    if latest_image_date:
-        latest_scan_clicked = st.sidebar.button(
-            t("latest_scan_btn"),
-            use_container_width=True,
-            help=t("latest_scan_help"),
-            key="btn_latest_scan",
-        )
+    st.sidebar.markdown(f"### {t('sidebar_caption')}")
 
     st.sidebar.markdown("---")
 
@@ -116,13 +77,41 @@ def render_sidebar() -> dict:
     st.sidebar.markdown("---")
 
     # ── Recent activity ────────────────────────────────────────────────
-    # Detection runs every Monday & Thursday → 4 runs ≈ 2 weeks
+    # Detection runs every Monday & Thursday → 1 run ≈ a few days
     st.sidebar.subheader(t("recent_section"))
+
+    # Latest scan info (was a separate section) — now lives inside Recent
+    # Activity with a "?" help tooltip explaining the two dates.
+    alert_files = sorted(ALERTS_DIR.glob("alerts_*.geojson"))
+    latest_image_date: str | None = None
+    latest_run_date: str | None = None
+    if alert_files:
+        latest_image_date = alert_files[-1].stem.replace("alerts_", "")
+        try:
+            import json as _json
+
+            with open(alert_files[-1]) as _f:
+                _feats = _json.load(_f).get("features", [])
+            if _feats:
+                _ca = _feats[0].get("properties", {}).get("created_at", "")
+                latest_run_date = _ca[:10] if _ca else None
+        except Exception:
+            pass
+
+    if latest_image_date:
+        st.sidebar.markdown(
+            t("latest_scan_info").format(
+                run_date=latest_run_date or "—",
+                image_date=latest_image_date,
+            ),
+            help=t("latest_scan_help_tooltip"),
+        )
+
     recent_n = int(st.sidebar.number_input(
         t("recent_n_label"),
         min_value=1,
         max_value=20,
-        value=4,
+        value=1,
         step=1,
         help=t("recent_n_help"),
     ))
@@ -131,6 +120,9 @@ def render_sidebar() -> dict:
         value=False,
         help=t("recent_only_help"),
     )
+
+    # No standalone "Latest Scan Only" button anymore — N=1 covers the case.
+    latest_scan_clicked = False
 
     st.sidebar.markdown("---")
 
