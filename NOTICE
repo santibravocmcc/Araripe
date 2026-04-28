@@ -1,0 +1,19 @@
+Chapada do Araripe Deforestation Monitor
+Copyright 2026 Santiago Bravo
+
+This product includes software developed by Santiago Bravo
+(https://github.com/santibravocmcc/Araripe).
+
+Data products distributed alongside the source code (in `data/baselines/`,
+`data/alerts/`, `data/timeseries/`, and `data/aoi/`) are licensed separately
+under Creative Commons Attribution 4.0 International (CC-BY-4.0); see the
+DATA_LICENSE file for details.
+
+Earth observation inputs are provided by:
+  - ESA Copernicus Sentinel-2 (free and open data, https://sentinel.esa.int)
+  - USGS Landsat (free and open data, https://www.usgs.gov/landsat-missions)
+  - NASA Harmonized Landsat Sentinel-2 (HLS, https://hls.gsfc.nasa.gov)
+  - UCSB CHIRPS precipitation (https://www.chc.ucsb.edu/data/chirps)
+
+When citing this work, please use the metadata in CITATION.cff or the
+"How to cite" section of README.md.

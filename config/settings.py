@@ -14,7 +14,7 @@ TIMESERIES_DIR = DATA_DIR / "timeseries"
 # Chapada do Araripe bounding box: ~7–8°S, 39–40°W
 AOI_BBOX = [-40.0, -8.0, -39.0, -7.0]  # [west, south, east, north]
 AOI_GEOJSON = AOI_DIR / "chapada_araripe.geojson"
-AOI_GEOPACKAGE = AOI_DIR / "chapada_araripe.gpkg"
+AOI_GEOPACKAGE = AOI_DIR / "APA_chapada_araripe.gpkg"
 
 # ─── STAC API endpoints ──────────────────────────────────────────────────────
 ELEMENT84_URL = "https://earth-search.aws.element84.com/v1"

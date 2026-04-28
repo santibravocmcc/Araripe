@@ -1,0 +1,36 @@
+{
+  "title": "Chapada do Araripe Deforestation Monitor",
+  "description": "Open-source deforestation and degradation monitoring system for the Chapada do Araripe protected area (APA) in Brazil. Builds monthly per-pixel baselines from Sentinel-2, Landsat, and Harmonized Landsat Sentinel-2 imagery, then detects anomalies in vegetation moisture (NDMI), burn (NBR), and greenness (EVI2) indices via z-score thresholds with drought-adjusted sensitivity. Designed to be replicable in other regions.",
+  "creators": [
+    {
+      "name": "Bravo, Santiago",
+      "affiliation": ""
+    }
+  ],
+  "access_right": "open",
+  "license": "Apache-2.0",
+  "upload_type": "software",
+  "keywords": [
+    "deforestation",
+    "remote sensing",
+    "Sentinel-2",
+    "Landsat",
+    "Caatinga",
+    "Cerrado",
+    "Chapada do Araripe",
+    "vegetation indices",
+    "change detection"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/santibravocmcc/Araripe",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    },
+    {
+      "identifier": "https://huggingface.co/spaces/santibravo/araripe-monitor",
+      "relation": "isPublishedIn",
+      "scheme": "url"
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+cff-version: 1.2.0
+title: "Chapada do Araripe Deforestation Monitor"
+message: >-
+  If you use this software, the baseline products, or the alert
+  outputs in your research, please cite it as below.
+type: software
+authors:
+  - given-names: Santiago
+    family-names: Bravo
+    email: gonzalezlopezpardo@gmail.com
+    # orcid: "https://orcid.org/0000-0000-0000-0000"  # add ORCID when available
+repository-code: "https://github.com/santibravocmcc/Araripe"
+url: "https://huggingface.co/spaces/santibravo/araripe-monitor"
+abstract: >-
+  Open-source deforestation and degradation monitoring system for the
+  Chapada do Araripe protected area (APA) in Brazil. Builds monthly
+  per-pixel baselines from Sentinel-2, Landsat, and Harmonized Landsat
+  Sentinel-2 imagery, then detects anomalies in vegetation moisture
+  (NDMI), burn (NBR), and greenness (EVI2) indices via z-score
+  thresholds with drought-adjusted sensitivity. Designed to be
+  replicable in other regions.
+keywords:
+  - deforestation
+  - remote sensing
+  - Sentinel-2
+  - Landsat
+  - Caatinga
+  - Cerrado
+  - Chapada do Araripe
+  - vegetation indices
+  - z-score
+  - change detection
+license: Apache-2.0
+version: "1.0.0"
+date-released: "2026-04-27"
+# doi: "10.5281/zenodo.XXXXXXX"  # fill in after first Zenodo release

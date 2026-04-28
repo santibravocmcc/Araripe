@@ -46,6 +46,7 @@ def load_aoi_polygon(
         # then GeoJSON (which may be a simple bbox rectangle).
         from config.settings import AOI_DIR
         candidates = [
+            AOI_DIR / "APA_chapada_araripe.gpkg",
             AOI_DIR / "chapada_araripe.gpkg",
             AOI_GEOJSON,
         ]
@@ -100,6 +101,7 @@ def get_aoi_bbox_wgs84(path: Optional[Path] = None) -> list[float]:
     else:
         from config.settings import AOI_DIR
         candidates = [
+            AOI_DIR / "APA_chapada_araripe.gpkg",
             AOI_DIR / "chapada_araripe.gpkg",
             AOI_GEOJSON,
         ]

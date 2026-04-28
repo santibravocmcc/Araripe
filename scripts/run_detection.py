@@ -53,6 +53,11 @@ from src.timeseries.builder import store_alert_stats, store_regional_stats
     type=click.Path(exists=False),
     help="Path to AOI polygon (GeoJSON or GeoPackage).",
 )
+@click.option(
+    "--max-scenes",
+    default=20,
+    help="Maximum number of scenes to process per run (sorted by lowest cloud).",
+)
 def main(
     days_back: int,
     indices: str,
@@ -60,6 +65,7 @@ def main(
     min_clear: float,
     cache: bool,
     aoi: str | None,
+    max_scenes: int,
 ) -> None:
     """Run the weekly deforestation detection pipeline."""
     index_list = [idx.strip() for idx in indices.split(",")]
@@ -125,7 +131,7 @@ def main(
     # Stage 2-5: Process scenes
     all_alerts = []
 
-    for item in items_sorted[:20]:  # Process up to 20 best scenes
+    for item in items_sorted[:max_scenes]:  # Process up to --max-scenes best scenes
         scene_date = str(item.datetime)[:10]
         scene_month = item.datetime.month
         cloud_pct = item.properties.get("eo:cloud_cover", "?")

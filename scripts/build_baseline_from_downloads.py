@@ -43,7 +43,7 @@ RESOLUTION = 20.0  # meters
 
 def load_aoi(aoi_dir: Path) -> gpd.GeoDataFrame:
     """Load AOI polygon, preferring GeoPackage over GeoJSON."""
-    for name in ["chapada_araripe.gpkg", "chapada_araripe.geojson"]:
+    for name in ["APA_chapada_araripe.gpkg", "chapada_araripe.gpkg", "chapada_araripe.geojson"]:
         path = aoi_dir / name
         if path.exists():
             gdf = gpd.read_file(str(path))

@@ -285,6 +285,54 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "para acumular histórico de observações."
         ),
     },
+    "ts_baselines_expander": {
+        "en": "Monthly climatology baselines (per-pixel reference, 2020–2025)",
+        "pt": "Climatologia mensal de referência (por pixel, 2020–2025)",
+    },
+    "ts_baselines_caption": {
+        "en": (
+            "Per-pixel monthly mean and standard deviation across multiple years "
+            "of cloud-free imagery, clipped to the APA Chapada do Araripe boundary. "
+            "These rasters define what \"normal\" looks like for each calendar month "
+            "and are the reference against which incoming scenes are compared.\n\n"
+            "**Reading the colour scales.** Negative values are physically meaningful: "
+            "for NDMI and NBR they indicate dry/exposed soil, recently burned ground, "
+            "rock outcrops, or water — not an artefact. EVI2 is bounded near "
+            "[-0.2, 0.8] in practice; persistent zeros indicate non-vegetated surfaces. "
+            "**Grey pixels** represent missing data (zero valid scenes for that "
+            "month/pixel); they are now distinguished from real-zero values."
+        ),
+        "pt": (
+            "Média e desvio-padrão mensal por pixel ao longo de vários anos de "
+            "imagens sem nuvem, recortados ao limite da APA Chapada do Araripe. "
+            "Estes rasters definem o que é \"normal\" para cada mês do calendário e "
+            "servem de referência para comparar as cenas recém-baixadas.\n\n"
+            "**Como ler as escalas de cor.** Valores negativos têm significado "
+            "físico: para NDMI e NBR indicam solo seco/exposto, queimadas recentes, "
+            "afloramentos rochosos ou água — não são artefatos. O EVI2 fica na "
+            "prática entre [-0.2, 0.8]; zeros persistentes apontam superfícies não "
+            "vegetadas. **Pixels cinzas** representam ausência de dados (zero cenas "
+            "válidas para aquele mês/pixel) e agora são distinguíveis dos zeros reais."
+        ),
+    },
+    "ts_baselines_mean": {
+        "en": "Monthly mean",
+        "pt": "Média mensal",
+    },
+    "ts_baselines_std": {
+        "en": "Monthly standard deviation",
+        "pt": "Desvio-padrão mensal",
+    },
+    "ts_baselines_missing": {
+        "en": (
+            "Baseline plot not found at `{path}`. Run "
+            "`python scripts/plot_baselines.py` after rebuilding the baselines."
+        ),
+        "pt": (
+            "Plot de referência não encontrado em `{path}`. Execute "
+            "`python scripts/plot_baselines.py` após reconstruir as baselines."
+        ),
+    },
     "ts_trend": {
         "en": "Vegetation Trend",
         "pt": "Tendência da Vegetação",

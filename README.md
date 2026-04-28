@@ -7,10 +7,14 @@ sdk: streamlit
 sdk_version: "1.40.0"
 app_file: app.py
 pinned: false
-license: mit
+license: apache-2.0
 ---
 
 # Araripe
+
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Data: CC BY 4.0](https://img.shields.io/badge/Data-CC_BY_4.0-lightgrey.svg)](DATA_LICENSE)
+[![DOI](https://img.shields.io/badge/DOI-pending_first_release-orange.svg)](https://zenodo.org/)
 
 Zero-cost deforestation monitoring system for Chapada do Araripe, Brazil.
 
@@ -125,4 +129,48 @@ pytest tests/ -v
 
 ## License
 
-MIT
+- **Source code:** [Apache License 2.0](LICENSE) — permissive, with explicit
+  patent grant and a `NOTICE` file that propagates attribution to derivative
+  works.
+- **Data products** (`data/baselines/`, `data/alerts/`, `data/timeseries/`,
+  `data/aoi/`): [Creative Commons Attribution 4.0 International](DATA_LICENSE)
+  (CC-BY-4.0). You may share and adapt the data, including for commercial use,
+  as long as you credit the project.
+
+The repository is intentionally public so the methodology can be replicated in
+other regions. Copyright protects authorship regardless of visibility — the
+combination of license + DOI + `CITATION.cff` is what preserves credit.
+
+## How to cite
+
+If you use this software, the baseline products, or the alert outputs in your
+research, please cite the project. The canonical metadata lives in
+[`CITATION.cff`](CITATION.cff) (GitHub renders a "Cite this repository"
+button in the right-hand sidebar).
+
+After the first tagged release the project will receive a persistent
+[Zenodo](https://zenodo.org) DOI; the badge above will then point at it. Until
+then, please cite as:
+
+> Bravo, S. (2026). *Chapada do Araripe Deforestation Monitor* (Version 1.0.0)
+> [Computer software]. https://github.com/santibravocmcc/Araripe
+
+BibTeX:
+
+```bibtex
+@software{bravo_araripe_2026,
+  author  = {Bravo, Santiago},
+  title   = {Chapada do Araripe Deforestation Monitor},
+  year    = {2026},
+  version = {1.0.0},
+  url     = {https://github.com/santibravocmcc/Araripe}
+}
+```
+
+### Replicating in another region
+
+Fork the repository, replace the polygon in `data/aoi/` with the boundary of
+your study area, adjust `AOI_BBOX` in [`config/settings.py`](config/settings.py),
+rebuild the baselines (`python scripts/build_baseline.py`), and credit the
+upstream project per the Apache-2.0 NOTICE and the CC-BY-4.0 attribution
+clause.

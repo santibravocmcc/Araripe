@@ -42,10 +42,14 @@ def save_baseline_cog(
     """
     path.parent.mkdir(parents=True, exist_ok=True)
 
+    # Explicit NaN nodata so out-of-AOI pixels and zero-scene pixels are not
+    # silently encoded as 0.0 (which the colormap would render as a real value).
+    data = data.rio.write_nodata(np.nan, inplace=False)
     data.rio.to_raster(
         str(path),
         driver="COG",
         compress=compress,
+        nodata=np.nan,
     )
     logger.info("Saved baseline COG: {}", path)
     return path

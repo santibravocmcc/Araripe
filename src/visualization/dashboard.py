@@ -12,28 +12,61 @@ from src.visualization.i18n import t
 
 
 def _render_language_selector() -> None:
-    """Render flag-based language selector at the bottom of the sidebar."""
+    """Deprecated sidebar language selector. Kept for backward compatibility
+    but no longer rendered — see ``render_language_flags_top()``."""
+    return
+
+
+def render_language_flags_top() -> None:
+    """Render two flag-emoji language buttons at the top-left of the page.
+
+    Call this from ``app.py`` immediately after ``st.set_page_config(...)`` and
+    *before* the first ``t(...)`` invocation so all rendered text uses the
+    chosen language on the same run.
+    """
     if "language" not in st.session_state:
         st.session_state["language"] = "pt"
 
-    st.sidebar.markdown("---")
+    # Scoped CSS: tighten button padding so the flag emojis read as chips, and
+    # nudge the row up against the top edge of the main content column.
+    st.markdown(
+        """
+        <style>
+        div[data-testid="stHorizontalBlock"]:has(button[kind][data-testid="stBaseButton-secondary"][aria-label="lang_pt_top"]),
+        div[data-testid="stHorizontalBlock"]:has(button#lang-flags-row) {
+            margin-top: -0.5rem;
+            margin-bottom: 0.25rem;
+        }
+        button[data-testid="stBaseButton-primary"][aria-label="lang_pt_top"],
+        button[data-testid="stBaseButton-secondary"][aria-label="lang_pt_top"],
+        button[data-testid="stBaseButton-primary"][aria-label="lang_en_top"],
+        button[data-testid="stBaseButton-secondary"][aria-label="lang_en_top"] {
+            padding: 2px 8px;
+            font-size: 1.4rem;
+            line-height: 1.2;
+            min-height: 0;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
-    col1, col2 = st.sidebar.columns(2)
-    with col1:
+    col_pt, col_en, _spacer = st.columns([1, 1, 20])
+    with col_pt:
         if st.button(
-            "Português",
-            use_container_width=True,
+            "🇧🇷",
             type="primary" if st.session_state["language"] == "pt" else "secondary",
-            key="lang_pt",
+            key="lang_pt_top",
+            help="Português (Brasil)",
         ):
             st.session_state["language"] = "pt"
             st.rerun()
-    with col2:
+    with col_en:
         if st.button(
-            "English",
-            use_container_width=True,
+            "🇬🇧",
             type="primary" if st.session_state["language"] == "en" else "secondary",
-            key="lang_en",
+            key="lang_en_top",
+            help="English",
         ):
             st.session_state["language"] = "en"
             st.rerun()
@@ -135,9 +168,6 @@ def render_sidebar() -> dict:
     )
 
     st.sidebar.caption(t("sidebar_filter_note"))
-
-    # ── Language selector at the bottom ────────────────────────────────
-    _render_language_selector()
 
     # Compute the set of detection-date strings that count as "recent".
     recent_dates: set[str] = set()

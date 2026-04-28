@@ -77,9 +77,16 @@ def _plot_panel(ax, data, transform, vrange, cmap, contours):
     bottom = top + transform.e * height
     extent = (left, right, bottom, top)
 
+    # Mask NaN (no-data) pixels so they render as the colormap's "bad" colour
+    # rather than as the midpoint, making "negative = real value" vs
+    # "missing = no data" visually unambiguous.
+    masked = np.ma.masked_invalid(data)
+    cmap_obj = plt.get_cmap(cmap).copy()
+    cmap_obj.set_bad(color="#d0d0d0", alpha=1.0)
+
     im = ax.imshow(
-        data,
-        cmap=cmap,
+        masked,
+        cmap=cmap_obj,
         vmin=vrange[0],
         vmax=vrange[1],
         extent=extent,
@@ -122,6 +129,10 @@ def _make_grid(index: str, kind: str) -> Path | None:
             continue
         with rasterio.open(path) as src:
             arr = src.read(1, masked=False).astype(np.float32)
+            # Convert any sentinel nodata (e.g. -3.4e+38, 0 in older COGs) to
+            # NaN so the masked_invalid plotting path treats them uniformly.
+            if src.nodata is not None and not np.isnan(src.nodata):
+                arr = np.where(arr == np.float32(src.nodata), np.nan, arr)
             rasters[month] = (arr, src.transform, src.crs)
             if target_crs is None:
                 target_crs = src.crs

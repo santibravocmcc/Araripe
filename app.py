@@ -31,6 +31,7 @@ from src.visualization.charts import (
 )
 from src.visualization.dashboard import (
     render_info_expander,
+    render_language_flags_top,
     render_metrics,
     render_sidebar,
     render_trend_indicator,
@@ -97,6 +98,9 @@ st.markdown("""
     .index-card code { font-size: 0.8rem; background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; }
 </style>
 """, unsafe_allow_html=True)
+
+# ─── Top-left language flags (must run before any t() call uses session state) ─
+render_language_flags_top()
 
 # ─── Sidebar ──────────────────────────────────────────────────────────────────
 filters = render_sidebar()
@@ -577,6 +581,35 @@ with tab_map:
 with tab_timeseries:
     INDEX_INFO = _get_index_info()
     st.subheader(t("ts_title"))
+
+    # ─── Climatology baselines expander ──────────────────────────────────
+    with st.expander(t("ts_baselines_expander"), expanded=False):
+        st.markdown(t("ts_baselines_caption"))
+        plots_dir = Path(__file__).resolve().parent / "data" / "baselines" / "plots"
+        baseline_subtabs = st.tabs(["NDMI", "NBR", "EVI2"])
+        for sub_tab, idx_key in zip(baseline_subtabs, ["ndmi", "nbr", "evi2"]):
+            with sub_tab:
+                info = INDEX_INFO[idx_key]
+                st.markdown(
+                    f"**{info['name']}** — {info['full_name']}  \n"
+                    f"`{info['formula']}`  \n"
+                    f"{info['description']}"
+                )
+                col_mean, col_std = st.columns(2)
+                mean_path = plots_dir / f"{idx_key}_monthly_mean.png"
+                std_path = plots_dir / f"{idx_key}_monthly_std.png"
+                with col_mean:
+                    st.caption(t("ts_baselines_mean"))
+                    if mean_path.exists():
+                        st.image(str(mean_path), use_container_width=True)
+                    else:
+                        st.info(t("ts_baselines_missing").format(path=mean_path.relative_to(Path(__file__).resolve().parent)))
+                with col_std:
+                    st.caption(t("ts_baselines_std"))
+                    if std_path.exists():
+                        st.image(str(std_path), use_container_width=True)
+                    else:
+                        st.info(t("ts_baselines_missing").format(path=std_path.relative_to(Path(__file__).resolve().parent)))
 
     # ─── Index explanation ───────────────────────────────────────────────
     with st.expander(t("ts_expander"), expanded=False):
