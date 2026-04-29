@@ -14,18 +14,27 @@ import xarray as xr
 from loguru import logger
 from shapely.geometry import shape
 
-from config.settings import ALERTS_DIR, MIN_ALERT_AREA_HA, TARGET_CRS
+from config.settings import ALERTS_DIR, MAX_ALERT_AREA_HA, MIN_ALERT_AREA_HA, TARGET_CRS
 
 
 def vectorize_alerts(
     confidence: xr.DataArray,
     min_confidence: int = 1,
     min_area_ha: float = MIN_ALERT_AREA_HA,
+    max_area_ha: float = MAX_ALERT_AREA_HA,
 ) -> gpd.GeoDataFrame:
     """Convert raster confidence map to vector alert polygons.
 
-    Groups connected pixels into polygons, filters by minimum area,
-    and assigns confidence based on the maximum confidence in each polygon.
+    Groups connected pixels into polygons, filters by minimum and maximum
+    area, and assigns confidence based on the maximum confidence in each
+    polygon.
+
+    Polygons larger than ``max_area_ha`` are *dropped* — at the spatial
+    resolution of Sentinel-2 (20 m here), a single connected anomaly that
+    exceeds ~10 km² is essentially always a scene-wide atmospheric or
+    sensor artefact (thin cirrus, BRDF, mosaic seam) rather than a real
+    deforestation event. Real clearings on the Caatinga/Cerrado plateau
+    are bounded by farm parcels and natural breaks well under this size.
 
     Parameters
     ----------
@@ -35,6 +44,9 @@ def vectorize_alerts(
         Minimum confidence level to include.
     min_area_ha : float
         Minimum polygon area in hectares.
+    max_area_ha : float
+        Maximum polygon area in hectares. Polygons larger than this are
+        treated as scene-wide artefacts and dropped.
 
     Returns
     -------
@@ -62,6 +74,8 @@ def vectorize_alerts(
     )
 
     records = []
+    n_too_small = 0
+    n_too_large = 0
     for geom, value in shapes_gen:
         polygon = shape(geom)
 
@@ -69,6 +83,10 @@ def vectorize_alerts(
         area_ha = polygon.area / 10_000
 
         if area_ha < min_area_ha:
+            n_too_small += 1
+            continue
+        if area_ha > max_area_ha:
+            n_too_large += 1
             continue
 
         # Get maximum confidence within this polygon
@@ -80,8 +98,19 @@ def vectorize_alerts(
             }
         )
 
+    if n_too_large > 0:
+        logger.warning(
+            "Dropped {} scene-wide polygon(s) larger than {} ha "
+            "(probable atmospheric / sensor artefact)",
+            n_too_large, max_area_ha,
+        )
+
     if not records:
-        logger.info("No alerts above minimum area threshold ({} ha)", min_area_ha)
+        logger.info(
+            "No alerts in size range [{}, {}] ha (rejected {} too-small, "
+            "{} too-large)",
+            min_area_ha, max_area_ha, n_too_small, n_too_large,
+        )
         return gpd.GeoDataFrame(
             columns=["geometry", "confidence", "area_ha"],
             crs=TARGET_CRS,

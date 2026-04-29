@@ -64,6 +64,29 @@ def load_band(
     if da.dtype != np.float32:
         da = da.astype(np.float32)
 
+    # Sentinel-2 Processing Baseline 04.00 (Jan 2022 onwards) encodes
+    # surface-reflectance with a BOA_ADD_OFFSET of -1000. To recover the
+    # true reflectance we must add 1000 (then divide by 10000, but for the
+    # normalized-difference indices we use that scale division cancels).
+    # This applies only to the spectral bands; SCL is a classification map
+    # and must NOT be offset.
+    #
+    # We skip it for the SCL band and for non-Sentinel-2 sensors. We also
+    # only apply it to numeric bands whose values look like raw int16
+    # reflectance (median > 200 → almost certainly stored DN, not already
+    # corrected float reflectance).
+    if sensor == "sentinel2" and logical_band != "scl":
+        try:
+            sample = da.isel(x=slice(0, min(512, da.sizes["x"])),
+                             y=slice(0, min(512, da.sizes["y"]))).values
+            sample = sample[~np.isnan(sample)]
+            if len(sample) > 0 and float(np.median(sample)) > 200.0:
+                da = da + 1000.0
+        except Exception:
+            # If the heuristic fails, fall through with raw values to
+            # match the historical behaviour.
+            pass
+
     # Reproject if needed
     if da.rio.crs and str(da.rio.crs) != target_crs:
         da = da.rio.reproject(

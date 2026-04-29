@@ -14,6 +14,7 @@ from datetime import datetime
 from pathlib import Path
 
 import click
+import numpy as np
 from loguru import logger
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -23,6 +24,7 @@ from config.settings import (
     AOI_BBOX,
     BASELINES_DIR,
     MAX_CLOUD_COVER,
+    SCENE_ANOMALY_REJECT_FRAC,
     SCENE_CACHE_DIR,
     SEARCH_DAYS_BACK,
 )
@@ -41,7 +43,7 @@ from src.timeseries.builder import store_alert_stats, store_regional_stats
 @click.option("--days-back", default=SEARCH_DAYS_BACK, help="Days to look back.")
 @click.option("--indices", default="ndmi,nbr,evi2", help="Comma-separated indices.")
 @click.option("--max-cloud", default=MAX_CLOUD_COVER, help="Max cloud cover %.")
-@click.option("--min-clear", default=50.0, help="Min clear pixel % to process scene.")
+@click.option("--min-clear", default=50.0, help="Min clear pixel %% to process scene (default 50; lower values let in scenes with more residual cloud / cirrus).")
 @click.option(
     "--cache/--no-cache",
     default=False,
@@ -146,6 +148,17 @@ def main(
             if cache_file and cache_file.exists():
                 logger.info("Cache hit: loading {} from disk", cache_file.name)
                 ds = xr.open_dataset(str(cache_file))
+                # Re-apply the clear-pixel filter on cached scenes too. The
+                # cache was written after an earlier --min-clear pass, but
+                # subsequent runs may use a stricter threshold and still
+                # need to honour it.
+                cached_clear_pct = compute_clear_percentage(ds)
+                if cached_clear_pct < min_clear:
+                    logger.info(
+                        "Cached scene only {:.1f}% clear (< {}%), skipping",
+                        cached_clear_pct, min_clear,
+                    )
+                    continue
             else:
                 ds = load_sentinel2_for_indices(item, index_list)
                 ds = mask_sentinel2(ds)
@@ -214,7 +227,29 @@ def main(
                 spi_3month=spi_value,
             )
 
-            # Vectorize alerts
+            # Scene-wide anomaly guard. If a large fraction of the clipped
+            # AOI pixels are flagged at any confidence level, the scene is
+            # almost certainly a thin-cirrus / BRDF / mosaic-seam artefact
+            # rather than a real deforestation event. Reject it wholesale.
+            try:
+                conf = detection["confidence"]
+                valid_mask = ~np.isnan(conf.values)
+                n_valid = int(valid_mask.sum())
+                n_alert = int(((conf.values >= 1) & valid_mask).sum())
+                if n_valid > 0:
+                    alert_frac = n_alert / n_valid
+                    if alert_frac > SCENE_ANOMALY_REJECT_FRAC:
+                        logger.warning(
+                            "Scene {}: {:.1%} of valid pixels flagged "
+                            "(>{:.0%} threshold) — likely scene-wide "
+                            "atmospheric anomaly, REJECTING this scene.",
+                            scene_date, alert_frac, SCENE_ANOMALY_REJECT_FRAC,
+                        )
+                        continue
+            except Exception as guard_err:
+                logger.warning("Scene-wide guard failed ({}); proceeding", guard_err)
+
+            # Vectorize alerts (drops both too-small and too-large polygons)
             alerts_gdf = vectorize_alerts(detection["confidence"])
 
             if not alerts_gdf.empty:

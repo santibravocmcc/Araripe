@@ -57,6 +57,15 @@ DELTA_THRESHOLD_LOW = -0.15
 # Minimum alert area in hectares (patches smaller than this are filtered out)
 MIN_ALERT_AREA_HA = 1.0
 
+# Maximum alert area in hectares (polygons larger than this are scene-wide
+# atmospheric anomalies, not real deforestation events, and are dropped).
+MAX_ALERT_AREA_HA = 1000.0
+
+# Scene-wide anomaly guard: if more than this fraction of clipped-AOI pixels
+# in a single scene are flagged at any confidence level, the entire scene is
+# rejected as an atmospheric / sensor anomaly (thin cirrus, BRDF, etc.).
+SCENE_ANOMALY_REJECT_FRAC = 0.30
+
 # Fire detection thresholds
 DNBR_LOW_SEVERITY = 0.27
 DNBR_HIGH_SEVERITY = 0.66
