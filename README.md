@@ -161,6 +161,7 @@ BibTeX:
   title   = {Chapada do Araripe Deforestation Monitor},
   year    = {2026},
   version = {1.0.0},
+  doi     = {10.5281/zenodo.19885824},
   url     = {https://github.com/santibravocmcc/Araripe}
 }
 ```

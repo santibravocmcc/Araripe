@@ -519,17 +519,109 @@ Chapada do Araripe usando imagens de satélite do Sentinel-2 e Landsat.
     },
     "footer": {
         "en": (
-            "Chapada do Araripe Deforestation Monitor | "
-            "[GitHub](https://github.com/santibravocmcc/Araripe) | "
-            "Open source | "
-            "Data: ESA Sentinel-2, USGS Landsat, NASA HLS"
+            "Chapada do Araripe Deforestation Monitor · "
+            "Developed by [Santiago Bravo](https://santibravocmcc.github.io/portfolio/) · "
+            "[GitHub](https://github.com/santibravocmcc/Araripe) · "
+            "Code: Apache 2.0 | Data: CC BY 4.0 · "
+            "Imagery: ESA Sentinel-2, USGS Landsat, NASA HLS"
         ),
         "pt": (
-            "Monitor de Desmatamento da Chapada do Araripe | "
-            "[GitHub](https://github.com/santibravocmcc/Araripe) | "
-            "Código aberto | "
-            "Dados: ESA Sentinel-2, USGS Landsat, NASA HLS"
+            "Monitor de Desmatamento da Chapada do Araripe · "
+            "Desenvolvido por [Santiago Bravo](https://santibravocmcc.github.io/portfolio/) · "
+            "[GitHub](https://github.com/santibravocmcc/Araripe) · "
+            "Código: Apache 2.0 | Dados: CC BY 4.0 · "
+            "Imagens: ESA Sentinel-2, USGS Landsat, NASA HLS"
         ),
+    },
+    "license_title": {
+        "en": "License & Attribution",
+        "pt": "Licença e Atribuição",
+    },
+    "code_license_body": {
+        "en": """**Source Code**
+
+[![Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://github.com/santibravocmcc/Araripe/blob/main/LICENSE)
+
+[Apache License 2.0](https://github.com/santibravocmcc/Araripe/blob/main/LICENSE)
+
+Permissive open-source license. Free to use, modify, and distribute — including commercially — provided the `NOTICE` file is retained in derivative works.""",
+        "pt": """**Código-fonte**
+
+[![Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://github.com/santibravocmcc/Araripe/blob/main/LICENSE)
+
+[Apache License 2.0](https://github.com/santibravocmcc/Araripe/blob/main/LICENSE)
+
+Licença permissiva. Livre para usar, modificar e distribuir — inclusive comercialmente — desde que o arquivo `NOTICE` seja mantido em obras derivadas.""",
+    },
+    "data_license_body": {
+        "en": """**Data Products**
+
+[![CC BY 4.0](https://img.shields.io/badge/Data-CC_BY_4.0-lightgrey.svg)](https://github.com/santibravocmcc/Araripe/blob/main/DATA_LICENSE)
+
+[Creative Commons BY 4.0](https://github.com/santibravocmcc/Araripe/blob/main/DATA_LICENSE)
+
+Applies to baselines, alert GeoJSONs, and time series. Share and adapt for any purpose, including commercial use, with attribution.""",
+        "pt": """**Produtos de Dados**
+
+[![CC BY 4.0](https://img.shields.io/badge/Data-CC_BY_4.0-lightgrey.svg)](https://github.com/santibravocmcc/Araripe/blob/main/DATA_LICENSE)
+
+[Creative Commons BY 4.0](https://github.com/santibravocmcc/Araripe/blob/main/DATA_LICENSE)
+
+Aplica-se a linhas de base, GeoJSONs de alerta e séries temporais. Compartilhe e adapte para qualquer finalidade, inclusive comercial, com atribuição.""",
+    },
+    "citation_title": {
+        "en": "How to Cite",
+        "pt": "Como Citar",
+    },
+    "citation_body": {
+        "en": """If you use this software, baseline products, or alert outputs in your research, please cite:
+
+> Bravo, S. (2026). *Chapada do Araripe Deforestation Monitor* (Version 1.0.0) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.19885824
+
+[![DOI](https://zenodo.org/badge/1152379890.svg)](https://doi.org/10.5281/zenodo.19885824)
+
+**BibTeX:**
+```bibtex
+@software{bravo_araripe_2026,
+  author  = {Bravo, Santiago},
+  title   = {Chapada do Araripe Deforestation Monitor},
+  year    = {2026},
+  version = {1.0.0},
+  doi     = {10.5281/zenodo.19885824},
+  url     = {https://github.com/santibravocmcc/Araripe}
+}
+```""",
+        "pt": """Se você usar este software, produtos de linha de base ou saídas de alerta em sua pesquisa, por favor cite:
+
+> Bravo, S. (2026). *Chapada do Araripe Deforestation Monitor* (Versão 1.0.0) [Software]. Zenodo. https://doi.org/10.5281/zenodo.19885824
+
+[![DOI](https://zenodo.org/badge/1152379890.svg)](https://doi.org/10.5281/zenodo.19885824)
+
+**BibTeX:**
+```bibtex
+@software{bravo_araripe_2026,
+  author  = {Bravo, Santiago},
+  title   = {Chapada do Araripe Deforestation Monitor},
+  year    = {2026},
+  version = {1.0.0},
+  doi     = {10.5281/zenodo.19885824},
+  url     = {https://github.com/santibravocmcc/Araripe}
+}
+```""",
+    },
+    "developer_title": {
+        "en": "Developer",
+        "pt": "Desenvolvedor",
+    },
+    "developer_body": {
+        "en": """**Santiago Bravo**
+Environmental monitoring software developer.
+
+[Portfolio](https://santibravocmcc.github.io/portfolio/) · [GitHub](https://github.com/santibravocmcc)""",
+        "pt": """**Santiago Bravo**
+Desenvolvedor de software para monitoramento ambiental.
+
+[Portfólio](https://santibravocmcc.github.io/portfolio/) · [GitHub](https://github.com/santibravocmcc)""",
     },
     # ── No data message ───────────────────────────────────────────────────
     "no_data": {

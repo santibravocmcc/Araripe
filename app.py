@@ -796,4 +796,20 @@ with tab_about:
         )
 
     st.markdown("---")
-    st.caption(t("footer"))
+    st.subheader(t("license_title"))
+    col_code, col_data = st.columns(2)
+    with col_code:
+        st.markdown(t("code_license_body"))
+    with col_data:
+        st.markdown(t("data_license_body"))
+
+    st.markdown("---")
+    st.subheader(t("citation_title"))
+    st.markdown(t("citation_body"))
+
+    st.markdown("---")
+    st.subheader(t("developer_title"))
+    st.markdown(t("developer_body"))
+
+st.markdown("---")
+st.caption(t("footer"))
