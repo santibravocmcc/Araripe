@@ -14,7 +14,7 @@ license: apache-2.0
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Data: CC BY 4.0](https://img.shields.io/badge/Data-CC_BY_4.0-lightgrey.svg)](DATA_LICENSE)
-[![DOI](https://img.shields.io/badge/DOI-pending_first_release-orange.svg)](https://zenodo.org/)
+[![DOI](https://zenodo.org/badge/1152379890.svg)](https://doi.org/10.5281/zenodo.19885824)
 
 Zero-cost deforestation monitoring system for Chapada do Araripe, Brazil.
 
@@ -148,12 +148,10 @@ research, please cite the project. The canonical metadata lives in
 [`CITATION.cff`](CITATION.cff) (GitHub renders a "Cite this repository"
 button in the right-hand sidebar).
 
-After the first tagged release the project will receive a persistent
-[Zenodo](https://zenodo.org) DOI; the badge above will then point at it. Until
-then, please cite as:
+Please cite as:
 
 > Bravo, S. (2026). *Chapada do Araripe Deforestation Monitor* (Version 1.0.0)
-> [Computer software]. https://github.com/santibravocmcc/Araripe
+> [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.19885824
 
 BibTeX:
 
