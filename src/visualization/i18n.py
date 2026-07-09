@@ -522,14 +522,14 @@ Chapada do Araripe usando imagens de satélite do Sentinel-2 e Landsat.
             "Chapada do Araripe Deforestation Monitor · "
             "Developed by [Santiago Bravo](https://santibravocmcc.github.io/portfolio/) · "
             "[GitHub](https://github.com/santibravocmcc/Araripe) · "
-            "Code: Apache 2.0 | Data: CC BY 4.0 · "
+            "Code: AGPL-3.0 | Data: CC BY-SA 4.0 · "
             "Imagery: ESA Sentinel-2, USGS Landsat, NASA HLS"
         ),
         "pt": (
             "Monitor de Desmatamento da Chapada do Araripe · "
             "Desenvolvido por [Santiago Bravo](https://santibravocmcc.github.io/portfolio/) · "
             "[GitHub](https://github.com/santibravocmcc/Araripe) · "
-            "Código: Apache 2.0 | Dados: CC BY 4.0 · "
+            "Código: AGPL-3.0 | Dados: CC BY-SA 4.0 · "
             "Imagens: ESA Sentinel-2, USGS Landsat, NASA HLS"
         ),
     },
@@ -540,34 +540,34 @@ Chapada do Araripe usando imagens de satélite do Sentinel-2 e Landsat.
     "code_license_body": {
         "en": """**Source Code**
 
-[![Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://github.com/santibravocmcc/Araripe/blob/main/LICENSE)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://github.com/santibravocmcc/Araripe/blob/main/LICENSE)
 
-[Apache License 2.0](https://github.com/santibravocmcc/Araripe/blob/main/LICENSE)
+[GNU Affero General Public License v3.0 or later](https://github.com/santibravocmcc/Araripe/blob/main/LICENSE)
 
-Permissive open-source license. Free to use, modify, and distribute — including commercially — provided the `NOTICE` file is retained in derivative works.""",
+Strong copyleft license. Free to use, modify, and distribute — including commercially — but modified or distributed versions must stay open under the same license. Its network clause requires anyone running a modified version as a hosted service to offer that service's users the source code.""",
         "pt": """**Código-fonte**
 
-[![Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://github.com/santibravocmcc/Araripe/blob/main/LICENSE)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://github.com/santibravocmcc/Araripe/blob/main/LICENSE)
 
-[Apache License 2.0](https://github.com/santibravocmcc/Araripe/blob/main/LICENSE)
+[GNU Affero General Public License v3.0 ou posterior](https://github.com/santibravocmcc/Araripe/blob/main/LICENSE)
 
-Licença permissiva. Livre para usar, modificar e distribuir — inclusive comercialmente — desde que o arquivo `NOTICE` seja mantido em obras derivadas.""",
+Licença copyleft forte. Livre para usar, modificar e distribuir — inclusive comercialmente — mas versões modificadas ou distribuídas devem permanecer abertas sob a mesma licença. Sua cláusula de rede exige que quem executa uma versão modificada como serviço hospedado ofereça o código-fonte aos usuários desse serviço.""",
     },
     "data_license_body": {
         "en": """**Data Products**
 
-[![CC BY 4.0](https://img.shields.io/badge/Data-CC_BY_4.0-lightgrey.svg)](https://github.com/santibravocmcc/Araripe/blob/main/DATA_LICENSE)
+[![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC_BY--SA_4.0-lightgrey.svg)](https://github.com/santibravocmcc/Araripe/blob/main/DATA_LICENSE)
 
-[Creative Commons BY 4.0](https://github.com/santibravocmcc/Araripe/blob/main/DATA_LICENSE)
+[Creative Commons BY-SA 4.0](https://github.com/santibravocmcc/Araripe/blob/main/DATA_LICENSE)
 
-Applies to baselines, alert GeoJSONs, and time series. Share and adapt for any purpose, including commercial use, with attribution.""",
+Applies to baselines, alert GeoJSONs, and time series. Share and adapt for any purpose, including commercial use, with attribution and under the same license (ShareAlike).""",
         "pt": """**Produtos de Dados**
 
-[![CC BY 4.0](https://img.shields.io/badge/Data-CC_BY_4.0-lightgrey.svg)](https://github.com/santibravocmcc/Araripe/blob/main/DATA_LICENSE)
+[![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC_BY--SA_4.0-lightgrey.svg)](https://github.com/santibravocmcc/Araripe/blob/main/DATA_LICENSE)
 
-[Creative Commons BY 4.0](https://github.com/santibravocmcc/Araripe/blob/main/DATA_LICENSE)
+[Creative Commons BY-SA 4.0](https://github.com/santibravocmcc/Araripe/blob/main/DATA_LICENSE)
 
-Aplica-se a linhas de base, GeoJSONs de alerta e séries temporais. Compartilhe e adapte para qualquer finalidade, inclusive comercial, com atribuição.""",
+Aplica-se a linhas de base, GeoJSONs de alerta e séries temporais. Compartilhe e adapte para qualquer finalidade, inclusive comercial, com atribuição e sob a mesma licença (ShareAlike).""",
     },
     "citation_title": {
         "en": "How to Cite",
