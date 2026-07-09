@@ -1,6 +1,6 @@
-"""Weekly detection script: find recent imagery, detect changes, generate alerts.
+"""Twice-weekly detection script: find recent imagery, detect changes, generate alerts.
 
-This script is designed to run in GitHub Actions on a weekly schedule.
+This script is designed to run in GitHub Actions on a twice-weekly schedule.
 
 Usage:
     python scripts/run_detection.py
@@ -69,7 +69,7 @@ def main(
     aoi: str | None,
     max_scenes: int,
 ) -> None:
-    """Run the weekly deforestation detection pipeline."""
+    """Run the twice-weekly deforestation detection pipeline."""
     index_list = [idx.strip() for idx in indices.split(",")]
     today = datetime.utcnow().strftime("%Y-%m-%d")
 

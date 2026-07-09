@@ -12,7 +12,7 @@ The Chapada do Araripe Deforestation Monitoring System is a near-real-time chang
 
 The system is designed to operate at zero recurring cost, using GitHub Actions for twice-weekly automation, Hugging Face Spaces for the Streamlit dashboard, and Cloudflare R2 for Cloud Optimized GeoTIFF (COG) storage. Detection outputs are vectorized alert polygons in GeoJSON format, classified into three confidence tiers (high, medium, low) with a minimum mapping unit of 1 hectare.
 
-**Current operational status:** The full codebase is implemented and functional. Monthly baselines (72 COG files) have been produced for all 12 months across three spectral indices. Five alert files have been generated covering the period November 2025 through February 2026, containing a total of 8,924 alert polygons. The CHIRPS precipitation data for drought adjustment has not yet been populated. The weekly automation pipeline and public dashboard are configured but not yet deployed in production.
+**Current operational status:** The full codebase is implemented and functional. Monthly baselines (72 COG files) have been produced for all 12 months across three spectral indices. Five alert files have been generated covering the period November 2025 through February 2026, containing a total of 8,924 alert polygons. The CHIRPS precipitation data for drought adjustment has not yet been populated. The twice-weekly automation pipeline and public dashboard are configured but not yet deployed in production.
 
 ---
 

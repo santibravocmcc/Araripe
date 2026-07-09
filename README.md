@@ -18,7 +18,7 @@ license: agpl-3.0
 
 Zero-cost deforestation monitoring system for Chapada do Araripe, Brazil.
 
-Detects vegetation loss across the Cerrado/Caatinga transition zone (~7-8S, 39-40W) using Sentinel-2 and Landsat satellite imagery, processed weekly via GitHub Actions and visualized through a Streamlit dashboard.
+Detects vegetation loss across the Cerrado/Caatinga transition zone (~7-8S, 39-40W) using Sentinel-2 and Landsat satellite imagery, processed twice-weekly via GitHub Actions and visualized through a Streamlit dashboard.
 
 ## Architecture
 
@@ -26,7 +26,7 @@ Detects vegetation loss across the Cerrado/Caatinga transition zone (~7-8S, 39-4
 Sentinel-2 / Landsat (STAC APIs)
         │
         ▼
-  GitHub Actions (weekly cron)
+  GitHub Actions (twice-weekly cron)
     ├── Cloud masking (SCL / QA_PIXEL)
     ├── Index computation (NDMI, NBR, EVI2)
     ├── Z-score anomaly detection vs monthly baselines
@@ -85,7 +85,7 @@ python scripts/build_baseline.py --years 5 --indices ndmi,nbr,evi2
 │   └── visualization/          # Maps (Leafmap), charts (Plotly)
 ├── scripts/
 │   ├── build_baseline.py       # One-time baseline computation
-│   ├── run_detection.py        # Weekly detection pipeline
+│   ├── run_detection.py        # Twice-weekly detection pipeline
 │   └── upload_to_r2.py         # Upload COGs to Cloudflare R2
 ├── data/
 │   ├── aoi/                    # Study area GeoJSON
@@ -93,7 +93,7 @@ python scripts/build_baseline.py --years 5 --indices ndmi,nbr,evi2
 │   ├── alerts/                 # Detection alert GeoJSONs
 │   └── timeseries/             # SQLite database
 ├── tests/                      # Unit tests
-└── .github/workflows/          # Weekly automation
+└── .github/workflows/          # Twice-weekly automation
 ```
 
 ## Data Sources
@@ -120,6 +120,7 @@ Copy `.env.example` to `.env` and configure:
 - `CDSE_USERNAME` / `CDSE_PASSWORD` — Copernicus Data Space (optional)
 - `EARTHDATA_USERNAME` / `EARTHDATA_PASSWORD` — NASA Earthdata (for HLS)
 - `R2_ENDPOINT_URL` / `R2_ACCESS_KEY` / `R2_SECRET_KEY` — Cloudflare R2 storage
+- `PC_SDK_SUBSCRIPTION_KEY` — Microsoft Planetary Computer (optional, increases rate limits)
 
 ## Running Tests
 

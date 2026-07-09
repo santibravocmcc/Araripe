@@ -9,7 +9,7 @@ This document explains how to deploy the three external services that make the m
 The system has three moving parts beyond your local machine:
 
 ```
-GitHub Actions (weekly cron)
+GitHub Actions (twice-weekly cron)
     |
     ├── Runs detection pipeline (queries free STAC imagery)
     ├── Saves alert GeoJSON + time series to the repo
@@ -106,14 +106,14 @@ https://huggingface.co/spaces/YOUR_USERNAME/araripe-monitor
 
 ---
 
-## 2. GitHub Actions (Automated Weekly Detection)
+## 2. GitHub Actions (Automated Twice-Weekly Detection)
 
 ### What it does
-Runs the detection pipeline (`scripts/run_detection.py`) every Monday at 06:00 UTC. It queries the latest Sentinel-2 imagery from free STAC APIs, compares against baselines, generates alerts, and commits the results back to the repo.
+Runs the detection pipeline (`scripts/run_detection.py`) every Monday and Thursday at 06:00 UTC. It queries the latest Sentinel-2 imagery from free STAC APIs, compares against baselines, generates alerts, and commits the results back to the repo.
 
 ### Why GitHub Actions?
 - 2,000 free minutes/month on the free tier
-- The detection pipeline takes ~20-30 minutes per run (well within budget for weekly runs)
+- The detection pipeline takes ~20-30 minutes per run (well within budget for twice-weekly runs)
 - Keeps the alert data up to date without any manual intervention
 
 ### Why STAC credentials?
@@ -159,7 +159,7 @@ git push -u origin main
 #### 2.3 Test the workflow
 
 1. Go to **Actions** tab in your GitHub repo
-2. Select "Weekly Deforestation Detection" workflow
+2. Select "Twice-Weekly Deforestation Detection" workflow
 3. Click **Run workflow** > **Run workflow** (manual trigger)
 4. Monitor the run — it should complete in ~20-30 minutes
 
@@ -268,7 +268,7 @@ Add these three secrets to your GitHub repo (Settings > Secrets > Actions):
 | `R2_ACCESS_KEY` | Your R2 API token access key |
 | `R2_SECRET_KEY` | Your R2 API token secret key |
 
-Now the weekly GitHub Actions workflow will automatically upload any new/updated COGs after each detection run.
+Now the twice-weekly GitHub Actions workflow will automatically upload any new/updated COGs after each detection run.
 
 ---
 
