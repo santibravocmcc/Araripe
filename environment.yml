@@ -26,7 +26,11 @@ dependencies:
   - plotly>=5.24.0
   - folium>=0.18.0
   # ─── Storage / DB ────────────────────────────────────────────────────────
-  - boto3>=1.35.0
+  # boto3 e botocore fixados no mesmo minor: sem isso o conda pegava
+  # boto3 1.43.x com botocore 1.43.0 (defasado), quebrando o import
+  # (ImportError: cannot import name 'DocumentModifiedShape').
+  - boto3>=1.35.0,<1.36.0
+  - botocore>=1.35.0,<1.36.0
   - duckdb>=1.1.0
   # ─── Utilities ───────────────────────────────────────────────────────────
   - python-dotenv>=1.0.0
