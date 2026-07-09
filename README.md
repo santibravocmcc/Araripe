@@ -151,10 +151,9 @@ combination of license + DOI + `CITATION.cff` is what preserves credit.
 > (version DOI [10.5281/zenodo.19885825](https://doi.org/10.5281/zenodo.19885825))
 > remains under its original licenses — Apache-2.0 (code) and CC-BY-4.0 (data)
 > — permanently; relicensing is not retroactive. The AGPL-3.0-or-later /
-> CC-BY-SA-4.0 terms above apply from the **next** release onward, which
-> carries a version bump (e.g. 2.0.0) to mark the license change. The badge
-> and citation above use the *concept* DOI (10.5281/zenodo.19885824), which
-> always resolves to the latest version.
+> CC-BY-SA-4.0 terms above apply from **v2.0.0** onward — the release that
+> marks the license change. The badge and citation above use the *concept*
+> DOI (10.5281/zenodo.19885824), which always resolves to the latest version.
 
 ## How to cite
 
@@ -165,7 +164,7 @@ button in the right-hand sidebar).
 
 Please cite as:
 
-> Bravo, S. (2026). *Chapada do Araripe Deforestation Monitor* (Version 1.0.0)
+> Bravo, S. (2026). *Chapada do Araripe Deforestation Monitor* (Version 2.0.0)
 > [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.19885824
 
 BibTeX:
@@ -175,7 +174,7 @@ BibTeX:
   author  = {Bravo, Santiago},
   title   = {Chapada do Araripe Deforestation Monitor},
   year    = {2026},
-  version = {1.0.0},
+  version = {2.0.0},
   doi     = {10.5281/zenodo.19885824},
   url     = {https://github.com/santibravocmcc/Araripe}
 }

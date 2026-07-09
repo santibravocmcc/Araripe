@@ -576,7 +576,7 @@ Aplica-se a linhas de base, GeoJSONs de alerta e séries temporais. Compartilhe 
     "citation_body": {
         "en": """If you use this software, baseline products, or alert outputs in your research, please cite:
 
-> Bravo, S. (2026). *Chapada do Araripe Deforestation Monitor* (Version 1.0.0) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.19885824
+> Bravo, S. (2026). *Chapada do Araripe Deforestation Monitor* (Version 2.0.0) [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.19885824
 
 [![DOI](https://zenodo.org/badge/1152379890.svg)](https://doi.org/10.5281/zenodo.19885824)
 
@@ -586,14 +586,14 @@ Aplica-se a linhas de base, GeoJSONs de alerta e séries temporais. Compartilhe 
   author  = {Bravo, Santiago},
   title   = {Chapada do Araripe Deforestation Monitor},
   year    = {2026},
-  version = {1.0.0},
+  version = {2.0.0},
   doi     = {10.5281/zenodo.19885824},
   url     = {https://github.com/santibravocmcc/Araripe}
 }
 ```""",
         "pt": """Se você usar este software, produtos de linha de base ou saídas de alerta em sua pesquisa, por favor cite:
 
-> Bravo, S. (2026). *Chapada do Araripe Deforestation Monitor* (Versão 1.0.0) [Software]. Zenodo. https://doi.org/10.5281/zenodo.19885824
+> Bravo, S. (2026). *Chapada do Araripe Deforestation Monitor* (Versão 2.0.0) [Software]. Zenodo. https://doi.org/10.5281/zenodo.19885824
 
 [![DOI](https://zenodo.org/badge/1152379890.svg)](https://doi.org/10.5281/zenodo.19885824)
 
@@ -603,7 +603,7 @@ Aplica-se a linhas de base, GeoJSONs de alerta e séries temporais. Compartilhe 
   author  = {Bravo, Santiago},
   title   = {Chapada do Araripe Deforestation Monitor},
   year    = {2026},
-  version = {1.0.0},
+  version = {2.0.0},
   doi     = {10.5281/zenodo.19885824},
   url     = {https://github.com/santibravocmcc/Araripe}
 }
