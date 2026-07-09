@@ -7,13 +7,13 @@ sdk: streamlit
 sdk_version: "1.40.0"
 app_file: app.py
 pinned: false
-license: apache-2.0
+license: agpl-3.0
 ---
 
 # Araripe
 
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Data: CC BY 4.0](https://img.shields.io/badge/Data-CC_BY_4.0-lightgrey.svg)](DATA_LICENSE)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
+[![Data: CC BY-SA 4.0](https://img.shields.io/badge/Data-CC_BY--SA_4.0-lightgrey.svg)](DATA_LICENSE)
 [![DOI](https://zenodo.org/badge/1152379890.svg)](https://doi.org/10.5281/zenodo.19885824)
 
 Zero-cost deforestation monitoring system for Chapada do Araripe, Brazil.
@@ -129,17 +129,31 @@ pytest tests/ -v
 
 ## License
 
-- **Source code:** [Apache License 2.0](LICENSE) — permissive, with explicit
-  patent grant and a `NOTICE` file that propagates attribution to derivative
-  works.
+- **Source code:** [GNU Affero General Public License v3.0 or later](LICENSE)
+  (AGPL-3.0-or-later) — a strong copyleft license. You may use, modify, and
+  distribute the code, including commercially, but any distributed or modified
+  version must be released under the same license with its complete source.
+  Its network clause (section 13) closes the "SaaS loophole": if you run a
+  modified version as a network service (for example, as a web app on Hugging
+  Face Spaces), you must offer that service's users the corresponding source.
 - **Data products** (`data/baselines/`, `data/alerts/`, `data/timeseries/`,
-  `data/aoi/`): [Creative Commons Attribution 4.0 International](DATA_LICENSE)
-  (CC-BY-4.0). You may share and adapt the data, including for commercial use,
-  as long as you credit the project.
+  `data/aoi/`): [Creative Commons Attribution-ShareAlike 4.0 International](DATA_LICENSE)
+  (CC-BY-SA-4.0). You may share and adapt the data, including for commercial
+  use, as long as you credit the project and license any derivatives under the
+  same terms (CC-BY-SA-4.0).
 
 The repository is intentionally public so the methodology can be replicated in
 other regions. Copyright protects authorship regardless of visibility — the
 combination of license + DOI + `CITATION.cff` is what preserves credit.
+
+> **Relicensing & versioning note.** The v1.0.0 snapshot archived on Zenodo
+> (version DOI [10.5281/zenodo.19885825](https://doi.org/10.5281/zenodo.19885825))
+> remains under its original licenses — Apache-2.0 (code) and CC-BY-4.0 (data)
+> — permanently; relicensing is not retroactive. The AGPL-3.0-or-later /
+> CC-BY-SA-4.0 terms above apply from the **next** release onward, which
+> carries a version bump (e.g. 2.0.0) to mark the license change. The badge
+> and citation above use the *concept* DOI (10.5281/zenodo.19885824), which
+> always resolves to the latest version.
 
 ## How to cite
 
@@ -171,5 +185,9 @@ BibTeX:
 Fork the repository, replace the polygon in `data/aoi/` with the boundary of
 your study area, adjust `AOI_BBOX` in [`config/settings.py`](config/settings.py),
 rebuild the baselines (`python scripts/build_baseline.py`), and credit the
-upstream project per the Apache-2.0 NOTICE and the CC-BY-4.0 attribution
-clause.
+upstream project per the AGPL-3.0 `NOTICE` and the CC-BY-SA-4.0 attribution
+clause. Because the code is AGPL-3.0-or-later, any fork you publish — or run
+as a hosted service (e.g. on Hugging Face Spaces) — must itself stay open:
+release your modified source under the same license and, for a network
+service, offer it to that service's users (AGPL section 13). Adapted data
+products must likewise be shared under CC-BY-SA-4.0.

@@ -1,9 +1,9 @@
-Creative Commons Attribution 4.0 International (CC-BY-4.0)
+Creative Commons Attribution-ShareAlike 4.0 International (CC-BY-SA-4.0)
 
 The data products distributed in this repository — including but not limited
 to the contents of `data/baselines/`, `data/alerts/`, `data/timeseries/`, and
-`data/aoi/` — are licensed under the Creative Commons Attribution 4.0
-International License (CC-BY-4.0).
+`data/aoi/` — are licensed under the Creative Commons Attribution-ShareAlike
+4.0 International License (CC-BY-SA-4.0).
 
 You are free to:
 
@@ -19,14 +19,22 @@ Under the following terms:
     reasonable manner, but not in any way that suggests the licensor
     endorses you or your use.
 
+  - ShareAlike — If you remix, transform, or build upon the material, you
+    must distribute your contributions under the same license as the
+    original (CC-BY-SA-4.0), or a Creative Commons BY-SA Compatible License.
+
+  - No additional restrictions — You may not apply legal terms or
+    technological measures that legally restrict others from doing anything
+    the license permits.
+
 Recommended attribution string:
 
     "Baselines and alerts produced by the Chapada do Araripe Deforestation
-    Monitor (Santiago Bravo, 2026), licensed under CC-BY-4.0. DOI: <to be
+    Monitor (Santiago Bravo, 2026), licensed under CC-BY-SA-4.0. DOI: <to be
     filled in after first Zenodo release>."
 
 Earth observation inputs (Sentinel-2, Landsat, HLS, CHIRPS) retain their
-original public-domain or open-data licenses; this CC-BY-4.0 grant applies
+original public-domain or open-data licenses; this CC-BY-SA-4.0 grant applies
 to the derived products in this repository.
 
-Full license text: https://creativecommons.org/licenses/by/4.0/legalcode
+Full license text: https://creativecommons.org/licenses/by-sa/4.0/legalcode

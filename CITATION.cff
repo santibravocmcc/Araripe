@@ -30,7 +30,15 @@ keywords:
   - vegetation indices
   - z-score
   - change detection
-license: Apache-2.0
+# Relicensing note: v1.0.0 was released under Apache-2.0 (data CC-BY-4.0).
+# The project is relicensed to AGPL-3.0-or-later (data CC-BY-SA-4.0), effective
+# from the next release; relicensing is not retroactive, so the archived v1.0.0
+# snapshot on Zenodo (version DOI 10.5281/zenodo.19885825) stays under its
+# original license forever.
+# The `doi` below is the *concept* DOI (10.5281/zenodo.19885824): it is constant
+# across releases and always resolves to the latest version — do NOT change it.
+# When cutting the next release, bump `version` and `date-released` only.
+license: AGPL-3.0-or-later
 version: "1.0.0"
 date-released: "2026-04-27"
 doi: "10.5281/zenodo.19885824"
