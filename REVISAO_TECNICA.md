@@ -12,7 +12,7 @@ O Sistema de Monitoramento de Desmatamento da Chapada do Araripe é um pipeline 
 
 O sistema foi projetado para operar com custo recorrente zero, utilizando GitHub Actions para automação bisemanal (duas vezes por semana), Hugging Face Spaces para o painel Streamlit e Cloudflare R2 para armazenamento de Cloud Optimized GeoTIFF (COG). As saídas de detecção são polígonos de alerta vetorizados em formato GeoJSON, classificados em três níveis de confiança (alto, médio, baixo) com unidade mínima de mapeamento de 1 hectare.
 
-**Status operacional atual:** O código-fonte completo está implementado e funcional. Os baselines mensais (72 arquivos COG) foram produzidos para todos os 12 meses em três índices espectrais. Cinco arquivos de alerta foram gerados cobrindo o período de novembro de 2025 a fevereiro de 2026, contendo um total de 8.924 polígonos de alerta. Os dados de precipitação CHIRPS para ajuste de seca ainda não foram preenchidos. O pipeline de automação semanal e o painel público estão configurados, mas ainda não implantados em produção.
+**Status operacional atual:** O código-fonte completo está implementado e funcional. Os baselines mensais (72 arquivos COG) foram produzidos para todos os 12 meses em três índices espectrais. Cinco arquivos de alerta foram gerados cobrindo o período de novembro de 2025 a fevereiro de 2026, contendo um total de 8.924 polígonos de alerta. Os dados de precipitação CHIRPS para ajuste de seca ainda não foram preenchidos. O pipeline de automação bissemanal e o painel público estão configurados, mas ainda não implantados em produção.
 
 ---
 
