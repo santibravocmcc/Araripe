@@ -196,6 +196,30 @@ if alerts_gdf is not None and not alerts_gdf.empty:
         recent_mask = pd.Series(True, index=alerts_gdf.index)
 
     filtered_alerts = alerts_gdf[conf_mask & recent_mask]
+
+    # ── Land-cover filter (Task 8) ─────────────────────────────────────────
+    # Applied to the already-narrowed subset so the raster read stays bounded.
+    if filters.get("lc_natural_only") and filtered_alerts is not None and not filtered_alerts.empty:
+        try:
+            from pathlib import Path as _Path
+
+            from config.settings import LANDCOVER_RASTERS
+            from src.detection.landcover import filter_alerts_by_natural_vegetation
+
+            _coll = filters.get("lc_collection", "mapbiomas10m")
+            _raster = LANDCOVER_RASTERS.get(_coll)
+            if _raster and _Path(_raster).exists():
+                with st.spinner("Applying land-cover filter…"):
+                    filtered_alerts = filter_alerts_by_natural_vegetation(
+                        filtered_alerts, _raster,
+                        min_natural_frac=filters.get("lc_min_frac", 0.5),
+                        collection=_coll,
+                    )
+            else:
+                st.warning(f"Land-cover raster for {_coll} not found; filter skipped.")
+        except Exception as _lc_err:
+            st.warning(f"Land-cover filter unavailable: {_lc_err}")
+
     summary = summarize_alerts(filtered_alerts)
 else:
     filtered_alerts = None

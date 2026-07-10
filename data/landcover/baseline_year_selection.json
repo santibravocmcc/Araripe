@@ -1,0 +1,129 @@
+{
+  "params": {
+    "n": 5,
+    "min_year": 2017,
+    "max_year": 2025,
+    "max_severity": 1.5,
+    "w_enso": 1.0,
+    "w_precip": 0.5
+  },
+  "candidates": [
+    {
+      "year": 2017,
+      "enso_state": "La Nina",
+      "oni_peak": -0.86,
+      "severity": 0.86,
+      "band": "weak",
+      "annual_precip_mm": null,
+      "precip_z": null,
+      "score": 0.86,
+      "eligible": true
+    },
+    {
+      "year": 2018,
+      "enso_state": "El Nino",
+      "oni_peak": 0.97,
+      "severity": 0.97,
+      "band": "weak",
+      "annual_precip_mm": null,
+      "precip_z": null,
+      "score": 0.97,
+      "eligible": true
+    },
+    {
+      "year": 2019,
+      "enso_state": "El Nino",
+      "oni_peak": 0.89,
+      "severity": 0.89,
+      "band": "weak",
+      "annual_precip_mm": null,
+      "precip_z": null,
+      "score": 0.89,
+      "eligible": true
+    },
+    {
+      "year": 2020,
+      "enso_state": "La Nina",
+      "oni_peak": -1.2,
+      "severity": 1.2,
+      "band": "moderate",
+      "annual_precip_mm": null,
+      "precip_z": null,
+      "score": 1.2,
+      "eligible": true
+    },
+    {
+      "year": 2021,
+      "enso_state": "La Nina",
+      "oni_peak": -0.91,
+      "severity": 0.91,
+      "band": "weak",
+      "annual_precip_mm": null,
+      "precip_z": null,
+      "score": 0.91,
+      "eligible": true
+    },
+    {
+      "year": 2022,
+      "enso_state": "La Nina",
+      "oni_peak": -0.97,
+      "severity": 0.97,
+      "band": "weak",
+      "annual_precip_mm": 860.2,
+      "precip_z": 1.53,
+      "score": 1.733,
+      "eligible": true
+    },
+    {
+      "year": 2023,
+      "enso_state": "El Nino",
+      "oni_peak": 2.06,
+      "severity": 2.06,
+      "band": "very strong",
+      "annual_precip_mm": 728.8,
+      "precip_z": -0.31,
+      "score": 2.213,
+      "eligible": false
+    },
+    {
+      "year": 2024,
+      "enso_state": "El Nino",
+      "oni_peak": 1.92,
+      "severity": 1.92,
+      "band": "strong",
+      "annual_precip_mm": 753.1,
+      "precip_z": 0.03,
+      "score": 1.937,
+      "eligible": false
+    },
+    {
+      "year": 2025,
+      "enso_state": "La Nina",
+      "oni_peak": -0.55,
+      "severity": 0.55,
+      "band": "weak",
+      "annual_precip_mm": 660.7,
+      "precip_z": -1.25,
+      "score": 1.177,
+      "eligible": true
+    }
+  ],
+  "recommended_recent_quiet": [
+    2019,
+    2020,
+    2021,
+    2022,
+    2025
+  ],
+  "least_anomalous_by_score": [
+    2017,
+    2018,
+    2019,
+    2021,
+    2025
+  ],
+  "excluded_strong_enso": [
+    2023,
+    2024
+  ]
+}

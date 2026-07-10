@@ -6,6 +6,39 @@ import streamlit as st
 
 # ─── All user-facing strings ──────────────────────────────────────────────────
 TRANSLATIONS: dict[str, dict[str, str]] = {
+    # ── Land cover (MapBiomas) filter ─────────────────────────────────────
+    "landcover_section": {
+        "en": "Land cover (MapBiomas)",
+        "pt": "Cobertura do solo (MapBiomas)",
+    },
+    "lc_natural_only": {
+        "en": "Only alerts on natural vegetation",
+        "pt": "Apenas alertas em vegetação natural",
+    },
+    "lc_natural_only_help": {
+        "en": ("Keep only alerts whose overlap with natural vegetation is at "
+               "least the threshold below. Filters out alerts already on "
+               "pasture/agriculture/urban land."),
+        "pt": ("Mantém apenas alertas cuja sobreposição com vegetação natural "
+               "atinge o limiar abaixo. Remove alertas já sobre "
+               "pastagem/agricultura/área urbana."),
+    },
+    "lc_collection": {
+        "en": "MapBiomas collection",
+        "pt": "Coleção MapBiomas",
+    },
+    "lc_collection_10m": {
+        "en": "10 m — Collection 2 beta (2023)",
+        "pt": "10 m — Coleção 2 beta (2023)",
+    },
+    "lc_collection_30m": {
+        "en": "Collection 10 (~300 m territorio, 2023)",
+        "pt": "Coleção 10 (~300 m territorio, 2023)",
+    },
+    "lc_min_frac": {
+        "en": "Min. natural-vegetation fraction",
+        "pt": "Fração mínima de vegetação natural",
+    },
     # ── Page / header ─────────────────────────────────────────────────────
     "page_title": {
         "en": "Chapada do Araripe Deforestation Monitor",

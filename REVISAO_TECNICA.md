@@ -103,9 +103,9 @@ A aquisição de dados é implementada em `src/acquisition/stac_client.py` utili
 | 1 | Element84 Earth Search | `https://earth-search.aws.element84.com/v1` | Não requerida |
 | 2 | Microsoft Planetary Computer | `https://planetarycomputer.microsoft.com/api/stac/v1` | Assinatura de token SAS via pacote `planetary-computer` |
 | 3 | NASA CMR STAC | `https://cmr.earthdata.nasa.gov/stac/LPCLOUD` | Login NASA Earthdata |
-| 4 | Copernicus Data Space | `https://stac.dataspace.copernicus.eu/v1` | Configurado, mas não utilizado ativamente na cadeia de fallback |
+| 4 | ~~Copernicus Data Space~~ | ~~`https://stac.dataspace.copernicus.eu/v1`~~ | **Removido na Fase 2** — era config morta (nenhum código o consumia; não havia fallback real, apesar de docs antigas afirmarem o contrário). Sentinel-1 SAR via CDSE é *roadmap* (ver ROADMAP.md) |
 
-A lógica de fallback para consultas Sentinel-2 é: Element84 primeiro; se zero resultados, Planetary Computer. Consultas Landsat vão diretamente para o Planetary Computer. Consultas HLS vão para o NASA CMR STAC.
+A lógica de fallback para consultas Sentinel-2 é: Element84 primeiro; se zero resultados, Planetary Computer. Consultas Landsat e HLS podem ser adicionadas como fontes extras de observação via `run_detection.py --extra-sources landsat,hls` (Fase 2, Tarefa 7.1).
 
 ### 3.3 Parâmetros de Consulta
 
@@ -122,7 +122,7 @@ O ajuste de seca depende de estimativas mensais de precipitação do **Climate H
 - **Resolução:** 0,05° (~5,5 km)
 - **Cobertura temporal:** 1981--presente
 - **Diretório de cache:** `data/chirps/`
-- **Status atual:** O diretório de cache está vazio; os dados CHIRPS ainda não foram baixados.
+- **Status atual (atualizado na auditoria 2026-07, revisado na Fase 2):** O cache local `data/chirps/` contém **61 arquivos globais** mensais de CHIRPS, de 2021-03 a 2026-03 (contagem verificada na Fase 2; a Fase 1 dizia "~62"). Não são versionados no Git, portanto ausentes do repositório remoto. O download foi tornado robusto na auditoria (retry com backoff, retomada por *range* e verificação de integridade) em `src/acquisition/chirps.py` e no novo `scripts/download_baseline_data.py`. **O ajuste de seca por SPI já está ATIVO por padrão** em `scripts/run_detection.py` (chama `get_current_spi` e o passa a `detect_deforestation`) — a Fase 2 confirmou que não era um item "a ativar", e reforçou a robustez descartando meses recentes ainda não publicados do CHIRPS.
 
 ---
 
@@ -245,7 +245,7 @@ Todos os 72 arquivos de baseline foram produzidos com sucesso e estão armazenad
 
 ### 5.5 Profundidade Temporal
 
-A configuração especifica um objetivo de 5 anos de histórico (`BASELINE_YEARS = 5`), mas os baselines atuais são construídos a partir de **3 anos** (2023--2025), com o ano de 2026 reservado para a etapa de detecção. Isso atende ao mínimo de 3 anos considerado adequado para estatísticas de baseline, mas pode não capturar totalmente a variabilidade interanual extrema (por exemplo, ciclos fortes de El Niño / La Niña). Recomenda-se estender a janela conforme cenas adicionais de 2022 e anteriores sejam adquiridas.
+A configuração especifica um objetivo de 5 anos de histórico (`BASELINE_YEARS = 5`), mas os baselines atuais são construídos a partir de **3 anos** (2023--2025), com o ano de 2026 reservado para a etapa de detecção. Isso atende ao mínimo de 3 anos considerado adequado para estatísticas de baseline, mas pode não capturar totalmente a variabilidade interanual extrema (por exemplo, ciclos fortes de El Niño / La Niña). Recomenda-se estender a janela conforme cenas adicionais de 2022 e anteriores sejam adquiridas. **[Auditoria 2026-07]** Nota crítica: a janela atual (2023--2025) inclui justamente 2023 e 2024 — os dois anos de El Niño mais fortes do registro recente (pico ONI +2,06 e +1,92) — o que enviesa o baseline em direção a condições de seca. O script `scripts/select_baseline_years.py` seleciona, de forma reprodutível, os anos recentes com menor anomalia climática (recomendação: 2019, 2021, 2022, 2025 e 2017; excluir 2023 e 2024). Ver AUDITORIA_TECNICA.md, Tarefa 3.
 
 ### 5.6 Inspeção Visual dos Baselines
 
@@ -369,7 +369,7 @@ Isso efetivamente exige um desvio maior do baseline para disparar um alerta dura
 
 ### 7.4 Status Atual
 
-O cache de dados de precipitação CHIRPS (`data/chirps/`) está atualmente vazio. O módulo de ajuste de seca está completamente implementado, mas ainda não foi ativado em execuções operacionais. Até que os dados CHIRPS sejam ingeridos, o sistema opera sem ajuste de seca (SPI padrão de 0,0, sem alargamento de limiares).
+**[Atualizado na auditoria 2026-07]** O cache `data/chirps/` contém dados CHIRPS mensais de 2021-03 a 2026-03 (locais, não versionados). O módulo de ajuste de seca está completamente implementado e agora pode operar; recomenda-se habilitá-lo nas execuções de detecção. Historicamente (antes da auditoria) o sistema operou sem ajuste de seca (SPI padrão de 0,0, sem alargamento de limiares), pois o cache estava vazio. Uma série de precipitação média na AOI (2021--2026) foi extraída para `data/chirps_aoi/chirps_aoi_monthly.csv`.
 
 ---
 
@@ -611,7 +611,7 @@ Todos os parâmetros configuráveis são definidos em `config/settings.py`. A ta
 | `MAX_CLOUD_COVER` | 20% | Filtro de cobertura de nuvens no nível da cena |
 | `SEARCH_DAYS_BACK` | 16 dias | Janela temporal de busca |
 | `MIN_CLEAR_PERCENTAGE_BASELINE` | 10% | Mínimo de pixels claros para incluir uma cena |
-| `BASELINE_YEARS` | 5 | Anos-alvo para o baseline (4 alcançados) |
+| `BASELINE_YEARS` | 5 | Anos-alvo para o baseline (3 alcançados: 2023--2025 — ver nota de auditoria em §5.5) |
 | `Z_THRESHOLD_HIGH` | -3,0 | Z-score para alertas de alta confiança |
 | `Z_THRESHOLD_MEDIUM` | -2,5 | Z-score para alertas de confiança média |
 | `Z_THRESHOLD_LOW` | -2,0 | Z-score para alertas de baixa confiança |

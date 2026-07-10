@@ -1,0 +1,76 @@
+{
+  "source": {
+    "path": "/Users/sbravo/Downloads/mapbiomas_10m_collection2_integration_v1-classification_2023.tif",
+    "size_bytes": 5499290793,
+    "width": 465718,
+    "height": 476412,
+    "gigapixels": 221.87,
+    "count": 1,
+    "dtype": "uint8",
+    "crs": "EPSG:4326",
+    "bounds": [
+      -74.8974,
+      -34.85203,
+      -33.06124,
+      7.94479
+    ],
+    "res_deg": [
+      8.983152841195223e-05,
+      8.983152841195223e-05
+    ],
+    "res_m_approx": 10.0,
+    "nodata": null,
+    "tiled": true,
+    "block_shape": [
+      256,
+      256
+    ],
+    "compression": "Compression.lzw",
+    "overviews_b1": [],
+    "band1_tags": {
+      "STATISTICS_APPROXIMATE": "YES",
+      "STATISTICS_MAXIMUM": "50",
+      "STATISTICS_MEAN": "3.6514253802579",
+      "STATISTICS_MINIMUM": "0",
+      "STATISTICS_STDDEV": "6.6489648662154",
+      "STATISTICS_VALID_PERCENT": "100"
+    }
+  },
+  "crop": {
+    "out_path": "data/landcover/mapbiomas10m_araripe_2023.tif",
+    "size_mb": 16.3,
+    "width": 24490,
+    "height": 13358
+  },
+  "validation": {
+    "passed": true,
+    "valid_frac": 1.0,
+    "histogram": {
+      "0": 450,
+      "3": 18062275,
+      "4": 187937006,
+      "12": 81845,
+      "15": 99747746,
+      "19": 229804,
+      "21": 15910244,
+      "24": 2398905,
+      "25": 1544553,
+      "30": 77282,
+      "31": 372,
+      "33": 1146938
+    },
+    "checks": {
+      "dtype_uint8": true,
+      "extent_within_tol": true,
+      "has_valid_data": true,
+      "plausible_classes": true,
+      "vegetation_present": true
+    },
+    "bounds": [
+      -41.00001,
+      -7.99995,
+      -38.80003,
+      -6.79998
+    ]
+  }
+}

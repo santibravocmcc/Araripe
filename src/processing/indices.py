@@ -33,6 +33,23 @@ def evi2(ds: xr.Dataset, nir: str = "nir", red: str = "red") -> xr.DataArray:
     """Enhanced Vegetation Index 2 (two-band version, no blue needed).
 
     EVI2 = 2.5 * (NIR - RED) / (NIR + 2.4 * RED + 1)
+
+    IMPORTANT — units caveat: the "+1" soil/aerosol term assumes surface
+    reflectance is scaled to [0, 1]. Whether the input is reflectance or raw DN
+    depends on ``config.settings.REFLECTANCE_SCALING`` (see
+    src/acquisition/download.py::load_band):
+      * REFLECTANCE_SCALING = True  → bands are true reflectance in [0,1] and
+        EVI2 is physically valid. This is the correct mode, but it requires the
+        baselines to have been rebuilt in reflectance (they are coupled).
+      * REFLECTANCE_SCALING = False (current default) → Sentinel-2 bands stay at
+        DN scale (~0-10000, +1000 offset), so the "+1" is negligible and EVI2
+        inflates toward ~1-2.5 — the cause of the "45.7% of EVI2 outside
+        [-1,1]" contamination. This mode is kept only for scale-consistency with
+        the current DN-scale on-disk baselines.
+    NDMI/NBR are ratios and are far less sensitive to the scale. To activate the
+    fix, rebuild baselines with build_baseline.py (reflectance) then set
+    REFLECTANCE_SCALING=True — never change one side only (see
+    AUDITORIA_TECNICA.md, Task 1).
     """
     numerator = 2.5 * (ds[nir] - ds[red])
     denominator = ds[nir] + 2.4 * ds[red] + 1

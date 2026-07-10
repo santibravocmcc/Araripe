@@ -199,6 +199,28 @@ def get_current_spi(
     # Fetch precipitation data
     precip_values = fetch_chirps_range(months, bbox)
 
+    # CHIRPS monthly rasters publish with a ~1–1.5 month lag, so the most recent
+    # requested month(s) may be missing (returned as NaN). If we leave a trailing
+    # NaN in place, the last 3-month rolling window is NaN and SPI-3 collapses to
+    # 0.0 — i.e. drought would be silently ignored. Drop trailing NaN months so
+    # SPI-3 is computed over the most recent *available* window instead.
+    import math
+
+    while precip_values and (
+        precip_values[-1] is None
+        or (isinstance(precip_values[-1], float) and math.isnan(precip_values[-1]))
+    ):
+        dropped = months[-1] if months else None
+        precip_values = precip_values[:-1]
+        months = months[:-1]
+        if dropped:
+            logger.info("Dropping unpublished CHIRPS month {}-{:02d} from SPI window",
+                        dropped[0], dropped[1])
+
+    if len(precip_values) < 3:
+        logger.warning("Fewer than 3 available CHIRPS months; SPI unavailable")
+        return 0.0
+
     # Compute SPI-3
     spi = compute_spi_3month(precip_values)
 

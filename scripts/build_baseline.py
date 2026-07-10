@@ -14,6 +14,7 @@ Usage:
 from __future__ import annotations
 
 import gc
+import shutil
 import sys
 import time
 from datetime import datetime
@@ -65,6 +66,14 @@ def setup_logging(output_dir: Path) -> Path:
     return log_path
 
 
+def free_gb(path: Path) -> float:
+    """Free disk space (GB) on the filesystem containing *path*."""
+    try:
+        return shutil.disk_usage(str(path)).free / 1e9
+    except Exception:
+        return float("inf")
+
+
 def check_existing_baselines(
     index_list: list[str],
     baselines_dir: Path,
@@ -90,7 +99,32 @@ def check_existing_baselines(
 @click.option(
     "--years",
     default=BASELINE_YEARS,
-    help="Number of years of history to use.",
+    help="Number of years of history to use (only if --year-set is not given).",
+)
+@click.option(
+    "--year-set",
+    default="",
+    help="Explicit comma-separated calendar years to pool into the baseline "
+         "(e.g. '2017,2019,2021,2022,2025'). Overrides --years. Each year is "
+         "queried separately to avoid the 500-item cap and to skip excluded years.",
+)
+@click.option(
+    "--months",
+    default="",
+    help="Comma-separated months (1-12) to build. Empty = all needed months. "
+         "Useful for memory-bounded, one-month-at-a-time rebuilds.",
+)
+@click.option(
+    "--min-free-gb",
+    default=3.0,
+    help="Abort if free disk space drops below this (GB) before a query or write.",
+)
+@click.option(
+    "--reflectance/--no-reflectance",
+    default=True,
+    help="Convert DN to surface reflectance [0,1] (EVI2 fix). Default True so "
+         "rebuilt baselines are in reflectance. After rebuilding, set "
+         "REFLECTANCE_SCALING=True in config/settings.py for detection to match.",
 )
 @click.option(
     "--indices",
@@ -132,6 +166,10 @@ def check_existing_baselines(
 )
 def main(
     years: int,
+    year_set: str,
+    months: str,
+    min_free_gb: float,
+    reflectance: bool,
     indices: str,
     output_dir: str,
     max_cloud: int,
@@ -141,15 +179,23 @@ def main(
     aoi: str | None,
 ) -> None:
     """Build monthly baselines from historical Sentinel-2 imagery."""
+    # Force the reflectance scaling for this build so baselines are physically
+    # scaled (EVI2 fix). This is set on the settings module *before* load_band
+    # is used, so the whole build honours it regardless of the global default.
+    import config.settings as _settings
+    _settings.REFLECTANCE_SCALING = reflectance
     from src.acquisition.aoi import clip_dataset_to_aoi, get_aoi_bbox_wgs84, load_aoi_polygon
     from src.acquisition.download import load_sentinel2_for_indices
     from src.acquisition.stac_client import search_element84
-    from src.detection.baseline import build_baselines, save_baseline_cog
+    from src.detection.baseline import save_baseline_cog
     from src.processing.cloud_mask import compute_clear_percentage, mask_sentinel2
-    from src.processing.composite import monthly_composite
+    from src.processing.composite import median_composite, std_composite
     from src.processing.indices import compute_all_indices
 
     index_list = [idx.strip() for idx in indices.split(",")]
+    requested_months = (
+        {int(m) for m in months.split(",") if m.strip()} if months.strip() else None
+    )
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
 
@@ -175,6 +221,23 @@ def main(
     else:
         needed = check_existing_baselines(index_list, output_path)
 
+    # Restrict to explicitly requested months (memory-bounded rebuilds)
+    if requested_months is not None:
+        needed = {idx: [m for m in months_ if m in requested_months]
+                  for idx, months_ in needed.items()}
+        logger.info("Restricting to months {}", sorted(requested_months))
+
+    # ─── Disk-space pre-flight ────────────────────────────────────────────
+    avail = free_gb(output_path)
+    if avail < min_free_gb:
+        logger.error(
+            "Only {:.1f} GB free at {} (< --min-free-gb {:.1f}). Aborting before "
+            "download. Free space or move the existing baselines aside first.",
+            avail, output_path, min_free_gb,
+        )
+        sys.exit(2)
+    logger.info("Disk pre-flight OK: {:.1f} GB free (min {:.1f})", avail, min_free_gb)
+
     # Report what's already done vs what remains
     total_needed = sum(len(months) for months in needed.values())
     total_possible = len(index_list) * 12
@@ -197,27 +260,37 @@ def main(
         "Building {}/{} month-index baselines for indices: {}",
         total_needed, total_possible, index_list,
     )
-    logger.info("Using {} years of history, max cloud cover {}%", years, max_cloud)
+    # ─── Resolve the set of calendar years to pool ────────────────────────
+    if year_set.strip():
+        years_list = sorted({int(y) for y in year_set.split(",") if y.strip()})
+        logger.info("Explicit year set: {}", years_list)
+    else:
+        now = datetime.utcnow()
+        years_list = list(range(now.year - years, now.year + 1))
+        logger.info("Using {} years of history: {}", years, years_list)
+    logger.info("Max cloud cover {}%", max_cloud)
 
-    # ─── Query imagery ────────────────────────────────────────────────────
-    now = datetime.utcnow()
-    start_year = now.year - years
-    datetime_range = f"{start_year}-01-01/{now.strftime('%Y-%m-%d')}"
-
-    logger.info("Querying imagery from {}", datetime_range)
-
-    items = search_element84(
-        bbox=aoi_bbox,
-        datetime_range=datetime_range,
-        max_cloud_cover=max_cloud,
-        max_items=500,
-    )
+    # ─── Query imagery (one query PER YEAR) ───────────────────────────────
+    # Per-year querying avoids the 500-item truncation of a single multi-year
+    # query and lets a discrete, non-contiguous year set (e.g. skipping the
+    # El-Nino years 2023/2024) be expressed directly.
+    items = []
+    for yr in years_list:
+        yr_items = search_element84(
+            bbox=aoi_bbox,
+            datetime_range=f"{yr}-01-01/{yr}-12-31",
+            max_cloud_cover=max_cloud,
+            max_items=500,
+        )
+        yr_items = list(yr_items)
+        logger.info("Year {}: {} scenes", yr, len(yr_items))
+        items.extend(yr_items)
 
     if len(items) == 0:
         logger.error("No imagery found for the specified parameters")
         sys.exit(1)
 
-    logger.info("Found {} scenes to process", len(items))
+    logger.info("Found {} scenes across {} years to process", len(items), len(years_list))
 
     # ─── Single pass: load bands once, compute ALL indices per scene ──────
     # Store index arrays grouped by (index_name, month) for direct compositing
@@ -327,7 +400,10 @@ def main(
     logger.info("=== Scene loading complete. Building monthly composites... ===")
 
     built_count = 0
+    stop_writing = False
     for idx_name in index_list:
+        if stop_writing:
+            break
         for month in needed[idx_name]:
             key = (idx_name, month)
             if key not in arrays_by_idx_month or not arrays_by_idx_month[key]:
@@ -350,18 +426,29 @@ def main(
                     month,
                 )
 
-            try:
-                import numpy as np
-                import xarray as xr
+            # Disk guard before writing each month-index pair
+            avail = free_gb(output_path)
+            if avail < min_free_gb:
+                logger.error(
+                    "Only {:.1f} GB free (< --min-free-gb {:.1f}); stopping before "
+                    "writing {}_month{:02d}. {} baselines were written so far.",
+                    avail, min_free_gb, idx_name, month, built_count,
+                )
+                stop_writing = True
+                break
 
-                stacked = xr.concat(arrays, dim="time", join="outer")
-                mean_arr = stacked.mean(dim="time", skipna=True)
-                std_arr = stacked.std(dim="time", skipna=True)
+            try:
+                # Central statistic is the MEDIAN (robust to residual cloud /
+                # outliers), matching build_baseline_from_downloads.py and
+                # composite.monthly_composite. The output suffix stays "_mean"
+                # for backward compatibility with load_baseline_pair.
+                center_arr = median_composite(arrays)
+                std_arr = std_composite(arrays)
 
                 mean_path = output_path / f"{idx_name}_month{month:02d}_mean.tif"
                 std_path = output_path / f"{idx_name}_month{month:02d}_std.tif"
 
-                save_baseline_cog(mean_arr, mean_path)
+                save_baseline_cog(center_arr, mean_path)
                 save_baseline_cog(std_arr, std_path)
 
                 built_count += 1
@@ -371,7 +458,7 @@ def main(
                 )
 
                 # Free memory after saving
-                del stacked, mean_arr, std_arr, arrays
+                del center_arr, std_arr, arrays
                 arrays_by_idx_month[key] = []
                 gc.collect()
 

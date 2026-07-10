@@ -474,7 +474,7 @@ def create_export_map(
 
     m = folium.Map(location=center, zoom_start=DEFAULT_MAP_ZOOM, tiles=None)
 
-    # Basemaps (first = default = Google Satellite Hybrid)
+    # Basemaps (first = default = Esri Satellite; see BASEMAPS)
     _add_basemaps_folium(m)
 
     # Protected-area boundaries

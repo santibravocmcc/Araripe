@@ -28,26 +28,72 @@ def _get_cache_path(year: int, month: int) -> Path:
     return CHIRPS_CACHE_DIR / f"chirps-v2.0.{year}.{month:02d}.tif"
 
 
+def _download_resumable(url: str, dest: Path, retries: int = 6, timeout: int = 60) -> Path:
+    """Download `url` to `dest` with HTTP Range resume + exponential backoff.
+
+    The UCSB CHIRPS server advertises ``Accept-Ranges: bytes``, so an
+    interrupted transfer resumes from the last byte instead of restarting.
+    Raises RuntimeError if all attempts fail or the final size is wrong.
+    """
+    import random
+    import time
+
+    import requests
+
+    part = dest.with_suffix(dest.suffix + ".part")
+    total = None
+    try:
+        h = requests.head(url, timeout=timeout, allow_redirects=True)
+        if h.ok and "Content-Length" in h.headers:
+            total = int(h.headers["Content-Length"])
+    except requests.RequestException:
+        pass
+
+    for attempt in range(1, retries + 1):
+        have = part.stat().st_size if part.exists() else 0
+        headers = {"Range": f"bytes={have}-"} if have else {}
+        try:
+            with requests.get(url, headers=headers, stream=True, timeout=timeout) as r:
+                if have and r.status_code == 200:  # server ignored Range → restart
+                    have = 0
+                    part.unlink(missing_ok=True)
+                elif have and r.status_code == 416:  # already complete
+                    break
+                r.raise_for_status()
+                with open(part, "ab" if have else "wb") as f:
+                    for chunk in r.iter_content(1 << 20):
+                        if chunk:
+                            f.write(chunk)
+            if total is None or part.stat().st_size >= total:
+                break
+            logger.warning("CHIRPS short read ({}/{} bytes), attempt {}/{}",
+                           part.stat().st_size, total, attempt, retries)
+        except (requests.RequestException, OSError) as e:
+            wait = min(60, 2 ** attempt) + random.uniform(0, 1.5)
+            logger.warning("CHIRPS download error ({}); retry {}/{} in {:.1f}s",
+                           e, attempt, retries, wait)
+            time.sleep(wait)
+    else:
+        raise RuntimeError(f"Failed to download {url} after {retries} attempts")
+
+    if total is not None and part.stat().st_size != total:
+        part.unlink(missing_ok=True)
+        raise RuntimeError(
+            f"CHIRPS size mismatch for {url}: got {part.stat().st_size}, expected {total}")
+    part.replace(dest)
+    return dest
+
+
 def _download_chirps_month(year: int, month: int) -> Path:
     """Download a single CHIRPS monthly precipitation GeoTIFF.
 
-    Downloads the gzipped file from UCSB, decompresses it, and caches
-    the result locally.
-
-    Parameters
-    ----------
-    year : int
-        Year (1981–present).
-    month : int
-        Month (1–12).
-
-    Returns
-    -------
-    Path
-        Local path to the cached GeoTIFF.
+    Robust replacement for the old bare ``urlretrieve``: streams the gzipped
+    file with resume + exponential-backoff retry, verifies the download against
+    the server ``Content-Length``, then decompresses and confirms the result
+    opens as a valid raster (a corrupt/partial file is discarded rather than
+    cached). Parameters as before (year 1981–present, month 1–12); returns the
+    local cache path.
     """
-    import urllib.request
-
     cache_path = _get_cache_path(year, month)
 
     if cache_path.exists():
@@ -56,23 +102,25 @@ def _download_chirps_month(year: int, month: int) -> Path:
 
     filename = f"chirps-v2.0.{year}.{month:02d}.tif.gz"
     url = f"{CHIRPS_BASE_URL}/{filename}"
-
     gz_path = cache_path.with_suffix(".tif.gz")
 
     logger.info("Downloading CHIRPS: {}", url)
-    try:
-        urllib.request.urlretrieve(url, str(gz_path))
-    except Exception as e:
-        raise RuntimeError(f"Failed to download CHIRPS data for {year}-{month:02d}: {e}")
+    _download_resumable(url, gz_path)
 
     # Decompress
     logger.debug("Decompressing {}", gz_path.name)
-    with gzip.open(str(gz_path), "rb") as f_in:
-        with open(str(cache_path), "wb") as f_out:
+    try:
+        with gzip.open(str(gz_path), "rb") as f_in, open(str(cache_path), "wb") as f_out:
             shutil.copyfileobj(f_in, f_out)
-
-    # Remove gzip file
-    gz_path.unlink()
+        # Integrity: the decompressed file must open as a valid raster.
+        with rasterio.open(str(cache_path)):
+            pass
+    except Exception as e:
+        cache_path.unlink(missing_ok=True)
+        gz_path.unlink(missing_ok=True)
+        raise RuntimeError(f"Corrupt CHIRPS download for {year}-{month:02d}: {e}")
+    finally:
+        gz_path.unlink(missing_ok=True)
 
     logger.info("Cached CHIRPS: {}", cache_path.name)
     return cache_path

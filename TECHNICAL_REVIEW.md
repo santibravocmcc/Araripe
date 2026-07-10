@@ -103,9 +103,9 @@ Data acquisition is implemented in `src/acquisition/stac_client.py` using the `p
 | 1 | Element84 Earth Search | `https://earth-search.aws.element84.com/v1` | None required |
 | 2 | Microsoft Planetary Computer | `https://planetarycomputer.microsoft.com/api/stac/v1` | SAS token signing via `planetary-computer` package |
 | 3 | NASA CMR STAC | `https://cmr.earthdata.nasa.gov/stac/LPCLOUD` | NASA Earthdata login |
-| 4 | Copernicus Data Space | `https://stac.dataspace.copernicus.eu/v1` | Configured but not actively used in the fallback chain |
+| 4 | ~~Copernicus Data Space~~ | ~~`https://stac.dataspace.copernicus.eu/v1`~~ | **Removed in Phase 2** — it was dead config (no code consumed it; there was no real fallback despite older docs). Sentinel-1 SAR via CDSE is a roadmap item (see ROADMAP.md) |
 
-The fallback logic for Sentinel-2 queries is: Element84 first; if zero results, Planetary Computer. Landsat queries go directly to Planetary Computer. HLS queries go to NASA CMR STAC.
+The fallback logic for Sentinel-2 queries is: Element84 first; if zero results, Planetary Computer. Landsat and HLS can be added as extra observation sources via `run_detection.py --extra-sources landsat,hls` (Phase 2, Task 7.1).
 
 ### 3.3 Query Parameters
 
@@ -122,7 +122,7 @@ Drought adjustment relies on monthly precipitation estimates from the **Climate 
 - **Resolution:** 0.05 deg (~5.5 km)
 - **Temporal coverage:** 1981--present
 - **Cache directory:** `data/chirps/`
-- **Current status:** Cache directory is empty; CHIRPS data has not yet been downloaded.
+- **Current status (updated in the 2026-07 audit, revised in Phase 2):** The local cache `data/chirps/` holds **61 monthly global files** from 2021-03 to 2026-03 (count verified in Phase 2; Phase 1 said "~62"). Not tracked in Git, hence absent from the remote repo. The download was hardened during the audit (backoff retry, HTTP range resume, integrity check) in `src/acquisition/chirps.py` and the new `scripts/download_baseline_data.py`. **SPI-based drought adjustment is already ACTIVE by default** in `scripts/run_detection.py` (it calls `get_current_spi` and passes it to `detect_deforestation`) — Phase 2 confirmed this was not a "to-enable" item, and hardened it further by dropping not-yet-published recent CHIRPS months.
 
 ---
 
@@ -245,7 +245,7 @@ All 72 baseline files have been successfully produced and are stored in `data/ba
 
 ### 5.5 Temporal Depth
 
-The configuration specifies a target of 5 years of history (`BASELINE_YEARS = 5`), but the current baselines are constructed from **3 years** (2023--2025), with 2026 reserved for the detection stage. This meets the minimum of 3 years considered adequate for baseline statistics, but it may not fully capture extreme inter-annual variability (e.g., strong El Nino / La Nina cycles). It is recommended to extend the window as additional 2022 and earlier scenes are acquired.
+The configuration specifies a target of 5 years of history (`BASELINE_YEARS = 5`), but the current baselines are constructed from **3 years** (2023--2025), with 2026 reserved for the detection stage. This meets the minimum of 3 years considered adequate for baseline statistics, but it may not fully capture extreme inter-annual variability (e.g., strong El Nino / La Nina cycles). It is recommended to extend the window as additional 2022 and earlier scenes are acquired. **[2026-07 audit]** Critical note: the current window (2023--2025) contains exactly 2023 and 2024 — the two strongest El Nino years in the recent record (ONI peaks +2.06 and +1.92) — biasing the baseline toward drought conditions. The script `scripts/select_baseline_years.py` reproducibly selects the recent years with the lowest climate anomaly (recommendation: 2019, 2021, 2022, 2025 and 2017; exclude 2023 and 2024). See AUDITORIA_TECNICA.md, Task 3.
 
 ### 5.6 Visual Inspection of Baselines
 
@@ -369,7 +369,7 @@ This effectively requires a larger departure from the baseline to trigger an ale
 
 ### 7.4 Current Status
 
-The CHIRPS precipitation data cache (`data/chirps/`) is currently empty. The drought adjustment module is fully implemented but has not yet been activated in operational runs. Until CHIRPS data is ingested, the system operates without drought adjustment (SPI defaults to 0.0, no threshold widening).
+**[Updated in the 2026-07 audit]** The cache `data/chirps/` holds monthly CHIRPS data from 2021-03 to 2026-03 (local, untracked). The drought adjustment module is fully implemented and can now operate; enabling it in detection runs is recommended. Historically (pre-audit) the system ran without drought adjustment (SPI defaulting to 0.0, no threshold widening) because the cache was empty. An AOI-mean precipitation series (2021--2026) was extracted to `data/chirps_aoi/chirps_aoi_monthly.csv`.
 
 ---
 
@@ -611,7 +611,7 @@ All configurable parameters are defined in `config/settings.py`. The following t
 | `MAX_CLOUD_COVER` | 20% | Scene-level cloud cover filter |
 | `SEARCH_DAYS_BACK` | 16 days | Temporal search window |
 | `MIN_CLEAR_PERCENTAGE_BASELINE` | 10% | Minimum clear pixels to include a scene |
-| `BASELINE_YEARS` | 5 | Target years for baseline (4 achieved) |
+| `BASELINE_YEARS` | 5 | Target years for baseline (3 achieved: 2023--2025 — see audit note in §5.5) |
 | `Z_THRESHOLD_HIGH` | -3.0 | Z-score for high-confidence alerts |
 | `Z_THRESHOLD_MEDIUM` | -2.5 | Z-score for medium-confidence alerts |
 | `Z_THRESHOLD_LOW` | -2.0 | Z-score for low-confidence alerts |

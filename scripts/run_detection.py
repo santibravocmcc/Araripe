@@ -23,20 +23,108 @@ from config.settings import (
     ALERTS_DIR,
     AOI_BBOX,
     BASELINES_DIR,
+    DEFAULT_LANDCOVER_COLLECTION,
+    LANDCOVER_RASTERS,
     MAX_CLOUD_COVER,
     SCENE_ANOMALY_REJECT_FRAC,
     SCENE_CACHE_DIR,
     SEARCH_DAYS_BACK,
 )
 from src.acquisition.aoi import clip_dataset_to_aoi, get_aoi_bbox_wgs84, load_aoi_polygon
-from src.acquisition.stac_client import search_sentinel2_with_fallback
-from src.acquisition.download import load_sentinel2_for_indices
+from src.acquisition.stac_client import (
+    search_landsat,
+    search_nasa_hls,
+    search_sentinel2_with_fallback,
+)
+from src.acquisition.download import (
+    load_hls_for_indices,
+    load_landsat_for_indices,
+    load_sentinel2_for_indices,
+)
 from src.detection.alerts import save_alerts, summarize_alerts, vectorize_alerts
 from src.detection.baseline import load_baseline_pair
 from src.detection.change_detect import detect_deforestation
-from src.processing.cloud_mask import compute_clear_percentage, mask_sentinel2
+from src.detection.landcover import annotate_alerts_with_landcover
+from src.detection.persistence import DEFAULT_MIN_OVERLAP_FRAC, filter_alerts_by_persistence
+from src.processing.cloud_mask import (
+    compute_clear_percentage,
+    mask_hls,
+    mask_landsat,
+    mask_sentinel2,
+)
 from src.processing.indices import compute_all_indices
 from src.timeseries.builder import store_alert_stats, store_regional_stats
+
+
+# ─── Multi-sensor dispatch ───────────────────────────────────────────────────
+# Each supported source: (search fn, band loader, cloud mask, grid tolerance m).
+# NOTE: the on-disk baselines are Sentinel-2 (20 m). Landsat/HLS observations
+# are 30 m and are compared against those S2 baselines after nearest-neighbour
+# grid snapping — this raises observation density (helping the persistence
+# filter) but is a cross-sensor approximation; ideally each sensor gets its own
+# baseline (roadmap). Extra sources are therefore opt-in via --extra-sources.
+def _load_and_mask(item, sensor, index_list):
+    if sensor == "sentinel2":
+        return mask_sentinel2(load_sentinel2_for_indices(item, index_list))
+    if sensor == "landsat":
+        return mask_landsat(load_landsat_for_indices(item, index_list))
+    if sensor == "hls":
+        return mask_hls(load_hls_for_indices(item, index_list))
+    raise ValueError(f"Unknown sensor {sensor!r}")
+
+
+_GRID_TOLERANCE_M = {"sentinel2": 10, "landsat": 35, "hls": 35}
+
+_CLEARING_LABELS = {0: "none", 1: "fire", 2: "mechanical", 3: "uncertain"}
+
+
+def _find_previous_alert_file(alerts_dir: Path, scene_date: str):
+    """Most recent alerts_YYYY-MM-DD.geojson strictly before scene_date, or None."""
+    prev = None
+    for f in sorted(alerts_dir.glob("alerts_*.geojson")):
+        d = f.stem.replace("alerts_", "")
+        if d < scene_date:
+            prev = f
+        else:
+            break
+    return prev
+
+
+def _modal_class_per_polygon(gdf, class_da):
+    """Modal (most frequent) raster value inside each polygon's exact geometry."""
+    import numpy as np
+    from rasterio.features import geometry_mask
+    from rasterio.windows import Window
+    from rasterio.windows import transform as window_transform
+
+    vals = class_da.values
+    transform = class_da.rio.transform()
+    inv = ~transform
+    out = []
+    for _, row in gdf.to_crs(class_da.rio.crs).iterrows():
+        b = row.geometry.bounds
+        c0f, r0f = inv * (b[0], b[3])
+        c1f, r1f = inv * (b[2], b[1])
+        r0 = max(0, int(r0f)); r1 = min(vals.shape[0], int(r1f) + 1)
+        c0 = max(0, int(c0f)); c1 = min(vals.shape[1], int(c1f) + 1)
+        if r0 >= r1 or c0 >= c1:
+            out.append(0); continue
+        win = Window(c0, r0, c1 - c0, r1 - r0)
+        try:
+            mask = geometry_mask([row.geometry.__geo_interface__],
+                                 out_shape=(r1 - r0, c1 - c0),
+                                 transform=window_transform(win, transform),
+                                 invert=True, all_touched=True)
+        except Exception:
+            out.append(0); continue
+        inside = vals[r0:r1, c0:c1][mask]
+        inside = inside[np.isfinite(inside)] if inside.dtype.kind == "f" else inside
+        inside = inside[inside > 0]  # ignore 'none'
+        if inside.size == 0:
+            out.append(0); continue
+        codes, counts = np.unique(inside.astype(int), return_counts=True)
+        out.append(int(codes[counts.argmax()]))
+    return out
 
 
 @click.command()
@@ -60,6 +148,37 @@ from src.timeseries.builder import store_alert_stats, store_regional_stats
     default=20,
     help="Maximum number of scenes to process per run (sorted by lowest cloud).",
 )
+@click.option(
+    "--extra-sources",
+    default="",
+    help="Comma-separated additional sensors to query for more valid "
+         "observations (reinforces the persistence filter): 'landsat', 'hls'. "
+         "Empty = Sentinel-2 only. NOTE: compared against S2 baselines "
+         "(cross-sensor approximation); HLS requires Earthdata auth.",
+)
+@click.option(
+    "--persistence/--no-persistence",
+    default=True,
+    help="Only report alerts confirmed in >=2 consecutive observations "
+         "(compares against the most recent prior alert file). Non-destructive: "
+         "all alerts are saved with a persistence_status column.",
+)
+@click.option(
+    "--min-overlap-frac",
+    default=DEFAULT_MIN_OVERLAP_FRAC,
+    help="Min overlap with the previous observation to confirm an alert.",
+)
+@click.option(
+    "--landcover-collection",
+    default=DEFAULT_LANDCOVER_COLLECTION,
+    help="MapBiomas collection for annotating alerts (mapbiomas10m|mapbiomas30m). "
+         "Empty string disables land-cover annotation.",
+)
+@click.option(
+    "--classify-clearing/--no-classify-clearing",
+    default=True,
+    help="Annotate each alert with a likely clearing type (fire vs mechanical).",
+)
 def main(
     days_back: int,
     indices: str,
@@ -68,9 +187,19 @@ def main(
     cache: bool,
     aoi: str | None,
     max_scenes: int,
+    extra_sources: str,
+    persistence: bool,
+    min_overlap_frac: float,
+    landcover_collection: str,
+    classify_clearing: bool,
 ) -> None:
     """Run the twice-weekly deforestation detection pipeline."""
     index_list = [idx.strip() for idx in indices.split(",")]
+    extra = [s.strip() for s in extra_sources.split(",") if s.strip()]
+    # BSI is needed only to classify fire vs mechanical clearing; it is loaded
+    # and computed as an extra index but is NOT used for z-score detection.
+    do_classify = classify_clearing and "nbr" in index_list
+    compute_list = index_list + (["bsi"] if do_classify and "bsi" not in index_list else [])
     today = datetime.utcnow().strftime("%Y-%m-%d")
 
     logger.info("=== Araripe Deforestation Detection ===")
@@ -112,32 +241,59 @@ def main(
 
     datetime_range = _build_datetime_range(days_back=days_back)
     logger.info("Search window: {}", datetime_range)
-    items = search_sentinel2_with_fallback(
-        bbox=aoi_bbox,
-        datetime_range=datetime_range,
-        max_cloud_cover=max_cloud,
-    )
 
-    if len(items) == 0:
+    # Tag each item with its sensor so the per-scene loop can dispatch to the
+    # right loader / cloud mask. Sentinel-2 is always queried; Landsat/HLS are
+    # added on request to raise the density of valid observations (which
+    # directly strengthens the persistence filter during the cloudy wet season).
+    tagged: list[tuple[object, str]] = []
+    s2_items = search_sentinel2_with_fallback(
+        bbox=aoi_bbox, datetime_range=datetime_range, max_cloud_cover=max_cloud,
+    )
+    tagged.extend((it, "sentinel2") for it in s2_items)
+    logger.info("Sentinel-2: {} scenes", len(s2_items))
+
+    if "landsat" in extra:
+        try:
+            ls_items = list(search_landsat(
+                bbox=aoi_bbox, datetime_range=datetime_range, max_cloud_cover=max_cloud,
+            ))
+            tagged.extend((it, "landsat") for it in ls_items)
+            logger.info("Landsat: {} scenes", len(ls_items))
+        except Exception as e:
+            logger.warning("Landsat search failed ({}); continuing without it.", e)
+    if "hls" in extra:
+        try:
+            hls_items = list(search_nasa_hls(
+                bbox=aoi_bbox, datetime_range=datetime_range,
+            ))
+            tagged.extend((it, "hls") for it in hls_items)
+            logger.info("HLS: {} scenes", len(hls_items))
+        except Exception as e:
+            logger.warning("HLS search failed ({}); continuing without it.", e)
+
+    if len(tagged) == 0:
         logger.warning("No cloud-free imagery found. Exiting.")
         return
 
-    logger.info("Found {} candidate scenes", len(items))
+    logger.info("Found {} candidate scenes across {} sensor(s)",
+                len(tagged), 1 + len(extra))
 
     # Sort by cloud cover (process clearest first)
     items_sorted = sorted(
-        items,
-        key=lambda x: x.properties.get("eo:cloud_cover", 100),
+        tagged,
+        key=lambda t: t[0].properties.get("eo:cloud_cover", 100),
     )
 
     # Stage 2-5: Process scenes
     all_alerts = []
 
-    for item in items_sorted[:max_scenes]:  # Process up to --max-scenes best scenes
+    for item, sensor in items_sorted[:max_scenes]:  # up to --max-scenes best scenes
         scene_date = str(item.datetime)[:10]
         scene_month = item.datetime.month
         cloud_pct = item.properties.get("eo:cloud_cover", "?")
-        logger.info("Processing {} (cloud: {}%, month: {})", item.id, cloud_pct, scene_month)
+        logger.info("Processing {} [{}] (cloud: {}%, month: {})",
+                    item.id, sensor, cloud_pct, scene_month)
 
         try:
             # Stage 2: Load, mask, and clip to AOI
@@ -160,8 +316,8 @@ def main(
                     )
                     continue
             else:
-                ds = load_sentinel2_for_indices(item, index_list)
-                ds = mask_sentinel2(ds)
+                # Dispatch to the sensor-specific loader + cloud mask.
+                ds = _load_and_mask(item, sensor, compute_list)
 
                 # Check clear percentage BEFORE clipping (clipping can
                 # reset NaN pixels and inflate the clear percentage).
@@ -187,8 +343,19 @@ def main(
                     except Exception as cache_err:
                         logger.warning("Failed to cache: {}", cache_err)
 
-            # Stage 3: Compute indices
-            idx_ds = compute_all_indices(ds, index_list, sensor="sentinel2")
+            # Stage 3: Compute indices (incl. BSI when classifying clearing).
+            # Only compute indices whose required bands are actually present —
+            # a cached scene written under a bsi-free band set lacks 'blue', so
+            # requesting bsi would KeyError and drop the whole scene.
+            from config.bands import INDEX_BANDS, LANDSAT_INDEX_BANDS
+
+            _band_req = LANDSAT_INDEX_BANDS if sensor in ("landsat", "hls") else INDEX_BANDS
+            _avail = set(ds.data_vars)
+            usable = [ix for ix in compute_list if set(_band_req.get(ix, [])) <= _avail]
+            if set(usable) != set(compute_list):
+                logger.info("Bands available only for indices {} (requested {})",
+                            usable, compute_list)
+            idx_ds = compute_all_indices(ds, usable, sensor=sensor)
 
             # Store regional stats
             for idx_name in index_list:
@@ -198,18 +365,17 @@ def main(
             # Stage 4: Load baselines and compare
             baseline_means = {}
             baseline_stds = {}
+            # Grid snap tolerance: S2 baselines are 20 m; a coarser sensor
+            # needs a wider nearest-neighbour tolerance to align.
+            tol = _GRID_TOLERANCE_M.get(sensor, 10)
 
             for idx_name in index_list:
                 try:
                     mean, std = load_baseline_pair(idx_name, scene_month)
                     # Align baseline grid to current scene grid.
-                    # Baselines were built from merged tiles and may have
-                    # pixel centers that don't exactly match STAC scene
-                    # grids.  reindex_like with nearest-neighbor and a
-                    # 10 m tolerance avoids NaN from coordinate mismatch.
                     ref_var = list(idx_ds.data_vars)[0]
-                    mean = mean.reindex_like(idx_ds[ref_var], method="nearest", tolerance=10)
-                    std = std.reindex_like(idx_ds[ref_var], method="nearest", tolerance=10)
+                    mean = mean.reindex_like(idx_ds[ref_var], method="nearest", tolerance=tol)
+                    std = std.reindex_like(idx_ds[ref_var], method="nearest", tolerance=tol)
                     baseline_means[idx_name] = mean
                     baseline_stds[idx_name] = std
                 except FileNotFoundError:
@@ -253,7 +419,65 @@ def main(
             alerts_gdf = vectorize_alerts(detection["confidence"])
 
             if not alerts_gdf.empty:
-                # Save alerts
+                # ─── Task 7.2: annotate clearing type (fire vs mechanical) ────
+                if do_classify and "nbr" in baseline_means and "bsi" in idx_ds:
+                    try:
+                        from src.detection.change_detect import classify_fire_vs_mechanical
+
+                        clearing = classify_fire_vs_mechanical(
+                            nbr_pre=baseline_means["nbr"],
+                            nbr_post=idx_ds["nbr"],
+                            bsi_post=idx_ds["bsi"],
+                        )
+                        codes = _modal_class_per_polygon(alerts_gdf, clearing)
+                        alerts_gdf["clearing_type"] = [_CLEARING_LABELS.get(c, "none") for c in codes]
+                    except Exception as ce:
+                        logger.warning("Clearing classification failed ({}); skipping", ce)
+
+                # ─── Task 8: annotate with land-cover context ─────────────────
+                if landcover_collection and landcover_collection in LANDCOVER_RASTERS:
+                    lc_path = LANDCOVER_RASTERS[landcover_collection]
+                    if Path(lc_path).exists():
+                        try:
+                            alerts_gdf = annotate_alerts_with_landcover(
+                                alerts_gdf, lc_path, collection=landcover_collection,
+                            )
+                        except Exception as le:
+                            logger.warning("Land-cover annotation failed ({}); skipping", le)
+                    else:
+                        logger.warning("Land-cover raster {} missing; skipping annotation", lc_path)
+
+                # ─── Task 2: temporal-persistence confirmation ────────────────
+                # Non-destructive: mark each alert confirmed/candidate/first_obs
+                # by comparing to the most recent prior observation. All alerts
+                # are still saved so the next run can chain against them.
+                if persistence:
+                    try:
+                        import geopandas as gpd
+
+                        prev_f = _find_previous_alert_file(ALERTS_DIR, scene_date)
+                        if prev_f is None:
+                            alerts_gdf["persistence_status"] = "first_observation"
+                        else:
+                            prev_gdf = gpd.read_file(str(prev_f))
+                            confirmed = filter_alerts_by_persistence(
+                                alerts_gdf, prev_gdf, min_overlap_frac=min_overlap_frac,
+                            )
+                            confirmed_idx = set(confirmed.index)
+                            alerts_gdf["persistence_status"] = [
+                                "confirmed" if i in confirmed_idx else "candidate"
+                                for i in alerts_gdf.index
+                            ]
+                            n_conf = int((alerts_gdf["persistence_status"] == "confirmed").sum())
+                            logger.info(
+                                "Persistence: {}/{} alerts confirmed vs {}",
+                                n_conf, len(alerts_gdf), prev_f.name,
+                            )
+                    except Exception as pe:
+                        logger.warning("Persistence step failed ({}); saving all as candidate", pe)
+                        alerts_gdf["persistence_status"] = "candidate"
+
+                # Save alerts (all polygons; consumers filter on persistence_status)
                 alert_path = save_alerts(alerts_gdf, scene_date)
                 all_alerts.append(alerts_gdf)
 
@@ -270,7 +494,7 @@ def main(
             else:
                 logger.info("Scene {}: no alerts", scene_date)
 
-        except Exception as e:
+        except Exception as e:  # keep per-scene failures isolated
             logger.error("Failed to process {}: {}", item.id, e)
             continue
 

@@ -133,8 +133,23 @@ def _assign_polygon_confidence(
     gdf: gpd.GeoDataFrame,
     confidence: xr.DataArray,
 ) -> list[int]:
-    """Assign max confidence value to each polygon via rasterization."""
-    from rasterio.features import rasterize
+    """Assign the maximum confidence value found *inside* each polygon.
+
+    The confidence is taken only over pixels that fall within the exact
+    polygon geometry, not over its rectangular bounding box. The previous
+    implementation used ``np.nanmax`` over the bounding-box window, so a
+    high-confidence pixel belonging to a *different* nearby polygon that
+    happened to fall inside the bounding rectangle could inflate the reported
+    confidence (AUDITORIA_TECNICA.md item G). Here we rasterize the actual
+    geometry within the same window and reduce only over interior pixels.
+
+    Because every polygon originates from the binary ``alert_mask`` (all its
+    pixels are >= ``min_confidence`` by construction), the exact mask can only
+    *lower* an inflated bounding-box value, never raise a legitimate one.
+    """
+    from rasterio.features import geometry_mask
+    from rasterio.windows import Window
+    from rasterio.windows import transform as window_transform
 
     confidences = []
     conf_values = confidence.values
@@ -159,7 +174,27 @@ def _assign_polygon_confidence(
             continue
 
         window = conf_values[r0:r1, c0:c1]
-        max_conf = int(np.nanmax(window)) if window.size > 0 else 1
+
+        # Rasterize the exact geometry into the window (True = inside polygon).
+        # all_touched=True mirrors rasterio.features.shapes, which draws polygon
+        # edges along pixel boundaries, so the mask recovers the same pixels the
+        # polygon was vectorized from.
+        win = Window(c0, r0, c1 - c0, r1 - r0)
+        win_transform = window_transform(win, transform)
+        try:
+            inside = geometry_mask(
+                [row.geometry.__geo_interface__],
+                out_shape=(r1 - r0, c1 - c0),
+                transform=win_transform,
+                invert=True,        # True where INSIDE the geometry
+                all_touched=True,
+            )
+        except Exception:
+            # Degenerate geometry — fall back to the whole window.
+            inside = np.ones_like(window, dtype=bool)
+
+        interior = window[inside]
+        max_conf = int(np.nanmax(interior)) if interior.size > 0 else 1
         confidences.append(max_conf)
 
     return confidences

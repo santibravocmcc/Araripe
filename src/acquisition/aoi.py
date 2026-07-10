@@ -29,8 +29,9 @@ def load_aoi_polygon(
     Parameters
     ----------
     path : Path, optional
-        Path to GeoJSON or GeoPackage.  If *None*, tries ``AOI_GEOPACKAGE``
-        first, then ``AOI_GEOJSON`` from settings.
+        Path to GeoJSON or GeoPackage.  If *None*, tries, in order,
+        ``APA_chapada_araripe.gpkg``, ``chapada_araripe.gpkg`` and finally
+        ``AOI_GEOJSON`` (chapada_araripe.geojson) from ``AOI_DIR``.
     target_crs : str
         Target CRS to reproject the polygon into.
 
