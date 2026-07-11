@@ -132,6 +132,13 @@ def load_band(
         da = da.where(da != 0)  # 0 = fill → NaN
         scale, offset = _reflectance_scale_offset(item, asset_key, sensor)
         da = da * scale + offset
+        # Floor at 0: negative surface reflectance is physically invalid (it
+        # arises from the BOA offset on near-zero/dark pixels). Crucially, this
+        # keeps the normalized-difference denominator (e.g. NIR+SWIR) from
+        # crossing zero, which otherwise makes NDMI/NBR explode to ±1e5 at
+        # dark/shadow pixels. With both bands >= 0, NDMI/NBR are bounded to
+        # [-1, 1] by construction (NaN is preserved by clip).
+        da = da.clip(min=0.0)
     elif sensor == "sentinel2" and not is_class_band:
         # Legacy DN path (matches the current DN-scale baselines). S2 L2A
         # processing baseline 04.00+ stores reflectance*10000 + 1000; the
@@ -146,13 +153,33 @@ def load_band(
         except Exception:
             pass
 
+    # Declare nodata=NaN for spectral bands BEFORE any fill-producing op. This
+    # is the single most important correctness step: without it, rioxarray's
+    # reproject / reproject_match / clip fill out-of-footprint (and clipped-out)
+    # pixels with 0 — which the compositor then treats as valid data (e.g.
+    # EVI2 = 2.5*(0-0)/(0+0+1) = 0), collapsing coverage. It must be set even
+    # when reprojection is skipped (scene CRS already == target), because
+    # clip_dataset_to_aoi downstream also fills. 0-valued reflectance stays
+    # valid data (nodata is NaN, not 0).
+    if not is_class_band:
+        try:
+            da.rio.write_nodata(np.nan, inplace=True)
+        except Exception:
+            pass
+
     # Reproject if needed
     if da.rio.crs and str(da.rio.crs) != target_crs:
-        da = da.rio.reproject(
-            target_crs,
-            resolution=target_resolution,
-            resampling=1,  # bilinear
-        )
+        if is_class_band:
+            da = da.rio.reproject(
+                target_crs, resolution=target_resolution, resampling=1,
+            )
+        else:
+            da = da.rio.reproject(
+                target_crs,
+                resolution=target_resolution,
+                resampling=1,  # bilinear
+                nodata=np.nan,
+            )
 
     da.attrs["logical_band"] = logical_band
     da.attrs["sensor"] = sensor

@@ -245,3 +245,7 @@ data/baselines/_pre_2026cutoff_backup/
 # regenerable local data (like baselines/chirps) — keep only the small metadata.
 data/landcover/*.tif
 data/chirps_aoi/*.tif
+
+# temporary reflectance rebuild staging (swapped into data/baselines when complete)
+data/baselines_reflectance/
+data/baselines_dn_backup/
