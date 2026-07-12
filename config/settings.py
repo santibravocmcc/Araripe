@@ -55,10 +55,16 @@ BASELINE_MONTHS = list(range(1, 13))  # all 12 months
 #     offline path), so this defaults to False to keep detection self-consistent.
 #   * scripts/build_baseline.py forces this True for its own run, so a rebuilt
 #     baseline is always in reflectance.
-# To activate the EVI2 fix in production: rebuild the baselines with
-# build_baseline.py (reflectance), THEN set REFLECTANCE_SCALING = True here.
+# To activate the EVI2 fix in production: rebuild the baselines in reflectance,
+# THEN set REFLECTANCE_SCALING = True here.
 # Do NOT flip this without rebuilding — "don't change scaling on one side only".
-REFLECTANCE_SCALING = False
+#
+# ACTIVATED 2026-07-11: the on-disk baselines in data/baselines/ were rebuilt in
+# surface reflectance via Google Earth Engine (scripts/build_baseline_gee.py +
+# split_gee_baselines.py; median composites over {2017,2019,2021,2022,2025},
+# validated: EVI2 medians ~0.15-0.44 seasonal, coverage ~100%). Detection now
+# produces reflectance to match them.
+REFLECTANCE_SCALING = True
 
 # ─── Detection thresholds ────────────────────────────────────────────────────
 # Z-score thresholds (number of standard deviations below mean)
