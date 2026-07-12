@@ -38,18 +38,30 @@ jobs:
           use-mamba: true            # mamba is much faster at solving
           miniforge-version: latest
 
+      - name: Fetch reflectance baselines from R2
+        # CRITICAL: the baselines are git-ignored local data (not in the repo),
+        # so a fresh CI checkout has none and detection would skip ("No baselines
+        # available"). Pull them from R2 first (uploaded once via upload_to_r2.py).
+        # This is what makes the GitHub Action actually detect.
+        if: env.R2_ENDPOINT_URL != ''
+        run: python scripts/fetch_baselines_from_r2.py
+
       - name: Run detection pipeline
         # EARTHDATA_* are used only when NASA HLS is enabled as an extra source
         # (--extra-sources hls). CDSE_* were removed: no code consumed them
         # (dead config); Sentinel-1 SAR via CDSE is a roadmap item, not wired.
+        # NOTE: run_detection.py streams current scenes from AWS — fine on a CI
+        # runner (fast network), unlike a throttled home connection. It uses the
+        # reflectance baselines fetched above with REFLECTANCE_SCALING=True.
         env:
           EARTHDATA_USERNAME: ${{ secrets.EARTHDATA_USERNAME }}
           EARTHDATA_PASSWORD: ${{ secrets.EARTHDATA_PASSWORD }}
         run: python scripts/run_detection.py
 
-      - name: Upload COGs to Cloudflare R2
-        if: success() && env.R2_ENDPOINT_URL != ''
-        run: python scripts/upload_to_r2.py
+      # (No per-run R2 upload: run_detection produces no COGs, and the baselines
+      # are static — they're published to R2 manually via upload_to_r2.py only
+      # when rebuilt. Fetching then re-uploading the same ~7.5 GB every run would
+      # be pure waste.)
 
       - name: Commit alerts and time series data
         if: success()
