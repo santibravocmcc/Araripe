@@ -92,14 +92,40 @@ def store_regional_stats(
         Path to SQLite database.
     """
     init_database(db_path)
-
     values = index_data.values.flatten()
     valid = values[~np.isnan(values)]
+    store_regional_stats_values(
+        date, index_name, valid, total_pixels=len(values),
+        region=region, db_path=db_path,
+    )
 
+
+def store_regional_stats_values(
+    date: str,
+    index_name: str,
+    valid_values,
+    total_pixels: int,
+    region: str = "full_aoi",
+    db_path: Path = DB_PATH,
+) -> None:
+    """Store regional stats from precomputed *valid* pixel values.
+
+    Lets a caller combine several tiles of one acquisition date into a single
+    full-AOI row (concatenate each tile's finite pixels and sum their pixel
+    counts) instead of writing once per tile — the per-tile writes collided on
+    UNIQUE(date, index_name, region='full_aoi') and kept only the last tile.
+
+    ``total_pixels`` is the count of all pixels (valid + invalid) the stats are
+    measured over, used for ``pct_valid``.
+    """
+    init_database(db_path)
+    valid = np.asarray(valid_values).ravel()
+    valid = valid[~np.isnan(valid)]
     if len(valid) == 0:
         logger.warning("No valid pixels for {} on {}", index_name, date)
         return
 
+    total = max(int(total_pixels), len(valid))
     stats = {
         "date": date,
         "index_name": index_name,
@@ -109,13 +135,12 @@ def store_regional_stats(
         "std": float(np.std(valid)),
         "min": float(np.min(valid)),
         "max": float(np.max(valid)),
-        "pct_valid": float(len(valid) / len(values) * 100),
+        "pct_valid": float(len(valid) / total * 100),
         "n_pixels": int(len(valid)),
     }
 
     conn = sqlite3.connect(str(db_path))
     cursor = conn.cursor()
-
     cursor.execute(
         """
         INSERT OR REPLACE INTO regional_stats
@@ -125,7 +150,6 @@ def store_regional_stats(
         """,
         stats,
     )
-
     conn.commit()
     conn.close()
     logger.debug("Stored stats for {} {} on {}", region, index_name, date)

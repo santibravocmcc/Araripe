@@ -43,12 +43,33 @@ def get_r2_client():
 @click.option("--prefix", default="baselines/", help="Object key prefix in the bucket.")
 @click.option("--out", default=str(BASELINES_DIR), help="Local output directory.")
 @click.option("--bucket", default=R2_BUCKET_NAME)
-def main(prefix, out, bucket):
+@click.option("--list-only", is_flag=True, help="List/count the baseline objects in R2 "
+              "without downloading — use to verify the R2 copy (e.g. 72 .tif) is complete "
+              "before deleting the local data/baselines/ to free disk.")
+def main(prefix, out, bucket, list_only):
+    client = get_r2_client()
+    paginator = client.get_paginator("list_objects_v2")
+
+    if list_only:
+        n, total = 0, 0
+        for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
+            for obj in page.get("Contents", []):
+                if not obj["Key"].endswith(".tif"):
+                    continue
+                n += 1
+                total += obj["Size"]
+                print(f"  {obj['Key']} ({obj['Size']//1_000_000} MB)")
+        print(f"\n{n} baseline COG(s) in s3://{bucket}/{prefix} ({total/1e9:.2f} GB total)")
+        if n < 72:
+            print(f"WARNING: expected 72 baseline files, found {n}. Do NOT delete the "
+                  "local copy until this shows 72.")
+        else:
+            print("OK: 72 baseline files present in R2 — the local data/baselines/ can be "
+                  "safely deleted and re-fetched with this script (without --list-only).")
+        return
+
     out_dir = Path(out)
     out_dir.mkdir(parents=True, exist_ok=True)
-    client = get_r2_client()
-
-    paginator = client.get_paginator("list_objects_v2")
     n = 0
     for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
         for obj in page.get("Contents", []):

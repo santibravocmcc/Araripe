@@ -572,7 +572,7 @@ A interface web (`app.py` + `src/visualization/`) foi atualizada na versão 1.1 
 
 ### 10.1 Confundimento Fenológico
 
-A fenologia decídua da vegetação da Caatinga permanece como a fonte mais significativa de erro potencial de comissão. Durante a estação seca (agosto--outubro, definida como `CAATINGA_LEAFOFF_MONTHS = [8, 9, 10]`), a queda foliar natural pode produzir assinaturas espectrais que se sobrepõem aos sinais de desmatamento, mesmo em índices baseados em umidade como o NDMI. A abordagem de baseline mensal mitiga isso comparando com distribuições históricas do mesmo mês, mas o baseline pode não capturar toda a faixa de variabilidade fenológica interanual, especialmente com apenas 3 anos de dados de referência.
+A fenologia decídua da vegetação da Caatinga permanece como a fonte mais significativa de erro potencial de comissão. Durante a estação seca (agosto--outubro, definida como `CAATINGA_LEAFOFF_MONTHS = [8, 9, 10]`), a queda foliar natural pode produzir assinaturas espectrais que se sobrepõem aos sinais de desmatamento, mesmo em índices baseados em umidade como o NDMI. A abordagem de baseline mensal mitiga isso comparando com distribuições históricas do mesmo mês; a janela de 5 anos {2017, 2019, 2021, 2022, 2025} amplia a base em relação à v1.1 (3 anos), mas ainda pode não capturar toda a variabilidade fenológica interanual.
 
 ### 10.2 Cobertura de Nuvens
 
@@ -580,7 +580,7 @@ A cobertura de nuvens da estação chuvosa (novembro--abril) reduz o número de 
 
 ### 10.3 Sensibilidade do EVI2 a Cirrus Finos
 
-Conforme documentado na Seção 8, o EVI2 é mais sensível à contaminação residual por cirrus finos do que o NDMI ou NBR. A mitigação por limitação (valores > 1,0 definidos como 1,0) aborda casos extremos, mas não corrige valores moderadamente elevados na faixa de 0,8--1,0 que ainda podem estar contaminados. Isso aumenta a incerteza das estatísticas do baseline do EVI2 (tanto mediana quanto desvio padrão).
+Conforme documentado na Seção 8, o EVI2 é mais sensível à contaminação residual por cirrus finos do que o NDMI ou NBR. **Na v2.0, a causa dominante (escala DN) foi corrigida** (refletância + `REFLECTANCE_SCALING`), eliminando o *cap* artificial em 1,0 da v1.1 e restaurando o poder discriminativo do EVI2. Resta apenas a sensibilidade *residual* a cirrus finos (valores individuais marginalmente elevados), que mantém a incerteza do EVI2 um pouco acima da do NDMI/NBR — aceitável dado seu papel confirmatório.
 
 ### 10.4 Profundidade Temporal do Baseline
 
@@ -600,7 +600,7 @@ A área mínima de alerta de 1 ha pode ser muito grosseira para detectar extraç
 
 ### 10.8 Lacuna na Validação dos Alertas
 
-Os alertas gerados (8.924 polígonos) não foram validados contra dados de referência independentes. Sem avaliação de acurácia (taxas de erro de comissão e omissão), a confiabilidade do sistema não pode ser quantificada.
+Os alertas gerados (17.528 polígonos brutos no histórico v1.1; 2.244 após persistência) não foram validados contra dados de referência independentes. Sem avaliação de acurácia (taxas de erro de comissão e omissão), a confiabilidade do sistema não pode ser quantificada. O `scripts/sample_alerts_for_validation.py` monta a amostra estratificada; a interpretação visual é etapa humana pendente.
 
 ---
 

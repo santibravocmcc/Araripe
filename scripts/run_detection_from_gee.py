@@ -101,17 +101,15 @@ def _load_composite(path: Path) -> tuple[xr.Dataset, xr.DataArray]:
     return ds, bsi
 
 
-@click.command()
-@click.option("--in-dir", required=True, type=click.Path(exists=True), help="Dir with araripe_detect_*.tif from Drive.")
-@click.option("--out-dir", default=str(ALERTS_DIR), help="Output alerts dir.")
-@click.option("--min-clear", default=20.0, help="Skip a date if valid AOI coverage %% is below this.")
-@click.option("--persistence/--no-persistence", default=True, help="Require >=2 consecutive observations.")
-@click.option("--min-overlap-frac", default=DEFAULT_MIN_OVERLAP_FRAC)
-@click.option("--landcover-collection", default=DEFAULT_LANDCOVER_COLLECTION)
-@click.option("--classify-clearing/--no-classify-clearing", default=True)
-@click.option("--spi/--no-spi", default=True, help="Fetch CHIRPS SPI for drought "
-              "widening. Use --no-spi to skip (offline, or when CHIRPS is slow).")
-def main(in_dir, out_dir, min_clear, persistence, min_overlap_frac, landcover_collection, classify_clearing, spi):
+def run_detection_on_dir(in_dir, out_dir=ALERTS_DIR, *, min_clear=20.0,
+                         persistence=True, min_overlap_frac=DEFAULT_MIN_OVERLAP_FRAC,
+                         landcover_collection=DEFAULT_LANDCOVER_COLLECTION,
+                         classify_clearing=True, spi=True):
+    """Run the existing detection logic over a directory of per-date GEE
+    composites (``araripe_detect_YYYY-MM-DD.tif``). Reused by both the manual
+    path (this script's CLI) and the headless CI path
+    (``scripts/run_detection_gee.py``), so the science is identical regardless
+    of how the composites were obtained (Drive download vs direct pull)."""
     in_dir = Path(in_dir); out_dir = Path(out_dir); out_dir.mkdir(parents=True, exist_ok=True)
     files = sorted((f for f in in_dir.glob("*.tif") if _DATE_RE.search(f.stem)),
                    key=lambda f: _DATE_RE.search(f.stem).group(1))
@@ -217,6 +215,25 @@ def main(in_dir, out_dir, min_clear, persistence, min_overlap_frac, landcover_co
             logger.error("Failed {}: {}", date, e); continue
 
     logger.info("=== Done. Wrote alerts for {} dates to {} ===", n_written, out_dir)
+    return n_written
+
+
+@click.command()
+@click.option("--in-dir", required=True, type=click.Path(exists=True), help="Dir with araripe_detect_*.tif from Drive.")
+@click.option("--out-dir", default=str(ALERTS_DIR), help="Output alerts dir.")
+@click.option("--min-clear", default=20.0, help="Skip a date if valid AOI coverage %% is below this.")
+@click.option("--persistence/--no-persistence", default=True, help="Require >=2 consecutive observations.")
+@click.option("--min-overlap-frac", default=DEFAULT_MIN_OVERLAP_FRAC)
+@click.option("--landcover-collection", default=DEFAULT_LANDCOVER_COLLECTION)
+@click.option("--classify-clearing/--no-classify-clearing", default=True)
+@click.option("--spi/--no-spi", default=True, help="Fetch CHIRPS SPI for drought "
+              "widening. Use --no-spi to skip (offline, or when CHIRPS is slow).")
+def main(in_dir, out_dir, min_clear, persistence, min_overlap_frac, landcover_collection, classify_clearing, spi):
+    run_detection_on_dir(
+        in_dir, out_dir, min_clear=min_clear, persistence=persistence,
+        min_overlap_frac=min_overlap_frac, landcover_collection=landcover_collection,
+        classify_clearing=classify_clearing, spi=spi,
+    )
 
 
 if __name__ == "__main__":

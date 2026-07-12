@@ -53,7 +53,10 @@ from src.processing.cloud_mask import (
     mask_sentinel2,
 )
 from src.processing.indices import compute_all_indices
-from src.timeseries.builder import store_alert_stats, store_regional_stats
+from src.timeseries.builder import (
+    store_alert_stats,
+    store_regional_stats_values,
+)
 
 
 # ─── Multi-sensor dispatch ───────────────────────────────────────────────────
@@ -88,6 +91,55 @@ def _find_previous_alert_file(alerts_dir: Path, scene_date: str):
         else:
             break
     return prev
+
+
+def _merge_and_confirm(scene_date, parts, alerts_dir, persistence, min_overlap_frac):
+    """Merge every tile's alerts for one acquisition date into a single
+    GeoDataFrame and mark temporal persistence against the most recent prior
+    alert file.
+
+    Fixes a latent data-loss bug: the streaming loop yields one GeoDataFrame per
+    *tile*, and several tiles can share one ``scene_date``. The old code called
+    ``save_alerts(gdf, scene_date)`` once per tile, so each tile overwrote the
+    previous tile's ``alerts_<date>.geojson`` — only the last tile of a date
+    survived on disk, silently dropping the rest of the AOI. Now all tiles of a
+    date are concatenated into one file. (The GEE path never had this bug: it
+    mosaics all tiles into one AOI composite per date before detection.)
+
+    Persistence is evaluated here (not per-tile) so it runs against the full
+    merged date. ``filter_alerts_by_persistence`` reprojects both sides to the
+    metric CRS internally, so the in-memory UTM alerts and the WGS84 prior file
+    compare correctly.
+    """
+    import geopandas as gpd
+
+    merged = gpd.GeoDataFrame(
+        gpd.pd.concat(parts, ignore_index=True),
+        crs=parts[0].crs,
+    )
+    if persistence:
+        try:
+            prev_f = _find_previous_alert_file(alerts_dir, scene_date)
+            if prev_f is None:
+                merged["persistence_status"] = "first_observation"
+            else:
+                prev_gdf = gpd.read_file(str(prev_f))
+                confirmed = filter_alerts_by_persistence(
+                    merged, prev_gdf, min_overlap_frac=min_overlap_frac,
+                )
+                confirmed_idx = set(confirmed.index)
+                merged["persistence_status"] = [
+                    "confirmed" if i in confirmed_idx else "candidate"
+                    for i in merged.index
+                ]
+                logger.info(
+                    "Persistence {}: {}/{} confirmed vs {}",
+                    scene_date, len(confirmed_idx), len(merged), prev_f.name,
+                )
+        except Exception as pe:
+            logger.warning("Persistence step failed ({}); marking candidate", pe)
+            merged["persistence_status"] = "candidate"
+    return merged
 
 
 def _modal_class_per_polygon(gdf, class_da):
@@ -285,8 +337,17 @@ def main(
         key=lambda t: t[0].properties.get("eo:cloud_cover", 100),
     )
 
-    # Stage 2-5: Process scenes
-    all_alerts = []
+    # Stage 2-5: Process scenes. Collect alerts per acquisition DATE (a date can
+    # span several UTM tiles) so they can be merged into one file per date below
+    # — saving per tile here would overwrite the file (see _merge_and_confirm).
+    alerts_by_date: dict[str, list] = {}
+    # Valid index pixels + total pixel count per (date, index), pooled across all
+    # UTM tiles of a date, so regional stats are written once over the full AOI
+    # in Stage 6 (writing per tile collided on UNIQUE(date,index,'full_aoi') and
+    # kept only the last tile). Memory is bounded by --max-scenes; for the
+    # bi-weekly window this is a handful of scenes.
+    regional_px: dict[str, dict[str, list]] = {}
+    regional_total: dict[str, dict[str, int]] = {}
 
     for item, sensor in items_sorted[:max_scenes]:  # up to --max-scenes best scenes
         scene_date = str(item.datetime)[:10]
@@ -357,10 +418,17 @@ def main(
                             usable, compute_list)
             idx_ds = compute_all_indices(ds, usable, sensor=sensor)
 
-            # Store regional stats
+            # Accumulate valid pixels per (date, index) for a single full-AOI
+            # regional-stats write in Stage 6 (see regional_px note above).
             for idx_name in index_list:
                 if idx_name in idx_ds:
-                    store_regional_stats(scene_date, idx_name, idx_ds[idx_name])
+                    vals = idx_ds[idx_name].values.ravel()
+                    finite = vals[np.isfinite(vals)]
+                    regional_px.setdefault(scene_date, {}).setdefault(idx_name, [])
+                    regional_total.setdefault(scene_date, {}).setdefault(idx_name, 0)
+                    if finite.size:
+                        regional_px[scene_date][idx_name].append(finite)
+                    regional_total[scene_date][idx_name] += int(vals.size)
 
             # Stage 4: Load baselines and compare
             baseline_means = {}
@@ -447,49 +515,14 @@ def main(
                     else:
                         logger.warning("Land-cover raster {} missing; skipping annotation", lc_path)
 
-                # ─── Task 2: temporal-persistence confirmation ────────────────
-                # Non-destructive: mark each alert confirmed/candidate/first_obs
-                # by comparing to the most recent prior observation. All alerts
-                # are still saved so the next run can chain against them.
-                if persistence:
-                    try:
-                        import geopandas as gpd
-
-                        prev_f = _find_previous_alert_file(ALERTS_DIR, scene_date)
-                        if prev_f is None:
-                            alerts_gdf["persistence_status"] = "first_observation"
-                        else:
-                            prev_gdf = gpd.read_file(str(prev_f))
-                            confirmed = filter_alerts_by_persistence(
-                                alerts_gdf, prev_gdf, min_overlap_frac=min_overlap_frac,
-                            )
-                            confirmed_idx = set(confirmed.index)
-                            alerts_gdf["persistence_status"] = [
-                                "confirmed" if i in confirmed_idx else "candidate"
-                                for i in alerts_gdf.index
-                            ]
-                            n_conf = int((alerts_gdf["persistence_status"] == "confirmed").sum())
-                            logger.info(
-                                "Persistence: {}/{} alerts confirmed vs {}",
-                                n_conf, len(alerts_gdf), prev_f.name,
-                            )
-                    except Exception as pe:
-                        logger.warning("Persistence step failed ({}); saving all as candidate", pe)
-                        alerts_gdf["persistence_status"] = "candidate"
-
-                # Save alerts (all polygons; consumers filter on persistence_status)
-                alert_path = save_alerts(alerts_gdf, scene_date)
-                all_alerts.append(alerts_gdf)
-
-                # Store alert stats
-                summary = summarize_alerts(alerts_gdf)
-                store_alert_stats(scene_date, summary)
-
+                # Persistence + save are deferred to a per-DATE phase after the
+                # loop (see _merge_and_confirm): several tiles can share one
+                # scene_date, and saving here would make each tile overwrite the
+                # previous tile's file. Collect this tile's alerts under its date.
+                alerts_by_date.setdefault(scene_date, []).append(alerts_gdf)
                 logger.info(
-                    "Scene {}: {} alerts, {:.1f} ha",
-                    scene_date,
-                    summary["total_alerts"],
-                    summary["total_area_ha"],
+                    "Scene {} [{}]: {} candidate polygon(s) (pre-merge)",
+                    scene_date, sensor, len(alerts_gdf),
                 )
             else:
                 logger.info("Scene {}: no alerts", scene_date)
@@ -497,6 +530,39 @@ def main(
         except Exception as e:  # keep per-scene failures isolated
             logger.error("Failed to process {}: {}", item.id, e)
             continue
+
+    # ─── Stage 6a: regional stats, once per date over the full merged AOI ─────
+    # (Includes dates with no alerts, matching the old per-scene behavior.)
+    for scene_date in sorted(regional_px):
+        for idx_name, arrs in regional_px[scene_date].items():
+            if not arrs:
+                continue
+            try:
+                store_regional_stats_values(
+                    scene_date, idx_name, np.concatenate(arrs),
+                    total_pixels=regional_total[scene_date][idx_name],
+                )
+            except Exception as rse:
+                logger.warning("Regional stats {} {} failed ({})", scene_date, idx_name, rse)
+
+    # ─── Stage 6b: merge tiles per date, confirm persistence, save once ───────
+    # Process dates chronologically so persistence chains correctly: each date's
+    # file is saved before the next date's previous-file lookup runs, so one run
+    # confirms its own consecutive dates as well as against prior history.
+    all_alerts = []
+    for scene_date in sorted(alerts_by_date):
+        parts = alerts_by_date[scene_date]
+        merged = _merge_and_confirm(
+            scene_date, parts, ALERTS_DIR, persistence, min_overlap_frac,
+        )
+        save_alerts(merged, scene_date)
+        summary = summarize_alerts(merged)
+        store_alert_stats(scene_date, summary)
+        all_alerts.append(merged)
+        logger.info(
+            "Date {}: {} alert(s) merged from {} tile(s), {:.1f} ha",
+            scene_date, summary["total_alerts"], len(parts), summary["total_area_ha"],
+        )
 
     # Summary
     if all_alerts:

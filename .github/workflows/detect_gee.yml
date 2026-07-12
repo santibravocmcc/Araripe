@@ -1,0 +1,91 @@
+name: GEE Deforestation Detection (headless)
+
+# Fully-automated Google Earth Engine detection path (service account -> tiled
+# synchronous pull -> existing detection logic). Manual-trigger by default so it
+# can be validated with your service account before being trusted on a schedule.
+#
+# To make THIS the scheduled path instead of the streaming update_data.yml:
+#   1. confirm a manual run here succeeds end-to-end, then
+#   2. uncomment the `schedule:` block below AND remove/disable the `schedule:`
+#      in update_data.yml (running both would double-detect and fight on push).
+#
+# Frontend note: the live site is the STATIC Cloudflare Pages app, which ingests
+# alerts from THIS repo's git (its own workflow clones the repo + runs
+# prepare_data.py). So the `git push` step below is what feeds production — no
+# Hugging Face sync is needed here. (update_data.yml still carries an HF Space
+# sync; that Space is the legacy Streamlit dashboard, no longer the frontend.)
+#
+# Required repo config:
+#   - secret  GEE_SA_KEY   : full service-account JSON key (Earth Engine Resource
+#                            Viewer on a registered, EE-API-enabled Cloud project)
+#   - secrets R2_ENDPOINT_URL / R2_ACCESS_KEY / R2_SECRET_KEY : baseline fetch
+#   - var     EE_PROJECT    : Earth Engine project id (defaults to ee-araripe)
+
+on:
+  workflow_dispatch:
+    inputs:
+      start:
+        description: "Start date YYYY-MM-DD (blank = today - 16 days)"
+        required: false
+      end:
+        description: "End date YYYY-MM-DD exclusive (blank = tomorrow)"
+        required: false
+  # schedule:
+  #   - cron: '0 6 * * 1,4'   # Mon & Thu 06:00 UTC (enable only after validating)
+
+permissions:
+  contents: write
+
+jobs:
+  detect-gee:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL }}
+      R2_ACCESS_KEY: ${{ secrets.R2_ACCESS_KEY }}
+      R2_SECRET_KEY: ${{ secrets.R2_SECRET_KEY }}
+      GEE_SA_KEY: ${{ secrets.GEE_SA_KEY }}
+      EE_PROJECT: ${{ vars.EE_PROJECT || 'ee-araripe' }}
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Set up Conda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          environment-file: environment.yml
+          activate-environment: araripe
+          auto-activate-base: false
+          use-mamba: true
+          miniforge-version: latest
+
+      - name: Install Earth Engine client
+        run: pip install -q earthengine-api requests
+
+      - name: Fetch reflectance baselines from R2
+        if: env.R2_ENDPOINT_URL != ''
+        run: python scripts/fetch_baselines_from_r2.py
+
+      - name: Run GEE detection
+        env:
+          START: ${{ github.event.inputs.start }}
+          END: ${{ github.event.inputs.end }}
+        run: |
+          python scripts/run_detection_gee.py \
+            --project "$EE_PROJECT" --start "$START" --end "$END"
+
+      - name: Commit alerts and time series data
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/alerts/ data/timeseries/
+          git diff --staged --quiet || git commit -m "chore: update alerts (GEE) $(date +%Y-%m-%d)"
+          git pull --rebase origin main
+          git push
