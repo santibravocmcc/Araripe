@@ -15,6 +15,50 @@ from config.bands import LANDSAT_BANDS, SENTINEL2_BANDS, get_asset_key
 from config.settings import CHUNK_SIZE, TARGET_CRS
 
 
+def _reflectance_scale_offset(item: Item, asset_key: str, sensor: str) -> tuple[float, float]:
+    """Return (scale, offset) to convert a DN band to surface reflectance [0,1].
+
+    Prefers the STAC raster-extension ``raster:bands`` scale/offset (authoritative
+    and per-asset; present for Element84 S2, Planetary Computer Landsat, and HLS
+    when available). Falls back per sensor:
+      * sentinel2 : scale 1e-4, offset -0.1 for processing baseline >= 04.00
+                    (2022-01-25+), else 0.
+      * landsat   : Collection 2 Level 2 surface reflectance → scale 2.75e-5,
+                    offset -0.2.
+      * hls       : reflectance * 10000 → scale 1e-4, offset 0.
+    """
+    try:
+        rb = item.assets[asset_key].extra_fields.get("raster:bands")
+        if rb and isinstance(rb, list) and rb[0].get("scale") is not None:
+            scale = float(rb[0]["scale"])
+            offset = float(rb[0].get("offset") or 0.0)
+            return scale, offset
+    except Exception:
+        pass
+
+    if sensor == "landsat":
+        return 2.75e-5, -0.2
+    if sensor == "hls":
+        return 1e-4, 0.0
+
+    # sentinel2 fallback
+    scale, offset = 1e-4, 0.0
+    try:
+        pb = item.properties.get("s2:processing_baseline")
+        if pb is not None:
+            if float(pb) >= 4.0:
+                offset = -0.1
+        elif item.datetime is not None:
+            from datetime import datetime, timezone
+
+            cutoff = datetime(2022, 1, 25, tzinfo=item.datetime.tzinfo or timezone.utc)
+            if item.datetime >= cutoff:
+                offset = -0.1
+    except Exception:
+        pass
+    return scale, offset
+
+
 def load_band(
     item: Item,
     logical_band: str,
@@ -64,18 +108,42 @@ def load_band(
     if da.dtype != np.float32:
         da = da.astype(np.float32)
 
-    # Sentinel-2 Processing Baseline 04.00 (Jan 2022 onwards) encodes
-    # surface-reflectance with a BOA_ADD_OFFSET of -1000. To recover the
-    # true reflectance we must add 1000 (then divide by 10000, but for the
-    # normalized-difference indices we use that scale division cancels).
-    # This applies only to the spectral bands; SCL is a classification map
-    # and must NOT be offset.
+    # ─── Surface-reflectance scaling (COUPLED with the baseline scale) ────
+    # When config.settings.REFLECTANCE_SCALING is True, convert raw DN to
+    # surface reflectance in [0,1] via the STAC raster:bands scale/offset:
+    #     reflectance = DN * scale + offset
+    # applied per-scene and per-sensor (S2/Landsat/HLS). This is physically
+    # correct and fixes the inflated/mis-scaled EVI2 (whose "+1" soil term
+    # assumes reflectance in [0,1] — the "45.7% of EVI2 outside [-1,1]"
+    # contamination). NDMI/NBR are ratios and are far less sensitive.
     #
-    # We skip it for the SCL band and for non-Sentinel-2 sensors. We also
-    # only apply it to numeric bands whose values look like raw int16
-    # reflectance (median > 200 → almost certainly stored DN, not already
-    # corrected float reflectance).
-    if sensor == "sentinel2" and logical_band != "scl":
+    # CRITICAL COUPLING: this must match the scale of the on-disk baselines.
+    # The current baselines are DN-scale, so REFLECTANCE_SCALING defaults to
+    # False and this path preserves the legacy DN behaviour (Sentinel-2 +1000
+    # offset heuristic). build_baseline.py forces the flag True for its own run
+    # so rebuilt baselines are in reflectance; flip the setting True only after
+    # rebuilding. See AUDITORIA_TECNICA.md Task 1 and config/settings.py.
+    #
+    # Classification bands (SCL for S2, QA for Landsat/HLS) are never scaled.
+    import config.settings as _settings
+
+    is_class_band = logical_band in ("scl", "qa")
+    if getattr(_settings, "REFLECTANCE_SCALING", False) and not is_class_band:
+        da = da.where(da != 0)  # 0 = fill → NaN
+        scale, offset = _reflectance_scale_offset(item, asset_key, sensor)
+        da = da * scale + offset
+        # Floor at 0: negative surface reflectance is physically invalid (it
+        # arises from the BOA offset on near-zero/dark pixels). Crucially, this
+        # keeps the normalized-difference denominator (e.g. NIR+SWIR) from
+        # crossing zero, which otherwise makes NDMI/NBR explode to ±1e5 at
+        # dark/shadow pixels. With both bands >= 0, NDMI/NBR are bounded to
+        # [-1, 1] by construction (NaN is preserved by clip).
+        da = da.clip(min=0.0)
+    elif sensor == "sentinel2" and not is_class_band:
+        # Legacy DN path (matches the current DN-scale baselines). S2 L2A
+        # processing baseline 04.00+ stores reflectance*10000 + 1000; the
+        # historical code added +1000 to already-DN bands. Preserved here for
+        # scale-consistency with the un-rebuilt baselines.
         try:
             sample = da.isel(x=slice(0, min(512, da.sizes["x"])),
                              y=slice(0, min(512, da.sizes["y"]))).values
@@ -83,17 +151,35 @@ def load_band(
             if len(sample) > 0 and float(np.median(sample)) > 200.0:
                 da = da + 1000.0
         except Exception:
-            # If the heuristic fails, fall through with raw values to
-            # match the historical behaviour.
+            pass
+
+    # Declare nodata=NaN for spectral bands BEFORE any fill-producing op. This
+    # is the single most important correctness step: without it, rioxarray's
+    # reproject / reproject_match / clip fill out-of-footprint (and clipped-out)
+    # pixels with 0 — which the compositor then treats as valid data (e.g.
+    # EVI2 = 2.5*(0-0)/(0+0+1) = 0), collapsing coverage. It must be set even
+    # when reprojection is skipped (scene CRS already == target), because
+    # clip_dataset_to_aoi downstream also fills. 0-valued reflectance stays
+    # valid data (nodata is NaN, not 0).
+    if not is_class_band:
+        try:
+            da.rio.write_nodata(np.nan, inplace=True)
+        except Exception:
             pass
 
     # Reproject if needed
     if da.rio.crs and str(da.rio.crs) != target_crs:
-        da = da.rio.reproject(
-            target_crs,
-            resolution=target_resolution,
-            resampling=1,  # bilinear
-        )
+        if is_class_band:
+            da = da.rio.reproject(
+                target_crs, resolution=target_resolution, resampling=1,
+            )
+        else:
+            da = da.rio.reproject(
+                target_crs,
+                resolution=target_resolution,
+                resampling=1,  # bilinear
+                nodata=np.nan,
+            )
 
     da.attrs["logical_band"] = logical_band
     da.attrs["sensor"] = sensor
@@ -259,3 +345,27 @@ def load_landsat_for_indices(
         list(required_bands),
         sensor="landsat",
     )
+
+
+def load_hls_for_indices(
+    item: Item,
+    indices: list[str],
+) -> xr.Dataset:
+    """Load NASA HLS bands required for specified vegetation indices.
+
+    HLS is on a common 30 m grid. Uses the Landsat-style band set (nir08 for
+    NDMI/NBR/EVI2). Note: HLS assets are served from NASA Earthdata and require
+    Earthdata authentication (earthaccess) for GDAL /vsicurl streaming.
+    """
+    from config.bands import LANDSAT_INDEX_BANDS
+
+    required_bands = set()
+    for idx in indices:
+        required_bands.update(LANDSAT_INDEX_BANDS[idx])
+    required_bands.add("qa")
+
+    logger.info(
+        "Loading {} HLS bands for indices {}: {}",
+        len(required_bands), indices, sorted(required_bands),
+    )
+    return load_bands(item, list(required_bands), sensor="hls", target_resolution=30.0)

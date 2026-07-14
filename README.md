@@ -117,8 +117,7 @@ python scripts/build_baseline.py --years 5 --indices ndmi,nbr,evi2
 
 Copy `.env.example` to `.env` and configure:
 
-- `CDSE_USERNAME` / `CDSE_PASSWORD` — Copernicus Data Space (optional)
-- `EARTHDATA_USERNAME` / `EARTHDATA_PASSWORD` — NASA Earthdata (for HLS)
+- `EARTHDATA_USERNAME` / `EARTHDATA_PASSWORD` — NASA Earthdata (only for HLS via `--extra-sources hls`)
 - `R2_ENDPOINT_URL` / `R2_ACCESS_KEY` / `R2_SECRET_KEY` — Cloudflare R2 storage
 - `PC_SDK_SUBSCRIPTION_KEY` — Microsoft Planetary Computer (optional, increases rate limits)
 

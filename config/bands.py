@@ -25,7 +25,7 @@ LANDSAT_BANDS = {
     "green":  {"asset": "green",  "band": "B3", "wavelength_nm": 562,  "resolution_m": 30},
     "red":    {"asset": "red",    "band": "B4", "wavelength_nm": 655,  "resolution_m": 30},
     "nir08":  {"asset": "nir08",  "band": "B5", "wavelength_nm": 865,  "resolution_m": 30},
-    "swir16": {"asset": "lwir16", "band": "B6", "wavelength_nm": 1610, "resolution_m": 30},
+    "swir16": {"asset": "swir16", "band": "B6", "wavelength_nm": 1610, "resolution_m": 30},
     "swir22": {"asset": "swir22", "band": "B7", "wavelength_nm": 2200, "resolution_m": 30},
     "qa":     {"asset": "qa_pixel", "band": "QA_PIXEL", "wavelength_nm": None, "resolution_m": 30},
 }
@@ -37,6 +37,10 @@ HLS_BANDS = {
     "green":  {"asset": "B03", "wavelength_nm": 560,  "resolution_m": 30},
     "red":    {"asset": "B04", "wavelength_nm": 665,  "resolution_m": 30},
     "nir":    {"asset": "B8A", "wavelength_nm": 865,  "resolution_m": 30},
+    # nir08 alias (same narrow-NIR asset as `nir`) so the Landsat-style index
+    # overrides (which use the "nir08" band name for NDMI/NBR/EVI2) resolve for
+    # HLS too.
+    "nir08":  {"asset": "B8A", "wavelength_nm": 865,  "resolution_m": 30},
     "swir16": {"asset": "B11", "wavelength_nm": 1610, "resolution_m": 30},
     "swir22": {"asset": "B12", "wavelength_nm": 2190, "resolution_m": 30},
     "qa":     {"asset": "Fmask", "wavelength_nm": None, "resolution_m": 30},

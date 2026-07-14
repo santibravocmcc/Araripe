@@ -107,13 +107,17 @@ def monthly_composite(
 
     logger.info("Building monthly composite for month {}: {} scenes", month, len(month_arrays))
 
-    mean = mean_composite(month_arrays)
+    # Central statistic is the MEDIAN (robust to residual cloud/outliers), to
+    # match the documented design and the on-disk baselines produced by
+    # build_baseline_from_downloads.py. The output file suffix is still "_mean"
+    # for backward compatibility (see baseline.py / REVISAO_TECNICA.md §5.4).
+    center = median_composite(month_arrays)
     std = std_composite(month_arrays)
 
-    mean.attrs["month"] = month
+    center.attrs["month"] = month
     std.attrs["month"] = month
 
-    return mean, std
+    return center, std
 
 
 def seasonal_composite(

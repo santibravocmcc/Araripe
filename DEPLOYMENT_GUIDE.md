@@ -118,16 +118,16 @@ Runs the detection pipeline (`scripts/run_detection.py`) every Monday and Thursd
 
 ### Why STAC credentials?
 
-The workflow file (`.github/workflows/update_data.yml`) references four credential secrets:
+The workflow file (`.github/workflows/update_data.yml`) references these credential secrets:
 
 | Secret | Service | Why needed |
 |--------|---------|------------|
-| `CDSE_USERNAME` | Copernicus Data Space | **Fallback** STAC API. The primary source (Element84) needs no auth, but if it's down, the pipeline falls back to Copernicus, which requires a free account |
-| `CDSE_PASSWORD` | Copernicus Data Space | Password for the above |
-| `EARTHDATA_USERNAME` | NASA Earthdata | **Fallback** for HLS (Harmonized Landsat-Sentinel) data. Also free, requires registration |
+| `EARTHDATA_USERNAME` | NASA Earthdata | Only for NASA HLS as an **extra source** (`--extra-sources hls`). Free, requires registration. Not used by the default pipeline. |
 | `EARTHDATA_PASSWORD` | NASA Earthdata | Password for the above |
+| `R2_ENDPOINT_URL` / `R2_ACCESS_KEY` / `R2_SECRET_KEY` | Cloudflare R2 | COG upload (see section 3). The upload step is skipped when `R2_ENDPOINT_URL` is unset. |
+| `HF_TOKEN` | Hugging Face | Sync to the Hugging Face Space |
 
-**Note:** The primary data source (Element84 Earth Search) requires **no authentication**. These secrets are only for fallback providers. The pipeline will work without them — it just won't have fallback options if Element84 is unavailable.
+**Note:** The primary data source (Element84 Earth Search) requires **no authentication**, and Planetary Computer is the automatic fallback (also no secret needed for read access). The pipeline works with none of the optional secrets set. **Copernicus/CDSE was removed** — it was configured but never consumed by any code (there was *no* Copernicus fallback despite earlier docs saying so). Sentinel-1 SAR via CDSE for wet-season cloud penetration is a roadmap item, not a drop-in credential.
 
 ### Setup Steps
 
@@ -150,9 +150,7 @@ git push -u origin main
 - `R2_ACCESS_KEY` — R2 API token access key
 - `R2_SECRET_KEY` — R2 API token secret key
 
-**Optional (fallback STAC providers):**
-- `CDSE_USERNAME` — register free at https://dataspace.copernicus.eu
-- `CDSE_PASSWORD`
+**Optional (only for NASA HLS as an extra source):**
 - `EARTHDATA_USERNAME` — register free at https://urs.earthdata.nasa.gov
 - `EARTHDATA_PASSWORD`
 
@@ -279,10 +277,9 @@ Now the twice-weekly GitHub Actions workflow will automatically upload any new/u
 | GitHub Actions | `R2_ENDPOINT_URL` | Cloudflare R2 dashboard | Yes (for COG hosting) |
 | GitHub Actions | `R2_ACCESS_KEY` | Cloudflare R2 API token | Yes (for COG hosting) |
 | GitHub Actions | `R2_SECRET_KEY` | Cloudflare R2 API token | Yes (for COG hosting) |
-| GitHub Actions | `CDSE_USERNAME` | https://dataspace.copernicus.eu | Optional (fallback) |
-| GitHub Actions | `CDSE_PASSWORD` | Copernicus Data Space | Optional (fallback) |
-| GitHub Actions | `EARTHDATA_USERNAME` | https://urs.earthdata.nasa.gov | Optional (fallback) |
-| GitHub Actions | `EARTHDATA_PASSWORD` | NASA Earthdata | Optional (fallback) |
+| GitHub Actions | `HF_TOKEN` | Hugging Face | Yes (for Space sync) |
+| GitHub Actions | `EARTHDATA_USERNAME` | https://urs.earthdata.nasa.gov | Optional (only for `--extra-sources hls`) |
+| GitHub Actions | `EARTHDATA_PASSWORD` | NASA Earthdata | Optional (only for `--extra-sources hls`) |
 | HF Spaces | `R2_ENDPOINT_URL` | Same as above | Only if dashboard streams from R2 |
 
 ---

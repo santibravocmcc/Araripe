@@ -125,8 +125,13 @@ def harmonic_fit(
 
     Model: y(t) = a0 + Σ[a_k * cos(2πk*t/T) + b_k * sin(2πk*t/T)]
 
-    Used for BFAST Monitor-style breakpoint detection: observations
-    exceeding 3× RMSE of the fitted model on 3 consecutive dates are flagged.
+    ROADMAP NOTE — this is a *simplified, BFAST-Monitor-style* residual check
+    (observations exceeding 3× RMSE of the fitted harmonic on 3 consecutive
+    dates are flagged); it is **not** the BFAST algorithm and is **not wired
+    into the detection pipeline or the dashboard**. A real BFAST implementation
+    (OLS-MOSUM / recursive-residuals structural-break tests, trend+season
+    decomposition with confidence intervals) is a tracked roadmap item — see
+    ROADMAP.md. Do not present this function as "BFAST" in production.
 
     Parameters
     ----------

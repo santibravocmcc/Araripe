@@ -118,7 +118,7 @@ def detect_deforestation(
         med_flag = z_med_flag & d_med_flag
         confidence = confidence.where(~((confidence < 2) & med_flag), other=2)
 
-    # Low confidence: z < -2.0 AND delta < -0.10 in any single index
+    # Low confidence: z < -2.0 AND delta < -0.15 (DELTA_THRESHOLD_LOW) in any single index
     for idx_name in all_indices:
         low_z = results[f"z_{idx_name}"] < z_low
         low_d = results[f"delta_{idx_name}"] < DELTA_THRESHOLD_LOW

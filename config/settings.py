@@ -20,7 +20,11 @@ AOI_GEOPACKAGE = AOI_DIR / "APA_chapada_araripe.gpkg"
 ELEMENT84_URL = "https://earth-search.aws.element84.com/v1"
 PLANETARY_COMPUTER_URL = "https://planetarycomputer.microsoft.com/api/stac/v1"
 NASA_STAC_URL = "https://cmr.earthdata.nasa.gov/stac/LPCLOUD"
-COPERNICUS_STAC_URL = "https://stac.dataspace.copernicus.eu/v1"
+# NOTE: Copernicus/CDSE (stac.dataspace.copernicus.eu) was removed as dead
+# config — no code consumed it and the workflow's CDSE_* secrets were unused.
+# Sentinel-1 SAR via CDSE (wet-season cloud penetration) is a roadmap item; it
+# needs its own preprocessing chain (calibration/speckle/terrain correction),
+# not just an endpoint. See AUDITORIA_TECNICA.md Task 7.3 / roadmap.
 
 # ─── Collection IDs ──────────────────────────────────────────────────────────
 SENTINEL2_COLLECTION = "sentinel-2-l2a"
@@ -42,6 +46,25 @@ LANDSAT_RESOLUTION = 30  # meters
 # ─── Baseline parameters ─────────────────────────────────────────────────────
 BASELINE_YEARS = 5  # number of years of history for baseline computation
 BASELINE_MONTHS = list(range(1, 13))  # all 12 months
+
+# ─── Reflectance scaling (COUPLED with the baseline scale — Task 1) ───────────
+# When True, load_band converts DN → surface reflectance in [0,1] (per-scene
+# STAC raster:bands scale/offset). This is physically correct and fixes the
+# inflated/mis-scaled EVI2, BUT it MUST match the scale of the on-disk baselines:
+#   * The current baselines in data/baselines/ are DN-scale (built by the old
+#     offline path), so this defaults to False to keep detection self-consistent.
+#   * scripts/build_baseline.py forces this True for its own run, so a rebuilt
+#     baseline is always in reflectance.
+# To activate the EVI2 fix in production: rebuild the baselines in reflectance,
+# THEN set REFLECTANCE_SCALING = True here.
+# Do NOT flip this without rebuilding — "don't change scaling on one side only".
+#
+# ACTIVATED 2026-07-11: the on-disk baselines in data/baselines/ were rebuilt in
+# surface reflectance via Google Earth Engine (scripts/build_baseline_gee.py +
+# split_gee_baselines.py; median composites over {2017,2019,2021,2022,2025},
+# validated: EVI2 medians ~0.15-0.44 seasonal, coverage ~100%). Detection now
+# produces reflectance to match them.
+REFLECTANCE_SCALING = True
 
 # ─── Detection thresholds ────────────────────────────────────────────────────
 # Z-score thresholds (number of standard deviations below mean)
@@ -83,6 +106,19 @@ NDFI_DEGRADED_MIN = 0.0
 # ─── CHIRPS precipitation data ────────────────────────────────────────────────
 CHIRPS_BASE_URL = "https://data.chc.ucsb.edu/products/CHIRPS-2.0/global_monthly/tifs"
 CHIRPS_CACHE_DIR = DATA_DIR / "chirps"
+
+# ─── Land cover (MapBiomas) context layers ───────────────────────────────────
+# Two selectable collections; their class taxonomies differ (see
+# src/detection/landcover.py). Paths point at AOI crops under data/landcover/.
+LANDCOVER_DIR = DATA_DIR / "landcover"
+LANDCOVER_RASTERS = {
+    # Collection 2 beta (10 m, Sentinel-2, 2016–2023)
+    "mapbiomas10m": LANDCOVER_DIR / "mapbiomas10m_araripe_2023.tif",
+    # Collection 10 (Landsat legend; territorio crop is ~300 m aggregated)
+    "mapbiomas30m": LANDCOVER_DIR / "mapbiomas30m_araripe_2023.tif",
+}
+DEFAULT_LANDCOVER_COLLECTION = "mapbiomas10m"
+NATURAL_VEG_MIN_FRAC = 0.5  # default threshold for the natural-vegetation filter
 
 # ─── Baseline quality filters ────────────────────────────────────────────────
 MIN_CLEAR_PERCENTAGE_BASELINE = 10.0  # skip scenes with <10% clear pixels

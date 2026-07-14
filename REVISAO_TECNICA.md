@@ -1,18 +1,51 @@
 # Revisão Técnica: Sistema de Monitoramento de Desmatamento da Chapada do Araripe
 
-**Versão:** 1.1
-**Data:** 25/04/2026
+**Versão:** 2.0
+**Data:** 12/07/2026
 **Preparado para:** Revisão por pares especialistas (sensoriamento remoto, monitoramento ambiental)
+
+---
+
+## 0. O que mudou na versão 2.0 (após a auditoria técnica)
+
+Esta versão incorpora as correções e melhorias da auditoria técnica (detalhes e
+justificativas em `AUDITORIA_TECNICA.md`; explicação em linguagem simples em
+`COMO_FUNCIONA.md`). As mudanças de maior impacto científico:
+
+1. **Baseline reconstruído em refletância, sobre 5 anos climaticamente "calmos"
+   {2017, 2019, 2021, 2022, 2025}** — substituindo a janela 2023–2025, que estava
+   contaminada pelos dois El Niño mais fortes do período (2023/2024). Calculado no
+   **Google Earth Engine** (mediana verdadeira por mês, coleção `S2_SR_HARMONIZED`).
+2. **Correção de escala do EVI2** (refletância `DN·scale + offset`, por-cena/sensor)
+   acoplada ao rebuild do baseline via a flag `REFLECTANCE_SCALING` (agora `True`).
+   Elimina os ~45,7% de EVI2 fora de [-1,1] que motivavam o *cap* artificial em 1,0.
+3. **Filtro de persistência temporal** (≥2 observações consecutivas com sobreposição
+   espacial) — reduz a comissão da estação chuvosa (~-87% no histórico).
+4. **Máscara de confiança por geometria exata** do polígono (não mais pela janela
+   *bounding-box*), evitando herança de confiança de polígonos vizinhos.
+5. **Integração de land cover (MapBiomas)** à análise: anotação de cada alerta por
+   classe/grupo dominante, com **as duas coleções selecionáveis** (10 m Coleção 2 e
+   30 m Coleção 10), cada uma com sua tabela de reclassificação.
+6. **Ajuste de seca (SPI/CHIRPS) confirmado ativo** por padrão e endurecido
+   (descarte de meses ainda não publicados).
+7. **Configuração morta removida** (Copernicus/CDSE) e **código antes não exercido
+   ligado** (Landsat/HLS como fontes extras opcionais; discriminação fogo×mecânico).
+8. **Caminho de produção via Google Earth Engine + Cloudflare R2**: baselines
+   publicados no R2 e baixados sob demanda pelo CI; detecção de 2026 reprocessada
+   via GEE (ver §9.3). Painel público migrado do Streamlit para **site estático**.
+
+O restante deste documento foi atualizado para refletir esse estado. Onde uma
+afirmação da v1.1 se tornou obsoleta, o texto foi corrigido no lugar.
 
 ---
 
 ## 1. Resumo Executivo
 
-O Sistema de Monitoramento de Desmatamento da Chapada do Araripe é um pipeline de detecção de mudanças em tempo quase real, projetado para gerar alertas bissemanais (duas vezes por semana) de desmatamento e degradação para a região da Chapada do Araripe, no nordeste do Brasil. O sistema ingere imagens multiespectrais de satélite (Sentinel-2 L2A, Landsat 8/9 Collection 2, NASA HLS) via APIs STAC abertas, calcula índices espectrais sensíveis à umidade e à vegetação (NDMI, NBR, EVI2) e detecta perda anômala de vegetação por meio de desvio z-score em relação a baselines mensais construídos a partir de uma janela fixa de referência de 3 anos (2023--2025). O calendário 2026 em diante é reservado exclusivamente para a etapa de detecção, garantindo uma comparação clara contra um baseline congelado.
+O Sistema de Monitoramento de Desmatamento da Chapada do Araripe é um pipeline de detecção de mudanças em tempo quase real, projetado para gerar alertas bissemanais (duas vezes por semana) de desmatamento e degradação para a região da Chapada do Araripe, no nordeste do Brasil. O sistema ingere imagens multiespectrais de satélite (Sentinel-2 L2A como fonte primária; Landsat 8/9 Collection 2 e NASA HLS como fontes extras opcionais) via APIs STAC abertas, calcula índices espectrais sensíveis à umidade e à vegetação (NDMI, NBR, EVI2) e detecta perda anômala de vegetação por meio de desvio z-score em relação a baselines mensais. Os baselines são construídos a partir de uma janela de referência de **5 anos climaticamente "calmos" — {2017, 2019, 2021, 2022, 2025}** — em **refletância de superfície**. O calendário 2026 em diante é reservado exclusivamente para a etapa de detecção, garantindo uma comparação clara contra um baseline congelado.
 
-O sistema foi projetado para operar com custo recorrente zero, utilizando GitHub Actions para automação bisemanal (duas vezes por semana), Hugging Face Spaces para o painel Streamlit e Cloudflare R2 para armazenamento de Cloud Optimized GeoTIFF (COG). As saídas de detecção são polígonos de alerta vetorizados em formato GeoJSON, classificados em três níveis de confiança (alto, médio, baixo) com unidade mínima de mapeamento de 1 hectare.
+O sistema foi projetado para operar com custo recorrente zero. A automação bissemanal usa **GitHub Actions**; os baselines são armazenados como Cloud Optimized GeoTIFF (COG) no **Cloudflare R2** e baixados sob demanda pelo CI antes da detecção; o **painel público é um site estático** (Cloudflare Pages), tendo substituído o painel Streamlit/Hugging Face original. As saídas de detecção são polígonos de alerta vetorizados em formato GeoJSON, classificados em três níveis de confiança (alto, médio, baixo) com unidade mínima de mapeamento de 1 hectare, anotados com a classe de uso do solo (MapBiomas) e com um estado de persistência temporal.
 
-**Status operacional atual:** O código-fonte completo está implementado e funcional. Os baselines mensais (72 arquivos COG) foram produzidos para todos os 12 meses em três índices espectrais. Cinco arquivos de alerta foram gerados cobrindo o período de novembro de 2025 a fevereiro de 2026, contendo um total de 8.924 polígonos de alerta. Os dados de precipitação CHIRPS para ajuste de seca ainda não foram preenchidos. O pipeline de automação bissemanal e o painel público estão configurados, mas ainda não implantados em produção.
+**Status operacional atual:** O código-fonte completo está implementado e funcional. Os baselines mensais (**72 arquivos COG, em refletância**) foram reconstruídos via Google Earth Engine para todos os 12 meses em três índices espectrais e publicados no R2. O histórico de detecção acumulava **7 arquivos de alerta / 17.528 polígonos** (nov/2025 a abr/2026); a detecção de **2026 está sendo reprocessada via GEE** com o baseline novo (ver §9.3). Os dados de precipitação CHIRPS **estão presentes** (2021-03 a 2026-03) e o ajuste de seca por SPI **está ativo**. O pipeline de automação bissemanal foi endurecido (busca os baselines no R2, correção do gate de R2) e depende apenas de habilitar os Actions e definir os *secrets* no repositório.
 
 ---
 
@@ -103,9 +136,9 @@ A aquisição de dados é implementada em `src/acquisition/stac_client.py` utili
 | 1 | Element84 Earth Search | `https://earth-search.aws.element84.com/v1` | Não requerida |
 | 2 | Microsoft Planetary Computer | `https://planetarycomputer.microsoft.com/api/stac/v1` | Assinatura de token SAS via pacote `planetary-computer` |
 | 3 | NASA CMR STAC | `https://cmr.earthdata.nasa.gov/stac/LPCLOUD` | Login NASA Earthdata |
-| 4 | Copernicus Data Space | `https://stac.dataspace.copernicus.eu/v1` | Configurado, mas não utilizado ativamente na cadeia de fallback |
+| 4 | ~~Copernicus Data Space~~ | ~~`https://stac.dataspace.copernicus.eu/v1`~~ | **Removido na Fase 2** — era config morta (nenhum código o consumia; não havia fallback real, apesar de docs antigas afirmarem o contrário). Sentinel-1 SAR via CDSE é *roadmap* (ver ROADMAP.md) |
 
-A lógica de fallback para consultas Sentinel-2 é: Element84 primeiro; se zero resultados, Planetary Computer. Consultas Landsat vão diretamente para o Planetary Computer. Consultas HLS vão para o NASA CMR STAC.
+A lógica de fallback para consultas Sentinel-2 é: Element84 primeiro; se zero resultados, Planetary Computer. Consultas Landsat e HLS podem ser adicionadas como fontes extras de observação via `run_detection.py --extra-sources landsat,hls` (Fase 2, Tarefa 7.1).
 
 ### 3.3 Parâmetros de Consulta
 
@@ -122,7 +155,7 @@ O ajuste de seca depende de estimativas mensais de precipitação do **Climate H
 - **Resolução:** 0,05° (~5,5 km)
 - **Cobertura temporal:** 1981--presente
 - **Diretório de cache:** `data/chirps/`
-- **Status atual:** O diretório de cache está vazio; os dados CHIRPS ainda não foram baixados.
+- **Status atual (atualizado na auditoria 2026-07, revisado na Fase 2):** O cache local `data/chirps/` contém **61 arquivos globais** mensais de CHIRPS, de 2021-03 a 2026-03 (contagem verificada na Fase 2; a Fase 1 dizia "~62"). Não são versionados no Git, portanto ausentes do repositório remoto. O download foi tornado robusto na auditoria (retry com backoff, retomada por *range* e verificação de integridade) em `src/acquisition/chirps.py` e no novo `scripts/download_baseline_data.py`. **O ajuste de seca por SPI já está ATIVO por padrão** em `scripts/run_detection.py` (chama `get_current_spi` e o passa a `detect_deforestation`) — a Fase 2 confirmou que não era um item "a ativar", e reforçou a robustez descartando meses recentes ainda não publicados do CHIRPS.
 
 ---
 
@@ -185,7 +218,7 @@ Três índices espectrais formam o núcleo do pipeline de detecção. A seleçã
 
 **Justificativa:** O EVI2 fornece um complemento sensível ao verdor em relação ao NDMI e NBR, baseados em umidade. Embora compartilhe parte da sensibilidade à deciduidade do NDVI, é menos afetado pela dispersão atmosférica e pelo fundo de solo. Pode detectar desmatamento que envolve remoção de dossel sem alterar a umidade do solo (por exemplo, extração seletiva de madeira).
 
-**Limitação:** A validação revelou que o EVI2 é suscetível à contaminação residual por cirrus finos não detectada pela máscara de nuvens SCL. Nuvens possuem alta reflectância NIR em relação ao RED, o que infla o EVI2 muito mais do que o NDMI ou NBR (que utilizam bandas SWIR absorvidas pelas nuvens). Nos dados do baseline de janeiro, 45,7% dos pixels válidos de EVI2 ficaram fora do intervalo [-1, 1] e o P99 atingiu 1,74. Isso exigiu uma etapa de mitigação (limitação dos valores a 1,0) durante a construção do baseline.
+**Limitação (revisada na v2.0):** A validação da v1.1 encontrou 45,7% dos pixels de EVI2 fora de [-1, 1] (P99 = 1,74) e atribuiu isso a cirrus finos. A auditoria mostrou que a **causa dominante era de unidade/escala**: a aquisição somava o *offset* BOA mas **não dividia por 10000**, deixando as bandas em escala DN (~0–10000); como o termo "+1" da fórmula do EVI2 pressupõe refletância em [0,1], o índice inflava para ~1–2,5. NDMI e NBR, sendo razões puras, são imunes — exatamente o padrão observado. **Correção (v2.0):** conversão para refletância dirigida por metadados (`DN·scale + offset`, por-cena/sensor), acoplada ao rebuild do baseline via `REFLECTANCE_SCALING = True`. Após a correção, o EVI2 por-cena fica em ~0% fora de [-1, 1], **sem** o *cap* artificial em 1,0 da v1.1. Contaminação por cirrus fino ainda pode elevar marginalmente valores individuais, mas deixou de ser sistemática.
 
 **Papel no pipeline:** Índice confirmatório. Pode disparar alertas de baixa confiança independentemente, mas não pode elevar para confiança média ou alta sem concordância do NDMI ou NBR.
 
@@ -212,26 +245,28 @@ O sistema de detecção utiliza uma abordagem de baseline por mês: para cada um
 
 ### 5.2 Dados de Origem
 
-Os baselines foram construídos a partir de cenas Sentinel-2 L2A baixadas utilizando o script `scripts/build_baseline_from_downloads.py`. A janela de referência é **fixada em 2023--2025**: a flag `--max-year 2025` exclui qualquer cena de 2026 ou posterior, de modo que o baseline permaneça congelado e o ano de 2026 em diante seja usado apenas para detecção. Os dados de origem consistiam em:
+Os baselines atuais (v2.0) foram construídos no **Google Earth Engine (GEE)** a partir da coleção `COPERNICUS/S2_SR_HARMONIZED`, que harmoniza automaticamente o *offset* de refletância introduzido na *Processing Baseline* 04.00 (2022). A janela de referência é o conjunto de **5 anos climaticamente "calmos": {2017, 2019, 2021, 2022, 2025}**, selecionado para excluir 2023 e 2024 — os dois El Niño mais fortes do registro recente (ver §5.5 e `AUDITORIA_TECNICA.md`, Tarefa 3). O ano de 2026 em diante é usado apenas para detecção. Os dados de origem:
 
-- **GeoTIFFs por mês** baixados pela equipe parceira, cada um com 3 bandas (NDMI, NBR, EVI2)
-- **7 tiles UTM** cobrindo a AOI: 24MTS, 24MTT, 24MUS, 24MUT, 24MVS, 24MVT, 24MWS
-- **3 plataformas de satélite:** Sentinel-2A, Sentinel-2B e Sentinel-2C (cenas 2023--2025)
-- **3 anos de cobertura efetiva:** 2023, 2024 e 2025 (cenas datadas 2026 retidas no disco mas filtradas pelo `--max-year 2025`)
-- **SRC:** EPSG:32724 (UTM zona 24S), **Resolução:** 20 m
+- **Fonte:** Sentinel-2 L2A (`S2_SR_HARMONIZED`), **refletância de superfície** (as bandas são divididas por 10000 no servidor, de modo que os índices ficam na escala física correta).
+- **Máscara de nuvens:** classes claras da SCL {2, 4, 5, 6, 7, 11}, aplicada por-pixel antes da composição.
+- **Cobertura espacial:** toda a AOI da APA (mosaico das tiles UTM feito server-side).
+- **SRC:** EPSG:32724 (UTM zona 24S), **Resolução:** 20 m.
+- **Bandas exportadas:** os 3 índices de detecção (NDMI, NBR, EVI2), cada um com mediana e desvio-padrão mensais.
 
-> **Nota sobre as cenas de 2026.** Embora as pastas `temp_month_01/` e `temp_month_02/` no disco externo contenham cenas Sentinel-2C reais datadas de janeiro/fevereiro de 2026 (verificado via metadados GeoTIFF: `datetime` e `item_id` STAC), elas **não** entram no baseline. Ficam disponíveis para a fase de detecção, em que cada cena de 2026 é comparada com a estatística histórica do mês correspondente.
+> **Por que GEE.** A construção por *streaming* de COG a partir do S3 público (`scripts/build_baseline.py`) está implementada e validada, mas o gargalo real era a **rede** (throttling do S3 a partir do Brasil, ~1 MB/s), que inviabilizava reconstruir os 60 compostos localmente. O GEE executa a mediana no servidor e exporta apenas 12 GeoTIFFs pequenos, contornando esse gargalo. Scripts: `scripts/build_baseline_gee.py` / `docs/gee_baseline_cloudshell.py` (cálculo) e `scripts/split_gee_baselines.py` (fatiamento nos 72 COGs do detector). Passo-a-passo em `docs/BASELINE_GEE.md`.
 
 ### 5.3 Pipeline de Processamento
 
-Para cada mês, a construção do baseline procede da seguinte forma:
+Para cada mês, a construção do baseline (no GEE) procede da seguinte forma:
 
-1. **Agrupamento por data de aquisição** -- Os arquivos são agrupados pelo prefixo de data de 8 dígitos no nome do arquivo (por exemplo, `20230103`).
-2. **Mosaicagem de tiles** -- Para cada data, os 7 tiles UTM são fundidos em um raster único cobrindo toda a extensão da AOI usando `rasterio.merge` com `method="first"` e NaN como no-data.
-3. **Recorte pela AOI** -- O raster fundido é mascarado pelo polígono da AOI (pixels fora do polígono são definidos como NaN).
-4. **Filtragem de outliers do EVI2** -- Para a banda EVI2, valores que excedem 1,0 em valor absoluto são limitados a 1,0 (`EVI2_CAP = 1.0`). Isso mitiga a contaminação residual por cirrus finos que infla o EVI2 além de limites fisicamente realistas.
-5. **Composição temporal** -- Todas as datas dentro de um dado mês são empilhadas em um array 3D (datas x altura x largura). A **mediana** e o **desvio padrão** pixel a pixel são calculados ao longo do eixo temporal. A mediana é preferida à média por sua robustez a outliers. Pixels com menos de 2 observações válidas em todas as datas têm seu desvio padrão definido como NaN.
-6. **Saída em COG** -- Os resultados são salvos como Cloud Optimized GeoTIFFs com compressão DEFLATE, tiling interno de 512x512 e overviews (via `gdal_translate -of COG` quando disponível).
+1. **Filtro temporal e espacial** -- A coleção é filtrada pela AOI e pelos meses-calendário correspondentes ao longo dos 5 anos selecionados.
+2. **Máscara de nuvens + refletância + índices** -- Cada cena é mascarada pela SCL, convertida para refletância e transformada em NDMI/NBR/EVI2 (a mesma preparação `prep()` usada na detecção via GEE, garantindo que baseline e observação fiquem na mesma escala).
+3. **Composição temporal** -- Para cada mês, calcula-se a **mediana** e o **desvio padrão** pixel a pixel sobre todas as cenas dos 5 anos. A mediana é preferida à média por robustez a outliers (nuvens residuais, sombras). A mediana verdadeira é viável no GEE (todo o *stack* fica no servidor).
+4. **Exportação** -- Os compostos mensais são exportados para o Google Drive e, na máquina local, fatiados em 72 arquivos `{index}_month{MM}_{mean,std}.tif` por `split_gee_baselines.py`, que restaura o sentinela de no-data e grava `nodata=NaN`.
+
+> **Sem *cap* de EVI2.** Ao contrário da v1.1 — que aplicava `EVI2_CAP = 1.0` para conter a cauda irreal do EVI2 em escala DN — a v2.0 não precisa desse corte: com a refletância correta, o EVI2 já cai na faixa física esperada (medianas ~0,15–0,44, com a sazonalidade correta). O *cap* mascarava o problema de unidade e comprimia artificialmente o sinal (ver §4.3 e §8.2).
+
+> **Nota sobre o *streaming* como *fallback*.** O caminho `scripts/build_baseline.py` (streaming COG, mediana, `nodata=NaN`, guarda de disco, retry por-cena) permanece disponível e corrigido — útil no CI (rede rápida) ou como alternativa ao GEE.
 
 ### 5.4 Saída
 
@@ -241,11 +276,11 @@ A construção do baseline produz **72 arquivos COG**:
 
 Convenção de nomenclatura: `{index}_month{MM}_mean.tif` e `{index}_month{MM}_std.tif`
 
-Todos os 72 arquivos de baseline foram produzidos com sucesso e estão armazenados em `data/baselines/`. Nota: embora os nomes de arquivo utilizem o sufixo `_mean`, a estatística realmente calculada é a **mediana** (conforme implementado em `build_baseline_from_downloads.py`). Esta convenção de nomenclatura foi herdada do projeto original do pipeline.
+Todos os 72 arquivos de baseline foram reconstruídos com sucesso (via GEE) e estão armazenados em `data/baselines/` (e publicados no R2). Nota: embora os nomes de arquivo utilizem o sufixo `_mean`, a estatística realmente calculada é a **mediana**. Esta convenção de nomenclatura foi herdada do projeto original do pipeline e mantida por compatibilidade com o carregador (`load_baseline_pair`).
 
 ### 5.5 Profundidade Temporal
 
-A configuração especifica um objetivo de 5 anos de histórico (`BASELINE_YEARS = 5`), mas os baselines atuais são construídos a partir de **3 anos** (2023--2025), com o ano de 2026 reservado para a etapa de detecção. Isso atende ao mínimo de 3 anos considerado adequado para estatísticas de baseline, mas pode não capturar totalmente a variabilidade interanual extrema (por exemplo, ciclos fortes de El Niño / La Niña). Recomenda-se estender a janela conforme cenas adicionais de 2022 e anteriores sejam adquiridas.
+A configuração especifica um objetivo de 5 anos de histórico (`BASELINE_YEARS = 5`), agora **atingido**: os baselines v2.0 usam **{2017, 2019, 2021, 2022, 2025}**, com 2026 reservado para detecção. **[Auditoria 2026-07]** A janela anterior (2023--2025) incluía justamente 2023 e 2024 — os dois anos de El Niño mais fortes do registro recente (pico ONI +2,06 e +1,92) —, o que enviesava o baseline em direção a condições de seca e aumentava o risco de **omissão** (um pixel realmente desmatado em 2026 parece menos anômalo frente a um "normal" já seco). O script `scripts/select_baseline_years.py` seleciona, de forma reprodutível, os anos recentes com menor anomalia climática (combinando severidade ENSO/ONI e anomalia de precipitação CHIRPS na AOI); a decisão adotada foi {2017, 2019, 2021, 2022, 2025}, excluindo 2023 e 2024. Ver `AUDITORIA_TECNICA.md`, Tarefa 3. Ressalva remanescente: 5 anos ainda podem não cobrir toda a variabilidade interanual extrema; estender a janela conforme mais cenas quietas sejam adquiridas segue recomendado.
 
 ### 5.6 Inspeção Visual dos Baselines
 
@@ -315,7 +350,7 @@ O processo de vetorização está implementado em `src/detection/alerts.py::vect
 2. Componentes conexos são extraídos usando `rasterio.features.shapes()`.
 3. A área de cada polígono é calculada em hectares (assumindo que o SRC projetado está em metros).
 4. Polígonos abaixo da área mínima são descartados.
-5. A cada polígono sobrevivente é atribuído o valor **máximo de confiança** encontrado dentro de sua extensão espacial.
+5. A cada polígono sobrevivente é atribuído o valor **máximo de confiança** encontrado **dentro da sua geometria exata**. *(Correção v2.0: antes o cálculo usava a janela retangular — *bounding-box* — do polígono, podendo herdar a confiança de um pixel de outro polígono vizinho dentro do retângulo; agora rasteriza a geometria com `geometry_mask` e reduz só sobre pixels internos.)*
 6. Os polígonos são reprojetados de EPSG:32724 (UTM) para EPSG:4326 (WGS 84) para saída em GeoJSON.
 7. Metadados (data de detecção, timestamp de criação, rótulo de confiança) são anexados.
 8. A saída é salva como `data/alerts/alerts_{YYYY-MM-DD}.geojson`.
@@ -327,6 +362,27 @@ Um módulo auxiliar de classificação (`src/detection/change_detect.py::classif
 - **Incêndio:** dNBR > 0,27 E NBR pós-incêndio < 0,1
 - **Desmatamento mecânico:** BSI elevado sem assinatura de carvão (BSI > 0,1, dNBR > 0,05, sem máscara de incêndio)
 - **Incerto:** Alguma mudança detectada (dNBR > 0,1) mas não corresponde claramente a nenhum dos padrões
+
+*(v2.0: este módulo, antes implementado mas nunca chamado, foi **ligado ao pipeline** — cada alerta recebe um campo `clearing_type` = fogo/mecânico/incerto/nenhum, atribuído pela classe modal sobre a geometria exata do polígono.)*
+
+### 6.8 Persistência Temporal (novo na v2.0)
+
+A detecção é por-cena e sem estado. Para conter a comissão de fenômenos
+transitórios (nuvem/sombra/água temporária), a v2.0 adiciona um **filtro de
+persistência vetorial** (`src/detection/persistence.py`): um alerta só é marcado
+`confirmed` se **sobrepõe espacialmente** (≥5% da própria área, `min_overlap_frac`)
+um alerta da observação imediatamente anterior; caso contrário fica `candidate`
+(ou `first_observation` na primeira data). O filtro é **não-destrutivo** — grava
+todos os alertas com o campo `persistence_status`, permitindo encadear
+observações sucessivas sem reprocessar imagens.
+
+**Antes/depois no histórico real** (≥2 obs. consecutivas, sobreposição mín. 5%):
+a sequência bruta 13 / 1.334 / 1 / 3.776 / 4.951 / 4.709 / 2.744 (17.528 no total)
+cai para 0 / 22 / 0 / 0 / 701 / 1.364 / 157 confirmados (**2.244; −87,2%**), e
+**deixa de crescer monotonicamente com a nebulosidade**. Ressalva honesta: quando
+a observação anterior é pobre (ex.: cena muito nublada, 1 alerta), a confirmação
+fica impossível e o filtro super-suprime — efeito atenuado por uma cadência
+bissemanal regular. Testes: `tests/test_persistence.py`.
 
 ---
 
@@ -369,7 +425,7 @@ Isso efetivamente exige um desvio maior do baseline para disparar um alerta dura
 
 ### 7.4 Status Atual
 
-O cache de dados de precipitação CHIRPS (`data/chirps/`) está atualmente vazio. O módulo de ajuste de seca está completamente implementado, mas ainda não foi ativado em execuções operacionais. Até que os dados CHIRPS sejam ingeridos, o sistema opera sem ajuste de seca (SPI padrão de 0,0, sem alargamento de limiares).
+**[Atualizado na v2.0]** O cache `data/chirps/` contém **61 rasters** mensais CHIRPS de 2021-03 a 2026-03 (locais, não versionados). O ajuste de seca por SPI **está ATIVO por padrão** — `scripts/run_detection.py` (e `run_detection_from_gee.py`) chamam `get_current_spi(aoi_bbox)` e passam o valor a `detect_deforestation`, que alarga os limiares quando SPI-3 < −1,0. A auditoria da Fase 1 supunha que era um item "a ativar"; na verdade já estava ligado. O cálculo foi **endurecido** (`get_current_spi`) para descartar meses recentes ainda não publicados pelo CHIRPS (lag de ~1–1,5 mês), evitando que um mês faltante zere o SPI silenciosamente. Uma série de precipitação média na AOI (2021--2026) foi extraída para `data/chirps_aoi/chirps_aoi_monthly.csv`.
 
 ---
 
@@ -410,6 +466,7 @@ Um script de validação (`scripts/validate_baseline_data.py`) analisou todos os
 - **Causa provável:** Cirrus finos ou névoa não detectados pela máscara de nuvens SCL. Nuvens possuem alta reflectância NIR em relação ao RED, o que infla o EVI2 (devido ao multiplicador 2,5) muito mais do que o NDMI ou NBR (que utilizam bandas SWIR absorvidas pelas nuvens).
 - **Mitigação aplicada:** Valores de EVI2 são limitados a 1,0 durante a construção do baseline (`EVI2_CAP = 1.0` em `build_baseline_from_downloads.py`). Isso remove a cauda fisicamente irrealista preservando sinais válidos de vegetação.
 - **Avaliação:** Utilizável com limitação. No entanto, a contaminação sistemática significa que os baselines de EVI2 possuem maior incerteza do que os de NDMI ou NBR. Isso é aceitável porque o EVI2 desempenha um papel confirmatório, não de detecção primária.
+- **[Revisão v2.0]** Esta análise refere-se aos dados **em escala DN** da v1.1. Como explicado em §4.3, a maior parte dos "45,7% fora de faixa" era **erro de unidade**, não cirrus. Com a conversão de refletância (`REFLECTANCE_SCALING=True`) e o rebuild do baseline, o EVI2 passa a ~0% fora de [-1, 1] **sem** o *cap* em 1,0. Este bloco é mantido como registro do diagnóstico original.
 
 ### 8.3 Verificação da Máscara de Nuvens
 
@@ -432,16 +489,24 @@ A análise entre os 7 tiles UTM mostra:
 
 ### 9.1 Alertas Gerados
 
-Cinco arquivos de alerta foram gerados, cobrindo o período de novembro de 2025 a fevereiro de 2026:
+O histórico de detecção (v1.1) acumulava **7 arquivos de alerta / 17.528 polígonos**, cobrindo nov/2025 a abr/2026. *(A v1.1 relatava "5 arquivos / 8.924 polígonos" — desatualizado: omitia o arquivo de 1 feição de 28/12 e os arquivos de fev/abr, e trazia contagens per-arquivo incorretas.)*
 
-| Arquivo | Data | Polígonos de Alerta | Tamanho do Arquivo |
+| Arquivo | Data | Polígonos (bruto) | Confirmados (persistência) |
 |---------|------|---------------------|---------------------|
-| `alerts_2025-11-26.geojson` | 26/11/2025 | 13 | 257 KB |
-| `alerts_2025-11-28.geojson` | 28/11/2025 | 1.334 | 5,6 MB |
-| `alerts_2025-12-28.geojson` | 28/12/2025 | 1 | 1,8 KB |
-| `alerts_2026-01-12.geojson` | 12/01/2026 | 3.085 | 17,7 MB |
-| `alerts_2026-02-01.geojson` | 01/02/2026 | 4.491 | 23,9 MB |
-| **Total** | | **8.924** | **47,5 MB** |
+| `alerts_2025-11-26.geojson` | 26/11/2025 | 13 | 0 (1ª obs.) |
+| `alerts_2025-11-28.geojson` | 28/11/2025 | 1.334 | 22 |
+| `alerts_2025-12-28.geojson` | 28/12/2025 | 1 | 0 |
+| `alerts_2026-01-12.geojson` | 12/01/2026 | 3.776 | 0 |
+| `alerts_2026-02-01.geojson` | 01/02/2026 | 4.951 | 701 |
+| `alerts_2026-02-11.geojson` | 11/02/2026 | 4.709 | 1.364 |
+| `alerts_2026-04-27.geojson` | 27/04/2026 | 2.744 | 157 |
+| **Total** | | **17.528** | **2.244 (−87,2%)** |
+
+> **Reprocessamento 2026 (v2.0).** Estes números vêm do baseline DN antigo. A
+> detecção de 2026 está sendo **reprocessada via GEE** contra o baseline novo em
+> refletância (§9.3), o que substituirá as contagens acima por valores
+> consistentes na escala correta e com um passo de aquisição regular (as ~30 datas
+> bissemanais de 2026, em vez das 7 datas esparsas geradas por execuções manuais).
 
 ### 9.2 Observações
 
@@ -455,14 +520,42 @@ Esses alertas ainda não foram validados contra dados de referência independent
 
 ### 9.3 Automação e Implantação
 
-| Componente | Configuração | Status |
+| Componente | Configuração | Status (v2.0) |
 |------------|-------------|--------|
-| Cron bisemanal do GitHub Actions | `.github/workflows/update_data.yml`, segundas e quintas-feiras às 06:00 UTC | Configurado, ainda não ativo |
-| Painel Streamlit | `app.py` com Leafmap/Plotly, layout de 6 abas (Mapa, Séries Temporais, Histórico de Alertas, Guia, Documentação, Sobre) | Implementado |
-| Hospedagem no Hugging Face Spaces | Sincronização automática para `huggingface.co/spaces/santibravo/araripe-monitor` via `huggingface_hub` ao final do workflow | Implantado |
-| Armazenamento COG no Cloudflare R2 | Bucket `araripe-cogs`, upload via `scripts/upload_to_r2.py` | Configurado, URL do endpoint não definida |
+| Cron bissemanal do GitHub Actions | `.github/workflows/update_data.yml`, seg+qui 06:00 UTC | Endurecido; falta habilitar Actions + *secrets* R2 no repo |
+| Fetch de baselines do R2 (novo) | `scripts/fetch_baselines_from_r2.py`, passo do workflow antes da detecção | Adicionado — é o que faz o CI ter baselines |
+| Armazenamento no Cloudflare R2 | Bucket `araripe-cogs`, prefixo `baselines/`, upload via `scripts/upload_to_r2.py` | Baselines em refletância **publicados** |
+| Site público estático | Vite MPA → Cloudflare Pages; dados via `prepare_data.py` (lê `data/alerts` + `timeseries.db`) | Em produção (substitui o Streamlit/HF) |
+| Painel Streamlit / Hugging Face (legado) | `app.py`; sync HF ao fim do workflow | Legado, não mais o frontend em uso |
+
+**Por que a operação anterior capturava poucas datas (e por que o GEE captura ~30).**
+O workflow antigo **nunca detectava de fato no CI**: a checagem baixava o repositório,
+mas os baselines são dados locais *git-ignored* (não estavam no repo nem no R2 de
+forma consumível), então o passo de detecção encontrava "sem baselines" e pulava.
+Os 7 arquivos de alerta esparsos (§9.1) foram gerados por **execuções manuais
+locais**, cada uma olhando só `--days-back 16` — daí a cadência irregular. Não era
+uma operação bissemanal contínua. Com os baselines agora no R2 e o **novo passo de
+fetch** no workflow, o CI passa a ter baselines e a detecção via *streaming* roda no
+*runner* (rede rápida, ao contrário da conexão doméstica). Já o **caminho GEE**
+(§abaixo) processa **todas** as datas de aquisição de um intervalo — por isso
+enumera as ~30 datas bissemanais reais de 2026, expondo que a lacuna anterior era de
+**operação**, não de disponibilidade de imagens.
+
+**Caminho de detecção via Google Earth Engine (adotado para 2026).** Espelha o
+rebuild do baseline: `scripts/build_detection_gee.py` (Cloud Shell) computa **um
+composto por data** (NDMI/NBR/EVI2/BSI em refletância, com a mesma `prep()` do
+baseline) e exporta GeoTIFFs pequenos; `scripts/run_detection_from_gee.py` (local)
+roda a **lógica de detecção inalterada** contra os baselines em refletância
+(z-score → guarda de cena → vetorização → fogo×mecânico → land cover →
+persistência). Como o GEE mosaica todas as tiles de uma data num único composto da
+AOI, este caminho também **corrige** o bug latente do *streaming* em que tiles da
+mesma data sobrescreviam o arquivo de alerta uma da outra. Passo-a-passo em
+`docs/DETECTION_GEE.md`. *(A automação totalmente headless do GEE no CI — via conta
+de serviço — é roadmap; hoje o passo GEE é manual via Cloud Shell.)*
 
 ### 9.4 Painel Web — Camada de Visualização
+
+> **[v2.0] Esta seção descreve o painel Streamlit legado (`app.py`), que não é mais o frontend em uso.** O frontend atual é um **site estático** (Vite MPA → Cloudflare Pages), que consome os mesmos `data/alerts/*.geojson` via um script de preparação (`prepare_data.py`) e serve páginas prontas. O conteúdo abaixo é mantido como registro do painel original.
 
 A interface web (`app.py` + `src/visualization/`) foi atualizada na versão 1.1 para refletir a forma como o sistema é usado em campo:
 
@@ -479,7 +572,7 @@ A interface web (`app.py` + `src/visualization/`) foi atualizada na versão 1.1 
 
 ### 10.1 Confundimento Fenológico
 
-A fenologia decídua da vegetação da Caatinga permanece como a fonte mais significativa de erro potencial de comissão. Durante a estação seca (agosto--outubro, definida como `CAATINGA_LEAFOFF_MONTHS = [8, 9, 10]`), a queda foliar natural pode produzir assinaturas espectrais que se sobrepõem aos sinais de desmatamento, mesmo em índices baseados em umidade como o NDMI. A abordagem de baseline mensal mitiga isso comparando com distribuições históricas do mesmo mês, mas o baseline pode não capturar toda a faixa de variabilidade fenológica interanual, especialmente com apenas 3 anos de dados de referência.
+A fenologia decídua da vegetação da Caatinga permanece como a fonte mais significativa de erro potencial de comissão. Durante a estação seca (agosto--outubro, definida como `CAATINGA_LEAFOFF_MONTHS = [8, 9, 10]`), a queda foliar natural pode produzir assinaturas espectrais que se sobrepõem aos sinais de desmatamento, mesmo em índices baseados em umidade como o NDMI. A abordagem de baseline mensal mitiga isso comparando com distribuições históricas do mesmo mês; a janela de 5 anos {2017, 2019, 2021, 2022, 2025} amplia a base em relação à v1.1 (3 anos), mas ainda pode não capturar toda a variabilidade fenológica interanual.
 
 ### 10.2 Cobertura de Nuvens
 
@@ -487,22 +580,19 @@ A cobertura de nuvens da estação chuvosa (novembro--abril) reduz o número de 
 
 ### 10.3 Sensibilidade do EVI2 a Cirrus Finos
 
-Conforme documentado na Seção 8, o EVI2 é mais sensível à contaminação residual por cirrus finos do que o NDMI ou NBR. A mitigação por limitação (valores > 1,0 definidos como 1,0) aborda casos extremos, mas não corrige valores moderadamente elevados na faixa de 0,8--1,0 que ainda podem estar contaminados. Isso aumenta a incerteza das estatísticas do baseline do EVI2 (tanto mediana quanto desvio padrão).
+Conforme documentado na Seção 8, o EVI2 é mais sensível à contaminação residual por cirrus finos do que o NDMI ou NBR. **Na v2.0, a causa dominante (escala DN) foi corrigida** (refletância + `REFLECTANCE_SCALING`), eliminando o *cap* artificial em 1,0 da v1.1 e restaurando o poder discriminativo do EVI2. Resta apenas a sensibilidade *residual* a cirrus finos (valores individuais marginalmente elevados), que mantém a incerteza do EVI2 um pouco acima da do NDMI/NBR — aceitável dado seu papel confirmatório.
 
 ### 10.4 Profundidade Temporal do Baseline
 
-Os baselines atuais abrangem **3 anos (2023--2025)**, aquém do objetivo de 5 anos. O ano de 2026 foi deliberadamente excluído do baseline para que sirva como ano de detecção contra uma referência fixa. Isso pode não capturar toda a faixa de variabilidade interanual direcionada pelo clima. Em particular:
+Os baselines da v2.0 abrangem **5 anos {2017, 2019, 2021, 2022, 2025}**, atingindo o objetivo e **excluindo 2023/2024** (El Niño forte). O ano de 2026 foi deliberadamente excluído para servir como ano de detecção contra uma referência fixa. Ressalva remanescente: 5 anos ainda podem não capturar toda a variabilidade interanual extrema; eventos raros futuros (ex.: El Niño extremo) podem gerar falso-positivos, mitigados pelo ajuste de seca (SPI) e pela persistência.
 
-- Se 2023--2025 inclui um período anomalamente úmido ou seco, o baseline estará enviesado de acordo.
-- Eventos raros (por exemplo, El Niño extremo) podem não estar representados, levando a falso-positivos durante eventos futuros similares.
+### 10.5 Ajuste de Seca — **agora operacional (v2.0)**
 
-### 10.5 Ajuste de Seca Ainda Não Operacional
+Os dados CHIRPS **estão presentes** (61 rasters, 2021-03 a 2026-03) e o ajuste de seca por SPI **está ativo por padrão** (alargamento dos limiares quando SPI-3 < −1,0). Ressalva: a norma climatológica usa poucos anos (~5) em vez dos ~30 recomendados, e a distribuição gama poderia ser trocada por Pearson III (ver §11.7). Historicamente (antes da auditoria) o sistema operou sem esse ajuste.
 
-Os dados CHIRPS não foram baixados, portanto o ajuste de seca baseado em SPI não está ativo. Todos os alertas gerados até o momento foram produzidos sem alargamento de limiares por seca. Isso significa que alertas durante períodos mais secos que o normal podem incluir falso-positivos do estresse natural da vegetação.
+### 10.6 Persistência Temporal — **agora implementada (v2.0)**
 
-### 10.6 Sem Filtro de Persistência Temporal
-
-O sistema atual classifica cada observação independentemente (detecção de data única). Não há requisito de que um alerta seja confirmado por uma observação subsequente. Esta escolha de projeto maximiza a tempestividade, mas aumenta a taxa de falso-positivos em comparação com sistemas que exigem persistência ao longo de 2 ou mais datas (por exemplo, DETER, Global Forest Watch).
+A v2.0 adiciona um filtro de persistência vetorial (≥2 observações consecutivas com sobreposição espacial ≥5%; ver §6.8), reduzindo fortemente a comissão de fenômenos transitórios (−87% no histórico). Cada alerta carrega `persistence_status` (confirmed/candidate/first_observation), de forma não-destrutiva. Ressalva: com cadência irregular ou observação anterior muito nublada, o filtro pode super-suprimir; uma cadência bissemanal regular atenua isso.
 
 ### 10.7 Unidade Mínima de Mapeamento
 
@@ -510,7 +600,7 @@ A área mínima de alerta de 1 ha pode ser muito grosseira para detectar extraç
 
 ### 10.8 Lacuna na Validação dos Alertas
 
-Os alertas gerados (8.924 polígonos) não foram validados contra dados de referência independentes. Sem avaliação de acurácia (taxas de erro de comissão e omissão), a confiabilidade do sistema não pode ser quantificada.
+Os alertas gerados (17.528 polígonos brutos no histórico v1.1; 2.244 após persistência) não foram validados contra dados de referência independentes. Sem avaliação de acurácia (taxas de erro de comissão e omissão), a confiabilidade do sistema não pode ser quantificada. O `scripts/sample_alerts_for_validation.py` monta a amostra estratificada; a interpretação visual é etapa humana pendente.
 
 ---
 
@@ -611,7 +701,8 @@ Todos os parâmetros configuráveis são definidos em `config/settings.py`. A ta
 | `MAX_CLOUD_COVER` | 20% | Filtro de cobertura de nuvens no nível da cena |
 | `SEARCH_DAYS_BACK` | 16 dias | Janela temporal de busca |
 | `MIN_CLEAR_PERCENTAGE_BASELINE` | 10% | Mínimo de pixels claros para incluir uma cena |
-| `BASELINE_YEARS` | 5 | Anos-alvo para o baseline (4 alcançados) |
+| `BASELINE_YEARS` | 5 | Anos-alvo para o baseline (atingido: {2017, 2019, 2021, 2022, 2025} — ver §5.5) |
+| `REFLECTANCE_SCALING` | True (v2.0) | Converte DN→refletância (`DN·scale + offset`) na aquisição; acoplado ao baseline em refletância |
 | `Z_THRESHOLD_HIGH` | -3,0 | Z-score para alertas de alta confiança |
 | `Z_THRESHOLD_MEDIUM` | -2,5 | Z-score para alertas de confiança média |
 | `Z_THRESHOLD_LOW` | -2,0 | Z-score para alertas de baixa confiança |
@@ -619,6 +710,8 @@ Todos os parâmetros configuráveis são definidos em `config/settings.py`. A ta
 | `DELTA_THRESHOLD_MEDIUM` | -0,15 | Mudança absoluta para confiança média |
 | `DELTA_THRESHOLD_LOW` | -0,15 | Mudança absoluta para baixa confiança |
 | `MIN_ALERT_AREA_HA` | 1,0 ha | Área mínima do polígono |
+| `MAX_ALERT_AREA_HA` | 1000 ha | Área máxima do polígono (guarda contra artefatos) |
+| `SCENE_ANOMALY_REJECT_FRAC` | 0,30 | Fração de pixels sinalizados acima da qual a cena inteira é rejeitada |
 | `SPI_DROUGHT_THRESHOLD` | -1,0 | SPI-3 abaixo deste valor aciona o ajuste |
 | `DROUGHT_Z_ADJUSTMENT` | 0,5 sigma | Alargamento do limiar de z-score durante seca |
 | `DNBR_LOW_SEVERITY` | 0,27 | Limiar de dNBR para queimada de baixa severidade |
@@ -640,10 +733,16 @@ Todos os parâmetros configuráveis são definidos em `config/settings.py`. A ta
 | `src/processing/cloud_mask.py` | Máscara de nuvens para Sentinel-2 (SCL), Landsat (QA_PIXEL), HLS (Fmask) |
 | `src/processing/spi.py` | Cálculo do SPI (ajuste de distribuição gama) |
 | `src/detection/change_detect.py` | Detecção de anomalias por z-score e classificação de confiança |
-| `src/detection/alerts.py` | Vetorização de alertas, armazenamento e estatísticas resumidas |
-| `src/detection/baseline.py` | Primitivas de cálculo de z-score e delta |
+| `src/detection/alerts.py` | Vetorização de alertas (máscara de geometria exata), armazenamento e estatísticas |
+| `src/detection/baseline.py` | Primitivas de cálculo de z-score e delta; `load_baseline_pair` |
+| `src/detection/persistence.py` | **(v2.0)** Filtro de persistência temporal (sobreposição entre observações) |
+| `src/detection/landcover.py` | **(v2.0)** Anotação/filtro por MapBiomas (10 m e 30 m, tabelas por-coleção) |
 | `src/timeseries/trends.py` | Teste de Mann-Kendall e estimador de declividade de Sen |
-| `scripts/build_baseline_from_downloads.py` | Construção de COG de baseline a partir de cenas baixadas |
-| `scripts/run_detection.py` | Execução manual de detecção |
-| `scripts/upload_to_r2.py` | Upload de COG para Cloudflare R2 |
-| `app.py` | Ponto de entrada do painel Streamlit |
+| `scripts/build_baseline_gee.py` · `docs/gee_baseline_cloudshell.py` | **(v2.0)** Baseline mensal em refletância via Google Earth Engine |
+| `scripts/split_gee_baselines.py` | **(v2.0)** Fatia os compostos do GEE nos 72 COGs do detector |
+| `scripts/build_baseline.py` | Construção de baseline por *streaming* de COG (fallback; corrigido) |
+| `scripts/run_detection.py` | Execução de detecção por *streaming* (usada no CI) |
+| `scripts/build_detection_gee.py` · `scripts/run_detection_from_gee.py` | **(v2.0)** Detecção por composto-por-data via GEE (Cloud Shell + ingestão local) |
+| `scripts/select_baseline_years.py` | **(v2.0)** Seleção reprodutível dos anos "calmos" (ONI + CHIRPS) |
+| `scripts/upload_to_r2.py` · `scripts/fetch_baselines_from_r2.py` | Publicar / baixar baselines no Cloudflare R2 |
+| `app.py` | Painel Streamlit (**legado**; frontend atual é o site estático) |

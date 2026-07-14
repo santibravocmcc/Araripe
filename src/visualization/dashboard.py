@@ -109,6 +109,26 @@ def render_sidebar() -> dict:
 
     st.sidebar.markdown("---")
 
+    # ── Land cover (MapBiomas) filter ──────────────────────────────────
+    st.sidebar.subheader(t("landcover_section"))
+    lc_natural_only = st.sidebar.checkbox(
+        t("lc_natural_only"), value=False, help=t("lc_natural_only_help"),
+    )
+    _lc_labels = {
+        "mapbiomas10m": t("lc_collection_10m"),
+        "mapbiomas30m": t("lc_collection_30m"),
+    }
+    lc_collection = st.sidebar.selectbox(
+        t("lc_collection"),
+        options=["mapbiomas10m", "mapbiomas30m"],
+        format_func=lambda c: _lc_labels.get(c, c),
+    )
+    lc_min_frac = st.sidebar.slider(
+        t("lc_min_frac"), min_value=0.0, max_value=1.0, value=0.5, step=0.05,
+    )
+
+    st.sidebar.markdown("---")
+
     # ── Recent activity ────────────────────────────────────────────────
     # Detection runs every Monday & Thursday → 1 run ≈ a few days
     st.sidebar.subheader(t("recent_section"))
@@ -188,6 +208,9 @@ def render_sidebar() -> dict:
         "recent_n": recent_n,
         "recent_only": recent_only,
         "recent_dates": recent_dates,
+        "lc_natural_only": lc_natural_only,
+        "lc_collection": lc_collection,
+        "lc_min_frac": lc_min_frac,
         "view_on_map": view_on_map or latest_scan_clicked,
     }
 
