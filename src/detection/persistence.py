@@ -128,6 +128,71 @@ def filter_alerts_by_persistence(
     return kept
 
 
+def compute_persistence_counts(
+    current: gpd.GeoDataFrame,
+    previous: gpd.GeoDataFrame | None,
+    min_overlap_frac: float = DEFAULT_MIN_OVERLAP_FRAC,
+    count_col: str = "persistence_count",
+) -> pd.Series:
+    """Consecutive-observation *streak* for each current alert.
+
+    Returns a Series (indexed like ``current``) where each value is how many
+    consecutive valid observations that location has been flagged in, **including
+    the current one**:
+
+      * 1  → seen only now (a fresh appearance, or the first-ever observation);
+      * 2  → also present in the immediately-preceding observation;
+      * N  → present in N consecutive observations.
+
+    It chains: an alert inherits ``max(previous streak it overlaps) + 1``. So if
+    the previous file already carries ``persistence_count`` (written by a prior
+    run), the streak grows run over run — letting the front-end filter "appeared
+    ≥ N times". Overlap uses the same ≥ ``min_overlap_frac`` rule (of the current
+    alert's area) as :func:`filter_alerts_by_persistence`.
+    """
+    if current is None or current.empty:
+        return pd.Series([], dtype=int)
+    if previous is None or previous.empty:
+        return pd.Series(1, index=current.index, dtype=int)
+
+    from shapely import area as _area
+    from shapely import intersection as _intersection
+
+    cur = _to_metric(current)
+    prev = _to_metric(previous).copy()
+    if count_col in prev.columns:
+        prev_count = pd.to_numeric(prev[count_col], errors="coerce").fillna(1).astype(int)
+    else:
+        prev_count = pd.Series(1, index=prev.index, dtype=int)
+
+    cur_area = cur.geometry.area
+    left = gpd.GeoDataFrame({"__cidx": cur.index}, geometry=cur.geometry.values, crs=cur.crs)
+    right = gpd.GeoDataFrame(
+        {"__pcount": prev_count.values}, geometry=prev.geometry.values, crs=prev.crs
+    )
+    joined = gpd.sjoin(left, right, predicate="intersects", how="inner")
+    if joined.empty:
+        return pd.Series(1, index=current.index, dtype=int)
+
+    # Intersection area per matched pair (vectorized via shapely 2).
+    cur_geom = joined.geometry.values
+    prev_geom = right.geometry.values[joined["index_right"].values]
+    inter_area = _area(_intersection(cur_geom, prev_geom))
+    cidx = joined["__cidx"].values
+    frac = inter_area / cur_area.loc[cidx].values
+    ok = frac >= min_overlap_frac
+    if not ok.any():
+        return pd.Series(1, index=current.index, dtype=int)
+
+    best = (
+        pd.DataFrame({"__cidx": cidx[ok], "__pcount": joined["__pcount"].values[ok]})
+        .groupby("__cidx")["__pcount"].max()
+    )
+    streak = pd.Series(1, index=current.index, dtype=int)
+    streak.loc[best.index] = (best + 1).astype(int)
+    return streak
+
+
 def apply_persistence_to_history(
     dated_alerts: Iterable[tuple[str, gpd.GeoDataFrame]],
     min_consecutive: int = 2,

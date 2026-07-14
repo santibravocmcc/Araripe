@@ -108,13 +108,15 @@ def annotate_alerts_with_landcover(
     landcover_path: str | Path,
     all_touched: bool = True,
     collection: str = DEFAULT_COLLECTION,
+    col_suffix: str = "",
 ) -> gpd.GeoDataFrame:
     """Add land-cover context columns to an alerts GeoDataFrame.
 
-    For each alert polygon, reads the underlying MapBiomas pixels and adds:
-      - ``lc_class``        : dominant (modal) MapBiomas class code
-      - ``lc_group``        : dominant coarse group (natural/farming/urban/water)
-      - ``lc_natural_frac`` : fraction of alert pixels that are natural vegetation
+    For each alert polygon, reads the underlying MapBiomas pixels and adds
+    (``col_suffix`` is appended to each column name, e.g. ``"_10m"``):
+      - ``lc_class{suffix}``        : dominant (modal) MapBiomas class code
+      - ``lc_group{suffix}``        : dominant coarse group (natural/farming/…)
+      - ``lc_natural_frac{suffix}`` : fraction of alert pixels that are natural veg
 
     The alerts are reprojected to the raster CRS for the zonal read; the returned
     GeoDataFrame keeps the input CRS and geometry.
@@ -132,6 +134,9 @@ def annotate_alerts_with_landcover(
         (Collection 2 beta) or ``"mapbiomas30m"`` (Collection 10.1). The two
         legends differ (crop subdivisions, photovoltaic class), so pass the one
         matching ``landcover_path``.
+    col_suffix : str
+        Suffix appended to the output column names so several collections can be
+        annotated side by side (e.g. ``"_10m"`` and ``"_30m"``).
     """
     table, natural = _resolve_table(collection)
     if alerts_gdf.empty:
@@ -158,15 +163,69 @@ def annotate_alerts_with_landcover(
             groups.append(table.get(dom, "other"))
             nat_fracs.append(round(float(np.isin(vals, list(natural)).mean()), 3))
 
-    out["lc_class"] = classes
-    out["lc_group"] = groups
-    out["lc_natural_frac"] = nat_fracs
+    out[f"lc_class{col_suffix}"] = classes
+    out[f"lc_group{col_suffix}"] = groups
+    out[f"lc_natural_frac{col_suffix}"] = nat_fracs
     logger.info(
         "Annotated {} alerts with land cover from {} [{}] "
         "(natural-vegetation median frac={:.2f})",
         len(out), Path(landcover_path).name, collection,
         float(np.nanmedian([f for f in nat_fracs if f == f]) if any(f == f for f in nat_fracs) else float("nan")),
     )
+    return out
+
+
+def _collection_suffix(collection: str) -> str:
+    """'mapbiomas10m' -> '_10m', 'mapbiomas30m' -> '_30m'."""
+    return "_" + collection.replace("mapbiomas", "")
+
+
+def annotate_alerts_all_collections(
+    alerts_gdf: gpd.GeoDataFrame,
+    rasters: dict[str, str | Path] | None = None,
+    all_touched: bool = True,
+    default_collection: str = DEFAULT_COLLECTION,
+) -> gpd.GeoDataFrame:
+    """Annotate alerts with EVERY available MapBiomas collection, side by side.
+
+    Each collection gets its own suffixed columns (``lc_group_10m`` /
+    ``lc_natural_frac_10m`` and ``lc_group_30m`` / …), so the front-end can let
+    the user pick which collection to characterise/filter alerts by — without
+    losing the other. The ``default_collection`` is also copied to the unsuffixed
+    ``lc_class``/``lc_group``/``lc_natural_frac`` columns for backward
+    compatibility with existing consumers.
+
+    ``rasters`` maps collection key -> raster path (defaults to config
+    ``LANDCOVER_RASTERS``); collections whose file is missing are skipped.
+    """
+    if rasters is None:
+        from config.settings import LANDCOVER_RASTERS
+        rasters = LANDCOVER_RASTERS
+    if alerts_gdf.empty:
+        return alerts_gdf.copy()
+
+    out = alerts_gdf
+    annotated_any = []
+    for collection, path in rasters.items():
+        if collection not in _TABLES:
+            logger.warning("Skipping unknown land-cover collection {!r}", collection)
+            continue
+        if not Path(path).exists():
+            logger.warning("Land-cover raster for {} missing ({}); skipping", collection, path)
+            continue
+        out = annotate_alerts_with_landcover(
+            out, path, all_touched=all_touched, collection=collection,
+            col_suffix=_collection_suffix(collection),
+        )
+        annotated_any.append(collection)
+
+    # Mirror the default collection into the unsuffixed legacy columns.
+    if default_collection in annotated_any:
+        sfx = _collection_suffix(default_collection)
+        for base in ("lc_class", "lc_group", "lc_natural_frac"):
+            out[base] = out[f"{base}{sfx}"]
+    if not annotated_any:
+        logger.warning("No land-cover collections annotated (no rasters found).")
     return out
 
 

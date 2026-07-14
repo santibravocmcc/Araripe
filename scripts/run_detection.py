@@ -24,7 +24,6 @@ from config.settings import (
     AOI_BBOX,
     BASELINES_DIR,
     DEFAULT_LANDCOVER_COLLECTION,
-    LANDCOVER_RASTERS,
     MAX_CLOUD_COVER,
     SCENE_ANOMALY_REJECT_FRAC,
     SCENE_CACHE_DIR,
@@ -44,8 +43,8 @@ from src.acquisition.download import (
 from src.detection.alerts import save_alerts, summarize_alerts, vectorize_alerts
 from src.detection.baseline import load_baseline_pair
 from src.detection.change_detect import detect_deforestation
-from src.detection.landcover import annotate_alerts_with_landcover
-from src.detection.persistence import DEFAULT_MIN_OVERLAP_FRAC, filter_alerts_by_persistence
+from src.detection.landcover import annotate_alerts_all_collections
+from src.detection.persistence import DEFAULT_MIN_OVERLAP_FRAC, compute_persistence_counts
 from src.processing.cloud_mask import (
     compute_clear_percentage,
     mask_hls,
@@ -108,9 +107,10 @@ def _merge_and_confirm(scene_date, parts, alerts_dir, persistence, min_overlap_f
     mosaics all tiles into one AOI composite per date before detection.)
 
     Persistence is evaluated here (not per-tile) so it runs against the full
-    merged date. ``filter_alerts_by_persistence`` reprojects both sides to the
-    metric CRS internally, so the in-memory UTM alerts and the WGS84 prior file
-    compare correctly.
+    merged date, as a STREAK count (how many consecutive observations the
+    location was flagged). ``compute_persistence_counts`` reprojects both sides
+    to the metric CRS internally, so the in-memory UTM alerts and the WGS84 prior
+    file compare correctly. Nothing is dropped — every alert is tagged.
     """
     import geopandas as gpd
 
@@ -122,23 +122,25 @@ def _merge_and_confirm(scene_date, parts, alerts_dir, persistence, min_overlap_f
         try:
             prev_f = _find_previous_alert_file(alerts_dir, scene_date)
             if prev_f is None:
+                merged["persistence_count"] = 1
                 merged["persistence_status"] = "first_observation"
             else:
-                prev_gdf = gpd.read_file(str(prev_f))
-                confirmed = filter_alerts_by_persistence(
-                    merged, prev_gdf, min_overlap_frac=min_overlap_frac,
+                counts = compute_persistence_counts(
+                    merged, gpd.read_file(str(prev_f)), min_overlap_frac=min_overlap_frac,
                 )
-                confirmed_idx = set(confirmed.index)
+                merged["persistence_count"] = counts.reindex(merged.index).fillna(1).astype(int)
                 merged["persistence_status"] = [
-                    "confirmed" if i in confirmed_idx else "candidate"
-                    for i in merged.index
+                    "confirmed" if c >= 2 else "candidate"
+                    for c in merged["persistence_count"]
                 ]
                 logger.info(
-                    "Persistence {}: {}/{} confirmed vs {}",
-                    scene_date, len(confirmed_idx), len(merged), prev_f.name,
+                    "Persistence {}: {}/{} confirmed (streak>=2) vs {}; max streak={}",
+                    scene_date, int((merged["persistence_count"] >= 2).sum()),
+                    len(merged), prev_f.name, int(merged["persistence_count"].max()),
                 )
         except Exception as pe:
             logger.warning("Persistence step failed ({}); marking candidate", pe)
+            merged["persistence_count"] = 1
             merged["persistence_status"] = "candidate"
     return merged
 
@@ -510,18 +512,15 @@ def main(
                     except Exception as ce:
                         logger.warning("Clearing classification failed ({}); skipping", ce)
 
-                # ─── Task 8: annotate with land-cover context ─────────────────
-                if landcover_collection and landcover_collection in LANDCOVER_RASTERS:
-                    lc_path = LANDCOVER_RASTERS[landcover_collection]
-                    if Path(lc_path).exists():
-                        try:
-                            alerts_gdf = annotate_alerts_with_landcover(
-                                alerts_gdf, lc_path, collection=landcover_collection,
-                            )
-                        except Exception as le:
-                            logger.warning("Land-cover annotation failed ({}); skipping", le)
-                    else:
-                        logger.warning("Land-cover raster {} missing; skipping annotation", lc_path)
+                # ─── Task 8: annotate with land-cover context (BOTH collections)
+                # Suffixed columns lc_group_10m / lc_group_30m … so the FE can
+                # characterise/filter by either collection. Nothing is dropped.
+                try:
+                    alerts_gdf = annotate_alerts_all_collections(
+                        alerts_gdf, default_collection=landcover_collection,
+                    )
+                except Exception as le:
+                    logger.warning("Land-cover annotation failed ({}); skipping", le)
 
                 # Persistence + save are deferred to a per-DATE phase after the
                 # loop (see _merge_and_confirm): several tiles can share one

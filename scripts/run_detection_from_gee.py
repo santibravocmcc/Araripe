@@ -35,7 +35,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from config.settings import (
     ALERTS_DIR,
     DEFAULT_LANDCOVER_COLLECTION,
-    LANDCOVER_RASTERS,
     SCENE_ANOMALY_REJECT_FRAC,
     TARGET_CRS,
 )
@@ -43,8 +42,8 @@ from src.acquisition.aoi import get_aoi_bbox_wgs84
 from src.detection.alerts import save_alerts, summarize_alerts, vectorize_alerts
 from src.detection.baseline import load_baseline_pair
 from src.detection.change_detect import classify_fire_vs_mechanical, detect_deforestation
-from src.detection.landcover import annotate_alerts_with_landcover
-from src.detection.persistence import DEFAULT_MIN_OVERLAP_FRAC, filter_alerts_by_persistence
+from src.detection.landcover import annotate_alerts_all_collections
+from src.detection.persistence import DEFAULT_MIN_OVERLAP_FRAC, compute_persistence_counts
 from src.timeseries.builder import store_alert_stats, store_regional_stats
 from src.utils.logging_setup import configure_run_logging
 
@@ -182,15 +181,18 @@ def run_detection_on_dir(in_dir, out_dir=ALERTS_DIR, *, min_clear=20.0,
                 except Exception as ce:
                     logger.warning("clearing classification failed ({})", ce)
 
-            # Land cover annotation.
-            if landcover_collection in LANDCOVER_RASTERS and Path(LANDCOVER_RASTERS[landcover_collection]).exists():
-                try:
-                    alerts = annotate_alerts_with_landcover(alerts, LANDCOVER_RASTERS[landcover_collection],
-                                                            collection=landcover_collection)
-                except Exception as le:
-                    logger.warning("land-cover annotation failed ({})", le)
+            # Land cover annotation — annotate with BOTH MapBiomas collections
+            # (suffixed columns lc_group_10m / lc_group_30m …) so the front-end
+            # can characterise/filter alerts by either. Nothing is dropped.
+            try:
+                alerts = annotate_alerts_all_collections(alerts, default_collection=landcover_collection)
+            except Exception as le:
+                logger.warning("land-cover annotation failed ({})", le)
 
-            # Temporal persistence vs the previous processed date.
+            # Temporal persistence vs the previous processed date, as a STREAK
+            # count (how many consecutive observations this location was flagged).
+            # Nothing is removed — every alert is kept and tagged so the FE can
+            # filter by persistence_status or by persistence_count >= N.
             if persistence:
                 import geopandas as gpd
                 prev = None
@@ -199,13 +201,19 @@ def run_detection_on_dir(in_dir, out_dir=ALERTS_DIR, *, min_clear=20.0,
                     if d < date:
                         prev = pf
                 if prev is None:
+                    alerts["persistence_count"] = 1
                     alerts["persistence_status"] = "first_observation"
                 else:
-                    confirmed = filter_alerts_by_persistence(alerts, gpd.read_file(str(prev)),
-                                                             min_overlap_frac=min_overlap_frac)
-                    ci = set(confirmed.index)
-                    alerts["persistence_status"] = ["confirmed" if i in ci else "candidate" for i in alerts.index]
-                    logger.info("persistence: {}/{} confirmed vs {}", len(confirmed), len(alerts), prev.name)
+                    counts = compute_persistence_counts(
+                        alerts, gpd.read_file(str(prev)), min_overlap_frac=min_overlap_frac,
+                    )
+                    alerts["persistence_count"] = counts.reindex(alerts.index).fillna(1).astype(int)
+                    alerts["persistence_status"] = [
+                        "confirmed" if c >= 2 else "candidate" for c in alerts["persistence_count"]
+                    ]
+                    n_conf = int((alerts["persistence_count"] >= 2).sum())
+                    logger.info("persistence: {}/{} confirmed (streak>=2) vs {}; max streak={}",
+                                n_conf, len(alerts), prev.name, int(alerts["persistence_count"].max()))
 
             save_alerts(alerts, date, alerts_dir=out_dir)
             store_alert_stats(date, summarize_alerts(alerts))
