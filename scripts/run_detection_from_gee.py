@@ -46,6 +46,7 @@ from src.detection.change_detect import classify_fire_vs_mechanical, detect_defo
 from src.detection.landcover import annotate_alerts_with_landcover
 from src.detection.persistence import DEFAULT_MIN_OVERLAP_FRAC, filter_alerts_by_persistence
 from src.timeseries.builder import store_alert_stats, store_regional_stats
+from src.utils.logging_setup import configure_run_logging
 
 INDICES = ["ndmi", "nbr", "evi2"]     # detection channels
 _BAND_ORDER = ["ndmi", "nbr", "evi2", "bsi"]  # export order in build_detection_gee.py
@@ -228,7 +229,10 @@ def run_detection_on_dir(in_dir, out_dir=ALERTS_DIR, *, min_clear=20.0,
 @click.option("--classify-clearing/--no-classify-clearing", default=True)
 @click.option("--spi/--no-spi", default=True, help="Fetch CHIRPS SPI for drought "
               "widening. Use --no-spi to skip (offline, or when CHIRPS is slow).")
-def main(in_dir, out_dir, min_clear, persistence, min_overlap_frac, landcover_collection, classify_clearing, spi):
+@click.option("--log-level", default="INFO", help="Console log level (file always "
+              "captures full DEBUG detail under logs/). Use DEBUG to mirror everything.")
+def main(in_dir, out_dir, min_clear, persistence, min_overlap_frac, landcover_collection, classify_clearing, spi, log_level):
+    configure_run_logging("run_detection_from_gee", console_level=log_level)
     run_detection_on_dir(
         in_dir, out_dir, min_clear=min_clear, persistence=persistence,
         min_overlap_frac=min_overlap_frac, landcover_collection=landcover_collection,

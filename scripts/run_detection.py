@@ -57,6 +57,7 @@ from src.timeseries.builder import (
     store_alert_stats,
     store_regional_stats_values,
 )
+from src.utils.logging_setup import configure_run_logging
 
 
 # ─── Multi-sensor dispatch ───────────────────────────────────────────────────
@@ -231,6 +232,11 @@ def _modal_class_per_polygon(gdf, class_da):
     default=True,
     help="Annotate each alert with a likely clearing type (fire vs mechanical).",
 )
+@click.option(
+    "--log-level",
+    default="INFO",
+    help="Console log level (file always captures full DEBUG detail under logs/).",
+)
 def main(
     days_back: int,
     indices: str,
@@ -244,8 +250,10 @@ def main(
     min_overlap_frac: float,
     landcover_collection: str,
     classify_clearing: bool,
+    log_level: str,
 ) -> None:
     """Run the twice-weekly deforestation detection pipeline."""
+    configure_run_logging("run_detection", console_level=log_level)
     index_list = [idx.strip() for idx in indices.split(",")]
     extra = [s.strip() for s in extra_sources.split(",") if s.strip()]
     # BSI is needed only to classify fire vs mechanical clearing; it is loaded

@@ -32,7 +32,11 @@ python scripts/run_detection_from_gee.py --in-dir ~/Downloads/araripe_detection
 
 This runs the existing pipeline (z-score vs the reflectance baselines → scene-wide
 guard → vectorize → fire/mechanical → land cover → temporal persistence) and writes
-`data/alerts/alerts_YYYY-MM-DD.geojson`. Processing all 2026 dates re-detects the
+`data/alerts/alerts_YYYY-MM-DD.geojson`.
+
+> Every run also writes a full-detail log to `logs/run_detection_from_gee_<timestamp>.log`
+> (the console shows INFO; the file keeps DEBUG). Add `--log-level DEBUG` to mirror
+> everything on the terminal. Same for `run_detection.py` and `run_detection_gee.py`. Processing all 2026 dates re-detects the
 Jan–Apr files too, now consistently in reflectance scale. (This also fixes the old
 streaming bug where same-date tiles overwrote each other — GEE gives one clean
 AOI-wide composite per date.)

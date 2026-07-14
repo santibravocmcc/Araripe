@@ -44,6 +44,7 @@ sys.path.insert(0, str(_HERE))         # scripts/ (to import run_detection_from_
 from config.settings import ALERTS_DIR, DEFAULT_LANDCOVER_COLLECTION
 from src.acquisition.aoi import get_aoi_bbox_wgs84
 from src.acquisition.gee_download import download_image_tiled, ee_initialize
+from src.utils.logging_setup import configure_run_logging
 
 SCL_CLEAR = [2, 4, 5, 6, 7, 11]
 TARGET_CRS = "EPSG:32724"
@@ -84,8 +85,11 @@ def _prep(img, ee):
 @click.option("--landcover-collection", default=DEFAULT_LANDCOVER_COLLECTION)
 @click.option("--classify-clearing/--no-classify-clearing", default=True)
 @click.option("--spi/--no-spi", default=True, help="CHIRPS SPI drought widening.")
+@click.option("--log-level", default="INFO", help="Console log level (file always "
+              "captures full DEBUG detail under logs/).")
 def main(project, start, end, days_back, max_cloud, out_dir, work_dir, tile_px,
-         persistence, landcover_collection, classify_clearing, spi):
+         persistence, landcover_collection, classify_clearing, spi, log_level):
+    configure_run_logging("run_detection_gee", console_level=log_level)
     import ee
 
     # CI passes possibly-empty --start/--end; treat empty as "use default".
