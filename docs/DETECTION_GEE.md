@@ -97,8 +97,16 @@ default so you can validate it before scheduling).
    `https://console.cloud.google.com/earth-engine` and **enable the Earth Engine
    API** on it. (Unregistered projects lost EE access in 2024.)
 2. **Create a service account** (IAM & Admin → Service accounts) in that project
-   and grant it the **Earth Engine Resource Viewer** role (`roles/earthengine.viewer`);
-   add **Service Usage Consumer** if the project requires it.
+   and grant it the **Earth Engine Resource Writer** role
+   (`roles/earthengine.writer`) — **Viewer is NOT enough**: it lacks
+   `earthengine.computations.create` and `earthengine.thumbnails.create`, so
+   computing/downloading composites fails with a 403. Also add **Service Usage
+   Consumer** (`roles/serviceusage.serviceUsageConsumer`) if you later get a
+   `serviceusage.services.use` denial. Via gcloud:
+   ```bash
+   gcloud projects add-iam-policy-binding ee-araripe \
+     --member="serviceAccount:<SA_EMAIL>" --role="roles/earthengine.writer"
+   ```
 3. **Create a JSON key** for the service account and download it.
 4. In the GitHub repo settings:
    - add a **secret** `GEE_SA_KEY` = the *entire contents* of that JSON key file;

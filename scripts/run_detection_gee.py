@@ -43,7 +43,7 @@ sys.path.insert(0, str(_HERE))         # scripts/ (to import run_detection_from_
 
 from config.settings import ALERTS_DIR, DEFAULT_LANDCOVER_COLLECTION
 from src.acquisition.aoi import get_aoi_bbox_wgs84
-from src.acquisition.gee_download import download_image_tiled, ee_initialize
+from src.acquisition.gee_download import EEAuthError, download_image_tiled, ee_initialize
 from src.utils.logging_setup import configure_run_logging
 
 SCL_CLEAR = [2, 4, 5, 6, 7, 11]
@@ -96,7 +96,11 @@ def main(project, start, end, days_back, max_cloud, out_dir, work_dir, tile_px,
     start = start or None
     end = end or None
 
-    ee_initialize(project)
+    try:
+        ee_initialize(project)
+    except EEAuthError as e:
+        logger.error("{}", e)
+        raise SystemExit(1)
     bbox = list(get_aoi_bbox_wgs84())  # [w, s, e, n]
     aoi = ee.Geometry.Rectangle(bbox, proj="EPSG:4326", geodesic=False)
 
@@ -129,6 +133,10 @@ def main(project, start, end, days_back, max_cloud, out_dir, work_dir, tile_px,
             download_image_tiled(comp, bbox, out, bands=BANDS, scale=SCALE,
                                  crs=TARGET_CRS, tile_px=tile_px)
             got += 1
+        except EEAuthError as e:
+            # Deterministic IAM error — abort the whole run, don't churn every date.
+            logger.error("{}", e)
+            raise SystemExit(1)
         except Exception as e:
             logger.error("Composite download failed for {} ({}); skipping", d, e)
             continue

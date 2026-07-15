@@ -20,7 +20,9 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from src.acquisition.gee_download import (  # noqa: E402
+    EEAuthError,
     _bytes_to_tif,
+    _is_permission_error,
     compute_tile_grid,
     mosaic_tiles,
 )
@@ -101,3 +103,16 @@ def test_bytes_to_tif_unwraps_single_tif_zip(tmp_path):
 def test_bytes_to_tif_rejects_garbage(tmp_path):
     with pytest.raises(RuntimeError):
         _bytes_to_tif(b"not-a-tiff-or-zip", tmp_path / "x.tif")
+
+
+def test_permission_errors_detected_as_non_retryable():
+    # The real EE 403 messages that must fail fast (not retry 55 tiles × N dates).
+    assert _is_permission_error(Exception(
+        "Permission 'earthengine.thumbnails.create' denied on resource "
+        "'projects/ee-araripe' (or it may not exist)."))
+    assert _is_permission_error(Exception(
+        "Permission 'earthengine.computations.create' denied on resource 'projects/ee-araripe'"))
+    # Transient errors must NOT be treated as permission errors.
+    assert not _is_permission_error(Exception("HTTP 503"))
+    assert not _is_permission_error(Exception("Read timed out"))
+    assert issubclass(EEAuthError, RuntimeError)

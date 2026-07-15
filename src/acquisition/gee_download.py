@@ -41,6 +41,25 @@ from loguru import logger
 
 HIGH_VOLUME_URL = "https://earthengine-highvolume.googleapis.com"
 
+_IAM_HINT = (
+    "Earth Engine permission denied. Grant the service account the "
+    "'Earth Engine Resource Writer' role (roles/earthengine.writer) on the "
+    "project — the Viewer role is NOT enough (it lacks "
+    "earthengine.computations.create / earthengine.thumbnails.create). Add "
+    "roles/serviceusage.serviceUsageConsumer too if a 'serviceusage.services.use' "
+    "denial then appears. See docs/DETECTION_GEE.md."
+)
+
+
+class EEAuthError(RuntimeError):
+    """Non-retryable Earth Engine permission/auth error (deterministic — the
+    service account is missing an IAM role; retrying cannot help)."""
+
+
+def _is_permission_error(exc: Exception) -> bool:
+    m = str(exc).lower()
+    return any(k in m for k in ("denied", "permission", "forbidden", "not exist", " 403"))
+
 
 # ─── auth ─────────────────────────────────────────────────────────────────────
 def ee_initialize(project: str, *, high_volume: bool = True):
@@ -58,19 +77,24 @@ def ee_initialize(project: str, *, high_volume: bool = True):
     key_str = os.environ.get("GEE_SA_KEY")
     key_file = os.environ.get("GEE_SA_KEY_FILE")
 
-    if key_str:
-        # key_data takes the JSON *string*; the SA email is read from the JSON,
-        # so the email arg is ignored.
-        creds = ee.ServiceAccountCredentials(email="", key_data=key_str)
-        ee.Initialize(creds, project=project, opt_url=opt_url)
-        logger.info("EE initialized via GEE_SA_KEY (service account, high-volume={})", high_volume)
-    elif key_file:
-        creds = ee.ServiceAccountCredentials(email="", key_file=key_file)
-        ee.Initialize(creds, project=project, opt_url=opt_url)
-        logger.info("EE initialized via GEE_SA_KEY_FILE={}", key_file)
-    else:
-        ee.Initialize(project=project, opt_url=opt_url)
-        logger.info("EE initialized via interactive/default credentials")
+    try:
+        if key_str:
+            # key_data takes the JSON *string*; the SA email is read from the JSON,
+            # so the email arg is ignored.
+            creds = ee.ServiceAccountCredentials(email="", key_data=key_str)
+            ee.Initialize(creds, project=project, opt_url=opt_url)
+            logger.info("EE initialized via GEE_SA_KEY (service account, high-volume={})", high_volume)
+        elif key_file:
+            creds = ee.ServiceAccountCredentials(email="", key_file=key_file)
+            ee.Initialize(creds, project=project, opt_url=opt_url)
+            logger.info("EE initialized via GEE_SA_KEY_FILE={}", key_file)
+        else:
+            ee.Initialize(project=project, opt_url=opt_url)
+            logger.info("EE initialized via interactive/default credentials")
+    except Exception as ex:
+        if _is_permission_error(ex):
+            raise EEAuthError(f"{_IAM_HINT} (original: {ex})") from ex
+        raise
 
 
 # ─── pure helpers (unit-testable, no EE) ───────────────────────────────────────
@@ -207,6 +231,11 @@ def download_image_tiled(image, bounds: Sequence[float], out_path: Path, *,
                 # the retry budget (~31s) on something that will never succeed.
                 raise
             except Exception as ex:  # transient EE/HTTP → backoff
+                if _is_permission_error(ex):
+                    # IAM/permission denial (e.g. earthengine.thumbnails.create) is
+                    # deterministic — abort the whole run immediately instead of
+                    # churning 55 tiles × every date.
+                    raise EEAuthError(f"{_IAM_HINT} (original: {ex})") from ex
                 last_err = ex
                 if attempt < max_retries - 1:
                     sleep_s = min(60, 2 ** attempt)
