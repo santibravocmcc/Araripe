@@ -22,9 +22,6 @@ dependencies:
   - statsmodels>=0.14.0
   - dask>=2024.1.0
   - xarray>=2024.1.0
-  # ─── Visualization ───────────────────────────────────────────────────────
-  - plotly>=5.24.0
-  - folium>=0.18.0
   # ─── Storage / DB ────────────────────────────────────────────────────────
   # boto3 e botocore fixados no mesmo minor: sem isso o conda pegava
   # boto3 1.43.x com botocore 1.43.0 (defasado), quebrando o import
@@ -48,8 +45,4 @@ dependencies:
       - stackstac>=0.5.1
       - odc-stac>=0.3.10
       - rio-tiler>=7.0.0
-      - streamlit>=1.40.0
-      - leafmap>=0.40.0
-      - streamlit-folium>=0.23.0
-      - altair>=5.4.0
       - loguru>=0.7.0
