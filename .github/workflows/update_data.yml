@@ -1,9 +1,17 @@
-name: Twice-Weekly Deforestation Detection
+name: Streaming Detection (manual fallback)
+
+# Manual-only fallback to the scheduled GEE path (detect_gee.yml). Streams
+# current Sentinel-2 scenes from AWS and runs run_detection.py — works on a CI
+# runner (fast network), unlike a throttled home connection. Use it if GEE is
+# unavailable. Not on a schedule: only ONE path should run automatically, and
+# that is detect_gee.yml (running both would double-detect and fight on push).
+#
+# Same R2 data flow as detect_gee.yml: baselines + recent alerts fetched from
+# R2; new alerts uploaded to R2 (not committed); only the time-series DB is
+# committed.
 
 on:
-  schedule:
-    - cron: '0 6 * * 1,4'  # Monday & Thursday 6:00 UTC
-  workflow_dispatch:       # Manual trigger
+  workflow_dispatch:       # Manual trigger only
 
 permissions:
   contents: write
@@ -12,22 +20,17 @@ jobs:
   detect:
     runs-on: ubuntu-latest
     timeout-minutes: 120
-    # Job-level env so step `if:` conditions can read these (a step's own `env:`
-    # block is NOT visible to that step's own `if:`). This makes the R2 upload
-    # gate below actually evaluate correctly.
     env:
       R2_ENDPOINT_URL: ${{ secrets.R2_ENDPOINT_URL }}
       R2_ACCESS_KEY: ${{ secrets.R2_ACCESS_KEY }}
       R2_SECRET_KEY: ${{ secrets.R2_SECRET_KEY }}
     defaults:
       run:
-        shell: bash -l {0}  # Required for conda activate to work
+        shell: bash -l {0}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          lfs: true
 
       - name: Set up Conda
         uses: conda-incubator/setup-miniconda@v3
@@ -35,59 +38,33 @@ jobs:
           environment-file: environment.yml
           activate-environment: araripe
           auto-activate-base: false
-          use-mamba: true            # mamba is much faster at solving
+          use-mamba: true
           miniforge-version: latest
 
       - name: Fetch reflectance baselines from R2
-        # CRITICAL: the baselines are git-ignored local data (not in the repo),
-        # so a fresh CI checkout has none and detection would skip ("No baselines
-        # available"). Pull them from R2 first (uploaded once via upload_to_r2.py).
-        # This is what makes the GitHub Action actually detect.
         if: env.R2_ENDPOINT_URL != ''
         run: python scripts/fetch_baselines_from_r2.py
 
+      - name: Fetch recent alerts from R2 (for temporal persistence)
+        if: env.R2_ENDPOINT_URL != ''
+        run: python scripts/fetch_alerts_from_r2.py --latest 3
+
       - name: Run detection pipeline
-        # EARTHDATA_* are used only when NASA HLS is enabled as an extra source
-        # (--extra-sources hls). CDSE_* were removed: no code consumed them
-        # (dead config); Sentinel-1 SAR via CDSE is a roadmap item, not wired.
-        # NOTE: run_detection.py streams current scenes from AWS — fine on a CI
-        # runner (fast network), unlike a throttled home connection. It uses the
-        # reflectance baselines fetched above with REFLECTANCE_SCALING=True.
         env:
           EARTHDATA_USERNAME: ${{ secrets.EARTHDATA_USERNAME }}
           EARTHDATA_PASSWORD: ${{ secrets.EARTHDATA_PASSWORD }}
         run: python scripts/run_detection.py
 
-      # (No per-run R2 upload: run_detection produces no COGs, and the baselines
-      # are static — they're published to R2 manually via upload_to_r2.py only
-      # when rebuilt. Fetching then re-uploading the same ~7.5 GB every run would
-      # be pure waste.)
+      - name: Upload alerts to R2
+        if: success() && env.R2_ENDPOINT_URL != ''
+        run: python scripts/upload_to_r2.py --directory data/alerts --prefix alerts/ --pattern "*.geojson"
 
-      - name: Commit alerts and time series data
+      - name: Commit time-series DB
         if: success()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/alerts/ data/timeseries/
-          git diff --staged --quiet || git commit -m "chore: update alerts $(date +%Y-%m-%d)"
+          git add data/timeseries/
+          git diff --staged --quiet || git commit -m "chore: update time-series $(date +%Y-%m-%d)"
           git pull --rebase origin main
           git push
-
-      - name: Sync to Hugging Face Space
-        if: success()
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: |
-          pip install -q huggingface_hub
-          python -c "
-          from huggingface_hub import HfApi
-          api = HfApi()
-          api.upload_folder(
-              folder_path='.',
-              repo_id='santibravo/araripe-monitor',
-              repo_type='space',
-              delete_patterns='*',
-              ignore_patterns=['.git/*', '.github/*', 'data/baselines/*', 'data/chirps/*', '.DS_Store', '__pycache__'],
-          )
-          print('HF Space synced successfully')
-          "

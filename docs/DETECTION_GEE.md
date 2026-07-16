@@ -41,21 +41,30 @@ Jan–Apr files too, now consistently in reflectance scale. (This also fixes the
 streaming bug where same-date tiles overwrote each other — GEE gives one clean
 AOI-wide composite per date.)
 
-## Step 3 — publish to the live site
+## Step 3 — publish (alerts live in Cloudflare R2, not git)
 
-The static site reads alerts by cloning the Araripe repo. So:
+Alerts are **stored in R2** (`alerts/` prefix), not committed to git — they grow
+~1–2 GB/year, which would blow the free Git-LFS tier (1 GB storage + 1 GB/month
+bandwidth) almost immediately; R2 is 10 GB free with zero egress. Only the small
+time-series DB stays in git.
 
 ```bash
-# 1. commit the new alerts to the Araripe repo (alerts are Git-LFS tracked)
-git add data/alerts/ data/timeseries/ && git commit -m "detect: 2026 alerts (GEE)" && git push
+# 1. upload the alerts to R2 (from a machine with data/alerts/ + R2 creds)
+export R2_ENDPOINT_URL=... R2_ACCESS_KEY=... R2_SECRET_KEY=...
+python scripts/upload_to_r2.py --directory data/alerts --prefix alerts/ --pattern "*.geojson"
+# (commit the time-series DB if you ran detection locally)
+git add data/timeseries/ && git commit -m "detect: 2026 time-series" && git push
 
-# 2. rebuild the site's data (in the site repo) and push -> Cloudflare deploys
+# 2. rebuild the site's data (site fetches alerts from R2) and push -> Cloudflare
 cd ../Observatorio_Chapada_do_Araripe/site
 python scripts/prepare_data.py alerts timeseries
 git add public/data && git commit -m "chore: update alerts (2026)" && git push
 ```
-(Or just trigger the site's `update-data.yml` workflow manually once the Araripe
-alerts are pushed — it clones Araripe, runs `prepare_data.py`, and deploys.)
+
+The scheduled CI (`detect_gee.yml`) does the R2 upload automatically each run;
+it also fetches the latest few alerts from R2 first so temporal persistence can
+chain (`fetch_alerts_from_r2.py --latest 3`). To pull the whole archive locally:
+`python scripts/fetch_alerts_from_r2.py` (or `--list-only` to just count).
 
 ---
 

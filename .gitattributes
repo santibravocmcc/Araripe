@@ -1,1 +1,3 @@
-data/alerts/*.geojson filter=lfs diff=lfs merge=lfs -text
+# Alerts are no longer stored in git/LFS — they live in Cloudflare R2
+# (alerts/ prefix). See scripts/fetch_alerts_from_r2.py / upload_to_r2.py.
+# (~1-2 GB/year would blow the free Git-LFS tier; R2 = 10 GB free, zero egress.)

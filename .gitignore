@@ -244,7 +244,14 @@ data/baselines/_pre_2026cutoff_backup/
 # Phase 2: derived land-cover crops and per-month CHIRPS AOI recortes are
 # regenerable local data (like baselines/chirps) — keep only the small metadata.
 data/landcover/*.tif
+# ...except the two small, static MapBiomas crops the detector needs in CI to
+# annotate alerts with land cover (both collections). Committed (16 MB + 64 KB).
+!data/landcover/mapbiomas10m_araripe_2023.tif
+!data/landcover/mapbiomas30m_araripe_2023.tif
 data/chirps_aoi/*.tif
+
+# Alerts live in Cloudflare R2, not git (see .gitattributes). Never commit them.
+data/alerts/*.geojson
 
 # temporary reflectance rebuild staging (swapped into data/baselines when complete)
 data/baselines_reflectance/
