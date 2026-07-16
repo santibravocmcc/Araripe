@@ -1,25 +1,25 @@
 name: GEE Deforestation Detection (headless)
 
-# Fully-automated Google Earth Engine detection path (service account -> tiled
-# synchronous pull -> existing detection logic). Manual-trigger by default so it
-# can be validated with your service account before being trusted on a schedule.
+# Scheduled, fully-automated Google Earth Engine detection: service account ->
+# tiled synchronous pull -> existing detection logic. Runs twice a week and can
+# also be triggered manually (with a custom date range) via "Run workflow".
 #
-# To make THIS the scheduled path instead of the streaming update_data.yml:
-#   1. confirm a manual run here succeeds end-to-end, then
-#   2. uncomment the `schedule:` block below AND remove/disable the `schedule:`
-#      in update_data.yml (running both would double-detect and fight on push).
-#
-# Frontend note: the live site is the STATIC Cloudflare Pages app, which ingests
-# alerts from THIS repo's git (its own workflow clones the repo + runs
-# prepare_data.py). So the `git push` step below is what feeds production — no
-# Hugging Face sync is needed here. (update_data.yml still carries an HF Space
-# sync; that Space is the legacy Streamlit dashboard, no longer the frontend.)
+# Data flow (nothing large in git):
+#   - baselines are fetched from Cloudflare R2 (fetch_baselines_from_r2.py);
+#   - recent alerts are fetched from R2 so temporal persistence can chain;
+#   - new alerts are UPLOADED to R2 (alerts/ prefix), NOT committed to git
+#     (they'd grow ~1-2 GB/year and blow the free Git-LFS tier); only the small
+#     time-series DB is committed.
+# The static Cloudflare site ingests alerts from R2 + the DB from git.
 #
 # Required repo config:
-#   - secret  GEE_SA_KEY   : full service-account JSON key (Earth Engine Resource
-#                            Viewer on a registered, EE-API-enabled Cloud project)
-#   - secrets R2_ENDPOINT_URL / R2_ACCESS_KEY / R2_SECRET_KEY : baseline fetch
-#   - var     EE_PROJECT    : Earth Engine project id (defaults to ee-araripe)
+#   - secret  GEE_SA_KEY  : full service-account JSON key. The service account
+#                           needs the **Earth Engine Resource Writer** role
+#                           (roles/earthengine.writer) on a registered,
+#                           EE-API-enabled project — Viewer is NOT enough
+#                           (it lacks computations.create / thumbnails.create).
+#   - secrets R2_ENDPOINT_URL / R2_ACCESS_KEY / R2_SECRET_KEY
+#   - var     EE_PROJECT   : Earth Engine project id (defaults to ee-araripe)
 
 on:
   workflow_dispatch:
@@ -30,8 +30,8 @@ on:
       end:
         description: "End date YYYY-MM-DD exclusive (blank = tomorrow)"
         required: false
-  # schedule:
-  #   - cron: '0 6 * * 1,4'   # Mon & Thu 06:00 UTC (enable only after validating)
+  schedule:
+    - cron: '0 6 * * 1,4'   # Monday & Thursday 06:00 UTC
 
 permissions:
   contents: write
@@ -53,8 +53,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          lfs: true
+        # No lfs: baselines + alerts come from R2; land-cover rasters are plain git.
 
       - name: Set up Conda
         uses: conda-incubator/setup-miniconda@v3
@@ -72,6 +71,10 @@ jobs:
         if: env.R2_ENDPOINT_URL != ''
         run: python scripts/fetch_baselines_from_r2.py
 
+      - name: Fetch recent alerts from R2 (for temporal persistence)
+        if: env.R2_ENDPOINT_URL != ''
+        run: python scripts/fetch_alerts_from_r2.py --latest 3
+
       - name: Run GEE detection
         env:
           START: ${{ github.event.inputs.start }}
@@ -80,12 +83,16 @@ jobs:
           python scripts/run_detection_gee.py \
             --project "$EE_PROJECT" --start "$START" --end "$END"
 
-      - name: Commit alerts and time series data
+      - name: Upload alerts to R2
+        if: success() && env.R2_ENDPOINT_URL != ''
+        run: python scripts/upload_to_r2.py --directory data/alerts --prefix alerts/ --pattern "*.geojson"
+
+      - name: Commit time-series DB
         if: success()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/alerts/ data/timeseries/
-          git diff --staged --quiet || git commit -m "chore: update alerts (GEE) $(date +%Y-%m-%d)"
+          git add data/timeseries/
+          git diff --staged --quiet || git commit -m "chore: update time-series $(date +%Y-%m-%d)"
           git pull --rebase origin main
           git push
