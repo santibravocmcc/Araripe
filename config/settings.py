@@ -4,6 +4,18 @@ from pathlib import Path
 
 # ─── Project paths ────────────────────────────────────────────────────────────
 ROOT_DIR = Path(__file__).resolve().parent.parent
+
+# Load credentials from a local .env (gitignored) so R2/Earthdata secrets can
+# live in a file instead of manual `export`s. Imported by nearly every script,
+# so all of them get it. Does NOT override already-set env vars, so CI secrets
+# injected via the environment always win. No-op if the file / python-dotenv is
+# absent (e.g. a minimal CI image).
+try:
+    from dotenv import load_dotenv as _load_dotenv
+
+    _load_dotenv(ROOT_DIR / ".env")
+except Exception:
+    pass
 DATA_DIR = ROOT_DIR / "data"
 AOI_DIR = DATA_DIR / "aoi"
 BASELINES_DIR = DATA_DIR / "baselines"
