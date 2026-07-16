@@ -1,15 +1,3 @@
----
-title: Araripe Deforestation Monitor
-emoji: 🌳
-colorFrom: green
-colorTo: red
-sdk: streamlit
-sdk_version: "1.40.0"
-app_file: app.py
-pinned: false
-license: agpl-3.0
----
-
 # Araripe
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
@@ -18,7 +6,7 @@ license: agpl-3.0
 
 Zero-cost deforestation monitoring system for Chapada do Araripe, Brazil.
 
-Detects vegetation loss across the Cerrado/Caatinga transition zone (~7-8S, 39-40W) using Sentinel-2 and Landsat satellite imagery, processed twice-weekly via GitHub Actions and visualized through a Streamlit dashboard.
+Detects vegetation loss across the Cerrado/Caatinga transition zone (~7-8S, 39-40W) using Sentinel-2 and Landsat satellite imagery, processed twice-weekly via GitHub Actions and published to a static web dashboard (Cloudflare Pages).
 
 ## Architecture
 
@@ -32,12 +20,12 @@ Sentinel-2 / Landsat (STAC APIs)
     ├── Z-score anomaly detection vs monthly baselines
     └── Alert vectorization + confidence classification
         │
-        ├── Alerts (GeoJSON) → GitHub repo
-        ├── COGs → Cloudflare R2 (zero egress)
+        ├── Alerts (GeoJSON) → Cloudflare R2 (zero egress)
+        ├── Baselines (COGs) → Cloudflare R2
         └── Time series → SQLite
                 │
                 ▼
-        Streamlit Dashboard (Hugging Face Spaces)
+        Static site (Cloudflare Pages) — Observatorio_Chapada_do_Araripe
 ```
 
 ## Key Design Decisions
@@ -57,23 +45,23 @@ conda activate araripe
 # Or install via pip (requires system GDAL: brew install gdal / apt install gdal-bin)
 pip install -r requirements.txt
 
-# Copy env template and add your credentials
+# Copy env template and add your credentials (R2 keys, etc.)
 cp .env.example .env
 
-# Run the dashboard locally
-streamlit run app.py
+# Run detection manually — headless GEE path (CI default), or streaming fallback
+python scripts/run_detection_gee.py --project ee-araripe   # GEE (see docs/DETECTION_GEE.md)
+python scripts/run_detection.py                            # streaming fallback
 
-# Run detection pipeline manually
-python scripts/run_detection.py
+# Rebuild baselines (via Google Earth Engine) — see docs/BASELINE_GEE.md
+python scripts/build_baseline_gee.py
 
-# Build baselines from historical data (one-time setup)
-python scripts/build_baseline.py --years 5 --indices ndmi,nbr,evi2
+# The public dashboard is a separate static site (Cloudflare Pages):
+#   ../Observatorio_Chapada_do_Araripe/site
 ```
 
 ## Project Structure
 
 ```
-├── app.py                      # Streamlit dashboard entry point
 ├── config/
 │   ├── settings.py             # AOI, thresholds, paths, API endpoints
 │   └── bands.py                # Band mappings: S2, Landsat, HLS
