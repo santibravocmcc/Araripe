@@ -44,7 +44,7 @@ from src.detection.alerts import save_alerts, summarize_alerts, vectorize_alerts
 from src.detection.baseline import load_baseline_pair
 from src.detection.change_detect import detect_deforestation
 from src.detection.landcover import annotate_alerts_all_collections
-from src.detection.persistence import DEFAULT_MIN_OVERLAP_FRAC, compute_persistence_counts
+from src.detection.persistence import DEFAULT_MIN_OVERLAP_FRAC, update_tracks
 from src.processing.cloud_mask import (
     compute_clear_percentage,
     mask_hls,
@@ -81,22 +81,9 @@ _GRID_TOLERANCE_M = {"sentinel2": 10, "landsat": 35, "hls": 35}
 _CLEARING_LABELS = {0: "none", 1: "fire", 2: "mechanical", 3: "uncertain"}
 
 
-def _find_previous_alert_file(alerts_dir: Path, scene_date: str):
-    """Most recent alerts_YYYY-MM-DD.geojson strictly before scene_date, or None."""
-    prev = None
-    for f in sorted(alerts_dir.glob("alerts_*.geojson")):
-        d = f.stem.replace("alerts_", "")
-        if d < scene_date:
-            prev = f
-        else:
-            break
-    return prev
-
-
-def _merge_and_confirm(scene_date, parts, alerts_dir, persistence, min_overlap_frac):
+def _merge_and_confirm(scene_date, parts, persistence, min_overlap_frac, state):
     """Merge every tile's alerts for one acquisition date into a single
-    GeoDataFrame and mark temporal persistence against the most recent prior
-    alert file.
+    GeoDataFrame and update the gap-tolerant persistence tracks.
 
     Fixes a latent data-loss bug: the streaming loop yields one GeoDataFrame per
     *tile*, and several tiles can share one ``scene_date``. The old code called
@@ -106,11 +93,11 @@ def _merge_and_confirm(scene_date, parts, alerts_dir, persistence, min_overlap_f
     date are concatenated into one file. (The GEE path never had this bug: it
     mosaics all tiles into one AOI composite per date before detection.)
 
-    Persistence is evaluated here (not per-tile) so it runs against the full
-    merged date, as a STREAK count (how many consecutive observations the
-    location was flagged). ``compute_persistence_counts`` reprojects both sides
-    to the metric CRS internally, so the in-memory UTM alerts and the WGS84 prior
-    file compare correctly. Nothing is dropped — every alert is tagged.
+    Persistence is evaluated here (not per-tile), over the full merged date,
+    using the gap-tolerant tracker (``update_tracks``): each alert is chained to
+    a running track by spatial overlap, tolerating gaps up to 180 days; tracks
+    reaching the top tier become permanent. Returns ``(merged, new_state)`` so
+    the caller can thread the state across dates. Nothing is dropped.
     """
     import geopandas as gpd
 
@@ -120,29 +107,16 @@ def _merge_and_confirm(scene_date, parts, alerts_dir, persistence, min_overlap_f
     )
     if persistence:
         try:
-            prev_f = _find_previous_alert_file(alerts_dir, scene_date)
-            if prev_f is None:
-                merged["persistence_count"] = 1
-                merged["persistence_status"] = "first_observation"
-            else:
-                counts = compute_persistence_counts(
-                    merged, gpd.read_file(str(prev_f)), min_overlap_frac=min_overlap_frac,
-                )
-                merged["persistence_count"] = counts.reindex(merged.index).fillna(1).astype(int)
-                merged["persistence_status"] = [
-                    "confirmed" if c >= 2 else "candidate"
-                    for c in merged["persistence_count"]
-                ]
-                logger.info(
-                    "Persistence {}: {}/{} confirmed (streak>=2) vs {}; max streak={}",
-                    scene_date, int((merged["persistence_count"] >= 2).sum()),
-                    len(merged), prev_f.name, int(merged["persistence_count"].max()),
-                )
+            merged, state = update_tracks(
+                merged, state, scene_date, min_overlap_frac=min_overlap_frac,
+            )
+            vc = merged["persistence_status"].value_counts().to_dict()
+            logger.info("Persistência {}: {} | estado={} tracks", scene_date, vc, len(state))
         except Exception as pe:
             logger.warning("Persistence step failed ({}); marking candidate", pe)
             merged["persistence_count"] = 1
             merged["persistence_status"] = "candidate"
-    return merged
+    return merged, state
 
 
 def _modal_class_per_polygon(gdf, class_da):
@@ -557,10 +531,19 @@ def main(
     # file is saved before the next date's previous-file lookup runs, so one run
     # confirms its own consecutive dates as well as against prior history.
     all_alerts = []
+    import geopandas as gpd
+    state_path = ALERTS_DIR.parent / "persistence_state.geojson"
+    state = None
+    if persistence and state_path.exists():
+        try:
+            state = gpd.read_file(str(state_path))
+            logger.info("Persistência: estado carregado ({} tracks)", len(state))
+        except Exception as e:
+            logger.warning("Não foi possível ler o estado de persistência ({}); do zero", e)
     for scene_date in sorted(alerts_by_date):
         parts = alerts_by_date[scene_date]
-        merged = _merge_and_confirm(
-            scene_date, parts, ALERTS_DIR, persistence, min_overlap_frac,
+        merged, state = _merge_and_confirm(
+            scene_date, parts, persistence, min_overlap_frac, state,
         )
         save_alerts(merged, scene_date)
         summary = summarize_alerts(merged)
@@ -570,6 +553,12 @@ def main(
             "Date {}: {} alert(s) merged from {} tile(s), {:.1f} ha",
             scene_date, summary["total_alerts"], len(parts), summary["total_area_ha"],
         )
+    if persistence and state is not None:
+        try:
+            state.to_file(str(state_path), driver="GeoJSON")
+            logger.info("Persistência: estado salvo ({} tracks) -> {}", len(state), state_path)
+        except Exception as e:
+            logger.warning("Falha ao salvar o estado de persistência ({})", e)
 
     # Summary
     if all_alerts:
