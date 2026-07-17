@@ -44,7 +44,7 @@ from src.detection.alerts import save_alerts, summarize_alerts, vectorize_alerts
 from src.detection.baseline import load_baseline_pair
 from src.detection.change_detect import detect_deforestation
 from src.detection.landcover import annotate_alerts_all_collections
-from src.detection.persistence import DEFAULT_MIN_OVERLAP_FRAC, update_tracks
+from src.detection.persistence import DEFAULT_MIN_OVERLAP_FRAC, save_persistence_state, update_tracks
 from src.processing.cloud_mask import (
     compute_clear_percentage,
     mask_hls,
@@ -555,7 +555,7 @@ def main(
         )
     if persistence and state is not None:
         try:
-            state.to_file(str(state_path), driver="GeoJSON")
+            save_persistence_state(state, state_path)
             logger.info("Persistência: estado salvo ({} tracks) -> {}", len(state), state_path)
         except Exception as e:
             logger.warning("Falha ao salvar o estado de persistência ({})", e)

@@ -262,10 +262,26 @@ def apply_persistence_to_history(
 
 GRACE_DAYS = 180        # tolerância a buracos: reconecta se reapareceu em <= 180d
 CONFIRMED_MIN = 15      # n_sightings >= isto -> "confirmed" (topo, permanente)
+# O estado só serve para CASAR sobreposição na próxima detecção — não é o que o
+# site desenha. Guardar a geometria de ~100k+ tracks em resolução cheia infla o
+# arquivo (o CI o busca/envia a cada run). Simplificar ~12 m e limitar a precisão
+# de coordenada encolhe o arquivo ~5-10x sem mudar o casamento (limiar 5%, alertas
+# >= 1 ha), sem qualquer efeito visual no site.
+STATE_SIMPLIFY_M = 12.0    # tolerância de simplificação da geometria (metros)
+STATE_COORD_PRECISION = 6  # casas decimais ao salvar em WGS84 (~0.1 m)
 _ST_FIRST = "first_observation"
 _ST_CANDIDATE = "candidate"
 _ST_CONFIRMED = "confirmed"
 _STATE_COLS = ["n_sightings", "first_seen", "last_seen"]
+
+
+def save_persistence_state(state: gpd.GeoDataFrame, path) -> None:
+    """Salva o estado de tracks em GeoJSON compacto (precisão de coordenada
+    limitada) — mantém o arquivo pequeno para o CI buscar/enviar a cada run."""
+    try:
+        state.to_file(str(path), driver="GeoJSON", COORDINATE_PRECISION=STATE_COORD_PRECISION)
+    except TypeError:  # engine antiga sem a opção — salva sem limitar precisão
+        state.to_file(str(path), driver="GeoJSON")
 
 
 def persistence_tier(n: int, confirmed_min: int = CONFIRMED_MIN) -> str:
@@ -385,13 +401,14 @@ def update_tracks(
         w_n[t] += 1
         w_last[t] = date
         largest = cis[int(np.argmax(cur_area[cis]))]
-        w_geom[t] = cur_geom[largest]
+        w_geom[t] = cur_geom[largest].simplify(STATE_SIMPLIFY_M)  # estado enxuto
         for c in cis:
             n_now[c] = w_n[t]
             first_seen[c] = w_first[t]
     for c in range(n):
         if matched[c] < 0:
-            w_n.append(1); w_first.append(date); w_last.append(date); w_geom.append(cur_geom[c])
+            w_n.append(1); w_first.append(date); w_last.append(date)
+            w_geom.append(cur_geom[c].simplify(STATE_SIMPLIFY_M))
             n_now[c] = 1; first_seen[c] = date
 
     # prune: keep established (permanent) or seen within grace_days
