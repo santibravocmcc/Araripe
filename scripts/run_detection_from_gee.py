@@ -43,7 +43,7 @@ from src.detection.alerts import save_alerts, summarize_alerts, vectorize_alerts
 from src.detection.baseline import load_baseline_pair
 from src.detection.change_detect import classify_fire_vs_mechanical, detect_deforestation
 from src.detection.landcover import annotate_alerts_all_collections
-from src.detection.persistence import DEFAULT_MIN_OVERLAP_FRAC, compute_persistence_counts
+from src.detection.persistence import DEFAULT_MIN_OVERLAP_FRAC, update_tracks
 from src.timeseries.builder import store_alert_stats, store_regional_stats
 from src.utils.logging_setup import configure_run_logging
 
@@ -104,7 +104,7 @@ def _load_composite(path: Path) -> tuple[xr.Dataset, xr.DataArray]:
 def run_detection_on_dir(in_dir, out_dir=ALERTS_DIR, *, min_clear=20.0,
                          persistence=True, min_overlap_frac=DEFAULT_MIN_OVERLAP_FRAC,
                          landcover_collection=DEFAULT_LANDCOVER_COLLECTION,
-                         classify_clearing=True, spi=True):
+                         classify_clearing=True, spi=True, state_path=None):
     """Run the existing detection logic over a directory of per-date GEE
     composites (``araripe_detect_YYYY-MM-DD.tif``). Reused by both the manual
     path (this script's CLI) and the headless CI path
@@ -128,6 +128,19 @@ def run_detection_on_dir(in_dir, out_dir=ALERTS_DIR, *, min_clear=20.0,
             logger.warning("SPI unavailable ({}); no drought adjustment.", e)
     else:
         logger.info("SPI skipped (--no-spi)")
+
+    # Persistência (gap-tolerant): o estado é carregado uma vez, atualizado por
+    # data e salvo ao final. No CI ele é buscado de / enviado ao R2, garantindo a
+    # tolerância a buracos (até 180d) e a permanência dos tracks "confirmados".
+    import geopandas as gpd
+    state_path = Path(state_path) if state_path else Path(out_dir).parent / "persistence_state.geojson"
+    state = None
+    if persistence and state_path.exists():
+        try:
+            state = gpd.read_file(str(state_path))
+            logger.info("Persistência: estado carregado ({} tracks) de {}", len(state), state_path.name)
+        except Exception as e:
+            logger.warning("Não foi possível ler o estado de persistência ({}); começando do zero", e)
 
     n_written = 0
     for f in files:
@@ -189,31 +202,16 @@ def run_detection_on_dir(in_dir, out_dir=ALERTS_DIR, *, min_clear=20.0,
             except Exception as le:
                 logger.warning("land-cover annotation failed ({})", le)
 
-            # Temporal persistence vs the previous processed date, as a STREAK
-            # count (how many consecutive observations this location was flagged).
-            # Nothing is removed — every alert is kept and tagged so the FE can
-            # filter by persistence_status or by persistence_count >= N.
+            # Persistência temporal gap-tolerant: encadeia cada alerta a um track
+            # corrente por sobreposição (>=5%), tolerando buracos até 180 dias;
+            # tracks "confirmados" (>=15 avistamentos) ficam permanentes. Tiers:
+            # 1ª observação (1) / candidato (2-14) / confirmado (>=15). Nada é
+            # removido — cada alerta é rotulado (persistence_count/status,
+            # first_seen, last_seen) para o front-end filtrar.
             if persistence:
-                import geopandas as gpd
-                prev = None
-                for pf in sorted(out_dir.glob("alerts_*.geojson")):
-                    d = pf.stem.replace("alerts_", "")
-                    if d < date:
-                        prev = pf
-                if prev is None:
-                    alerts["persistence_count"] = 1
-                    alerts["persistence_status"] = "first_observation"
-                else:
-                    counts = compute_persistence_counts(
-                        alerts, gpd.read_file(str(prev)), min_overlap_frac=min_overlap_frac,
-                    )
-                    alerts["persistence_count"] = counts.reindex(alerts.index).fillna(1).astype(int)
-                    alerts["persistence_status"] = [
-                        "confirmed" if c >= 2 else "candidate" for c in alerts["persistence_count"]
-                    ]
-                    n_conf = int((alerts["persistence_count"] >= 2).sum())
-                    logger.info("persistence: {}/{} confirmed (streak>=2) vs {}; max streak={}",
-                                n_conf, len(alerts), prev.name, int(alerts["persistence_count"].max()))
+                alerts, state = update_tracks(alerts, state, date, min_overlap_frac=min_overlap_frac)
+                vc = alerts["persistence_status"].value_counts().to_dict()
+                logger.info("persistência [{}]: {} | estado={} tracks", date, vc, len(state))
 
             save_alerts(alerts, date, alerts_dir=out_dir)
             store_alert_stats(date, summarize_alerts(alerts))
@@ -222,6 +220,13 @@ def run_detection_on_dir(in_dir, out_dir=ALERTS_DIR, *, min_clear=20.0,
             logger.info("{}: {} alerts, {:.1f} ha", date, s["total_alerts"], s["total_area_ha"])
         except Exception as e:
             logger.error("Failed {}: {}", date, e); continue
+
+    if persistence and state is not None:
+        try:
+            state.to_file(str(state_path), driver="GeoJSON")
+            logger.info("Persistência: estado salvo ({} tracks) -> {}", len(state), state_path)
+        except Exception as e:
+            logger.warning("Falha ao salvar o estado de persistência ({})", e)
 
     logger.info("=== Done. Wrote alerts for {} dates to {} ===", n_written, out_dir)
     return n_written
@@ -237,14 +242,17 @@ def run_detection_on_dir(in_dir, out_dir=ALERTS_DIR, *, min_clear=20.0,
 @click.option("--classify-clearing/--no-classify-clearing", default=True)
 @click.option("--spi/--no-spi", default=True, help="Fetch CHIRPS SPI for drought "
               "widening. Use --no-spi to skip (offline, or when CHIRPS is slow).")
+@click.option("--state-path", default=None, help="Persistence-state GeoJSON "
+              "(gap-tolerant tracks). Default: <out-dir>/../persistence_state.geojson. "
+              "In CI, fetch from / push to R2.")
 @click.option("--log-level", default="INFO", help="Console log level (file always "
               "captures full DEBUG detail under logs/). Use DEBUG to mirror everything.")
-def main(in_dir, out_dir, min_clear, persistence, min_overlap_frac, landcover_collection, classify_clearing, spi, log_level):
+def main(in_dir, out_dir, min_clear, persistence, min_overlap_frac, landcover_collection, classify_clearing, spi, state_path, log_level):
     configure_run_logging("run_detection_from_gee", console_level=log_level)
     run_detection_on_dir(
         in_dir, out_dir, min_clear=min_clear, persistence=persistence,
         min_overlap_frac=min_overlap_frac, landcover_collection=landcover_collection,
-        classify_clearing=classify_clearing, spi=spi,
+        classify_clearing=classify_clearing, spi=spi, state_path=state_path,
     )
 
 

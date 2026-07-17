@@ -45,9 +45,9 @@ jobs:
         if: env.R2_ENDPOINT_URL != ''
         run: python scripts/fetch_baselines_from_r2.py
 
-      - name: Fetch recent alerts from R2 (for temporal persistence)
+      - name: Fetch persistence state from R2 (gap-tolerant tracking)
         if: env.R2_ENDPOINT_URL != ''
-        run: python scripts/fetch_alerts_from_r2.py --latest 3
+        run: python scripts/r2_state.py get data/persistence_state.geojson
 
       - name: Run detection pipeline
         env:
@@ -58,6 +58,10 @@ jobs:
       - name: Upload alerts to R2
         if: success() && env.R2_ENDPOINT_URL != ''
         run: python scripts/upload_to_r2.py --directory data/alerts --prefix alerts/ --pattern "*.geojson"
+
+      - name: Upload persistence state to R2
+        if: success() && env.R2_ENDPOINT_URL != ''
+        run: python scripts/r2_state.py put data/persistence_state.geojson
 
       - name: Commit time-series DB
         if: success()

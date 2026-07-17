@@ -247,3 +247,167 @@ def apply_persistence_to_history(
 
     summary = pd.DataFrame(rows)
     return confirmed_by_date, summary
+
+
+# ─── Gap-tolerant persistence (stateful tracking) ────────────────────────────
+# The strict streak above resets on ANY missed observation (a passing cloud
+# demotes a genuine clearing back to "candidate"). This gap-tolerant model
+# instead chains each alert to a running *track* by spatial overlap, tolerating
+# gaps up to ``grace_days`` (a full rainy season). A track that reaches the top
+# tier (``confirmed``) becomes permanent (infinite tolerance). Decision + the
+# empirical calibration are recorded in the project memo (2026-07-17):
+#   first_observation : n_sightings == 1        (visto uma vez)
+#   candidate         : 2 <= n_sightings < 15   (reapareceu, ainda avaliando)
+#   confirmed         : n_sightings >= 15        (clareira estabelecida; permanente)
+
+GRACE_DAYS = 180        # tolerância a buracos: reconecta se reapareceu em <= 180d
+CONFIRMED_MIN = 15      # n_sightings >= isto -> "confirmed" (topo, permanente)
+_ST_FIRST = "first_observation"
+_ST_CANDIDATE = "candidate"
+_ST_CONFIRMED = "confirmed"
+_STATE_COLS = ["n_sightings", "first_seen", "last_seen"]
+
+
+def persistence_tier(n: int, confirmed_min: int = CONFIRMED_MIN) -> str:
+    """Map a sighting count to its persistence tier."""
+    if n >= confirmed_min:
+        return _ST_CONFIRMED
+    if n >= 2:
+        return _ST_CANDIDATE
+    return _ST_FIRST
+
+
+def empty_persistence_state() -> gpd.GeoDataFrame:
+    """An empty track table (WGS84) for the first-ever observation."""
+    return gpd.GeoDataFrame(
+        {c: [] for c in _STATE_COLS}, geometry=[], crs="EPSG:4326"
+    )
+
+
+def _days_between(a: str, b: str) -> int:
+    from datetime import date as _date
+    return (_date.fromisoformat(str(a)) - _date.fromisoformat(str(b))).days
+
+
+def update_tracks(
+    current: gpd.GeoDataFrame,
+    state: gpd.GeoDataFrame | None,
+    date: str,
+    *,
+    grace_days: int = GRACE_DAYS,
+    confirmed_min: int = CONFIRMED_MIN,
+    min_overlap_frac: float = DEFAULT_MIN_OVERLAP_FRAC,
+) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
+    """Chain this date's alerts to a running track state (gap-tolerant).
+
+    Parameters
+    ----------
+    current : GeoDataFrame
+        This date's alert polygons (any CRS).
+    state : GeoDataFrame | None
+        Running track table from the previous call (cols ``n_sightings``,
+        ``first_seen``, ``last_seen``, geometry, WGS84) — ``None``/empty for the
+        first date.
+    date : str
+        ``YYYY-MM-DD`` of ``current``.
+
+    Returns
+    -------
+    (annotated_current, new_state)
+        ``annotated_current`` (input CRS/order preserved) gains
+        ``persistence_count`` (n_sightings), ``persistence_status``
+        (first_observation/candidate/confirmed), ``first_seen`` and
+        ``last_seen``. ``new_state`` (WGS84) is the pruned track table to pass to
+        the next call (established tracks kept forever; others expire after
+        ``grace_days``).
+    """
+    import numpy as np
+    from shapely import area as _area
+    from shapely import intersection as _intersection
+
+    cur = current.reset_index(drop=True).copy()
+    if cur.empty:
+        return cur, (state if state is not None and len(state) else empty_persistence_state())
+
+    cur_m = _to_metric(cur)
+    cur_geom = np.asarray(cur_m.geometry.values, dtype=object)
+    cur_area = _area(cur_geom)
+    n = len(cur)
+
+    have_state = state is not None and len(state) > 0
+    if have_state:
+        st = state.reset_index(drop=True).copy()
+        st_m = _to_metric(st)
+        st_geom = list(st_m.geometry.values)
+        st_n = pd.to_numeric(st["n_sightings"], errors="coerce").fillna(1).astype(int).to_numpy()
+        st_first = st["first_seen"].astype(str).tolist()
+        st_last = st["last_seen"].astype(str).tolist()
+        estab = st_n >= confirmed_min
+        elig = estab | np.array([_days_between(date, ls) <= grace_days for ls in st_last])
+    else:
+        st_geom, st_n, st_first, st_last = [], np.array([], dtype=int), [], []
+        elig = np.array([], dtype=bool)
+
+    matched = np.full(n, -1, dtype=int)   # cur row -> state row index (or -1)
+    if have_state and elig.any():
+        eidx = np.where(elig)[0]
+        right = gpd.GeoDataFrame({"__ti": eidx}, geometry=[st_geom[i] for i in eidx], crs=cur_m.crs)
+        left = gpd.GeoDataFrame({"__ci": np.arange(n)}, geometry=list(cur_geom), crs=cur_m.crs)
+        j = gpd.sjoin(left, right, predicate="intersects", how="inner")
+        if len(j):
+            cg = j.geometry.values
+            pg = right.geometry.values[j["index_right"].to_numpy()]
+            inter = _area(_intersection(cg, pg))
+            ci = j["__ci"].to_numpy()
+            frac = np.where(cur_area[ci] > 0, inter / cur_area[ci], 0.0)
+            keep = frac >= min_overlap_frac
+            best = (
+                pd.DataFrame({"ci": ci[keep], "ti": j["__ti"].to_numpy()[keep], "frac": frac[keep]})
+                .sort_values("frac", ascending=False).drop_duplicates("ci")
+            )
+            for c_, t_ in zip(best["ci"].astype(int), best["ti"].astype(int)):
+                matched[c_] = t_
+
+    # working copies of state (extend with new tracks)
+    w_n = list(st_n.tolist())
+    w_first = list(st_first)
+    w_last = list(st_last)
+    w_geom = list(st_geom)
+
+    n_now = np.ones(n, dtype=int)
+    first_seen = [date] * n
+
+    by_track: dict[int, list[int]] = {}
+    for c in range(n):
+        if matched[c] >= 0:
+            by_track.setdefault(int(matched[c]), []).append(c)
+    for t, cis in by_track.items():
+        w_n[t] += 1
+        w_last[t] = date
+        largest = cis[int(np.argmax(cur_area[cis]))]
+        w_geom[t] = cur_geom[largest]
+        for c in cis:
+            n_now[c] = w_n[t]
+            first_seen[c] = w_first[t]
+    for c in range(n):
+        if matched[c] < 0:
+            w_n.append(1); w_first.append(date); w_last.append(date); w_geom.append(cur_geom[c])
+            n_now[c] = 1; first_seen[c] = date
+
+    # prune: keep established (permanent) or seen within grace_days
+    keep = [
+        i for i in range(len(w_n))
+        if w_n[i] >= confirmed_min or _days_between(date, w_last[i]) <= grace_days
+    ]
+    new_state = gpd.GeoDataFrame(
+        {"n_sightings": [int(w_n[i]) for i in keep],
+         "first_seen": [w_first[i] for i in keep],
+         "last_seen": [w_last[i] for i in keep]},
+        geometry=[w_geom[i] for i in keep], crs=cur_m.crs,
+    ).to_crs("EPSG:4326")
+
+    cur["persistence_count"] = n_now
+    cur["persistence_status"] = [persistence_tier(int(x), confirmed_min) for x in n_now]
+    cur["first_seen"] = first_seen
+    cur["last_seen"] = date
+    return cur, new_state
