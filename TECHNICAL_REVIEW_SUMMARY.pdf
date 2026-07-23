@@ -1,0 +1,2372 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<<
+/Producer (pypdf)
+/Title (Concise Technical Review \055 Chapada do Araripe Monitoring System)
+/Author (Santiago Bravo)
+/Subject (Technical review of the Chapada do Araripe monitoring system)
+/Creator (Codex review workflow using ReportLab and pypdf)
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/Count 6
+/Kids [ 4 0 R 11 0 R 14 0 R 17 0 R 20 0 R 23 0 R ]
+>>
+endobj
+3 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+4 0 obj
+<<
+/Contents 5 0 R
+/MediaBox [ 0 0 595.2756 841.8898 ]
+/Resources <<
+/Font <<
+/F1 6 0 R
+/F1-0 7 0 R
+/F2 8 0 R
+/F3 9 0 R
+/F4 10 0 R
+>>
+/ProcSet [ /ImageB /ImageC /ImageI /PDF /Text ]
+>>
+/Rotate 0
+/Trans <<
+>>
+/Type /Page
+/Annots [ ]
+/Parent 2 0 R
+>>
+endobj
+5 0 obj
+<<
+/Length 8115
+>>
+stream
+q
+1 0 0 1 0 0 cm  BT /F1 12 Tf 14.4 TL ET
+q
+1 0 0 1 62.69291 735.1969 cm
+q
+.105882 .368627 .12549 rg
+BT 1 0 0 1 0 26 Tm /F2 18 Tf 22 TL 31.38288 0 Td (Concise Technical Review: Chapada do Araripe) Tj T* 122.553 0 Td (Monitoring System) Tj T* -153.9359 0 Td ET
+Q
+Q
+q
+1 0 0 1 62.69291 725.5276 cm
+Q
+q
+1 0 0 1 62.69291 712.5276 cm
+q
+BT 1 0 0 1 0 3 Tm 206.5999 0 Td 13 TL /F2 10 Tf .501961 .501961 .501961 rg (Version:) Tj /F1 10 Tf ( 1.0) Tj T* -206.5999 0 Td ET
+Q
+Q
+q
+1 0 0 1 62.69291 697.5276 cm
+q
+BT 1 0 0 1 0 3 Tm 195.4849 0 Td 13 TL /F2 10 Tf .501961 .501961 .501961 rg (Date:) Tj /F1 10 Tf ( 2026-07-22) Tj T* -195.4849 0 Td ET
+Q
+Q
+q
+1 0 0 1 62.69291 682.5276 cm
+q
+BT 1 0 0 1 0 3 Tm 147.1299 0 Td 13 TL /F2 10 Tf .501961 .501961 .501961 rg (Audience:) Tj /F1 10 Tf ( Technical colleague handoff) Tj T* -147.1299 0 Td ET
+Q
+Q
+q
+1 0 0 1 62.69291 667.5276 cm
+q
+BT 1 0 0 1 0 3 Tm 27.08488 0 Td 13 TL /F2 10 Tf .501961 .501961 .501961 rg (Scope:) Tj /F1 10 Tf ( Detection repository, site repository, GitHub Actions, Cloudflare R2, and the Alerts tab) Tj T* -27.08488 0 Td ET
+Q
+Q
+q
+1 0 0 1 62.69291 657.0236 cm
+Q
+q
+1 0 0 1 62.69291 627.0236 cm
+q
+.180392 .490196 .196078 rg
+BT 1 0 0 1 0 3 Tm /F2 13 Tf 16 TL (1. Bottom line) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 569.0236 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 42.5 Tm /F1 9.5 Tf 13 TL 2.392597 Tw (The monitoring system is real, automated, and technically substantial. A scheduled Google Earth Engine) Tj T* 0 Tw 1.243197 Tw (pipeline processes Sentinel-2 imagery twice weekly, stores baselines and alerts in Cloudflare R2, updates a) Tj T* 0 Tw .450626 Tw (public Vite/Cloudflare Worker site, and exposes maps, time series, downloads, rainfall, and an AI methodology) Tj T* 0 Tw (assistant.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 511.0236 cm
+q
+BT 1 0 0 1 0 42.5 Tm 2.241272 Tw 13 TL /F1 9.5 Tf 0 0 0 rg (The current outputs should nevertheless be treated as ) Tj /F2 9.5 Tf (experimental change observations, not verified) Tj T* 0 Tw 1.229984 Tw (deforestation statistics) Tj /F1 9.5 Tf (. The most important reason is a persistence defect: the same satellite date can be) Tj T* 0 Tw .10904 Tw (counted again when the rolling 16-day window overlaps, a job retries, or a manual rerun occurs. As a result, the) Tj T* 0 Tw (public candidate, confirmed, and strong totals may be inflated.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 492.0236 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 3.5 Tm /F1 9.5 Tf 13 TL (Two other correctness issues need early attention:) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 460.0236 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 16.5 Tm /F1 9.5 Tf 13 TL 1.609447 Tw (\177 scheduled GEE processing uses the APA bounding rectangle rather than the APA polygon, covering) Tj T* 0 Tw (about 2.2 times the intended area;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 428.0236 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 16.5 Tm /F1 9.5 Tf 13 TL 1.695251 Tw (\177 the scene-wide anomaly check counts nodata/cloud pixels in its denominator, weakening rejection of) Tj T* 0 Tw (contaminated scenes.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 383.0236 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 29.5 Tm /F1 9.5 Tf 13 TL .379515 Tw (The public site is useful, especially its Alerts tab, but the R2 migration left broken download/Home links and an) Tj T* 0 Tw 1.744405 Tw (unverified cross-origin full-data path. The site also describes strong as confirmed, although strong includes) Tj T* 0 Tw (candidates from two sightings onward.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 338.0236 cm
+q
+BT 1 0 0 1 0 29.5 Tm .445097 Tw 13 TL /F2 9.5 Tf 0 0 0 rg (Recommendation:) Tj /F1 9.5 Tf ( keep the system online, but add an interpretation warning, correct the three scientific-state) Tj T* 0 Tw 6.332251 Tw (defects, rebuild persistence deterministically, and then republish the alert products before using) Tj T* 0 Tw (confirmed/strong statistics for decisions.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 323.5197 cm
+Q
+q
+1 0 0 1 62.69291 293.5197 cm
+q
+.180392 .490196 .196078 rg
+BT 1 0 0 1 0 3 Tm /F2 13 Tf 16 TL (2. System in one view) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 276.5197 cm
+q
+.95 .95 .95 rg
+n 20 0 449.8898 11 re f*
+Q
+q
+BT 1 0 0 1 20 2.5 Tm 11 TL /F3 8.5 Tf 0 0 0 rg (Backend Actions -) Tj (> GEE composites -) Tj (> detection/persistence -) Tj (> R2 and Git) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 259.5197 cm
+q
+.95 .95 .95 rg
+n 20 0 449.8898 11 re f*
+Q
+q
+BT 1 0 0 1 20 2.5 Tm 11 TL /F3 8.5 Tf 0 0 0 rg (Site Actions -) Tj (> R2 source alerts -) Tj (> full/strong products -) Tj (> site data/rainfall) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 242.5197 cm
+q
+.95 .95 .95 rg
+n 20 0 449.8898 11 re f*
+Q
+q
+BT 1 0 0 1 20 2.5 Tm 11 TL /F3 8.5 Tf 0 0 0 rg (Cloudflare Worker -) Tj (> eight-page Vite site -) Tj (> Alerts UI and /api/chat) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 225.1811 cm
+Q
+q
+1 0 0 1 56.69291 63.1811 cm
+q
+.180392 .490196 .196078 rg
+n 0 162 481.8898 -18 re f*
+1 1 1 rg
+n 0 144 481.8898 -18 re f*
+.960784 .960784 .960784 rg
+n 0 126 481.8898 -18 re f*
+1 1 1 rg
+n 0 108 481.8898 -18 re f*
+.960784 .960784 .960784 rg
+n 0 90 481.8898 -18 re f*
+1 1 1 rg
+n 0 72 481.8898 -18 re f*
+.960784 .960784 .960784 rg
+n 0 54 481.8898 -18 re f*
+1 1 1 rg
+n 0 36 481.8898 -18 re f*
+.960784 .960784 .960784 rg
+n 0 18 481.8898 -18 re f*
+1 1 1 rg
+BT /F2 7.5 Tf 12 TL ET
+q
+1 0 0 1 5 148 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 2.5 Tm /F2 7.5 Tf 10 TL (Component) Tj T* ET
+Q
+Q
+q
+1 0 0 1 126.9239 148 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 2.5 Tm /F2 7.5 Tf 10 TL (Current status) Tj T* ET
+Q
+Q
+0 0 0 rg
+BT /F1 7.5 Tf 12 TL ET
+q
+1 0 0 1 5 130 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Scheduled detector) Tj T* ET
+Q
+Q
+q
+1 0 0 1 126.9239 130 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Active; latest verified scheduled run succeeded on 2026-07-20) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 112 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Baseline store) Tj T* ET
+Q
+Q
+q
+1 0 0 1 126.9239 112 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Complete: 72 monthly reflectance COGs) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 94 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Source alert store) Tj T* ET
+Q
+Q
+q
+1 0 0 1 126.9239 94 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (29 run files through 2026-07-16) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 76 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Site refresh) Tj T* ET
+Q
+Q
+q
+1 0 0 1 126.9239 76 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Alerts/series and rainfall bot commits published on 2026-07-20) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 58 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Python tests) Tj T* ET
+Q
+Q
+q
+1 0 0 1 126.9239 58 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (96 passed) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 40 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Site build) Tj T* ET
+Q
+Q
+q
+1 0 0 1 126.9239 40 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Passed; 59 modules and 126 output files) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 22 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (npm advisory scan) Tj T* ET
+Q
+Q
+q
+1 0 0 1 126.9239 22 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (0 known advisories) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 4 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Scientific validation) Tj T* ET
+Q
+Q
+q
+1 0 0 1 126.9239 4 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Not yet sufficient for operational deforestation claims) Tj T* ET
+Q
+Q
+q
+1 J
+1 j
+.741176 .741176 .741176 RG
+.5 w
+n 0 162 m 481.8898 162 l S
+n 0 0 m 481.8898 0 l S
+n 0 0 m 0 162 l S
+n 481.8898 0 m 481.8898 162 l S
+n 0 144 m 481.8898 144 l S
+n 0 126 m 481.8898 126 l S
+n 0 108 m 481.8898 108 l S
+n 0 90 m 481.8898 90 l S
+n 0 72 m 481.8898 72 l S
+n 0 54 m 481.8898 54 l S
+n 0 36 m 481.8898 36 l S
+n 0 18 m 481.8898 18 l S
+n 121.9239 0 m 121.9239 162 l S
+Q
+Q
+Q
+ 
+
+Q
+
+q
+0.0 0.0 595.2756 841.8898 re
+W
+n
+1 0 0 1 0 0 cm
+BT
+/F1-0 12 Tf
+14.4 TL
+ET
+0.780392 0.847059 0.788235 RG
+0.45 w
+n
+56.69291 797.9528 m
+538.5827 797.9528 l
+S
+n
+56.69291 41.10236 m
+538.5827 41.10236 l
+S
+0.372549 0.435294 0.384314 rg
+BT
+/F1-0 7.4 Tf
+8.88 TL
+ET
+BT
+1 0 0 1 56.69291 809.2914 Tm
+(CHAPADA DO ARARIPE MONITORING SYSTEM) Tj
+T*
+ET
+BT
+1 0 0 1 429.6251 809.2914 Tm
+(CONCISE TECHNICAL REVIEW) Tj
+T*
+ET
+BT
+1 0 0 1 56.69291 26.07874 Tm
+(Version 1\0560  \174  2026\05507\05522) Tj
+T*
+ET
+BT
+1 0 0 1 500.7317 26.07874 Tm
+(Page 1 of 6) Tj
+T*
+ET
+Q
+
+
+endstream
+endobj
+6 0 obj
+<<
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+/Name /F1
+/Subtype /Type1
+/Type /Font
+>>
+endobj
+7 0 obj
+<<
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+/Name /F1
+/Subtype /Type1
+/Type /Font
+>>
+endobj
+8 0 obj
+<<
+/BaseFont /Helvetica-Bold
+/Encoding /WinAnsiEncoding
+/Name /F2
+/Subtype /Type1
+/Type /Font
+>>
+endobj
+9 0 obj
+<<
+/BaseFont /Courier
+/Encoding /WinAnsiEncoding
+/Name /F3
+/Subtype /Type1
+/Type /Font
+>>
+endobj
+10 0 obj
+<<
+/BaseFont /Helvetica-BoldOblique
+/Encoding /WinAnsiEncoding
+/Name /F4
+/Subtype /Type1
+/Type /Font
+>>
+endobj
+11 0 obj
+<<
+/Contents 12 0 R
+/MediaBox [ 0 0 595.2756 841.8898 ]
+/Resources <<
+/Font <<
+/F1 6 0 R
+/F1-0 13 0 R
+/F2 8 0 R
+/F3 9 0 R
+/F4 10 0 R
+>>
+/ProcSet [ /ImageB /ImageC /ImageI /PDF /Text ]
+>>
+/Rotate 0
+/Trans <<
+>>
+/Type /Page
+/Annots [ ]
+/Parent 2 0 R
+>>
+endobj
+12 0 obj
+<<
+/Length 8286
+>>
+stream
+q
+1 0 0 1 0 0 cm  BT /F1 12 Tf 14.4 TL ET
+q
+1 0 0 1 62.69291 767.8583 cm
+Q
+q
+1 0 0 1 62.69291 728.8583 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 29.5 Tm /F1 9.5 Tf 13 TL .97104 Tw (The site is not Pages-only. It is configured as a Cloudflare Worker serving static assets and a chat API, with) Tj T* 0 Tw 3.329443 Tw (Workers AI and an 8 requests/IP/minute limiter. The repository documentation still describes the older) Tj T* 0 Tw (static-only deployment.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 714.3543 cm
+Q
+q
+1 0 0 1 62.69291 684.3543 cm
+q
+.180392 .490196 .196078 rg
+BT 1 0 0 1 0 3 Tm /F2 13 Tf 16 TL (3. Current published snapshot) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 665.3543 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 3.5 Tm /F1 9.5 Tf 13 TL (The remote manifest currently reports:) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 648.0157 cm
+Q
+q
+1 0 0 1 56.69291 486.0157 cm
+q
+.180392 .490196 .196078 rg
+n 0 162 481.8898 -18 re f*
+1 1 1 rg
+n 0 144 481.8898 -18 re f*
+.960784 .960784 .960784 rg
+n 0 126 481.8898 -18 re f*
+1 1 1 rg
+n 0 108 481.8898 -18 re f*
+.960784 .960784 .960784 rg
+n 0 90 481.8898 -18 re f*
+1 1 1 rg
+n 0 72 481.8898 -18 re f*
+.960784 .960784 .960784 rg
+n 0 54 481.8898 -18 re f*
+1 1 1 rg
+n 0 36 481.8898 -18 re f*
+.960784 .960784 .960784 rg
+n 0 18 481.8898 -18 re f*
+1 1 1 rg
+BT /F2 7.5 Tf 12 TL ET
+q
+1 0 0 1 5 148 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 2.5 Tm /F2 7.5 Tf 10 TL (Metric) Tj T* ET
+Q
+Q
+q
+1 0 0 1 142.6828 148 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 2.5 Tm /F2 7.5 Tf 10 TL (Value) Tj T* ET
+Q
+Q
+q
+1 0 0 1 211.5242 148 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 2.5 Tm /F2 7.5 Tf 10 TL (Interpretation) Tj T* ET
+Q
+Q
+0 0 0 rg
+BT /F1 7.5 Tf 12 TL ET
+q
+1 0 0 1 5 130 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Published acquisition dates) Tj T* ET
+Q
+Q
+q
+1 0 0 1 142.6828 130 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (29) Tj T* ET
+Q
+Q
+q
+1 0 0 1 211.5242 130 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (2026-01-02 through 2026-07-16) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 112 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Polygon observations) Tj T* ET
+Q
+Q
+q
+1 0 0 1 142.6828 112 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (352,919) Tj T* ET
+Q
+Q
+q
+1 0 0 1 211.5242 112 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Observations across dates, not unique events) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 94 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Summed observation area) Tj T* ET
+Q
+Q
+q
+1 0 0 1 142.6828 94 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (1,897,470.5 ha) Tj T* ET
+Q
+Q
+q
+1 0 0 1 211.5242 94 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Repeats the same places across runs) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 76 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (High-confidence observations) Tj T* ET
+Q
+Q
+q
+1 0 0 1 142.6828 76 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (225,477) Tj T* ET
+Q
+Q
+q
+1 0 0 1 211.5242 76 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Rule-based spectral tier) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 58 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Candidate) Tj T* ET
+Q
+Q
+q
+1 0 0 1 142.6828 58 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (222,867) Tj T* ET
+Q
+Q
+q
+1 0 0 1 211.5242 58 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Provisional persistence label) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 40 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Confirmed) Tj T* ET
+Q
+Q
+q
+1 0 0 1 142.6828 40 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (6,544) Tj T* ET
+Q
+Q
+q
+1 0 0 1 211.5242 40 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Provisional; may include duplicate-date increments) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 22 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Strong) Tj T* ET
+Q
+Q
+q
+1 0 0 1 142.6828 22 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (94,910) Tj T* ET
+Q
+Q
+q
+1 0 0 1 211.5242 22 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (High + at least 2 sightings + natural cover; provisional) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 4 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Maximum reported sightings) Tj T* ET
+Q
+Q
+q
+1 0 0 1 142.6828 4 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (27) Tj T* ET
+Q
+Q
+q
+1 0 0 1 211.5242 4 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Not guaranteed to be 27 distinct dates) Tj T* ET
+Q
+Q
+q
+1 J
+1 j
+.741176 .741176 .741176 RG
+.5 w
+n 0 162 m 481.8898 162 l S
+n 0 0 m 481.8898 0 l S
+n 0 0 m 0 162 l S
+n 481.8898 0 m 481.8898 162 l S
+n 0 144 m 481.8898 144 l S
+n 0 126 m 481.8898 126 l S
+n 0 108 m 481.8898 108 l S
+n 0 90 m 481.8898 90 l S
+n 0 72 m 481.8898 72 l S
+n 0 54 m 481.8898 54 l S
+n 0 36 m 481.8898 36 l S
+n 0 18 m 481.8898 18 l S
+n 137.6828 0 m 137.6828 162 l S
+n 206.5242 0 m 206.5242 162 l S
+Q
+Q
+Q
+q
+1 0 0 1 62.69291 474.6772 cm
+Q
+q
+1 0 0 1 62.69291 435.6772 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 29.5 Tm /F1 9.5 Tf 13 TL 1.29352 Tw (The latest run, 2026-07-16, contains 9,524 polygon observations and 49,311.5 summed ha. Those numbers) Tj T* 0 Tw .324235 Tw (describe that generated artifact; they do not show 9,524 independently verified clearings or 49,311.5 ha of new) Tj T* 0 Tw (deforestation.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 411.6772 cm
+q
+.219608 .556863 .235294 rg
+BT 1 0 0 1 0 3 Tm /F4 11 Tf 14 TL (What can be shared safely) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 394.6772 cm
+q
+BT 1 0 0 1 20 3.5 Tm 13 TL /F1 9.5 Tf 0 0 0 rg (\177 The system produced these many ) Tj /F2 9.5 Tf (algorithmic polygon observations) Tj /F1 9.5 Tf (.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 375.6772 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 3.5 Tm /F1 9.5 Tf 13 TL (\177 High, medium, and low are threshold-based spectral classes.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 356.6772 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 3.5 Tm /F1 9.5 Tf 13 TL (\177 Alerts are candidates for investigation and field/reference verification.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 337.6772 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 3.5 Tm /F1 9.5 Tf 13 TL (\177 The 72 baseline objects exist and the automation has run successfully.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 313.6772 cm
+q
+.219608 .556863 .235294 rg
+BT 1 0 0 1 0 3 Tm /F4 11 Tf 14 TL (What should not yet be claimed) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 296.6772 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 3.5 Tm /F1 9.5 Tf 13 TL (\177 Confirmed means 15 distinct satellite observations.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 277.6772 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 3.5 Tm /F1 9.5 Tf 13 TL (\177 Strong means independently confirmed deforestation.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 258.6772 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 3.5 Tm /F1 9.5 Tf 13 TL (\177 Total hectares is unique affected area.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 239.6772 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 3.5 Tm /F1 9.5 Tf 13 TL (\177 The monitoring footprint is exactly the APA polygon.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 220.6772 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 3.5 Tm /F1 9.5 Tf 13 TL (\177 The current totals have known precision/recall.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 206.1732 cm
+Q
+q
+1 0 0 1 62.69291 176.1732 cm
+q
+.180392 .490196 .196078 rg
+BT 1 0 0 1 0 3 Tm /F2 13 Tf 16 TL (4. How detection works) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 131.1732 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 29.5 Tm /F1 9.5 Tf 13 TL 1.785328 Tw (Production currently uses Sentinel-2 Surface Reflectance Harmonized in GEE. It searches a rolling 16-day) Tj T* 0 Tw 1.129876 Tw (window, masks scenes, builds one composite per acquisition date, and compares three indices with monthly) Tj T* 0 Tw (baselines:) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 112.1732 cm
+q
+BT 1 0 0 1 20 3.5 Tm 13 TL /F1 9.5 Tf 0 0 0 rg (\177 ) Tj /F2 9.5 Tf (NDMI:) Tj /F1 9.5 Tf ( vegetation moisture;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 93.17323 cm
+q
+BT 1 0 0 1 20 3.5 Tm 13 TL /F1 9.5 Tf 0 0 0 rg (\177 ) Tj /F2 9.5 Tf (NBR:) Tj /F1 9.5 Tf ( moisture/burn response;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 74.17323 cm
+q
+BT 1 0 0 1 20 3.5 Tm 13 TL /F1 9.5 Tf 0 0 0 rg (\177 ) Tj /F2 9.5 Tf (EVI2:) Tj /F1 9.5 Tf ( vegetation vigor.) Tj T* ET
+Q
+Q
+ 
+
+Q
+
+q
+0.0 0.0 595.2756 841.8898 re
+W
+n
+1 0 0 1 0 0 cm
+BT
+/F1-0 12 Tf
+14.4 TL
+ET
+0.780392 0.847059 0.788235 RG
+0.45 w
+n
+56.69291 797.9528 m
+538.5827 797.9528 l
+S
+n
+56.69291 41.10236 m
+538.5827 41.10236 l
+S
+0.372549 0.435294 0.384314 rg
+BT
+/F1-0 7.4 Tf
+8.88 TL
+ET
+BT
+1 0 0 1 56.69291 809.2914 Tm
+(CHAPADA DO ARARIPE MONITORING SYSTEM) Tj
+T*
+ET
+BT
+1 0 0 1 429.6251 809.2914 Tm
+(CONCISE TECHNICAL REVIEW) Tj
+T*
+ET
+BT
+1 0 0 1 56.69291 26.07874 Tm
+(Version 1\0560  \174  2026\05507\05522) Tj
+T*
+ET
+BT
+1 0 0 1 500.7317 26.07874 Tm
+(Page 2 of 6) Tj
+T*
+ET
+Q
+
+
+endstream
+endobj
+13 0 obj
+<<
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+/Name /F1
+/Subtype /Type1
+/Type /Font
+>>
+endobj
+14 0 obj
+<<
+/Contents 15 0 R
+/MediaBox [ 0 0 595.2756 841.8898 ]
+/Resources <<
+/Font <<
+/F1 6 0 R
+/F1-0 16 0 R
+/F2 8 0 R
+/F3 9 0 R
+/F4 10 0 R
+>>
+/ProcSet [ /ImageB /ImageC /ImageI /PDF /Text ]
+>>
+/Rotate 0
+/Trans <<
+>>
+/Type /Page
+/Annots [ ]
+/Parent 2 0 R
+>>
+endobj
+15 0 obj
+<<
+/Length 7014
+>>
+stream
+q
+1 0 0 1 0 0 cm  BT /F1 12 Tf 14.4 TL ET
+q
+1 0 0 1 62.69291 753.1969 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 16.5 Tm /F1 9.5 Tf 13 TL -0.034791 Tw (The baseline uses five selected years: 2017, 2019, 2021, 2022, and 2025. For each month and index, R2 stores) Tj T* 0 Tw (a median and standard-deviation COG, for 72 objects in total.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 734.1969 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 3.5 Tm /F1 9.5 Tf 13 TL (Pixel confidence rules are:) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 716.8583 cm
+Q
+q
+1 0 0 1 56.69291 644.8583 cm
+q
+.180392 .490196 .196078 rg
+n 0 72 481.8898 -18 re f*
+1 1 1 rg
+n 0 54 481.8898 -18 re f*
+.960784 .960784 .960784 rg
+n 0 36 481.8898 -18 re f*
+1 1 1 rg
+n 0 18 481.8898 -18 re f*
+1 1 1 rg
+BT /F2 7.5 Tf 12 TL ET
+q
+1 0 0 1 5 58 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 2.5 Tm /F2 7.5 Tf 10 TL (Class) Tj T* ET
+Q
+Q
+q
+1 0 0 1 48.80816 58 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 2.5 Tm /F2 7.5 Tf 10 TL (Simplified rule) Tj T* ET
+Q
+Q
+0 0 0 rg
+BT /F1 7.5 Tf 12 TL ET
+q
+1 0 0 1 5 40 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (High) Tj T* ET
+Q
+Q
+q
+1 0 0 1 48.80816 40 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (NDMI and NBR both show very large negative z-score and delta) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 22 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Medium) Tj T* ET
+Q
+Q
+q
+1 0 0 1 48.80816 22 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (At least one moisture index shows a large negative change) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 4 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Low) Tj T* ET
+Q
+Q
+q
+1 0 0 1 48.80816 4 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Any index crosses the lower anomaly threshold) Tj T* ET
+Q
+Q
+q
+1 J
+1 j
+.741176 .741176 .741176 RG
+.5 w
+n 0 72 m 481.8898 72 l S
+n 0 0 m 481.8898 0 l S
+n 0 0 m 0 72 l S
+n 481.8898 0 m 481.8898 72 l S
+n 0 54 m 481.8898 54 l S
+n 0 36 m 481.8898 36 l S
+n 0 18 m 481.8898 18 l S
+n 43.80816 0 m 43.80816 72 l S
+Q
+Q
+Q
+q
+1 0 0 1 62.69291 633.5197 cm
+Q
+q
+1 0 0 1 62.69291 607.5197 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 16.5 Tm /F1 9.5 Tf 13 TL .920772 Tw (Connected pixels become 1-1,000 ha polygons. MapBiomas attributes and a provisional fire/mechanical label) Tj T* 0 Tw (are added. These classifications are useful triage signals, not calibrated probabilities.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 588.5197 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 3.5 Tm /F1 9.5 Tf 13 TL (Persistence is intended to reconnect the same place for up to 180 days:) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 569.5197 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 3.5 Tm /F1 9.5 Tf 13 TL (\177 1 sighting: first observation;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 550.5197 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 3.5 Tm /F1 9.5 Tf 13 TL (\177 2-14: candidate;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 531.5197 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 3.5 Tm /F1 9.5 Tf 13 TL (\177 15 or more: confirmed.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 499.5197 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 16.5 Tm /F1 9.5 Tf 13 TL .641983 Tw (The implementation currently increments a matched track every time a file is processed, without remembering) Tj T* 0 Tw (which acquisition dates were already counted. That is the highest-priority correction.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 454.5197 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 29.5 Tm /F1 9.5 Tf 13 TL .032984 Tw (The drought adjustment is better described as an SPI-like experimental modifier. It uses a short, non-seasonally) Tj T* 0 Tw 2.451604 Tw (stratified CHIRPS reference and applies one current value across a run; it is not a fully standard SPI-3) Tj T* 0 Tw (implementation.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 440.0157 cm
+Q
+q
+1 0 0 1 62.69291 410.0157 cm
+q
+.180392 .490196 .196078 rg
+BT 1 0 0 1 0 3 Tm /F2 13 Tf 16 TL (5. Alerts tab: what a colleague will see) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 391.0157 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 3.5 Tm /F1 9.5 Tf 13 TL (The Alerts page has five sections.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 367.0157 cm
+q
+.219608 .556863 .235294 rg
+BT 1 0 0 1 0 3 Tm /F4 11 Tf 14 TL (Visao geral) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 350.0157 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 3.5 Tm /F1 9.5 Tf 13 TL (This is the main operational map. It shows run metrics, alert polygons or points, a table, and filters.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 331.0157 cm
+q
+BT 1 0 0 1 0 3.5 Tm 13 TL /F1 9.5 Tf 0 0 0 rg (Default view uses the ) Tj /F2 9.5 Tf (strong subset) Tj /F1 9.5 Tf (:) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 314.0157 cm
+q
+.95 .95 .95 rg
+n 20 0 449.8898 11 re f*
+Q
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.5 Tm /F3 8.5 Tf 11 TL (high confidence) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 297.0157 cm
+q
+.95 .95 .95 rg
+n 20 0 449.8898 11 re f*
+Q
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.5 Tm /F3 8.5 Tf 11 TL (+ persistence_count at least 2) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 280.0157 cm
+q
+.95 .95 .95 rg
+n 20 0 449.8898 11 re f*
+Q
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.5 Tm /F3 8.5 Tf 11 TL (+ MapBiomas 10 m natural vegetation at least 50 percent) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 248.0157 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 16.5 Tm /F1 9.5 Tf 13 TL .913318 Tw (Strong therefore includes candidates as well as confirmed features. The current page copy incorrectly says it) Tj T* 0 Tw (requires confirmed persistence.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 203.0157 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 29.5 Tm /F1 9.5 Tf 13 TL 2.760074 Tw (When strong is turned off, the interface attempts to load the full run from R2 and enables confidence,) Tj T* 0 Tw 4.699726 Tw (persistence, minimum-sightings, land-cover, and natural-cover filters. The map supports base layers,) Tj T* 0 Tw (MapBiomas overlays, popups, approximate location, a Google Maps field link, and incremental table loading.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 171.0157 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 16.5 Tm /F1 9.5 Tf 13 TL 1.460136 Tw (All-executions mode is a lightweight point panorama of strong observations. It performs approximate spatial) Tj T* 0 Tw (deduplication for display but is not a unique-event dataset.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 139.0157 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 16.5 Tm /F1 9.5 Tf 13 TL .804192 Tw (The drawing/export tool selects features by an approximate centroid inside the drawn polygon. It is not a true) Tj T* 0 Tw (polygon-intersection query.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 115.0157 cm
+q
+.219608 .556863 .235294 rg
+BT 1 0 0 1 0 3 Tm /F4 11 Tf 14 TL (Entenda) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 85.01575 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 16.5 Tm /F1 9.5 Tf 13 TL .637233 Tw (This section explains the baseline, indices, confidence, persistence, and MapBiomas context. It also loads the) Tj T* 0 Tw (AI assistant, which answers from an embedded project knowledge base.) Tj T* ET
+Q
+Q
+ 
+
+Q
+
+q
+0.0 0.0 595.2756 841.8898 re
+W
+n
+1 0 0 1 0 0 cm
+BT
+/F1-0 12 Tf
+14.4 TL
+ET
+0.780392 0.847059 0.788235 RG
+0.45 w
+n
+56.69291 797.9528 m
+538.5827 797.9528 l
+S
+n
+56.69291 41.10236 m
+538.5827 41.10236 l
+S
+0.372549 0.435294 0.384314 rg
+BT
+/F1-0 7.4 Tf
+8.88 TL
+ET
+BT
+1 0 0 1 56.69291 809.2914 Tm
+(CHAPADA DO ARARIPE MONITORING SYSTEM) Tj
+T*
+ET
+BT
+1 0 0 1 429.6251 809.2914 Tm
+(CONCISE TECHNICAL REVIEW) Tj
+T*
+ET
+BT
+1 0 0 1 56.69291 26.07874 Tm
+(Version 1\0560  \174  2026\05507\05522) Tj
+T*
+ET
+BT
+1 0 0 1 500.7317 26.07874 Tm
+(Page 3 of 6) Tj
+T*
+ET
+Q
+
+
+endstream
+endobj
+16 0 obj
+<<
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+/Name /F1
+/Subtype /Type1
+/Type /Font
+>>
+endobj
+17 0 obj
+<<
+/Contents 18 0 R
+/MediaBox [ 0 0 595.2756 841.8898 ]
+/Resources <<
+/Font <<
+/F1 6 0 R
+/F1-0 19 0 R
+/F2 8 0 R
+/F3 9 0 R
+/F4 10 0 R
+>>
+/ProcSet [ /ImageB /ImageC /ImageI /PDF /Text ]
+>>
+/Rotate 0
+/Trans <<
+>>
+/Type /Page
+/Annots [ ]
+/Parent 2 0 R
+>>
+endobj
+18 0 obj
+<<
+/Length 9776
+>>
+stream
+q
+1 0 0 1 0 0 cm  BT /F1 12 Tf 14.4 TL ET
+q
+1 0 0 1 62.69291 740.1969 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 29.5 Tm /F1 9.5 Tf 13 TL .98686 Tw (The assistant is rate-limited and escapes output, but the site should disclose that prompts may pass through) Tj T* 0 Tw 2.178718 Tw (different AI providers. Public debug/error detail, long sequential fallback, and lack of a global timeout are) Tj T* 0 Tw (operational gaps.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 716.1969 cm
+q
+.219608 .556863 .235294 rg
+BT 1 0 0 1 0 3 Tm /F4 11 Tf 14 TL (Series temporais) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 673.1969 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 29.5 Tm /F1 9.5 Tf 13 TL .981718 Tw (The page plots NDMI, NBR, and EVI2 against monthly baseline bands. The current caption says 2020-2025,) Tj T* 0 Tw 1.209898 Tw (while the actual baseline is the five discrete years above. Some tracked records also show low coverage or) Tj T* 0 Tw (implausible EVI2 values and lack processing-version/QA fields.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 649.1969 cm
+q
+.219608 .556863 .235294 rg
+BT 1 0 0 1 0 3 Tm /F4 11 Tf 14 TL (Downloads) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 619.1969 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 16.5 Tm /F1 9.5 Tf 13 TL .731015 Tw (The page lists per-run GeoJSON and supporting data. The per-run full links currently point to files that are no) Tj T* 0 Tw (longer deployed with the site, so they return 404. The Open Data page and Home use the same retired path.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 595.1969 cm
+q
+.219608 .556863 .235294 rg
+BT 1 0 0 1 0 3 Tm /F4 11 Tf 14 TL (Citacao) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 565.1969 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 16.5 Tm /F1 9.5 Tf 13 TL 1.175866 Tw (This section provides citation and license guidance. License wording should more clearly separate upstream) Tj T* 0 Tw (monitor code, site/game/Worker code, and data products.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 550.6929 cm
+Q
+q
+1 0 0 1 62.69291 520.6929 cm
+q
+.180392 .490196 .196078 rg
+BT 1 0 0 1 0 3 Tm /F2 13 Tf 16 TL (6. Main risks, in priority order) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 503.3543 cm
+Q
+q
+1 0 0 1 56.69291 221.3543 cm
+q
+.180392 .490196 .196078 rg
+n 0 282 481.8898 -18 re f*
+1 1 1 rg
+n 0 264 481.8898 -18 re f*
+.960784 .960784 .960784 rg
+n 0 246 481.8898 -18 re f*
+1 1 1 rg
+n 0 228 481.8898 -18 re f*
+.960784 .960784 .960784 rg
+n 0 210 481.8898 -18 re f*
+1 1 1 rg
+n 0 192 481.8898 -18 re f*
+.960784 .960784 .960784 rg
+n 0 174 481.8898 -18 re f*
+1 1 1 rg
+n 0 156 481.8898 -18 re f*
+.960784 .960784 .960784 rg
+n 0 138 481.8898 -28 re f*
+1 1 1 rg
+n 0 110 481.8898 -18 re f*
+.960784 .960784 .960784 rg
+n 0 92 481.8898 -28 re f*
+1 1 1 rg
+n 0 64 481.8898 -18 re f*
+.960784 .960784 .960784 rg
+n 0 46 481.8898 -18 re f*
+1 1 1 rg
+n 0 28 481.8898 -28 re f*
+1 1 1 rg
+BT /F2 7.5 Tf 12 TL ET
+q
+1 0 0 1 5 268 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 2.5 Tm /F2 7.5 Tf 10 TL (Finding \(severity\)) Tj T* ET
+Q
+Q
+q
+1 0 0 1 238.4621 268 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 2.5 Tm /F2 7.5 Tf 10 TL (Immediate response) Tj T* ET
+Q
+Q
+0 0 0 rg
+BT /F1 7.5 Tf 12 TL ET
+q
+1 0 0 1 5 250 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL ([P0] Duplicate-date persistence inflation) Tj T* ET
+Q
+Q
+q
+1 0 0 1 238.4621 250 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Make updates idempotent and rebuild state chronologically) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 232 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL ([P0] GEE uses a rectangle 2.203 times the APA polygon) Tj T* ET
+Q
+Q
+q
+1 0 0 1 238.4621 232 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Use one canonical polygon and reprocess affected products) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 214 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL ([P0] Scene anomaly denominator includes invalid pixels) Tj T* ET
+Q
+Q
+q
+1 0 0 1 238.4621 214 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Derive validity from finite source data and add a regression test) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 196 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL ([P1] No independent accuracy assessment) Tj T* ET
+Q
+Q
+q
+1 0 0 1 238.4621 196 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Keep alert language provisional; design a stratified validation sample) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 178 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL ([P1] R2 state errors can silently start from zero) Tj T* ET
+Q
+Q
+q
+1 0 0 1 238.4621 178 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Fail closed except on a confirmed missing object) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 160 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL ([P1] Home and full-download paths are broken) Tj T* ET
+Q
+Q
+q
+1 0 0 1 238.4621 160 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Point them to the production R2/Worker asset contract and test links) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 142 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL ([P1] Full-view CORS/custom domain is not verified) Tj T* ET
+Q
+Q
+q
+1 0 0 1 238.4621 142 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Use a production custom domain and exact-origin CORS) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 114 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 12.5 Tm /F1 7.5 Tf 10 TL ([P1] Source, baseline, state, and public files share one public) Tj T* (bucket) Tj T* ET
+Q
+Q
+q
+1 0 0 1 238.4621 124 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Separate public and private storage boundaries) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 96 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL ([P1] No concurrency or atomic release) Tj T* ET
+Q
+Q
+q
+1 0 0 1 238.4621 96 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Serialize runs and publish with staging plus a release manifest) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 68 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 12.5 Tm /F1 7.5 Tf 10 TL ([P1] Published wording overstates strong, totals, sources, and) Tj T* (baseline period) Tj T* ET
+Q
+Q
+q
+1 0 0 1 238.4621 78 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Correct the UI and manifest semantics) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 50 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL ([P2] No PR CI/site tests and mutable dependencies) Tj T* ET
+Q
+Q
+q
+1 0 0 1 238.4621 50 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Add install/test/build/schema/link checks and lock environments) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 32 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL ([P2] R2 and Git data grow inefficiently) Tj T* ET
+Q
+Q
+q
+1 0 0 1 238.4621 32 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Incremental sync, compression/tiling, pruning, and small Git manifests) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 14 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL ([P2] Worker privacy/error/timeout and site accessibility gaps) Tj T* ET
+Q
+Q
+q
+1 0 0 1 238.4621 4 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 12.5 Tm /F1 7.5 Tf 10 TL (Remove debug detail, disclose providers, harden headers, and add) Tj T* (keyboard/mobile QA) Tj T* ET
+Q
+Q
+q
+1 J
+1 j
+.741176 .741176 .741176 RG
+.5 w
+n 0 282 m 481.8898 282 l S
+n 0 0 m 481.8898 0 l S
+n 0 0 m 0 282 l S
+n 481.8898 0 m 481.8898 282 l S
+n 0 264 m 481.8898 264 l S
+n 0 246 m 481.8898 246 l S
+n 0 228 m 481.8898 228 l S
+n 0 210 m 481.8898 210 l S
+n 0 192 m 481.8898 192 l S
+n 0 174 m 481.8898 174 l S
+n 0 156 m 481.8898 156 l S
+n 0 138 m 481.8898 138 l S
+n 0 110 m 481.8898 110 l S
+n 0 92 m 481.8898 92 l S
+n 0 64 m 481.8898 64 l S
+n 0 46 m 481.8898 46 l S
+n 0 28 m 481.8898 28 l S
+n 233.4621 0 m 233.4621 282 l S
+Q
+Q
+Q
+q
+1 0 0 1 62.69291 210.0157 cm
+Q
+q
+1 0 0 1 62.69291 201.5118 cm
+Q
+q
+1 0 0 1 62.69291 171.5118 cm
+q
+.180392 .490196 .196078 rg
+BT 1 0 0 1 0 3 Tm /F2 13 Tf 16 TL (7. R2 and operating cost) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 152.5118 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 3.5 Tm /F1 9.5 Tf 13 TL (Live read-only inventory:) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 135.1732 cm
+Q
+q
+1 0 0 1 56.69291 63.17323 cm
+q
+.180392 .490196 .196078 rg
+n 0 72 481.8898 -18 re f*
+1 1 1 rg
+n 0 54 481.8898 -18 re f*
+.960784 .960784 .960784 rg
+n 0 36 481.8898 -18 re f*
+1 1 1 rg
+n 0 18 481.8898 -18 re f*
+1 1 1 rg
+BT /F2 7.5 Tf 12 TL ET
+q
+1 0 0 1 5 58 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 2.5 Tm /F2 7.5 Tf 10 TL (Product) Tj T* ET
+Q
+Q
+q
+1 0 0 1 226.4088 58 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 2.5 Tm /F2 7.5 Tf 10 TL (Objects) Tj T* ET
+Q
+Q
+q
+1 0 0 1 317.5771 58 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 2.5 Tm /F2 7.5 Tf 10 TL (Size) Tj T* ET
+Q
+Q
+0 0 0 rg
+BT /F1 7.5 Tf 12 TL ET
+q
+1 0 0 1 5 40 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Baselines) Tj T* ET
+Q
+Q
+q
+1 0 0 1 226.4088 40 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (72) Tj T* ET
+Q
+Q
+q
+1 0 0 1 317.5771 40 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (13.408 GB) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 22 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Source alerts) Tj T* ET
+Q
+Q
+q
+1 0 0 1 226.4088 22 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (29) Tj T* ET
+Q
+Q
+q
+1 0 0 1 317.5771 22 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (1.190 GB) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 4 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Full site alerts) Tj T* ET
+Q
+Q
+q
+1 0 0 1 226.4088 4 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (35) Tj T* ET
+Q
+Q
+q
+1 0 0 1 317.5771 4 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (0.612 GB) Tj T* ET
+Q
+Q
+q
+1 J
+1 j
+.741176 .741176 .741176 RG
+.5 w
+n 0 72 m 481.8898 72 l S
+n 0 0 m 0 72 l S
+n 481.8898 0 m 481.8898 72 l S
+n 0 0 m 481.8898 0 l S
+n 0 54 m 481.8898 54 l S
+n 0 36 m 481.8898 36 l S
+n 0 18 m 481.8898 18 l S
+n 221.4088 0 m 221.4088 72 l S
+n 312.5771 0 m 312.5771 72 l S
+Q
+Q
+Q
+ 
+
+Q
+
+q
+0.0 0.0 595.2756 841.8898 re
+W
+n
+1 0 0 1 0 0 cm
+BT
+/F1-0 12 Tf
+14.4 TL
+ET
+0.780392 0.847059 0.788235 RG
+0.45 w
+n
+56.69291 797.9528 m
+538.5827 797.9528 l
+S
+n
+56.69291 41.10236 m
+538.5827 41.10236 l
+S
+0.372549 0.435294 0.384314 rg
+BT
+/F1-0 7.4 Tf
+8.88 TL
+ET
+BT
+1 0 0 1 56.69291 809.2914 Tm
+(CHAPADA DO ARARIPE MONITORING SYSTEM) Tj
+T*
+ET
+BT
+1 0 0 1 429.6251 809.2914 Tm
+(CONCISE TECHNICAL REVIEW) Tj
+T*
+ET
+BT
+1 0 0 1 56.69291 26.07874 Tm
+(Version 1\0560  \174  2026\05507\05522) Tj
+T*
+ET
+BT
+1 0 0 1 500.7317 26.07874 Tm
+(Page 4 of 6) Tj
+T*
+ET
+Q
+
+
+endstream
+endobj
+19 0 obj
+<<
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+/Name /F1
+/Subtype /Type1
+/Type /Font
+>>
+endobj
+20 0 obj
+<<
+/Contents 21 0 R
+/MediaBox [ 0 0 595.2756 841.8898 ]
+/Resources <<
+/Font <<
+/F1 6 0 R
+/F1-0 22 0 R
+/F2 8 0 R
+/F3 9 0 R
+/F4 10 0 R
+>>
+/ProcSet [ /ImageB /ImageC /ImageI /PDF /Text ]
+>>
+/Rotate 0
+/Trans <<
+>>
+/Type /Page
+/Annots [ ]
+/Parent 2 0 R
+>>
+endobj
+21 0 obj
+<<
+/Length 7554
+>>
+stream
+q
+1 0 0 1 0 0 cm  BT /F1 12 Tf 14.4 TL ET
+q
+1 0 0 1 56.69291 725.1969 cm
+q
+.180392 .490196 .196078 rg
+n 0 54 481.8898 -18 re f*
+1 1 1 rg
+n 0 36 481.8898 -18 re f*
+.960784 .960784 .960784 rg
+n 0 18 481.8898 -18 re f*
+1 1 1 rg
+BT /F2 7.5 Tf 12 TL ET
+q
+1 0 0 1 5 40 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 2.5 Tm /F2 7.5 Tf 10 TL (Product) Tj T* ET
+Q
+Q
+q
+1 0 0 1 226.4088 40 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 2.5 Tm /F2 7.5 Tf 10 TL (Objects) Tj T* ET
+Q
+Q
+q
+1 0 0 1 317.5771 40 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 2.5 Tm /F2 7.5 Tf 10 TL (Size) Tj T* ET
+Q
+Q
+0 0 0 rg
+BT /F1 7.5 Tf 12 TL ET
+q
+1 0 0 1 5 22 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (Persistence state) Tj T* ET
+Q
+Q
+q
+1 0 0 1 226.4088 22 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (1) Tj T* ET
+Q
+Q
+q
+1 0 0 1 317.5771 22 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F1 7.5 Tf 10 TL (0.132 GB) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 4 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F2 7.5 Tf 10 TL (Total) Tj T* ET
+Q
+Q
+q
+1 0 0 1 226.4088 4 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F2 7.5 Tf 10 TL (137) Tj T* ET
+Q
+Q
+q
+1 0 0 1 317.5771 4 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.5 Tm /F2 7.5 Tf 10 TL (15.342 GB) Tj T* ET
+Q
+Q
+q
+1 J
+1 j
+.741176 .741176 .741176 RG
+.5 w
+n 0 54 m 481.8898 54 l S
+n 0 36 m 0 54 l S
+n 0 0 m 0 36 l S
+n 481.8898 36 m 481.8898 54 l S
+n 481.8898 0 m 481.8898 36 l S
+n 0 0 m 481.8898 0 l S
+n 0 36 m 481.8898 36 l S
+n 221.4088 36 m 221.4088 54 l S
+n 312.5771 36 m 312.5771 54 l S
+n 0 18 m 481.8898 18 l S
+n 221.4088 0 m 221.4088 36 l S
+n 312.5771 0 m 312.5771 36 l S
+Q
+Q
+Q
+q
+1 0 0 1 62.69291 713.8583 cm
+Q
+q
+1 0 0 1 62.69291 674.8583 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 29.5 Tm /F1 9.5 Tf 13 TL .213516 Tw (The current R2 Standard free allocation includes 10 GB-month. This bucket alone is above that quantity, so the) Tj T* 0 Tw .592016 Tw (system is low-cost rather than guaranteed zero-cost. The overage is small at present but should be monitored) Tj T* 0 Tw (as alerts and generated copies grow.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 642.8583 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 16.5 Tm /F1 9.5 Tf 13 TL 1.335905 Tw (The site uses an r2.dev public endpoint. Cloudflare documents that endpoint for non-production, rate-limited) Tj T* 0 Tw (traffic. A custom domain is the appropriate production path for caching and security controls.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 597.8583 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 29.5 Tm /F1 9.5 Tf 13 TL 1.70202 Tw (Representative public checks also showed that objects outside site-full, including the persistence state and) Tj T* 0 Tw .987454 Tw (baselines, were retrievable when their paths were known. Public and private data should not rely on prefixes) Tj T* 0 Tw (inside one public bucket.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 565.8583 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 16.5 Tm /F1 9.5 Tf 13 TL .186662 Tw (Bucket-level CORS, lifecycle, versioning, encryption configuration, and access policy could not be read with the) Tj T* 0 Tw (available object token. They must be verified in the Cloudflare account; they are not assumed absent.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 551.3543 cm
+Q
+q
+1 0 0 1 62.69291 521.3543 cm
+q
+.180392 .490196 .196078 rg
+BT 1 0 0 1 0 3 Tm /F2 13 Tf 16 TL (8. Recommended handoff plan) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 497.3543 cm
+q
+.219608 .556863 .235294 rg
+BT 1 0 0 1 0 3 Tm /F4 11 Tf 14 TL (First: protect the meaning of current data) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 467.3543 cm
+q
+BT 1 0 0 1 20 16.5 Tm 2.794574 Tw 13 TL /F2 9.5 Tf 0 0 0 rg (1.) Tj /F1 9.5 Tf ( Add a site note that counts are run observations, area is not unique, and persistence tiers are) Tj T* 0 Tw (provisional.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 448.3543 cm
+q
+BT 1 0 0 1 20 3.5 Tm 13 TL /F2 9.5 Tf 0 0 0 rg (2.) Tj /F1 9.5 Tf ( Stop using confirmed or strong totals in decision material until state is rebuilt.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 429.3543 cm
+q
+BT 1 0 0 1 20 3.5 Tm 13 TL /F2 9.5 Tf 0 0 0 rg (3.) Tj /F1 9.5 Tf ( Keep raw acquisition-date outputs as the canonical replay source.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 405.3543 cm
+q
+.219608 .556863 .235294 rg
+BT 1 0 0 1 0 3 Tm /F4 11 Tf 14 TL (Then: correct and republish) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 388.3543 cm
+q
+BT 1 0 0 1 20 3.5 Tm 13 TL /F2 9.5 Tf 0 0 0 rg (1.) Tj /F1 9.5 Tf ( Store a distinct observation ID/date set or watermark per track.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 369.3543 cm
+q
+BT 1 0 0 1 20 3.5 Tm 13 TL /F2 9.5 Tf 0 0 0 rg (2.) Tj /F1 9.5 Tf ( Make duplicate and out-of-order replay deterministic.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 350.3543 cm
+q
+BT 1 0 0 1 20 3.5 Tm 13 TL /F2 9.5 Tf 0 0 0 rg (3.) Tj /F1 9.5 Tf ( Use the APA polygon consistently.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 331.3543 cm
+q
+BT 1 0 0 1 20 3.5 Tm 13 TL /F2 9.5 Tf 0 0 0 rg (4.) Tj /F1 9.5 Tf ( Fix the valid-pixel scene guard.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 312.3543 cm
+q
+BT 1 0 0 1 20 3.5 Tm 13 TL /F2 9.5 Tf 0 0 0 rg (5.) Tj /F1 9.5 Tf ( Rebuild all state chronologically and regenerate the manifest/site.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 293.3543 cm
+q
+BT 1 0 0 1 20 3.5 Tm 13 TL /F2 9.5 Tf 0 0 0 rg (6.) Tj /F1 9.5 Tf ( Recompute or quarantine mixed-quality time-series dates.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 269.3543 cm
+q
+.219608 .556863 .235294 rg
+BT 1 0 0 1 0 3 Tm /F4 11 Tf 14 TL (Restore reliable delivery) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 252.3543 cm
+q
+BT 1 0 0 1 20 3.5 Tm 13 TL /F2 9.5 Tf 0 0 0 rg (1.) Tj /F1 9.5 Tf ( Put public full data behind a custom domain or Worker route.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 233.3543 cm
+q
+BT 1 0 0 1 20 3.5 Tm 13 TL /F2 9.5 Tf 0 0 0 rg (2.) Tj /F1 9.5 Tf ( Fix CORS and all Home/Download URLs.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 214.3543 cm
+q
+BT 1 0 0 1 20 3.5 Tm 13 TL /F2 9.5 Tf 0 0 0 rg (3.) Tj /F1 9.5 Tf ( Split public site products from private source/baseline/state storage.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 195.3543 cm
+q
+BT 1 0 0 1 20 3.5 Tm 13 TL /F2 9.5 Tf 0 0 0 rg (4.) Tj /F1 9.5 Tf ( Add Cache-Control, checksums, incremental sync, pruning, and release manifests.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 176.3543 cm
+q
+BT 1 0 0 1 20 3.5 Tm 13 TL /F2 9.5 Tf 0 0 0 rg (5.) Tj /F1 9.5 Tf ( Add shared workflow concurrency, fail-closed state handling, and completeness gates.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 152.3543 cm
+q
+.219608 .556863 .235294 rg
+BT 1 0 0 1 0 3 Tm /F4 11 Tf 14 TL (Establish scientific confidence) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 135.3543 cm
+q
+BT 1 0 0 1 20 3.5 Tm 13 TL /F2 9.5 Tf 0 0 0 rg (1.) Tj /F1 9.5 Tf ( Create a stratified independent validation sample.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 116.3543 cm
+q
+BT 1 0 0 1 20 3.5 Tm 13 TL /F2 9.5 Tf 0 0 0 rg (2.) Tj /F1 9.5 Tf ( Report precision, recall, commission, omission, and uncertainty.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 97.35433 cm
+q
+BT 1 0 0 1 20 3.5 Tm 13 TL /F2 9.5 Tf 0 0 0 rg (3.) Tj /F1 9.5 Tf ( Add stable track IDs and separate observation counts, unique tracks, and unique-area estimates.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 78.35433 cm
+q
+BT 1 0 0 1 20 3.5 Tm 13 TL /F2 9.5 Tf 0 0 0 rg (4.) Tj /F1 9.5 Tf ( Version the AOI, baseline, algorithm, and every release.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 63.85039 cm
+Q
+ 
+
+Q
+
+q
+0.0 0.0 595.2756 841.8898 re
+W
+n
+1 0 0 1 0 0 cm
+BT
+/F1-0 12 Tf
+14.4 TL
+ET
+0.780392 0.847059 0.788235 RG
+0.45 w
+n
+56.69291 797.9528 m
+538.5827 797.9528 l
+S
+n
+56.69291 41.10236 m
+538.5827 41.10236 l
+S
+0.372549 0.435294 0.384314 rg
+BT
+/F1-0 7.4 Tf
+8.88 TL
+ET
+BT
+1 0 0 1 56.69291 809.2914 Tm
+(CHAPADA DO ARARIPE MONITORING SYSTEM) Tj
+T*
+ET
+BT
+1 0 0 1 429.6251 809.2914 Tm
+(CONCISE TECHNICAL REVIEW) Tj
+T*
+ET
+BT
+1 0 0 1 56.69291 26.07874 Tm
+(Version 1\0560  \174  2026\05507\05522) Tj
+T*
+ET
+BT
+1 0 0 1 500.7317 26.07874 Tm
+(Page 5 of 6) Tj
+T*
+ET
+Q
+
+
+endstream
+endobj
+22 0 obj
+<<
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+/Name /F1
+/Subtype /Type1
+/Type /Font
+>>
+endobj
+23 0 obj
+<<
+/Contents 24 0 R
+/MediaBox [ 0 0 595.2756 841.8898 ]
+/Resources <<
+/Font <<
+/F1 6 0 R
+/F1-0 25 0 R
+/F2 8 0 R
+/F3 9 0 R
+/F4 10 0 R
+>>
+/ProcSet [ /ImageB /ImageC /ImageI /PDF /Text ]
+>>
+/Rotate 0
+/Trans <<
+>>
+/Type /Page
+/Annots [ ]
+/Parent 2 0 R
+>>
+endobj
+24 0 obj
+<<
+/Length 2186
+>>
+stream
+q
+1 0 0 1 0 0 cm  BT /F1 12 Tf 14.4 TL ET
+q
+1 0 0 1 62.69291 763.1969 cm
+q
+.180392 .490196 .196078 rg
+BT 1 0 0 1 0 3 Tm /F2 13 Tf 16 TL (9. Overall assessment) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 731.1969 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 16.5 Tm /F1 9.5 Tf 13 TL -0.039981 Tw (This is a promising and already functioning research/monitoring platform. Its strongest assets are the automated) Tj T* 0 Tw (satellite pipeline, complete baseline store, transparent rule logic, useful public interface, and open data intent.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 686.1969 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 29.5 Tm /F1 9.5 Tf 13 TL 1.350235 Tw (Its main weakness is not lack of implementation; it is that operational reruns, spatial extent, and publication) Tj T* 0 Tw .488351 Tw (semantics can change the meaning of the output without visibly failing. Correcting those state and provenance) Tj T* 0 Tw (issues should come before threshold tuning or new features.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 641.1969 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 29.5 Tm /F1 9.5 Tf 13 TL 2.019605 Tw (After the persistence rebuild, AOI correction, scene-guard fix, public data-contract repair, and independent) Tj T* 0 Tw 2.312213 Tw (validation, the project can move from an experimental alert demonstrator toward a defensible operational) Tj T* 0 Tw (monitoring product.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 609.1969 cm
+q
+BT 1 0 0 1 0 16.5 Tm 3.167024 Tw 13 TL /F1 9.5 Tf 0 0 0 rg (For implementation evidence, file-level findings, environment variables, storage limits, and the complete) Tj T* 0 Tw (remediation roadmap, see ) Tj /F2 9.5 Tf (TECHNICAL_REVIEW.md) Tj /F1 9.5 Tf (.) Tj T* ET
+Q
+Q
+ 
+
+Q
+
+q
+0.0 0.0 595.2756 841.8898 re
+W
+n
+1 0 0 1 0 0 cm
+BT
+/F1-0 12 Tf
+14.4 TL
+ET
+0.780392 0.847059 0.788235 RG
+0.45 w
+n
+56.69291 797.9528 m
+538.5827 797.9528 l
+S
+n
+56.69291 41.10236 m
+538.5827 41.10236 l
+S
+0.372549 0.435294 0.384314 rg
+BT
+/F1-0 7.4 Tf
+8.88 TL
+ET
+BT
+1 0 0 1 56.69291 809.2914 Tm
+(CHAPADA DO ARARIPE MONITORING SYSTEM) Tj
+T*
+ET
+BT
+1 0 0 1 429.6251 809.2914 Tm
+(CONCISE TECHNICAL REVIEW) Tj
+T*
+ET
+BT
+1 0 0 1 56.69291 26.07874 Tm
+(Version 1\0560  \174  2026\05507\05522) Tj
+T*
+ET
+BT
+1 0 0 1 500.7317 26.07874 Tm
+(Page 6 of 6) Tj
+T*
+ET
+Q
+
+
+endstream
+endobj
+25 0 obj
+<<
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+/Name /F1
+/Subtype /Type1
+/Type /Font
+>>
+endobj
+xref
+0 26
+0000000000 65535 f 
+0000000015 00000 n 
+0000000286 00000 n 
+0000000380 00000 n 
+0000000429 00000 n 
+0000000693 00000 n 
+0000008860 00000 n 
+0000008967 00000 n 
+0000009074 00000 n 
+0000009186 00000 n 
+0000009291 00000 n 
+0000009411 00000 n 
+0000009678 00000 n 
+0000018017 00000 n 
+0000018125 00000 n 
+0000018392 00000 n 
+0000025459 00000 n 
+0000025567 00000 n 
+0000025834 00000 n 
+0000035663 00000 n 
+0000035771 00000 n 
+0000036038 00000 n 
+0000043645 00000 n 
+0000043753 00000 n 
+0000044020 00000 n 
+0000046259 00000 n 
+trailer
+<<
+/Size 26
+/Root 3 0 R
+/Info 1 0 R
+>>
+startxref
+46367
+%%EOF

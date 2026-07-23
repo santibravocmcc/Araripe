@@ -1,0 +1,3160 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<<
+/Producer (pypdf)
+/Title (Chapada do Araripe Monitoring System \055 Guided Technical Overview)
+/Author (Santiago Bravo)
+/Subject (Newcomer\055facing overview of the Chapada do Araripe monitoring project)
+/Creator (Codex overview workflow using ReportLab and pypdf)
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/Count 7
+/Kids [ 4 0 R 11 0 R 14 0 R 17 0 R 20 0 R 23 0 R 26 0 R ]
+>>
+endobj
+3 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+4 0 obj
+<<
+/Contents 5 0 R
+/MediaBox [ 0 0 595.2756 841.8898 ]
+/Resources <<
+/Font <<
+/F1 6 0 R
+/F1-0 7 0 R
+/F2 8 0 R
+/F3 9 0 R
+/F4 10 0 R
+>>
+/ProcSet [ /ImageB /ImageC /ImageI /PDF /Text ]
+>>
+/Rotate 0
+/Trans <<
+>>
+/Type /Page
+/Annots [ ]
+/Parent 2 0 R
+>>
+endobj
+5 0 obj
+<<
+/Length 7738
+>>
+stream
+q
+1 0 0 1 0 0 cm  BT /F1 12 Tf 14.4 TL ET
+q
+1 0 0 1 62.69291 757.1969 cm
+q
+.105882 .368627 .12549 rg
+BT 1 0 0 1 0 4 Tm /F2 18 Tf 22 TL 65.91588 0 Td (Chapada do Araripe Monitoring System) Tj T* -65.91588 0 Td ET
+Q
+Q
+q
+1 0 0 1 62.69291 747.5276 cm
+Q
+q
+1 0 0 1 62.69291 734.5276 cm
+q
+BT 1 0 0 1 0 3 Tm 145.4749 0 Td 13 TL /F2 10 Tf .501961 .501961 .501961 rg (Document:) Tj /F1 10 Tf ( A guided technical overview) Tj T* -145.4749 0 Td ET
+Q
+Q
+q
+1 0 0 1 62.69291 719.5276 cm
+q
+BT 1 0 0 1 0 3 Tm 206.5999 0 Td 13 TL /F2 10 Tf .501961 .501961 .501961 rg (Version:) Tj /F1 10 Tf ( 1.0) Tj T* -206.5999 0 Td ET
+Q
+Q
+q
+1 0 0 1 62.69291 704.5276 cm
+q
+BT 1 0 0 1 0 3 Tm 195.4849 0 Td 13 TL /F2 10 Tf .501961 .501961 .501961 rg (Date:) Tj /F1 10 Tf ( 2026-07-22) Tj T* -195.4849 0 Td ET
+Q
+Q
+q
+1 0 0 1 62.69291 689.5276 cm
+q
+BT 1 0 0 1 0 3 Tm 97.11988 0 Td 13 TL /F2 10 Tf .501961 .501961 .501961 rg (Audience:) Tj /F1 10 Tf ( Colleagues discovering the project for the first time) Tj T* -97.11988 0 Td ET
+Q
+Q
+q
+1 0 0 1 62.69291 679.0236 cm
+Q
+q
+1 0 0 1 62.69291 654.5236 cm
+q
+.180392 .490196 .196078 rg
+BT 1 0 0 1 0 2.2 Tm /F2 12.3 Tf 14.5 TL (1. The project in one paragraph) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 592.0236 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 49.5 Tm /F1 9 Tf 11.7 TL .013184 Tw (The Chapada do Araripe Monitoring System is an open environmental-monitoring project that uses satellite imagery to) Tj T* 0 Tw .286487 Tw (look for unusual vegetation loss in and around the Chapada do Araripe, in northeastern Brazil. It compares each new) Tj T* 0 Tw .363163 Tw (observation with the way the same landscape normally looks in that month, turns unusual changes into mapped alert) Tj T* 0 Tw .665423 Tw (polygons, adds environmental context, and publishes the results on the website of the Observat\363rio da Chapada do) Tj T* 0 Tw (Araripe.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 552.9236 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 26.1 Tm /F1 9 Tf 11.7 TL 4.052059 Tw (The project brings together remote sensing, geospatial analysis, cloud automation, open data, and public) Tj T* 0 Tw .38956 Tw (communication. Its purpose is not simply to produce a map. It is to create a repeatable path from a satellite image to) Tj T* 0 Tw (information that researchers, local organizations, educators, and field teams can explore.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 537.2236 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.7 Tm /F1 9 Tf 11.7 TL (At its current stage, the system already includes:) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 521.5236 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 a monthly satellite baseline for the whole monitoring year;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 505.8236 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 an automated detection workflow running twice a week;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 490.1236 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 alert polygons with confidence, recurrence, land-cover, and location attributes;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 474.4236 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 regional vegetation time series;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 458.7236 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 cloud storage for large scientific files;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 443.0236 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 a public interactive site with maps, filters, downloads, explanatory content, and an AI methodology assistant.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 430.5197 cm
+Q
+q
+1 0 0 1 62.69291 406.0197 cm
+q
+.180392 .490196 .196078 rg
+BT 1 0 0 1 0 2.2 Tm /F2 12.3 Tf 14.5 TL (2. First, meet the Chapada do Araripe) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 366.9197 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 26.1 Tm /F1 9 Tf 11.7 TL .536987 Tw (The Chapada do Araripe is a large plateau in northeastern Brazil, close to the meeting point of Cear\341, Pernambuco,) Tj T* 0 Tw 1.635173 Tw (and Piau\355. Its elevation, geology, vegetation, springs, and long history of human occupation make it a distinctive) Tj T* 0 Tw (landscape within the semi-arid Northeast.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 351.2197 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.7 Tm /F1 9 Tf 11.7 TL (The region sits at an ecological transition. Different parts of the Chapada contain:) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 335.5197 cm
+q
+BT 1 0 0 1 20 2.7 Tm 11.7 TL /F1 9 Tf 0 0 0 rg (\177 ) Tj /F2 9 Tf (Caatinga) Tj /F1 9 Tf (, a seasonally dry vegetation adapted to long rainless periods;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 319.8197 cm
+q
+BT 1 0 0 1 20 2.7 Tm 11.7 TL /F1 9 Tf 0 0 0 rg (\177 ) Tj /F2 9 Tf (Cerrado) Tj /F1 9 Tf (, with savanna, grassland, shrub, and woodland formations;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 304.1197 cm
+q
+BT 1 0 0 1 20 2.7 Tm 11.7 TL /F1 9 Tf 0 0 0 rg (\177 ) Tj /F2 9 Tf (humid forest enclaves) Tj /F1 9 Tf (, especially where elevation and relief favor moisture.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 265.0197 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 26.1 Tm /F1 9 Tf 11.7 TL 1.570751 Tw (The plateau is also important for water. Rain infiltrates its sedimentary layers and helps feed springs around the) Tj T* 0 Tw 3.976342 Tw (escarpment. These water sources connect environmental conservation directly with farms, cities, traditional) Tj T* 0 Tw (communities, and daily life.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 225.9197 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 26.1 Tm /F1 9 Tf 11.7 TL 1.809548 Tw (The project's geographic focus is the APA Chapada do Araripe and the wider surrounding landscape. The APA) Tj T* 0 Tw .443984 Tw (boundary stored in the project data measures approximately 972,000 hectares. The broader region also contains the) Tj T* 0 Tw (Araripe National Forest and many inhabited and productive areas.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 206.4197 cm
+q
+.219608 .556863 .235294 rg
+BT 1 0 0 1 0 2.2 Tm /F3 10.3 Tf 12.5 TL (Why satellite monitoring is useful here) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 180.5197 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 14.4 Tm /F1 9 Tf 11.7 TL .643184 Tw (Vegetation change in the Chapada can be associated with several processes: expansion of agriculture and pasture,) Tj T* 0 Tw (wood extraction, fire, roads and urban growth, as well as natural drought and seasonal leaf loss.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 153.1197 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 14.4 Tm /F1 9 Tf 11.7 TL -0.046013 Tw (That last point is especially important. During the dry season, healthy Caatinga vegetation can lose much of its foliage.) Tj T* 0 Tw (A simple "green versus not green" method would easily confuse this normal seasonal behavior with clearing.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 137.4197 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.7 Tm /F1 9 Tf 11.7 TL (The central technical challenge is therefore:) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 110.0197 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 14.4 Tm /F1 9 Tf 11.7 TL .856987 Tw (> How can the system identify an unusual change while respecting the fact that this landscape naturally looks very) Tj T* 0 Tw (different from one month to another?) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 82.61969 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 14.4 Tm /F1 9 Tf 11.7 TL 3.423692 Tw (The project answers this by using a separate reference for every month of the year and by emphasizing) Tj T* 0 Tw (moisture-sensitive satellite measurements.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 70.11575 cm
+Q
+ 
+
+Q
+
+q
+0.0 0.0 595.2756 841.8898 re
+W
+n
+1 0 0 1 0 0 cm
+BT
+/F1-0 12 Tf
+14.4 TL
+ET
+0.780392 0.847059 0.788235 RG
+0.45 w
+n
+56.69291 797.9528 m
+538.5827 797.9528 l
+S
+n
+56.69291 41.10236 m
+538.5827 41.10236 l
+S
+0.372549 0.435294 0.384314 rg
+BT
+/F1-0 7.4 Tf
+8.88 TL
+ET
+BT
+1 0 0 1 56.69291 809.2914 Tm
+(CHAPADA DO ARARIPE MONITORING SYSTEM) Tj
+T*
+ET
+BT
+1 0 0 1 423.8679 809.2914 Tm
+(GUIDED TECHNICAL OVERVIEW) Tj
+T*
+ET
+BT
+1 0 0 1 56.69291 26.07874 Tm
+(Version 1\0560  \174  2026\05507\05522) Tj
+T*
+ET
+BT
+1 0 0 1 500.7317 26.07874 Tm
+(Page 1 of 7) Tj
+T*
+ET
+Q
+
+
+endstream
+endobj
+6 0 obj
+<<
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+/Name /F1
+/Subtype /Type1
+/Type /Font
+>>
+endobj
+7 0 obj
+<<
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+/Name /F1
+/Subtype /Type1
+/Type /Font
+>>
+endobj
+8 0 obj
+<<
+/BaseFont /Helvetica-Bold
+/Encoding /WinAnsiEncoding
+/Name /F2
+/Subtype /Type1
+/Type /Font
+>>
+endobj
+9 0 obj
+<<
+/BaseFont /Helvetica-BoldOblique
+/Encoding /WinAnsiEncoding
+/Name /F3
+/Subtype /Type1
+/Type /Font
+>>
+endobj
+10 0 obj
+<<
+/BaseFont /Courier
+/Encoding /WinAnsiEncoding
+/Name /F4
+/Subtype /Type1
+/Type /Font
+>>
+endobj
+11 0 obj
+<<
+/Contents 12 0 R
+/MediaBox [ 0 0 595.2756 841.8898 ]
+/Resources <<
+/Font <<
+/F1 6 0 R
+/F1-0 13 0 R
+/F2 8 0 R
+/F3 9 0 R
+/F4 10 0 R
+>>
+/ProcSet [ /ImageB /ImageC /ImageI /PDF /Text ]
+>>
+/Rotate 0
+/Trans <<
+>>
+/Type /Page
+/Annots [ ]
+/Parent 2 0 R
+>>
+endobj
+12 0 obj
+<<
+/Length 8849
+>>
+stream
+q
+1 0 0 1 0 0 cm  BT /F1 12 Tf 14.4 TL ET
+q
+1 0 0 1 62.69291 764.6969 cm
+q
+.180392 .490196 .196078 rg
+BT 1 0 0 1 0 2.2 Tm /F2 12.3 Tf 14.5 TL (3. The core idea) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 737.2969 cm
+q
+BT 1 0 0 1 0 14.4 Tm 1.430988 Tw 11.7 TL /F1 9 Tf 0 0 0 rg (The system does not ask whether a place is green in absolute terms. It asks whether that place looks unusually) Tj T* 0 Tw (different from what is expected ) Tj /F2 9 Tf (for that particular month) Tj /F1 9 Tf (.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 698.1969 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 26.1 Tm /F1 9 Tf 11.7 TL 1.388235 Tw (For example, a relatively dry signal in September may be normal for seasonally deciduous vegetation. The same) Tj T* 0 Tw .510487 Tw (signal in a month that is normally wet may deserve attention. A monthly baseline gives the comparison the seasonal) Tj T* 0 Tw (context it needs.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 682.4969 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.7 Tm /F1 9 Tf 11.7 TL (The conceptual sequence is:) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 667.1583 cm
+Q
+q
+1 0 0 1 56.69291 514.1583 cm
+q
+.180392 .490196 .196078 rg
+n 0 153 481.8898 -17 re f*
+1 1 1 rg
+n 0 136 481.8898 -17 re f*
+.960784 .960784 .960784 rg
+n 0 119 481.8898 -17 re f*
+1 1 1 rg
+n 0 102 481.8898 -17 re f*
+.960784 .960784 .960784 rg
+n 0 85 481.8898 -17 re f*
+1 1 1 rg
+n 0 68 481.8898 -17 re f*
+.960784 .960784 .960784 rg
+n 0 51 481.8898 -17 re f*
+1 1 1 rg
+n 0 34 481.8898 -17 re f*
+.960784 .960784 .960784 rg
+n 0 17 481.8898 -17 re f*
+1 1 1 rg
+BT /F2 7.5 Tf 12 TL ET
+q
+1 0 0 1 5 140 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 1.8 Tm /F2 7.2 Tf 9 TL (Step) Tj T* ET
+Q
+Q
+q
+1 0 0 1 64.70316 140 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 1.8 Tm /F2 7.2 Tf 9 TL (What happens) Tj T* ET
+Q
+Q
+0 0 0 rg
+BT /F1 7.5 Tf 12 TL ET
+q
+1 0 0 1 5 123 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (1. Observe) Tj T* ET
+Q
+Q
+q
+1 0 0 1 64.70316 123 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (A satellite records visible, near-infrared, and shortwave-infrared light reflected by the landscape) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 106 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (2. Clean) Tj T* ET
+Q
+Q
+q
+1 0 0 1 64.70316 106 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Cloud, shadow, and unusable pixels are masked) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 89 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (3. Describe) Tj T* ET
+Q
+Q
+q
+1 0 0 1 64.70316 89 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Spectral indices summarize vegetation moisture, burn response, and vigor) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 72 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (4. Compare) Tj T* ET
+Q
+Q
+q
+1 0 0 1 64.70316 72 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (The new observation is compared with the historical baseline for the same month) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 55 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (5. Detect) Tj T* ET
+Q
+Q
+q
+1 0 0 1 64.70316 55 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Pixels with unusually large negative changes receive a confidence class) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 38 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (6. Map) Tj T* ET
+Q
+Q
+q
+1 0 0 1 64.70316 38 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Neighboring alert pixels become polygons with area and location) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 21 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (7. Add context) Tj T* ET
+Q
+Q
+q
+1 0 0 1 64.70316 21 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Land cover, recurrence, and possible clearing type are attached) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 4 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (8. Publish) Tj T* ET
+Q
+Q
+q
+1 0 0 1 64.70316 4 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (The alert files, regional series, and web-ready products are updated) Tj T* ET
+Q
+Q
+q
+1 J
+1 j
+.741176 .741176 .741176 RG
+.5 w
+n 0 153 m 481.8898 153 l S
+n 0 0 m 481.8898 0 l S
+n 0 0 m 0 153 l S
+n 481.8898 0 m 481.8898 153 l S
+n 0 136 m 481.8898 136 l S
+n 0 119 m 481.8898 119 l S
+n 0 102 m 481.8898 102 l S
+n 0 85 m 481.8898 85 l S
+n 0 68 m 481.8898 68 l S
+n 0 51 m 481.8898 51 l S
+n 0 34 m 481.8898 34 l S
+n 0 17 m 481.8898 17 l S
+n 59.70316 0 m 59.70316 153 l S
+Q
+Q
+Q
+q
+1 0 0 1 62.69291 502.8197 cm
+Q
+q
+1 0 0 1 62.69291 479.4197 cm
+q
+BT 1 0 0 1 0 14.4 Tm .26211 Tw 11.7 TL /F1 9 Tf 0 0 0 rg (This approach is often called ) Tj /F2 9 Tf (anomaly detection) Tj /F1 9 Tf (: the system looks for departures from the expected condition rather) Tj T* 0 Tw (than applying one fixed vegetation threshold to every season.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 466.9157 cm
+Q
+q
+1 0 0 1 62.69291 442.4157 cm
+q
+.180392 .490196 .196078 rg
+BT 1 0 0 1 0 2.2 Tm /F2 12.3 Tf 14.5 TL (4. The satellite and environmental data) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 422.9157 cm
+q
+.219608 .556863 .235294 rg
+BT 1 0 0 1 0 2.2 Tm /F3 10.3 Tf 12.5 TL (4.1 Sentinel-2 imagery) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 397.0157 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 14.4 Tm /F1 9 Tf 11.7 TL 2.290888 Tw (The scheduled production workflow uses the European Copernicus Sentinel-2 Surface Reflectance Harmonized) Tj T* 0 Tw (collection through Google Earth Engine.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 381.3157 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.7 Tm /F1 9 Tf 11.7 TL (Sentinel-2 is well suited to this work because it:) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 365.6157 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 revisits the region every few days;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 349.9157 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 provides 10 m and 20 m optical bands;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 322.5157 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 14.4 Tm /F1 9 Tf 11.7 TL 1.462314 Tw (\177 records near-infrared and shortwave-infrared wavelengths that respond strongly to vegetation structure and) Tj T* 0 Tw (moisture;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 306.8157 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 supplies a scene-classification layer used in cloud masking.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 279.4157 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 14.4 Tm /F1 9 Tf 11.7 TL 1.127104 Tw (The detection stack operates at 20 m, matching the native resolution of the shortwave-infrared bands used by the) Tj T* 0 Tw (primary indices. A 20 m pixel represents an area of about 400 square meters.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 240.3157 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 26.1 Tm /F1 9 Tf 11.7 TL 1.167173 Tw (The repository also contains a streaming path that can use Sentinel-2 and optional Landsat or NASA Harmonized) Tj T* 0 Tw -0.123016 Tw (Landsat-Sentinel data. This is retained as an alternative path; scheduled production is currently centered on Sentinel-2) Tj T* 0 Tw (in Earth Engine.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 220.8157 cm
+q
+.219608 .556863 .235294 rg
+BT 1 0 0 1 0 2.2 Tm /F3 10.3 Tf 12.5 TL (4.2 The monthly baseline) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 206.6157 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.7 Tm /F1 9 Tf 11.7 TL (The baseline describes the expected seasonal cycle. It uses five selected reference years:) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 192.9157 cm
+q
+.95 .95 .95 rg
+n 20 0 449.8898 9.7 re f*
+Q
+q
+0 0 0 rg
+BT 1 0 0 1 20 1.7 Tm /F4 8 Tf 9.7 TL (2017, 2019, 2021, 2022, and 2025) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 177.2157 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.7 Tm /F1 9 Tf 11.7 TL (For each of the 12 calendar months and each of the three principal indices, the system stores:) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 161.5157 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 a multi-year monthly median;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 145.8157 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 a monthly standard deviation.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 130.1157 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.7 Tm /F1 9 Tf 11.7 TL (That produces:) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 116.4157 cm
+q
+.95 .95 .95 rg
+n 20 0 449.8898 9.7 re f*
+Q
+q
+0 0 0 rg
+BT 1 0 0 1 20 1.7 Tm /F4 8 Tf 9.7 TL (12 months x 3 indices x 2 statistics = 72 baseline files) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 89.01575 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 14.4 Tm /F1 9 Tf 11.7 TL 1.045673 Tw (The baseline files are Cloud Optimized GeoTIFFs, or COGs. This format is useful for cloud-based geospatial work) Tj T* 0 Tw (because software can request only the portion of a large raster that it needs.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 69.51575 cm
+q
+.219608 .556863 .235294 rg
+BT 1 0 0 1 0 2.2 Tm /F3 10.3 Tf 12.5 TL (4.3 Supporting environmental layers) Tj T* ET
+Q
+Q
+ 
+
+Q
+
+q
+0.0 0.0 595.2756 841.8898 re
+W
+n
+1 0 0 1 0 0 cm
+BT
+/F1-0 12 Tf
+14.4 TL
+ET
+0.780392 0.847059 0.788235 RG
+0.45 w
+n
+56.69291 797.9528 m
+538.5827 797.9528 l
+S
+n
+56.69291 41.10236 m
+538.5827 41.10236 l
+S
+0.372549 0.435294 0.384314 rg
+BT
+/F1-0 7.4 Tf
+8.88 TL
+ET
+BT
+1 0 0 1 56.69291 809.2914 Tm
+(CHAPADA DO ARARIPE MONITORING SYSTEM) Tj
+T*
+ET
+BT
+1 0 0 1 423.8679 809.2914 Tm
+(GUIDED TECHNICAL OVERVIEW) Tj
+T*
+ET
+BT
+1 0 0 1 56.69291 26.07874 Tm
+(Version 1\0560  \174  2026\05507\05522) Tj
+T*
+ET
+BT
+1 0 0 1 500.7317 26.07874 Tm
+(Page 2 of 7) Tj
+T*
+ET
+Q
+
+
+endstream
+endobj
+13 0 obj
+<<
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+/Name /F1
+/Subtype /Type1
+/Type /Font
+>>
+endobj
+14 0 obj
+<<
+/Contents 15 0 R
+/MediaBox [ 0 0 595.2756 841.8898 ]
+/Resources <<
+/Font <<
+/F1 6 0 R
+/F1-0 16 0 R
+/F2 8 0 R
+/F3 9 0 R
+/F4 10 0 R
+>>
+/ProcSet [ /ImageB /ImageC /ImageI /PDF /Text ]
+>>
+/Rotate 0
+/Trans <<
+>>
+/Type /Page
+/Annots [ ]
+/Parent 2 0 R
+>>
+endobj
+15 0 obj
+<<
+/Length 8970
+>>
+stream
+q
+1 0 0 1 0 0 cm  BT /F1 12 Tf 14.4 TL ET
+q
+1 0 0 1 62.69291 767.4969 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.7 Tm /F1 9 Tf 11.7 TL (Two additional data families help interpret the satellite signal:) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 740.0969 cm
+q
+BT 1 0 0 1 20 14.4 Tm 1.637251 Tw 11.7 TL /F1 9 Tf 0 0 0 rg (\177 ) Tj /F2 9 Tf (MapBiomas land cover) Tj /F1 9 Tf ( describes what type of surface is present, such as native vegetation, agriculture,) Tj T* 0 Tw (pasture, urban area, or water.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 712.6969 cm
+q
+BT 1 0 0 1 20 14.4 Tm 1.170451 Tw 11.7 TL /F1 9 Tf 0 0 0 rg (\177 ) Tj /F2 9 Tf (CHIRPS precipitation) Tj /F1 9 Tf ( provides rainfall context and supports a drought adjustment so that an unusually dry) Tj T* 0 Tw (regional period can be treated more cautiously.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 685.2969 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 14.4 Tm /F1 9 Tf 11.7 TL .167048 Tw (These layers do different jobs. The spectral indices indicate that the surface changed; MapBiomas helps explain what) Tj T* 0 Tw (was there; rainfall helps interpret whether regional drought may be influencing the observation.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 672.7929 cm
+Q
+q
+1 0 0 1 62.69291 648.2929 cm
+q
+.180392 .490196 .196078 rg
+BT 1 0 0 1 0 2.2 Tm /F2 12.3 Tf 14.5 TL (5. How change is measured) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 628.7929 cm
+q
+.219608 .556863 .235294 rg
+BT 1 0 0 1 0 2.2 Tm /F3 10.3 Tf 12.5 TL (5.1 Three complementary spectral indices) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 602.8929 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 14.4 Tm /F1 9 Tf 11.7 TL 2.160584 Tw (A satellite does not directly label "forest" or "deforestation." It measures reflected energy in wavelength bands.) Tj T* 0 Tw (Spectral indices combine those bands to emphasize physical properties of the surface.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 587.5543 cm
+Q
+q
+1 0 0 1 56.69291 492.5543 cm
+q
+.180392 .490196 .196078 rg
+n 0 95 481.8898 -26 re f*
+1 1 1 rg
+n 0 69 481.8898 -26 re f*
+.960784 .960784 .960784 rg
+n 0 43 481.8898 -17 re f*
+1 1 1 rg
+n 0 26 481.8898 -26 re f*
+1 1 1 rg
+BT /F2 7.5 Tf 12 TL ET
+q
+1 0 0 1 5 73 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 10.8 Tm /F2 7.2 Tf 9 TL (Inde) Tj T* (x) Tj T* ET
+Q
+Q
+q
+1 0 0 1 30.36262 82 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 1.8 Tm /F2 7.2 Tf 9 TL (Formula) Tj T* ET
+Q
+Q
+q
+1 0 0 1 238.3361 82 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 1.8 Tm /F2 7.2 Tf 9 TL (What it contributes) Tj T* ET
+Q
+Q
+0 0 0 rg
+BT /F1 7.5 Tf 12 TL ET
+q
+1 0 0 1 5 47 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 10.8 Tm /F1 7.2 Tf 9 TL (ND) Tj T* (MI) Tj T* ET
+Q
+Q
+q
+1 0 0 1 30.36262 56 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (\(NIR - SWIR1\) / \(NIR + SWIR1\)) Tj T* ET
+Q
+Q
+q
+1 0 0 1 238.3361 56 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Vegetation and canopy moisture) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 30 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (NBR) Tj T* ET
+Q
+Q
+q
+1 0 0 1 30.36262 30 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (\(NIR - SWIR2\) / \(NIR + SWIR2\)) Tj T* ET
+Q
+Q
+q
+1 0 0 1 238.3361 30 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Moisture loss, exposed surface, and burn response) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 4 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 10.8 Tm /F1 7.2 Tf 9 TL (EVI) Tj T* (2) Tj T* ET
+Q
+Q
+q
+1 0 0 1 30.36262 13 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (2.5 x \(NIR - Red\) / \(NIR + 2.4 x Red + 1\)) Tj T* ET
+Q
+Q
+q
+1 0 0 1 238.3361 13 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Vegetation vigor and canopy change) Tj T* ET
+Q
+Q
+q
+1 J
+1 j
+.741176 .741176 .741176 RG
+.5 w
+n 0 95 m 481.8898 95 l S
+n 0 0 m 481.8898 0 l S
+n 0 0 m 0 95 l S
+n 481.8898 0 m 481.8898 95 l S
+n 0 69 m 481.8898 69 l S
+n 0 43 m 481.8898 43 l S
+n 0 26 m 481.8898 26 l S
+n 25.36262 0 m 25.36262 95 l S
+n 233.3361 0 m 233.3361 95 l S
+Q
+Q
+Q
+q
+1 0 0 1 62.69291 481.2157 cm
+Q
+q
+1 0 0 1 62.69291 457.8157 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 14.4 Tm /F1 9 Tf 11.7 TL 2.18773 Tw (NDMI and NBR are the primary indicators because moisture-sensitive measurements help distinguish structural) Tj T* 0 Tw (change from ordinary seasonal loss of leaves. EVI2 adds a complementary view of vegetation vigor.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 438.3157 cm
+q
+.219608 .556863 .235294 rg
+BT 1 0 0 1 0 2.2 Tm /F3 10.3 Tf 12.5 TL (5.2 Two comparisons for every pixel) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 424.1157 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.7 Tm /F1 9 Tf 11.7 TL (For each index, the system calculates two forms of change:) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 408.4157 cm
+q
+BT 1 0 0 1 20 2.7 Tm 11.7 TL /F1 9 Tf 0 0 0 rg (\177 ) Tj /F2 9 Tf (absolute difference) Tj /F1 9 Tf (, or delta: how far the new value moved from the monthly baseline;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 392.7157 cm
+q
+BT 1 0 0 1 20 2.7 Tm 11.7 TL /F1 9 Tf 0 0 0 rg (\177 ) Tj /F2 9 Tf (standardized difference) Tj /F1 9 Tf (, or z-score: how unusual that movement is relative to normal variation for the month.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 365.3157 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 14.4 Tm /F1 9 Tf 11.7 TL .219692 Tw (Using both matters. A z-score can become large where historical variability is very small, while an absolute difference) Tj T* 0 Tw (ensures that the physical change is also meaningful.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 345.8157 cm
+q
+.219608 .556863 .235294 rg
+BT 1 0 0 1 0 2.2 Tm /F3 10.3 Tf 12.5 TL (5.3 Confidence classes) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 331.6157 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.7 Tm /F1 9 Tf 11.7 TL (The three classes are designed as a practical prioritization system:) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 316.2772 cm
+Q
+q
+1 0 0 1 56.69291 248.2772 cm
+q
+.180392 .490196 .196078 rg
+n 0 68 481.8898 -17 re f*
+1 1 1 rg
+n 0 51 481.8898 -17 re f*
+.960784 .960784 .960784 rg
+n 0 34 481.8898 -17 re f*
+1 1 1 rg
+n 0 17 481.8898 -17 re f*
+1 1 1 rg
+BT /F2 7.5 Tf 12 TL ET
+q
+1 0 0 1 5 55 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 1.8 Tm /F2 7.2 Tf 9 TL (Class) Tj T* ET
+Q
+Q
+q
+1 0 0 1 50.17717 55 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 1.8 Tm /F2 7.2 Tf 9 TL (General meaning) Tj T* ET
+Q
+Q
+0 0 0 rg
+BT /F1 7.5 Tf 12 TL ET
+q
+1 0 0 1 5 38 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (High) Tj T* ET
+Q
+Q
+q
+1 0 0 1 50.17717 38 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (NDMI and NBR both show a very strong negative anomaly) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 21 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Medium) Tj T* ET
+Q
+Q
+q
+1 0 0 1 50.17717 21 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (At least one moisture index shows a clear negative anomaly) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 4 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Low) Tj T* ET
+Q
+Q
+q
+1 0 0 1 50.17717 4 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (An available index crosses the lower change threshold) Tj T* ET
+Q
+Q
+q
+1 J
+1 j
+.741176 .741176 .741176 RG
+.5 w
+n 0 68 m 481.8898 68 l S
+n 0 0 m 481.8898 0 l S
+n 0 0 m 0 68 l S
+n 481.8898 0 m 481.8898 68 l S
+n 0 51 m 481.8898 51 l S
+n 0 34 m 481.8898 34 l S
+n 0 17 m 481.8898 17 l S
+n 45.17717 0 m 45.17717 68 l S
+Q
+Q
+Q
+q
+1 0 0 1 62.69291 236.9386 cm
+Q
+q
+1 0 0 1 62.69291 213.5386 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 14.4 Tm /F1 9 Tf 11.7 TL 1.079384 Tw (The exact rules combine z-score and delta thresholds. High confidence requires agreement between the two main) Tj T* 0 Tw (moisture indices, which makes it more selective.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 186.1386 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 14.4 Tm /F1 9 Tf 11.7 TL .779984 Tw (After classification, neighboring alert pixels are grouped into polygons. Very small patches are removed; the normal) Tj T* 0 Tw (minimum mapping unit is 1 hectare. Each polygon then receives attributes such as:) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 170.4386 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 observation date;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 154.7386 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 area;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 139.0386 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 confidence;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 123.3386 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 central coordinates and approximate nearby municipality;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 107.6386 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 MapBiomas class and natural-vegetation fraction;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 91.93858 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 recurrence information;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 76.23858 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 an indicative fire or mechanical-clearing label when the required data are available.) Tj T* ET
+Q
+Q
+ 
+
+Q
+
+q
+0.0 0.0 595.2756 841.8898 re
+W
+n
+1 0 0 1 0 0 cm
+BT
+/F1-0 12 Tf
+14.4 TL
+ET
+0.780392 0.847059 0.788235 RG
+0.45 w
+n
+56.69291 797.9528 m
+538.5827 797.9528 l
+S
+n
+56.69291 41.10236 m
+538.5827 41.10236 l
+S
+0.372549 0.435294 0.384314 rg
+BT
+/F1-0 7.4 Tf
+8.88 TL
+ET
+BT
+1 0 0 1 56.69291 809.2914 Tm
+(CHAPADA DO ARARIPE MONITORING SYSTEM) Tj
+T*
+ET
+BT
+1 0 0 1 423.8679 809.2914 Tm
+(GUIDED TECHNICAL OVERVIEW) Tj
+T*
+ET
+BT
+1 0 0 1 56.69291 26.07874 Tm
+(Version 1\0560  \174  2026\05507\05522) Tj
+T*
+ET
+BT
+1 0 0 1 500.7317 26.07874 Tm
+(Page 3 of 7) Tj
+T*
+ET
+Q
+
+
+endstream
+endobj
+16 0 obj
+<<
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+/Name /F1
+/Subtype /Type1
+/Type /Font
+>>
+endobj
+17 0 obj
+<<
+/Contents 18 0 R
+/MediaBox [ 0 0 595.2756 841.8898 ]
+/Resources <<
+/Font <<
+/F1 6 0 R
+/F1-0 19 0 R
+/F2 8 0 R
+/F3 9 0 R
+/F4 10 0 R
+>>
+/ProcSet [ /ImageB /ImageC /ImageI /PDF /Text ]
+>>
+/Rotate 0
+/Trans <<
+>>
+/Type /Page
+/Annots [ ]
+/Parent 2 0 R
+>>
+endobj
+18 0 obj
+<<
+/Length 8738
+>>
+stream
+q
+1 0 0 1 0 0 cm  BT /F1 12 Tf 14.4 TL ET
+q
+1 0 0 1 62.69291 766.6969 cm
+q
+.219608 .556863 .235294 rg
+BT 1 0 0 1 0 2.2 Tm /F3 10.3 Tf 12.5 TL (5.4 Recurrence over time) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 740.7969 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 14.4 Tm /F1 9 Tf 11.7 TL 1.111184 Tw (One satellite observation may contain residual cloud, shadow, or another temporary effect. A change that appears) Tj T* 0 Tw (again in later observations is generally more useful for prioritization.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 725.0969 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.7 Tm /F1 9 Tf 11.7 TL (The project therefore connects spatially overlapping observations into a recurrence history:) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 709.3969 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 first observation: seen once;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 693.6969 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 candidate: seen between 2 and 14 times;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 677.9969 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 confirmed tier: seen 15 or more times.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 650.5969 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 14.4 Tm /F1 9 Tf 11.7 TL -0.036486 Tw (The word "confirmed" is a system tier describing recurrence in the satellite record. It is not a substitute for independent) Tj T* 0 Tw (reference imagery or field confirmation.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 638.0929 cm
+Q
+q
+1 0 0 1 62.69291 613.5929 cm
+q
+.180392 .490196 .196078 rg
+BT 1 0 0 1 0 2.2 Tm /F2 12.3 Tf 14.5 TL (6. From scientific processing to an automated service) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 586.1929 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 14.4 Tm /F1 9 Tf 11.7 TL .046184 Tw (The project separates heavy geospatial processing from the public website. This keeps the browser experience lighter) Tj T* 0 Tw (and makes the scientific workflow reproducible.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 566.6929 cm
+q
+.219608 .556863 .235294 rg
+BT 1 0 0 1 0 2.2 Tm /F3 10.3 Tf 12.5 TL (6.1 Two repositories) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 552.8543 cm
+Q
+q
+1 0 0 1 56.69291 492.8543 cm
+q
+.180392 .490196 .196078 rg
+n 0 60 481.8898 -17 re f*
+1 1 1 rg
+n 0 43 481.8898 -17 re f*
+.960784 .960784 .960784 rg
+n 0 26 481.8898 -26 re f*
+1 1 1 rg
+BT /F2 7.5 Tf 12 TL ET
+q
+1 0 0 1 5 47 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 1.8 Tm /F2 7.2 Tf 9 TL (Repository) Tj T* ET
+Q
+Q
+q
+1 0 0 1 63.93616 47 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 1.8 Tm /F2 7.2 Tf 9 TL (Responsibility) Tj T* ET
+Q
+Q
+0 0 0 rg
+BT /F1 7.5 Tf 12 TL ET
+q
+1 0 0 1 5 30 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Araripe) Tj T* ET
+Q
+Q
+q
+1 0 0 1 63.93616 30 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Satellite acquisition, baseline handling, change detection, alert generation, persistence, and regional time series) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 4 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 10.8 Tm /F1 7.2 Tf 9 TL (observatorio-si) Tj T* (te) Tj T* ET
+Q
+Q
+q
+1 0 0 1 63.93616 13 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Public pages, interactive maps, charts, prepared web data, rainfall products, educational material, and the chat interface) Tj T* ET
+Q
+Q
+q
+1 J
+1 j
+.741176 .741176 .741176 RG
+.5 w
+n 0 60 m 481.8898 60 l S
+n 0 0 m 481.8898 0 l S
+n 0 0 m 0 60 l S
+n 481.8898 0 m 481.8898 60 l S
+n 0 43 m 481.8898 43 l S
+n 0 26 m 481.8898 26 l S
+n 58.93616 0 m 58.93616 60 l S
+Q
+Q
+Q
+q
+1 0 0 1 62.69291 481.5157 cm
+Q
+q
+1 0 0 1 62.69291 462.0157 cm
+q
+.219608 .556863 .235294 rg
+BT 1 0 0 1 0 2.2 Tm /F3 10.3 Tf 12.5 TL (6.2 Scheduled production) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 447.8157 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.7 Tm /F1 9 Tf 11.7 TL (The main detection workflow runs in GitHub Actions every Monday and Thursday:) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 432.1157 cm
+q
+BT 1 0 0 1 20 2.7 Tm 11.7 TL /F2 9 Tf 0 0 0 rg (1.) Tj /F1 9 Tf ( create the Python/geospatial environment;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 416.4157 cm
+q
+BT 1 0 0 1 20 2.7 Tm 11.7 TL /F2 9 Tf 0 0 0 rg (2.) Tj /F1 9 Tf ( retrieve the 72 baseline COGs from Cloudflare R2;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 400.7157 cm
+q
+BT 1 0 0 1 20 2.7 Tm 11.7 TL /F2 9 Tf 0 0 0 rg (3.) Tj /F1 9 Tf ( retrieve the current recurrence state;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 385.0157 cm
+q
+BT 1 0 0 1 20 2.7 Tm 11.7 TL /F2 9 Tf 0 0 0 rg (4.) Tj /F1 9 Tf ( ask Google Earth Engine for recent Sentinel-2 observations;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 369.3157 cm
+q
+BT 1 0 0 1 20 2.7 Tm 11.7 TL /F2 9 Tf 0 0 0 rg (5.) Tj /F1 9 Tf ( download the daily index composites;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 353.6157 cm
+q
+BT 1 0 0 1 20 2.7 Tm 11.7 TL /F2 9 Tf 0 0 0 rg (6.) Tj /F1 9 Tf ( run detection, polygonization, and annotation;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 337.9157 cm
+q
+BT 1 0 0 1 20 2.7 Tm 11.7 TL /F2 9 Tf 0 0 0 rg (7.) Tj /F1 9 Tf ( publish alert files and state to R2;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 322.2157 cm
+q
+BT 1 0 0 1 20 2.7 Tm 11.7 TL /F2 9 Tf 0 0 0 rg (8.) Tj /F1 9 Tf ( update the regional time-series database in Git.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 306.5157 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.7 Tm /F1 9 Tf 11.7 TL (A second workflow in the site repository starts later. It:) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 290.8157 cm
+q
+BT 1 0 0 1 20 2.7 Tm 11.7 TL /F2 9 Tf 0 0 0 rg (1.) Tj /F1 9 Tf ( retrieves the scientific outputs;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 275.1157 cm
+q
+BT 1 0 0 1 20 2.7 Tm 11.7 TL /F2 9 Tf 0 0 0 rg (2.) Tj /F1 9 Tf ( prepares lighter files for the browser;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 259.4157 cm
+q
+BT 1 0 0 1 20 2.7 Tm 11.7 TL /F2 9 Tf 0 0 0 rg (3.) Tj /F1 9 Tf ( creates the default strong subsets and the all-history point view;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 243.7157 cm
+q
+BT 1 0 0 1 20 2.7 Tm 11.7 TL /F2 9 Tf 0 0 0 rg (4.) Tj /F1 9 Tf ( publishes detailed full files to R2;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 228.0157 cm
+q
+BT 1 0 0 1 20 2.7 Tm 11.7 TL /F2 9 Tf 0 0 0 rg (5.) Tj /F1 9 Tf ( updates the public manifest and time-series JSON;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 212.3157 cm
+q
+BT 1 0 0 1 20 2.7 Tm 11.7 TL /F2 9 Tf 0 0 0 rg (6.) Tj /F1 9 Tf ( refreshes recent and historical rainfall products.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 184.9157 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 14.4 Tm /F1 9 Tf 11.7 TL .843987 Tw (The most recent verified cycle at the time of this overview ran successfully on 2026-07-20 and published alert data) Tj T* 0 Tw (through the 2026-07-16 satellite observation.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 165.4157 cm
+q
+.219608 .556863 .235294 rg
+BT 1 0 0 1 0 2.2 Tm /F3 10.3 Tf 12.5 TL (6.3 Cloud services) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 151.5772 cm
+Q
+q
+1 0 0 1 56.69291 66.57717 cm
+q
+.180392 .490196 .196078 rg
+n 0 85 481.8898 -17 re f*
+1 1 1 rg
+n 0 68 481.8898 -17 re f*
+.960784 .960784 .960784 rg
+n 0 51 481.8898 -17 re f*
+1 1 1 rg
+n 0 34 481.8898 -17 re f*
+.960784 .960784 .960784 rg
+n 0 17 481.8898 -17 re f*
+1 1 1 rg
+BT /F2 7.5 Tf 12 TL ET
+q
+1 0 0 1 5 72 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 1.8 Tm /F2 7.2 Tf 9 TL (Service) Tj T* ET
+Q
+Q
+q
+1 0 0 1 99.39078 72 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 1.8 Tm /F2 7.2 Tf 9 TL (Role) Tj T* ET
+Q
+Q
+0 0 0 rg
+BT /F1 7.5 Tf 12 TL ET
+q
+1 0 0 1 5 55 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Google Earth Engine) Tj T* ET
+Q
+Q
+q
+1 0 0 1 99.39078 55 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Searches and prepares Sentinel-2 imagery at planetary-data scale) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 38 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (GitHub Actions) Tj T* ET
+Q
+Q
+q
+1 0 0 1 99.39078 38 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Runs the scheduled processing and publication jobs) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 21 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Cloudflare R2) Tj T* ET
+Q
+Q
+q
+1 0 0 1 99.39078 21 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Stores large baseline, alert, and web-data objects) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 4 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Cloudflare Worker) Tj T* ET
+Q
+Q
+q
+1 0 0 1 99.39078 4 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Serves the built site and handles the chat API) Tj T* ET
+Q
+Q
+q
+1 J
+1 j
+.741176 .741176 .741176 RG
+.5 w
+n 0 85 m 481.8898 85 l S
+n 0 0 m 0 85 l S
+n 481.8898 0 m 481.8898 85 l S
+n 0 0 m 481.8898 0 l S
+n 0 68 m 481.8898 68 l S
+n 0 51 m 481.8898 51 l S
+n 0 34 m 481.8898 34 l S
+n 0 17 m 481.8898 17 l S
+n 94.39078 0 m 94.39078 85 l S
+Q
+Q
+Q
+ 
+
+Q
+
+q
+0.0 0.0 595.2756 841.8898 re
+W
+n
+1 0 0 1 0 0 cm
+BT
+/F1-0 12 Tf
+14.4 TL
+ET
+0.780392 0.847059 0.788235 RG
+0.45 w
+n
+56.69291 797.9528 m
+538.5827 797.9528 l
+S
+n
+56.69291 41.10236 m
+538.5827 41.10236 l
+S
+0.372549 0.435294 0.384314 rg
+BT
+/F1-0 7.4 Tf
+8.88 TL
+ET
+BT
+1 0 0 1 56.69291 809.2914 Tm
+(CHAPADA DO ARARIPE MONITORING SYSTEM) Tj
+T*
+ET
+BT
+1 0 0 1 423.8679 809.2914 Tm
+(GUIDED TECHNICAL OVERVIEW) Tj
+T*
+ET
+BT
+1 0 0 1 56.69291 26.07874 Tm
+(Version 1\0560  \174  2026\05507\05522) Tj
+T*
+ET
+BT
+1 0 0 1 500.7317 26.07874 Tm
+(Page 4 of 7) Tj
+T*
+ET
+Q
+
+
+endstream
+endobj
+19 0 obj
+<<
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+/Name /F1
+/Subtype /Type1
+/Type /Font
+>>
+endobj
+20 0 obj
+<<
+/Contents 21 0 R
+/MediaBox [ 0 0 595.2756 841.8898 ]
+/Resources <<
+/Font <<
+/F1 6 0 R
+/F1-0 22 0 R
+/F2 8 0 R
+/F3 9 0 R
+/F4 10 0 R
+>>
+/ProcSet [ /ImageB /ImageC /ImageI /PDF /Text ]
+>>
+/Rotate 0
+/Trans <<
+>>
+/Type /Page
+/Annots [ ]
+/Parent 2 0 R
+>>
+endobj
+21 0 obj
+<<
+/Length 8794
+>>
+stream
+q
+1 0 0 1 0 0 cm  BT /F1 12 Tf 14.4 TL ET
+q
+1 0 0 1 56.69291 745.1969 cm
+q
+.180392 .490196 .196078 rg
+n 0 34 481.8898 -17 re f*
+1 1 1 rg
+n 0 17 481.8898 -17 re f*
+1 1 1 rg
+BT /F2 7.5 Tf 12 TL ET
+q
+1 0 0 1 5 21 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 1.8 Tm /F2 7.2 Tf 9 TL (Service) Tj T* ET
+Q
+Q
+q
+1 0 0 1 99.39078 21 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 1.8 Tm /F2 7.2 Tf 9 TL (Role) Tj T* ET
+Q
+Q
+0 0 0 rg
+BT /F1 7.5 Tf 12 TL ET
+q
+1 0 0 1 5 4 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Git repositories) Tj T* ET
+Q
+Q
+q
+1 0 0 1 99.39078 4 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Version the code, configuration, documentation, and smaller generated products) Tj T* ET
+Q
+Q
+q
+1 J
+1 j
+.741176 .741176 .741176 RG
+.5 w
+n 0 34 m 481.8898 34 l S
+n 0 17 m 0 34 l S
+n 0 0 m 0 17 l S
+n 481.8898 17 m 481.8898 34 l S
+n 481.8898 0 m 481.8898 17 l S
+n 0 0 m 481.8898 0 l S
+n 0 17 m 481.8898 17 l S
+n 94.39078 17 m 94.39078 34 l S
+n 94.39078 0 m 94.39078 17 l S
+Q
+Q
+Q
+q
+1 0 0 1 62.69291 733.8583 cm
+Q
+q
+1 0 0 1 62.69291 710.4583 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 14.4 Tm /F1 9 Tf 11.7 TL .449423 Tw (The architecture is intentionally modular. The detection system can evolve independently from the site, while the site) Tj T* 0 Tw (consumes a defined set of prepared artifacts rather than performing geospatial analysis in the user's browser.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 697.9543 cm
+Q
+q
+1 0 0 1 62.69291 673.4543 cm
+q
+.180392 .490196 .196078 rg
+BT 1 0 0 1 0 2.2 Tm /F2 12.3 Tf 14.5 TL (7. What the public site offers) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 646.0543 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 14.4 Tm /F1 9 Tf 11.7 TL -0.106955 Tw (The monitoring system is presented inside a broader institutional site for the Observat\363rio da Chapada do Araripe. The) Tj T* 0 Tw (site connects scientific monitoring with territory, rainfall, education, public participation, and communication.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 626.5543 cm
+q
+.219608 .556863 .235294 rg
+BT 1 0 0 1 0 2.2 Tm /F3 10.3 Tf 12.5 TL (7.1 The Alerts page) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 612.3543 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.7 Tm /F1 9 Tf 11.7 TL (The Alerts page has five main tabs.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 597.0157 cm
+Q
+q
+1 0 0 1 56.69291 495.0157 cm
+q
+.180392 .490196 .196078 rg
+n 0 102 481.8898 -17 re f*
+1 1 1 rg
+n 0 85 481.8898 -17 re f*
+.960784 .960784 .960784 rg
+n 0 68 481.8898 -17 re f*
+1 1 1 rg
+n 0 51 481.8898 -17 re f*
+.960784 .960784 .960784 rg
+n 0 34 481.8898 -17 re f*
+1 1 1 rg
+n 0 17 481.8898 -17 re f*
+1 1 1 rg
+BT /F2 7.5 Tf 12 TL ET
+q
+1 0 0 1 5 89 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 1.8 Tm /F2 7.2 Tf 9 TL (Tab) Tj T* ET
+Q
+Q
+q
+1 0 0 1 88.80692 89 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 1.8 Tm /F2 7.2 Tf 9 TL (What the visitor can do) Tj T* ET
+Q
+Q
+0 0 0 rg
+BT /F1 7.5 Tf 12 TL ET
+q
+1 0 0 1 5 72 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Vis\343o geral) Tj T* ET
+Q
+Q
+q
+1 0 0 1 88.80692 72 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Explore metrics, dates, alert maps, filters, and the alert table) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 55 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Entenda) Tj T* ET
+Q
+Q
+q
+1 0 0 1 88.80692 55 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Learn how the baseline, indices, confidence, recurrence, and land cover work) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 38 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (S\351ries temporais) Tj T* ET
+Q
+Q
+q
+1 0 0 1 88.80692 38 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Follow regional NDMI, NBR, and EVI2 through time) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 21 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Downloads) Tj T* ET
+Q
+Q
+q
+1 0 0 1 88.80692 21 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Access alert, series, and study-area data products) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 4 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Cita\347\343o) Tj T* ET
+Q
+Q
+q
+1 0 0 1 88.80692 4 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Find citation and licensing information) Tj T* ET
+Q
+Q
+q
+1 J
+1 j
+.741176 .741176 .741176 RG
+.5 w
+n 0 102 m 481.8898 102 l S
+n 0 0 m 481.8898 0 l S
+n 0 0 m 0 102 l S
+n 481.8898 0 m 481.8898 102 l S
+n 0 85 m 481.8898 85 l S
+n 0 68 m 481.8898 68 l S
+n 0 51 m 481.8898 51 l S
+n 0 34 m 481.8898 34 l S
+n 0 17 m 481.8898 17 l S
+n 83.80692 0 m 83.80692 102 l S
+Q
+Q
+Q
+q
+1 0 0 1 62.69291 483.6772 cm
+Q
+q
+1 0 0 1 62.69291 448.5772 cm
+q
+BT 1 0 0 1 0 26.1 Tm .648987 Tw 11.7 TL /F1 9 Tf 0 0 0 rg (The default map opens with a compact ) Tj /F2 9 Tf (strong subset) Tj /F1 9 Tf ( intended as a useful starting point. It combines high spectral) Tj T* 0 Tw 1.046384 Tw (confidence, recurrence, and a minimum natural-vegetation fraction. The visitor can then move into a more detailed) Tj T* 0 Tw (view with:) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 432.8772 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 confidence and recurrence filters;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 417.1772 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 a minimum number of sightings;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 401.4772 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 a choice of MapBiomas collection;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 385.7772 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 a natural-cover threshold;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 370.0772 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 multiple base maps and land-cover overlays;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 354.3772 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 one-date or all-history views.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 326.9772 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 14.4 Tm /F1 9 Tf 11.7 TL .452104 Tw (Clicking an alert opens a summary with date, area, confidence, recurrence, land cover, location, and a Google Maps) Tj T* 0 Tw (link. A table supports closer inspection.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 299.5772 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 14.4 Tm /F1 9 Tf 11.7 TL -0.066162 Tw (The visitor can also draw a polygon on the map and export the selected observations as CSV or GeoJSON. This helps) Tj T* 0 Tw (move from regional exploration to a smaller field or research area.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 280.0772 cm
+q
+.219608 .556863 .235294 rg
+BT 1 0 0 1 0 2.2 Tm /F3 10.3 Tf 12.5 TL (7.2 Regional time series) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 242.4772 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 26.1 Tm /F1 9 Tf 11.7 TL 1.371987 Tw (The time-series view shows how the regional mean of each index changes over time and places it alongside the) Tj T* 0 Tw .921692 Tw (expected monthly baseline range. It gives the alert polygons a broader context: users can see whether a particular) Tj T* 0 Tw (observation belongs to a region-wide seasonal movement or a more unusual moment.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 222.9772 cm
+q
+.219608 .556863 .235294 rg
+BT 1 0 0 1 0 2.2 Tm /F3 10.3 Tf 12.5 TL (7.3 Methodology assistant) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 197.0772 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 14.4 Tm /F1 9 Tf 11.7 TL .744339 Tw (The Entenda tab includes an AI assistant grounded in a project-specific knowledge base. It can explain the indices,) Tj T* 0 Tw (baseline, thresholds, recurrence, and site controls in the language used by the visitor.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 169.6772 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 14.4 Tm /F1 9 Tf 11.7 TL 2.279984 Tw (The assistant is a communication layer, not part of the detection calculation. Satellite processing is completed) Tj T* 0 Tw (beforehand; the assistant helps people understand the results and methodology.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 150.1772 cm
+q
+.219608 .556863 .235294 rg
+BT 1 0 0 1 0 2.2 Tm /F3 10.3 Tf 12.5 TL (7.4 The broader site) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 135.9772 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.7 Tm /F1 9 Tf 11.7 TL (Beyond Alerts, the site includes:) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 120.2772 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 a Territory page with boundaries, landscape context, and rainfall;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 104.5772 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 institutional information about the Observat\363rio;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 88.87717 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 an Open Data page;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 73.17717 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 education and participation areas;) Tj T* ET
+Q
+Q
+ 
+
+Q
+
+q
+0.0 0.0 595.2756 841.8898 re
+W
+n
+1 0 0 1 0 0 cm
+BT
+/F1-0 12 Tf
+14.4 TL
+ET
+0.780392 0.847059 0.788235 RG
+0.45 w
+n
+56.69291 797.9528 m
+538.5827 797.9528 l
+S
+n
+56.69291 41.10236 m
+538.5827 41.10236 l
+S
+0.372549 0.435294 0.384314 rg
+BT
+/F1-0 7.4 Tf
+8.88 TL
+ET
+BT
+1 0 0 1 56.69291 809.2914 Tm
+(CHAPADA DO ARARIPE MONITORING SYSTEM) Tj
+T*
+ET
+BT
+1 0 0 1 423.8679 809.2914 Tm
+(GUIDED TECHNICAL OVERVIEW) Tj
+T*
+ET
+BT
+1 0 0 1 56.69291 26.07874 Tm
+(Version 1\0560  \174  2026\05507\05522) Tj
+T*
+ET
+BT
+1 0 0 1 500.7317 26.07874 Tm
+(Page 5 of 7) Tj
+T*
+ET
+Q
+
+
+endstream
+endobj
+22 0 obj
+<<
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+/Name /F1
+/Subtype /Type1
+/Type /Font
+>>
+endobj
+23 0 obj
+<<
+/Contents 24 0 R
+/MediaBox [ 0 0 595.2756 841.8898 ]
+/Resources <<
+/Font <<
+/F1 6 0 R
+/F1-0 25 0 R
+/F2 8 0 R
+/F3 9 0 R
+/F4 10 0 R
+>>
+/ProcSet [ /ImageB /ImageC /ImageI /PDF /Text ]
+>>
+/Rotate 0
+/Trans <<
+>>
+/Type /Page
+/Annots [ ]
+/Parent 2 0 R
+>>
+endobj
+24 0 obj
+<<
+/Length 7314
+>>
+stream
+q
+1 0 0 1 0 0 cm  BT /F1 12 Tf 14.4 TL ET
+q
+1 0 0 1 62.69291 767.4969 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 an experimental Three.js game about land-use choices in the Chapada.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 740.0969 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 14.4 Tm /F1 9 Tf 11.7 TL .893104 Tw (This broader design is important. It places the monitoring data within a social and educational narrative rather than) Tj T* 0 Tw (presenting alerts as isolated technical objects.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 727.5929 cm
+Q
+q
+1 0 0 1 62.69291 703.0929 cm
+q
+.180392 .490196 .196078 rg
+BT 1 0 0 1 0 2.2 Tm /F2 12.3 Tf 14.5 TL (8. What has been built so far) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 687.3929 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.7 Tm /F1 9 Tf 11.7 TL (As of this overview:) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 671.6929 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 all 72 monthly baseline COGs are available in cloud storage;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 655.9929 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 the headless Sentinel-2 workflow is scheduled twice weekly;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 640.2929 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 the alternative streaming workflow remains available for manual use;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 624.5929 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 the remote public manifest contains 29 published acquisition dates from 2026-01-02 through 2026-07-16;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 608.8929 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 the archive contains more than 350,000 date-level polygon observations;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 593.1929 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 the site publishes compact strong files, detailed files, an all-history point index, and regional time series;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 577.4929 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 MapBiomas attributes and rainfall context are integrated;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 561.7929 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 the Python test suite contains 96 passing offline tests;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 546.0929 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 the Vite production site builds successfully;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 530.3929 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 monitoring code and data include formal citation and open-license paths.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 491.2929 cm
+q
+BT 1 0 0 1 0 26.1 Tm .039163 Tw 11.7 TL /F1 9 Tf 0 0 0 rg (The alert archive is intentionally observation-based. If the same place appears on several dates, it can be represented) Tj T* 0 Tw 1.158868 Tw (several times. This is useful for studying recurrence, but totals across dates should be read as ) Tj /F2 9 Tf (observations) Tj /F1 9 Tf (, not) Tj T* 0 Tw (automatically as unique clearings or unique affected area.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 475.5929 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.7 Tm /F1 9 Tf 11.7 TL (For public and scientific communication, the most helpful workflow is:) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 459.8929 cm
+q
+BT 1 0 0 1 20 2.7 Tm 11.7 TL /F2 9 Tf 0 0 0 rg (1.) Tj /F1 9 Tf ( use the strong subset to find places worth examining;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 444.1929 cm
+q
+BT 1 0 0 1 20 2.7 Tm 11.7 TL /F2 9 Tf 0 0 0 rg (2.) Tj /F1 9 Tf ( inspect the date, confidence, recurrence, land cover, and time-series context;) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 428.4929 cm
+q
+BT 1 0 0 1 20 2.7 Tm 11.7 TL /F2 9 Tf 0 0 0 rg (3.) Tj /F1 9 Tf ( compare with high-resolution reference imagery or field information when a decision requires confirmation.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 415.989 cm
+Q
+q
+1 0 0 1 62.69291 391.489 cm
+q
+.180392 .490196 .196078 rg
+BT 1 0 0 1 0 2.2 Tm /F2 12.3 Tf 14.5 TL (9. A simple interpretation guide) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 371.989 cm
+q
+.219608 .556863 .235294 rg
+BT 1 0 0 1 0 2.2 Tm /F3 10.3 Tf 12.5 TL (What an alert means) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 346.089 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 14.4 Tm /F1 9 Tf 11.7 TL -0.124591 Tw (An alert means that the satellite signal changed more than expected for that month and that the changed pixels formed) Tj T* 0 Tw (a polygon large enough to retain.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 326.589 cm
+q
+.219608 .556863 .235294 rg
+BT 1 0 0 1 0 2.2 Tm /F3 10.3 Tf 12.5 TL (What confidence means) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 300.689 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 14.4 Tm /F1 9 Tf 11.7 TL 1.68881 Tw (Confidence describes how strongly and consistently the spectral rules were met. It is a prioritization label, not a) Tj T* 0 Tw (probability such as "90 percent certain.") Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 281.189 cm
+q
+.219608 .556863 .235294 rg
+BT 1 0 0 1 0 2.2 Tm /F3 10.3 Tf 12.5 TL (What recurrence means) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 255.289 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 14.4 Tm /F1 9 Tf 11.7 TL -0.060445 Tw (Recurrence describes how often an overlapping signal has appeared in the observation history. Repeated appearance) Tj T* 0 Tw (can make a location more interesting to investigate.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 235.789 cm
+q
+.219608 .556863 .235294 rg
+BT 1 0 0 1 0 2.2 Tm /F3 10.3 Tf 12.5 TL (What the strong subset means) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 209.889 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 14.4 Tm /F1 9 Tf 11.7 TL 1.860213 Tw (The strong subset is a presentation filter combining high spectral confidence, recurrence, and natural-vegetation) Tj T* 0 Tw (context. It helps a visitor begin with a smaller, more relevant set.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 190.389 cm
+q
+.219608 .556863 .235294 rg
+BT 1 0 0 1 0 2.2 Tm /F3 10.3 Tf 12.5 TL (What the system is designed to support) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 176.189 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 2.7 Tm /F1 9 Tf 11.7 TL (The system is designed for screening, exploration, research, communication, and prioritization. It helps answer:) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 160.489 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 Where did the satellite detect unusual vegetation change?) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 144.789 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 When was it observed?) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 129.089 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 How strong was the signal?) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 113.389 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 Did it recur?) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 97.68898 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 What land-cover context was present?) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 81.98898 cm
+q
+0 0 0 rg
+BT 1 0 0 1 20 2.7 Tm /F1 9 Tf 11.7 TL (\177 What should be examined more closely?) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 69.48504 cm
+Q
+ 
+
+Q
+
+q
+0.0 0.0 595.2756 841.8898 re
+W
+n
+1 0 0 1 0 0 cm
+BT
+/F1-0 12 Tf
+14.4 TL
+ET
+0.780392 0.847059 0.788235 RG
+0.45 w
+n
+56.69291 797.9528 m
+538.5827 797.9528 l
+S
+n
+56.69291 41.10236 m
+538.5827 41.10236 l
+S
+0.372549 0.435294 0.384314 rg
+BT
+/F1-0 7.4 Tf
+8.88 TL
+ET
+BT
+1 0 0 1 56.69291 809.2914 Tm
+(CHAPADA DO ARARIPE MONITORING SYSTEM) Tj
+T*
+ET
+BT
+1 0 0 1 423.8679 809.2914 Tm
+(GUIDED TECHNICAL OVERVIEW) Tj
+T*
+ET
+BT
+1 0 0 1 56.69291 26.07874 Tm
+(Version 1\0560  \174  2026\05507\05522) Tj
+T*
+ET
+BT
+1 0 0 1 500.7317 26.07874 Tm
+(Page 6 of 7) Tj
+T*
+ET
+Q
+
+
+endstream
+endobj
+25 0 obj
+<<
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+/Name /F1
+/Subtype /Type1
+/Type /Font
+>>
+endobj
+26 0 obj
+<<
+/Contents 27 0 R
+/MediaBox [ 0 0 595.2756 841.8898 ]
+/Resources <<
+/Font <<
+/F1 6 0 R
+/F1-0 28 0 R
+/F2 8 0 R
+/F3 9 0 R
+/F4 10 0 R
+>>
+/ProcSet [ /ImageB /ImageC /ImageI /PDF /Text ]
+>>
+/Rotate 0
+/Trans <<
+>>
+/Type /Page
+/Annots [ ]
+/Parent 2 0 R
+>>
+endobj
+27 0 obj
+<<
+/Length 9478
+>>
+stream
+q
+1 0 0 1 0 0 cm  BT /F1 12 Tf 14.4 TL ET
+q
+1 0 0 1 62.69291 764.6969 cm
+q
+.180392 .490196 .196078 rg
+BT 1 0 0 1 0 2.2 Tm /F2 12.3 Tf 14.5 TL (10. Why the project matters) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 737.2969 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 14.4 Tm /F1 9 Tf 11.7 TL .442269 Tw (This project turns globally available Earth-observation data into a regional public resource. The technical contribution) Tj T* 0 Tw (is the complete chain:) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 723.5969 cm
+q
+.95 .95 .95 rg
+n 20 0 449.8898 9.7 re f*
+Q
+q
+0 0 0 rg
+BT 1 0 0 1 20 1.7 Tm /F4 8 Tf 9.7 TL (seasonal understanding) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 709.8969 cm
+q
+.95 .95 .95 rg
+n 20 0 449.8898 9.7 re f*
+Q
+q
+0 0 0 rg
+BT 1 0 0 1 20 1.7 Tm /F4 8 Tf 9.7 TL (+ satellite processing) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 696.1969 cm
+q
+.95 .95 .95 rg
+n 20 0 449.8898 9.7 re f*
+Q
+q
+0 0 0 rg
+BT 1 0 0 1 20 1.7 Tm /F4 8 Tf 9.7 TL (+ repeatable detection) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 682.4969 cm
+q
+.95 .95 .95 rg
+n 20 0 449.8898 9.7 re f*
+Q
+q
+0 0 0 rg
+BT 1 0 0 1 20 1.7 Tm /F4 8 Tf 9.7 TL (+ environmental context) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 668.7969 cm
+q
+.95 .95 .95 rg
+n 20 0 449.8898 9.7 re f*
+Q
+q
+0 0 0 rg
+BT 1 0 0 1 20 1.7 Tm /F4 8 Tf 9.7 TL (+ automated publication) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 655.0969 cm
+q
+.95 .95 .95 rg
+n 20 0 449.8898 9.7 re f*
+Q
+q
+0 0 0 rg
+BT 1 0 0 1 20 1.7 Tm /F4 8 Tf 9.7 TL (+ accessible communication) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 627.6969 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 14.4 Tm /F1 9 Tf 11.7 TL .826567 Tw (The result is more than a detection script and more than a website. It is an early environmental information system) Tj T* 0 Tw (built around one place, its seasonal ecology, and the people who need to understand it.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 588.5969 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 26.1 Tm /F1 9 Tf 11.7 TL .137235 Tw (Its open structure also makes the work reusable. The monitoring code is published under AGPL-3.0-or-later, while the) Tj T* 0 Tw -0.04819 Tw (monitoring data products use CC BY-SA 4.0. With a new study-area boundary, a rebuilt baseline, and local calibration,) Tj T* 0 Tw (the general approach can be adapted to other regions.) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 576.0929 cm
+Q
+q
+1 0 0 1 62.69291 551.5929 cm
+q
+.180392 .490196 .196078 rg
+BT 1 0 0 1 0 2.2 Tm /F2 12.3 Tf 14.5 TL (Short glossary) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 536.2543 cm
+Q
+q
+1 0 0 1 56.69291 332.2543 cm
+q
+.180392 .490196 .196078 rg
+n 0 204 481.8898 -17 re f*
+1 1 1 rg
+n 0 187 481.8898 -17 re f*
+.960784 .960784 .960784 rg
+n 0 170 481.8898 -17 re f*
+1 1 1 rg
+n 0 153 481.8898 -17 re f*
+.960784 .960784 .960784 rg
+n 0 136 481.8898 -17 re f*
+1 1 1 rg
+n 0 119 481.8898 -17 re f*
+.960784 .960784 .960784 rg
+n 0 102 481.8898 -17 re f*
+1 1 1 rg
+n 0 85 481.8898 -17 re f*
+.960784 .960784 .960784 rg
+n 0 68 481.8898 -17 re f*
+1 1 1 rg
+n 0 51 481.8898 -17 re f*
+.960784 .960784 .960784 rg
+n 0 34 481.8898 -17 re f*
+1 1 1 rg
+n 0 17 481.8898 -17 re f*
+1 1 1 rg
+BT /F2 7.5 Tf 12 TL ET
+q
+1 0 0 1 5 191 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 1.8 Tm /F2 7.2 Tf 9 TL (Term) Tj T* ET
+Q
+Q
+q
+1 0 0 1 96.55906 191 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 1.8 Tm /F2 7.2 Tf 9 TL (Plain-language meaning) Tj T* ET
+Q
+Q
+0 0 0 rg
+BT /F1 7.5 Tf 12 TL ET
+q
+1 0 0 1 5 174 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (AOI) Tj T* ET
+Q
+Q
+q
+1 0 0 1 96.55906 174 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Area of interest: the geographic boundary being monitored) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 157 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Surface reflectance) Tj T* ET
+Q
+Q
+q
+1 0 0 1 96.55906 157 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Satellite measurement corrected to better represent light reflected by the ground) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 140 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Spectral index) Tj T* ET
+Q
+Q
+q
+1 0 0 1 96.55906 140 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (A formula combining wavelength bands to highlight a surface property) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 123 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Baseline) Tj T* ET
+Q
+Q
+q
+1 0 0 1 96.55906 123 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (The expected condition used for comparison) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 106 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Z-score) Tj T* ET
+Q
+Q
+q
+1 0 0 1 96.55906 106 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (A measure of how unusual a value is relative to normal variation) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 89 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Alert polygon) Tj T* ET
+Q
+Q
+q
+1 0 0 1 96.55906 89 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (A mapped area whose pixels met the change rules) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 72 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Recurrence) Tj T* ET
+Q
+Q
+q
+1 0 0 1 96.55906 72 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Reappearance of an overlapping signal through time) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 55 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (COG) Tj T* ET
+Q
+Q
+q
+1 0 0 1 96.55906 55 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (A cloud-friendly GeoTIFF raster format) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 38 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (GeoJSON) Tj T* ET
+Q
+Q
+q
+1 0 0 1 96.55906 38 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (A web-friendly format for geographic features and attributes) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 21 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (GEE) Tj T* ET
+Q
+Q
+q
+1 0 0 1 96.55906 21 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Google Earth Engine) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 4 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (R2) Tj T* ET
+Q
+Q
+q
+1 0 0 1 96.55906 4 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Cloudflare object storage used for large project files) Tj T* ET
+Q
+Q
+q
+1 J
+1 j
+.741176 .741176 .741176 RG
+.5 w
+n 0 204 m 481.8898 204 l S
+n 0 0 m 481.8898 0 l S
+n 0 0 m 0 204 l S
+n 481.8898 0 m 481.8898 204 l S
+n 0 187 m 481.8898 187 l S
+n 0 170 m 481.8898 170 l S
+n 0 153 m 481.8898 153 l S
+n 0 136 m 481.8898 136 l S
+n 0 119 m 481.8898 119 l S
+n 0 102 m 481.8898 102 l S
+n 0 85 m 481.8898 85 l S
+n 0 68 m 481.8898 68 l S
+n 0 51 m 481.8898 51 l S
+n 0 34 m 481.8898 34 l S
+n 0 17 m 481.8898 17 l S
+n 91.55906 0 m 91.55906 204 l S
+Q
+Q
+Q
+q
+1 0 0 1 62.69291 320.9157 cm
+Q
+q
+1 0 0 1 62.69291 296.4157 cm
+q
+.180392 .490196 .196078 rg
+BT 1 0 0 1 0 2.2 Tm /F2 12.3 Tf 14.5 TL (Further references) Tj T* ET
+Q
+Q
+q
+1 0 0 1 62.69291 281.0772 cm
+Q
+q
+1 0 0 1 56.69291 179.0772 cm
+q
+.180392 .490196 .196078 rg
+n 0 102 481.8898 -17 re f*
+1 1 1 rg
+n 0 85 481.8898 -17 re f*
+.960784 .960784 .960784 rg
+n 0 68 481.8898 -17 re f*
+1 1 1 rg
+n 0 51 481.8898 -17 re f*
+.960784 .960784 .960784 rg
+n 0 34 481.8898 -17 re f*
+1 1 1 rg
+n 0 17 481.8898 -17 re f*
+1 1 1 rg
+BT /F2 7.5 Tf 12 TL ET
+q
+1 0 0 1 5 89 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 1.8 Tm /F2 7.2 Tf 9 TL (Resource) Tj T* ET
+Q
+Q
+q
+1 0 0 1 134.5838 89 cm
+q
+1 1 1 rg
+BT 1 0 0 1 0 1.8 Tm /F2 7.2 Tf 9 TL (URL) Tj T* ET
+Q
+Q
+0 0 0 rg
+BT /F1 7.5 Tf 12 TL ET
+q
+1 0 0 1 5 72 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Monitoring repository) Tj T* ET
+Q
+Q
+q
+1 0 0 1 134.5838 72 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (https://github.com/santibravocmcc/Araripe) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 55 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Project DOI) Tj T* ET
+Q
+Q
+q
+1 0 0 1 134.5838 55 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (https://doi.org/10.5281/zenodo.19885824) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 38 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (Sentinel-2 SR Harmonized catalog) Tj T* ET
+Q
+Q
+q
+1 0 0 1 134.5838 38 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_S2_SR_HARMONIZED) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 21 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (CHIRPS rainfall data) Tj T* ET
+Q
+Q
+q
+1 0 0 1 134.5838 21 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (https://www.chc.ucsb.edu/data/chirps) Tj T* ET
+Q
+Q
+q
+1 0 0 1 5 4 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (MapBiomas) Tj T* ET
+Q
+Q
+q
+1 0 0 1 134.5838 4 cm
+q
+0 0 0 rg
+BT 1 0 0 1 0 1.8 Tm /F1 7.2 Tf 9 TL (https://brasil.mapbiomas.org/) Tj T* ET
+Q
+Q
+q
+1 J
+1 j
+.741176 .741176 .741176 RG
+.5 w
+n 0 102 m 481.8898 102 l S
+n 0 0 m 481.8898 0 l S
+n 0 0 m 0 102 l S
+n 481.8898 0 m 481.8898 102 l S
+n 0 85 m 481.8898 85 l S
+n 0 68 m 481.8898 68 l S
+n 0 51 m 481.8898 51 l S
+n 0 34 m 481.8898 34 l S
+n 0 17 m 481.8898 17 l S
+n 129.5838 0 m 129.5838 102 l S
+Q
+Q
+Q
+q
+1 0 0 1 62.69291 167.7386 cm
+Q
+q
+1 0 0 1 62.69291 159.2346 cm
+Q
+q
+1 0 0 1 62.69291 124.1346 cm
+q
+BT 1 0 0 1 0 26.1 Tm .48036 Tw 11.7 TL /F2 9 Tf 0 0 0 rg (In one sentence:) Tj /F1 9 Tf ( the Chapada do Araripe Monitoring System learns the normal seasonal behavior of the landscape) Tj T* 0 Tw 1.443584 Tw (from satellite data, identifies unusual vegetation change, adds environmental context, and turns the result into an) Tj T* 0 Tw (automated, open, and explorable public resource.) Tj T* ET
+Q
+Q
+ 
+
+Q
+
+q
+0.0 0.0 595.2756 841.8898 re
+W
+n
+1 0 0 1 0 0 cm
+BT
+/F1-0 12 Tf
+14.4 TL
+ET
+0.780392 0.847059 0.788235 RG
+0.45 w
+n
+56.69291 797.9528 m
+538.5827 797.9528 l
+S
+n
+56.69291 41.10236 m
+538.5827 41.10236 l
+S
+0.372549 0.435294 0.384314 rg
+BT
+/F1-0 7.4 Tf
+8.88 TL
+ET
+BT
+1 0 0 1 56.69291 809.2914 Tm
+(CHAPADA DO ARARIPE MONITORING SYSTEM) Tj
+T*
+ET
+BT
+1 0 0 1 423.8679 809.2914 Tm
+(GUIDED TECHNICAL OVERVIEW) Tj
+T*
+ET
+BT
+1 0 0 1 56.69291 26.07874 Tm
+(Version 1\0560  \174  2026\05507\05522) Tj
+T*
+ET
+BT
+1 0 0 1 500.7317 26.07874 Tm
+(Page 7 of 7) Tj
+T*
+ET
+Q
+
+
+endstream
+endobj
+28 0 obj
+<<
+/BaseFont /Helvetica
+/Encoding /WinAnsiEncoding
+/Name /F1
+/Subtype /Type1
+/Type /Font
+>>
+endobj
+xref
+0 29
+0000000000 65535 f 
+0000000015 00000 n 
+0000000301 00000 n 
+0000000402 00000 n 
+0000000451 00000 n 
+0000000715 00000 n 
+0000008505 00000 n 
+0000008612 00000 n 
+0000008719 00000 n 
+0000008831 00000 n 
+0000008950 00000 n 
+0000009056 00000 n 
+0000009323 00000 n 
+0000018225 00000 n 
+0000018333 00000 n 
+0000018600 00000 n 
+0000027623 00000 n 
+0000027731 00000 n 
+0000027998 00000 n 
+0000036789 00000 n 
+0000036897 00000 n 
+0000037164 00000 n 
+0000046011 00000 n 
+0000046119 00000 n 
+0000046386 00000 n 
+0000053753 00000 n 
+0000053861 00000 n 
+0000054128 00000 n 
+0000063659 00000 n 
+trailer
+<<
+/Size 29
+/Root 3 0 R
+/Info 1 0 R
+>>
+startxref
+63767
+%%EOF
