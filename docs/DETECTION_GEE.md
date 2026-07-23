@@ -56,7 +56,7 @@ python scripts/upload_to_r2.py --directory data/alerts --prefix alerts/ --patter
 git add data/timeseries/ && git commit -m "detect: 2026 time-series" && git push
 
 # 2. rebuild the site's data (site fetches alerts from R2) and push -> Cloudflare
-cd ../Observatorio_Chapada_do_Araripe/site
+cd ../site
 python scripts/prepare_data.py alerts timeseries
 git add public/data && git commit -m "chore: update alerts (2026)" && git push
 ```

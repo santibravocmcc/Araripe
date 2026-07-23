@@ -56,7 +56,7 @@ python scripts/run_detection.py                            # streaming fallback
 python scripts/build_baseline_gee.py
 
 # The public dashboard is a separate static site (Cloudflare Pages):
-#   ../Observatorio_Chapada_do_Araripe/site
+#   ../site
 ```
 
 ## Project Structure
