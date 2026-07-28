@@ -1,0 +1,600 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://observatoriodachapadadoararipe.com/data/schemas/persistence-state-v1.schema.json",
+  "title": "Araripe Replay-Safe Persistence State v1",
+  "description": "Versioned event state with distinct-acquisition contributions and fail-closed transition metadata.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "state_id",
+    "release_id",
+    "monitoring_extent_id",
+    "algorithm_version",
+    "generated_at",
+    "load_result",
+    "input_state",
+    "watermark",
+    "transition_policy",
+    "write_guard",
+    "last_transition",
+    "events",
+    "integrity",
+    "output_object"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "state_id": {
+      "$ref": "#/$defs/state_id"
+    },
+    "release_id": {
+      "$ref": "#/$defs/release_id"
+    },
+    "monitoring_extent_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "algorithm_version": {
+      "$ref": "#/$defs/semver"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "load_result": {
+      "enum": [
+        "loaded",
+        "not_found_initialized"
+      ]
+    },
+    "input_state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state_id",
+        "etag",
+        "sha256",
+        "explicitly_missing"
+      ],
+      "properties": {
+        "state_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/state_id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "etag": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sha256": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "explicitly_missing": {
+          "type": "boolean"
+        }
+      }
+    },
+    "watermark": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "acquisition_id",
+        "observed_on"
+      ],
+      "properties": {
+        "acquisition_id": {
+          "$ref": "#/$defs/acquisition_id"
+        },
+        "observed_on": {
+          "type": "string",
+          "format": "date"
+        }
+      }
+    },
+    "transition_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contribution_uniqueness",
+        "duplicate_contribution",
+        "out_of_order_acquisition",
+        "load_error",
+        "empty_state_initialization",
+        "confirmed_min_distinct_acquisitions",
+        "same_date_different_acquisition",
+        "chronological_rebuild_required_for_backfill"
+      ],
+      "properties": {
+        "contribution_uniqueness": {
+          "const": "event_id+acquisition_id"
+        },
+        "duplicate_contribution": {
+          "const": "no_op"
+        },
+        "out_of_order_acquisition": {
+          "const": "reject_fail_closed"
+        },
+        "load_error": {
+          "const": "fail_closed_no_write"
+        },
+        "empty_state_initialization": {
+          "const": "explicit_not_found_only"
+        },
+        "confirmed_min_distinct_acquisitions": {
+          "const": 15
+        },
+        "same_date_different_acquisition": {
+          "const": "reject_requires_new_generation"
+        },
+        "chronological_rebuild_required_for_backfill": {
+          "const": true
+        }
+      }
+    },
+    "write_guard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "expected_input_state_id",
+        "expected_input_etag",
+        "conditional_write_required",
+        "no_write_after_load_failure"
+      ],
+      "properties": {
+        "expected_input_state_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/state_id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expected_input_etag": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "conditional_write_required": {
+          "const": true
+        },
+        "no_write_after_load_failure": {
+          "const": true
+        }
+      }
+    },
+    "last_transition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "acquisition_id",
+        "observed_on",
+        "outcome",
+        "new_contribution_count",
+        "duplicate_contribution_count",
+        "state_changed"
+      ],
+      "properties": {
+        "acquisition_id": {
+          "$ref": "#/$defs/acquisition_id"
+        },
+        "observed_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "outcome": {
+          "enum": [
+            "applied",
+            "no_op_replay"
+          ]
+        },
+        "new_contribution_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "duplicate_contribution_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "state_changed": {
+          "type": "boolean"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "const": "no_op_replay"
+              }
+            },
+            "required": [
+              "outcome"
+            ]
+          },
+          "then": {
+            "properties": {
+              "new_contribution_count": {
+                "const": 0
+              },
+              "state_changed": {
+                "const": false
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "const": "applied"
+              }
+            },
+            "required": [
+              "outcome"
+            ]
+          },
+          "then": {
+            "properties": {
+              "new_contribution_count": {
+                "minimum": 1
+              },
+              "state_changed": {
+                "const": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/event_state"
+      },
+      "uniqueItems": true
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "canonical_payload_sha256",
+        "schema_validated",
+        "checksum_verified"
+      ],
+      "properties": {
+        "canonical_payload_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "schema_validated": {
+          "const": true
+        },
+        "checksum_verified": {
+          "const": true
+        }
+      }
+    },
+    "output_object": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "immutable_path",
+        "sha256",
+        "media_type"
+      ],
+      "properties": {
+        "immutable_path": {
+          "type": "string",
+          "pattern": "^releases/[a-z0-9][a-z0-9.-]*/state/.+\\.json$"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "media_type": {
+          "const": "application/json"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "load_result": {
+            "const": "not_found_initialized"
+          }
+        },
+        "required": [
+          "load_result"
+        ]
+      },
+      "then": {
+        "properties": {
+          "input_state": {
+            "properties": {
+              "state_id": {
+                "type": "null"
+              },
+              "etag": {
+                "type": "null"
+              },
+              "sha256": {
+                "type": "null"
+              },
+              "explicitly_missing": {
+                "const": true
+              }
+            }
+          },
+          "write_guard": {
+            "properties": {
+              "expected_input_state_id": {
+                "type": "null"
+              },
+              "expected_input_etag": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "input_state": {
+            "properties": {
+              "state_id": {
+                "$ref": "#/$defs/state_id"
+              },
+              "etag": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "$ref": "#/$defs/sha256"
+              },
+              "explicitly_missing": {
+                "const": false
+              }
+            }
+          },
+          "write_guard": {
+            "properties": {
+              "expected_input_state_id": {
+                "$ref": "#/$defs/state_id"
+              },
+              "expected_input_etag": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "release_id": {
+      "type": "string",
+      "pattern": "^araripe-[a-z0-9][a-z0-9.-]*$"
+    },
+    "state_id": {
+      "type": "string",
+      "pattern": "^pst-v1-[a-f0-9]{64}$"
+    },
+    "acquisition_id": {
+      "type": "string",
+      "pattern": "^acq-v1-[a-f0-9]{64}$"
+    },
+    "observation_id": {
+      "type": "string",
+      "pattern": "^obs-v1-[a-f0-9]{64}$"
+    },
+    "event_id": {
+      "type": "string",
+      "pattern": "^evt-v1-[a-f0-9]{64}$"
+    },
+    "contribution_key": {
+      "type": "string",
+      "pattern": "^pc-v1-[a-f0-9]{64}$"
+    },
+    "position": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        },
+        {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "ring": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/position"
+      },
+      "minItems": 4
+    },
+    "polygon_coordinates": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ring"
+      },
+      "minItems": 1
+    },
+    "geometry": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "coordinates"
+          ],
+          "properties": {
+            "type": {
+              "const": "Polygon"
+            },
+            "coordinates": {
+              "$ref": "#/$defs/polygon_coordinates"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "coordinates"
+          ],
+          "properties": {
+            "type": {
+              "const": "MultiPolygon"
+            },
+            "coordinates": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/polygon_coordinates"
+              },
+              "minItems": 1
+            }
+          }
+        }
+      ]
+    },
+    "contribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contribution_key",
+        "acquisition_id",
+        "observed_on",
+        "observation_ids"
+      ],
+      "properties": {
+        "contribution_key": {
+          "$ref": "#/$defs/contribution_key"
+        },
+        "acquisition_id": {
+          "$ref": "#/$defs/acquisition_id"
+        },
+        "observed_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "observation_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/observation_id"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    },
+    "event_state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event_id",
+        "persistence_tier",
+        "n_distinct_acquisitions",
+        "first_seen",
+        "last_seen",
+        "representative_geometry_crs",
+        "representative_geometry",
+        "representative_geometry_sha256",
+        "contributions",
+        "parent_event_ids",
+        "child_event_ids"
+      ],
+      "properties": {
+        "event_id": {
+          "$ref": "#/$defs/event_id"
+        },
+        "persistence_tier": {
+          "enum": [
+            "first_observation",
+            "candidate",
+            "confirmed"
+          ]
+        },
+        "n_distinct_acquisitions": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "first_seen": {
+          "type": "string",
+          "format": "date"
+        },
+        "last_seen": {
+          "type": "string",
+          "format": "date"
+        },
+        "representative_geometry_crs": {
+          "const": "EPSG:4326"
+        },
+        "representative_geometry": {
+          "$ref": "#/$defs/geometry"
+        },
+        "representative_geometry_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "contributions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/contribution"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "parent_event_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/event_id"
+          },
+          "uniqueItems": true
+        },
+        "child_event_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/event_id"
+          },
+          "uniqueItems": true
+        }
+      }
+    }
+  }
+}

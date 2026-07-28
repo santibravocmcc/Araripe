@@ -206,6 +206,18 @@ Codex/Claude load consistent instructions.
 32 provenance start
 **Estimated intensity:** High–Very High, approximately 35k–60k
 
+**Status:** Closed and accepted 2026-07-28; no production mutation performed.
+
+**Evidence package:** `docs/contracts/phase1/README.md` (captured 2026-07-24;
+local contract and repository gates revalidated 2026-07-28). The package
+includes the refreshed Cloudflare/R2 before-state and the authenticated
+names-only GitHub configuration inventory. GitHub cannot expose which
+historical Cloudflare access-key ID is stored behind a secret; that ambiguity
+is documented and must be replaced by uniquely named, role-specific
+credentials before implementation. Connector-limited Cloudflare zone controls
+and exact token scope remain mandatory pre-implementation rechecks rather than
+evidence that the working plugin is disconnected.
+
 #### 1.1 Cross-repository workflow inventory
 
 Before changing any GitHub Action:
@@ -593,8 +605,10 @@ Recommended prompt-sized planning envelopes:
 | 2026 replay orchestration | Multiple 15k–30k sessions plus external run time |
 | Validation tooling/reporting | Multiple 15k–30k sessions plus reviewer time |
 
-The next implementation prompt should select exactly one Phase 0 or Phase 1
-package. Selection is intentionally left for the project owner.
+With P0 and P1 closed, the next implementation prompt should select exactly
+one Phase 2A package. The default starting point is Package 2A.1
+(persistence, identity, and scene correctness) because later replay and
+publication work depend on its deterministic state behavior.
 
 ---
 

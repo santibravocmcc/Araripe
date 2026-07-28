@@ -1,0 +1,529 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://observatoriodachapadadoararipe.com/data/schemas/event-v1.schema.json",
+  "title": "Araripe Event and Lineage v1",
+  "description": "A durable event grouping raw observations with explicit continuation, split, and merge lineage.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "event_id",
+    "event_identity_inputs_sha256",
+    "identity_basis",
+    "monitoring_extent_id",
+    "status",
+    "first_observed_on",
+    "last_observed_on",
+    "observation_ids",
+    "contributing_acquisition_ids",
+    "contribution_keys",
+    "representative_geometry_crs",
+    "representative_geometry",
+    "representative_geometry_sha256",
+    "representative_area_ha",
+    "lineage",
+    "superseded_by_event_ids",
+    "raw_observations_preserved",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "event_id": {
+      "$ref": "#/$defs/event_id"
+    },
+    "event_identity_inputs_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "identity_basis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "first_observation_id",
+        "parent_event_ids",
+        "trigger_observation_ids"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "origin",
+            "split",
+            "merge"
+          ]
+        },
+        "first_observation_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/observation_id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "parent_event_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/event_id"
+          },
+          "uniqueItems": true
+        },
+        "trigger_observation_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/observation_id"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "origin"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+          "properties": {
+            "first_observation_id": {
+              "$ref": "#/$defs/observation_id"
+            },
+            "parent_event_ids": {
+                "maxItems": 0
+              },
+              "trigger_observation_ids": {
+                "minItems": 1,
+                "maxItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "split"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+          "properties": {
+            "first_observation_id": {
+              "type": "null"
+            },
+            "parent_event_ids": {
+                "minItems": 1,
+                "maxItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "merge"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+          "properties": {
+            "first_observation_id": {
+              "type": "null"
+            },
+            "parent_event_ids": {
+                "minItems": 2
+              }
+            }
+          }
+        }
+      ]
+    },
+    "monitoring_extent_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": [
+        "active",
+        "closed",
+        "superseded"
+      ]
+    },
+    "first_observed_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "last_observed_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "observation_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/observation_id"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "contributing_acquisition_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/acquisition_id"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "contribution_keys": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/contribution_key"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "representative_geometry_crs": {
+      "const": "EPSG:4326"
+    },
+    "representative_geometry": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/polygon"
+        },
+        {
+          "$ref": "#/$defs/multipolygon"
+        }
+      ]
+    },
+    "representative_geometry_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "representative_area_ha": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "lineage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "incoming",
+        "outgoing"
+      ],
+      "properties": {
+        "incoming": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/lineage_edge"
+          },
+          "uniqueItems": true
+        },
+        "outgoing": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/lineage_edge"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "superseded_by_event_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/event_id"
+      },
+      "uniqueItems": true
+    },
+    "raw_observations_preserved": {
+      "const": true
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "superseded"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "superseded_by_event_ids": {
+            "minItems": 1
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "superseded_by_event_ids": {
+            "maxItems": 0
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "acquisition_id": {
+      "type": "string",
+      "pattern": "^acq-v1-[a-f0-9]{64}$"
+    },
+    "observation_id": {
+      "type": "string",
+      "pattern": "^obs-v1-[a-f0-9]{64}$"
+    },
+    "event_id": {
+      "type": "string",
+      "pattern": "^evt-v1-[a-f0-9]{64}$"
+    },
+    "contribution_key": {
+      "type": "string",
+      "pattern": "^pc-v1-[a-f0-9]{64}$"
+    },
+    "lineage_id": {
+      "type": "string",
+      "pattern": "^lin-v1-[a-f0-9]{64}$"
+    },
+    "position": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        },
+        {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "ring": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/position"
+      },
+      "minItems": 4
+    },
+    "polygon_coordinates": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ring"
+      },
+      "minItems": 1
+    },
+    "polygon": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "coordinates"
+      ],
+      "properties": {
+        "type": {
+          "const": "Polygon"
+        },
+        "coordinates": {
+          "$ref": "#/$defs/polygon_coordinates"
+        }
+      }
+    },
+    "multipolygon": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "coordinates"
+      ],
+      "properties": {
+        "type": {
+          "const": "MultiPolygon"
+        },
+        "coordinates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/polygon_coordinates"
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "lineage_edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lineage_id",
+        "relation",
+        "parent_event_ids",
+        "child_event_ids",
+        "effective_acquisition_id",
+        "effective_on",
+        "trigger_observation_ids",
+        "algorithm_version",
+        "reason"
+      ],
+      "properties": {
+        "lineage_id": {
+          "$ref": "#/$defs/lineage_id"
+        },
+        "relation": {
+          "enum": [
+            "continuation",
+            "split",
+            "merge"
+          ]
+        },
+        "parent_event_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/event_id"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "child_event_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/event_id"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "effective_acquisition_id": {
+          "$ref": "#/$defs/acquisition_id"
+        },
+        "effective_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "trigger_observation_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/observation_id"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "algorithm_version": {
+          "$ref": "#/$defs/semver"
+        },
+        "reason": {
+          "enum": [
+            "spatial_continuity",
+            "split_detected",
+            "merge_detected",
+            "reviewed_correction"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "relation": {
+                "const": "continuation"
+              }
+            },
+            "required": [
+              "relation"
+            ]
+          },
+          "then": {
+            "properties": {
+              "parent_event_ids": {
+                "minItems": 1,
+                "maxItems": 1
+              },
+              "child_event_ids": {
+                "minItems": 1,
+                "maxItems": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "relation": {
+                "const": "split"
+              }
+            },
+            "required": [
+              "relation"
+            ]
+          },
+          "then": {
+            "properties": {
+              "parent_event_ids": {
+                "minItems": 1,
+                "maxItems": 1
+              },
+              "child_event_ids": {
+                "minItems": 2
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "relation": {
+                "const": "merge"
+              }
+            },
+            "required": [
+              "relation"
+            ]
+          },
+          "then": {
+            "properties": {
+              "parent_event_ids": {
+                "minItems": 2
+              },
+              "child_event_ids": {
+                "minItems": 1,
+                "maxItems": 1
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

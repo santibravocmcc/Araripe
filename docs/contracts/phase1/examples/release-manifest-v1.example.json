@@ -1,0 +1,281 @@
+{
+  "schema_version": "1.0.0",
+  "release_id": "araripe-2026-candidate-20260724t120000z-a1b2c3d4e5f6",
+  "release_version": "1.0.0",
+  "release_status": "complete_candidate",
+  "created_at": "2026-07-24T12:00:00Z",
+  "versions": {
+    "algorithm": {
+      "id": "araripe-spectral-detection",
+      "version": "1.0.0"
+    },
+    "baseline": {
+      "id": "araripe-reflectance-baseline",
+      "version": "1.0.0"
+    },
+    "monitoring_extent": {
+      "id": "araripe-implementation-rectangle-v1",
+      "version": "1.0.0"
+    },
+    "mapbiomas": [
+      {
+        "id": "mapbiomas_col3_beta_10m_2024",
+        "version": "3.0.0-beta.1",
+        "role": "primary_context",
+        "source_sha256": "2ba20d400976020b4e7472a37de04fe1755c6f23631008b39da388001a034f59"
+      },
+      {
+        "id": "mapbiomas_col10_1_30m_2024",
+        "version": "10.1.0",
+        "role": "secondary_reference",
+        "source_sha256": "1be96442929c98cdbe0126d5c83d65a8142b61642ec14fb0ad1dfdfa3bf68d6c"
+      }
+    ],
+    "schemas": {
+      "monitoring_extent": "1.0.0",
+      "observation": "1.0.0",
+      "event": "1.0.0",
+      "persistence_state": "1.0.0",
+      "processing_ledger": "1.0.0",
+      "release_manifest": "1.0.0"
+    }
+  },
+  "source_control": {
+    "backend": {
+      "repository": "santibravocmcc/Araripe",
+      "commit_sha": "e34dd27d3728161a603733ef79a0c95214b233d6"
+    },
+    "site": {
+      "repository": "santibravocmcc/observatorio-site",
+      "commit_sha": "c5ec119f44b27fc2dfc4ab987f031b49e06a46ef"
+    },
+    "workflow_runs": [
+      {
+        "repository": "santibravocmcc/Araripe",
+        "workflow_path": ".github/workflows/detect_gee.yml",
+        "workflow_blob_sha": "d2a6f9b1b7fa4601ea3ec9fddeecf9b166c63c32",
+        "run_id": "example-run-1001",
+        "run_attempt": 1
+      },
+      {
+        "repository": "santibravocmcc/observatorio-site",
+        "workflow_path": ".github/workflows/update-data.yml",
+        "workflow_blob_sha": "ff663b48ca52afffb78d96a510a69bf12742ff4e",
+        "run_id": "example-run-2001",
+        "run_attempt": 1
+      }
+    ]
+  },
+  "authoritative_records": {
+    "monitoring_extent": {
+      "immutable_path": "releases/araripe-2026-candidate-20260724t120000z-a1b2c3d4e5f6/aoi/monitoring-extent.json",
+      "sha256": "b4986ef80d8a0d6e65bbb41b575dbd952c010415bf3aee93a88412b3b657e8c7"
+    },
+    "processing_ledger": {
+      "immutable_path": "releases/araripe-2026-candidate-20260724t120000z-a1b2c3d4e5f6/processing-ledger.json",
+      "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    },
+    "persistence_state": {
+      "immutable_path": "releases/araripe-2026-candidate-20260724t120000z-a1b2c3d4e5f6/state/persistence-state-v1.json",
+      "sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+    }
+  },
+  "artifacts": [
+    {
+      "artifact_id": "monitoring-extent",
+      "kind": "monitoring_extent",
+      "component": "shared",
+      "visibility": "public",
+      "immutable_path": "releases/araripe-2026-candidate-20260724t120000z-a1b2c3d4e5f6/aoi/monitoring-extent.json",
+      "sha256": "b4986ef80d8a0d6e65bbb41b575dbd952c010415bf3aee93a88412b3b657e8c7",
+      "size_bytes": 2048,
+      "media_type": "application/json",
+      "content_encoding": null,
+      "public_url": "https://observatoriodachapadadoararipe.com/data/releases/araripe-2026-candidate-20260724t120000z-a1b2c3d4e5f6/aoi/monitoring-extent.json",
+      "cache_policy": "public_immutable"
+    },
+    {
+      "artifact_id": "raw-observations-2026-07-11",
+      "kind": "raw_observations",
+      "component": "alerts",
+      "visibility": "private",
+      "immutable_path": "releases/araripe-2026-candidate-20260724t120000z-a1b2c3d4e5f6/source/alerts/2026-07-11.geojson",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "size_bytes": 2048,
+      "media_type": "application/geo+json",
+      "content_encoding": null,
+      "public_url": null,
+      "cache_policy": "private_no_store"
+    },
+    {
+      "artifact_id": "events",
+      "kind": "events",
+      "component": "alerts",
+      "visibility": "private",
+      "immutable_path": "releases/araripe-2026-candidate-20260724t120000z-a1b2c3d4e5f6/events/events-v1.json",
+      "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "size_bytes": 4096,
+      "media_type": "application/json",
+      "content_encoding": null,
+      "public_url": null,
+      "cache_policy": "private_no_store"
+    },
+    {
+      "artifact_id": "persistence-state",
+      "kind": "persistence_state",
+      "component": "alerts",
+      "visibility": "private",
+      "immutable_path": "releases/araripe-2026-candidate-20260724t120000z-a1b2c3d4e5f6/state/persistence-state-v1.json",
+      "sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+      "size_bytes": 16384,
+      "media_type": "application/json",
+      "content_encoding": null,
+      "public_url": null,
+      "cache_policy": "private_no_store"
+    },
+    {
+      "artifact_id": "processing-ledger",
+      "kind": "processing_ledger",
+      "component": "alerts",
+      "visibility": "private",
+      "immutable_path": "releases/araripe-2026-candidate-20260724t120000z-a1b2c3d4e5f6/processing-ledger.json",
+      "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "size_bytes": 8192,
+      "media_type": "application/json",
+      "content_encoding": null,
+      "public_url": null,
+      "cache_policy": "private_no_store"
+    },
+    {
+      "artifact_id": "strong-alerts-2026-07-11",
+      "kind": "strong_alerts",
+      "component": "site",
+      "visibility": "public",
+      "immutable_path": "releases/araripe-2026-candidate-20260724t120000z-a1b2c3d4e5f6/alerts/run-2026-07-11.strong.geojson",
+      "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "size_bytes": 1024,
+      "media_type": "application/geo+json",
+      "content_encoding": "gzip",
+      "public_url": "https://observatoriodachapadadoararipe.com/data/releases/araripe-2026-candidate-20260724t120000z-a1b2c3d4e5f6/alerts/run-2026-07-11.strong.geojson",
+      "cache_policy": "public_immutable"
+    },
+    {
+      "artifact_id": "full-alerts-2026-07-11",
+      "kind": "full_alerts",
+      "component": "site",
+      "visibility": "public",
+      "immutable_path": "releases/araripe-2026-candidate-20260724t120000z-a1b2c3d4e5f6/alerts/run-2026-07-11.full.geojson",
+      "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "size_bytes": 4096,
+      "media_type": "application/geo+json",
+      "content_encoding": "gzip",
+      "public_url": "https://observatoriodachapadadoararipe.com/data/releases/araripe-2026-candidate-20260724t120000z-a1b2c3d4e5f6/alerts/run-2026-07-11.full.geojson",
+      "cache_policy": "public_immutable"
+    },
+    {
+      "artifact_id": "timeseries",
+      "kind": "timeseries",
+      "component": "site",
+      "visibility": "public",
+      "immutable_path": "releases/araripe-2026-candidate-20260724t120000z-a1b2c3d4e5f6/timeseries/series.json",
+      "sha256": "1212121212121212121212121212121212121212121212121212121212121212",
+      "size_bytes": 2048,
+      "media_type": "application/json",
+      "content_encoding": "gzip",
+      "public_url": "https://observatoriodachapadadoararipe.com/data/releases/araripe-2026-candidate-20260724t120000z-a1b2c3d4e5f6/timeseries/series.json",
+      "cache_policy": "public_immutable"
+    },
+    {
+      "artifact_id": "rainfall-manifest",
+      "kind": "rainfall",
+      "component": "rainfall",
+      "visibility": "public",
+      "immutable_path": "releases/araripe-2026-candidate-20260724t120000z-a1b2c3d4e5f6/rainfall/manifest.json",
+      "sha256": "1313131313131313131313131313131313131313131313131313131313131313",
+      "size_bytes": 1024,
+      "media_type": "application/json",
+      "content_encoding": "gzip",
+      "public_url": "https://observatoriodachapadadoararipe.com/data/releases/araripe-2026-candidate-20260724t120000z-a1b2c3d4e5f6/rainfall/manifest.json",
+      "cache_policy": "public_immutable"
+    }
+  ],
+  "freshness": {
+    "alerts": {
+      "release_action": "advanced",
+      "status": "complete",
+      "assessed_through": "2026-07-11",
+      "latest_attempt_at": "2026-07-24T10:45:00Z",
+      "last_successful_at": "2026-07-24T10:45:00Z",
+      "source_release_id": "araripe-2026-candidate-20260724t120000z-a1b2c3d4e5f6"
+    },
+    "rainfall": {
+      "release_action": "carried_forward",
+      "status": "complete",
+      "assessed_through": "2026-07-14",
+      "latest_attempt_at": "2026-07-21T08:00:00Z",
+      "last_successful_at": "2026-07-21T08:00:00Z",
+      "source_release_id": "araripe-legacy-20260721"
+    },
+    "site": {
+      "release_action": "advanced",
+      "status": "complete",
+      "assessed_through": "2026-07-11",
+      "latest_attempt_at": "2026-07-24T11:30:00Z",
+      "last_successful_at": "2026-07-24T11:30:00Z",
+      "source_release_id": "araripe-2026-candidate-20260724t120000z-a1b2c3d4e5f6"
+    }
+  },
+  "completeness": {
+    "expected_date_count": 2,
+    "terminal_date_count": 2,
+    "failed_date_count": 0,
+    "ledger_all_terminal": true,
+    "required_artifacts_verified": true,
+    "components": {
+      "alerts": true,
+      "rainfall": true,
+      "site": true
+    }
+  },
+  "validation": {
+    "status": "passed",
+    "schemas_valid": true,
+    "checksums_valid": true,
+    "cross_references_valid": true,
+    "checks": [
+      {
+        "name": "ledger-reconciled",
+        "passed": true
+      },
+      {
+        "name": "artifact-checksums",
+        "passed": true
+      },
+      {
+        "name": "same-origin-public-urls",
+        "passed": true
+      }
+    ]
+  },
+  "promotion": {
+    "eligible": true,
+    "pointer_path": "/data/releases/current.json",
+    "conditional_write_required": true,
+    "expected_previous_release_id": "araripe-legacy-20260721",
+    "expected_pointer_etag": "\"example-prior-pointer-etag\""
+  },
+  "rollback": {
+    "previous_release_id": "araripe-legacy-20260721",
+    "retained_release_ids": [
+      "araripe-legacy-20260721"
+    ],
+    "previous_release_verified": true,
+    "rollback_is_pointer_only": true
+  },
+  "integrity": {
+    "artifact_inventory_sha256": "b7a043857c81f447de40a90204de7f5e4900d70e0fb9305192e079774fd95686",
+    "schema_validated": true,
+    "release_paths_reconciled": true,
+    "public_urls_reconciled": true
+  }
+}

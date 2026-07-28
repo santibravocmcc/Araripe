@@ -1,0 +1,687 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://observatoriodachapadadoararipe.com/data/schemas/processing-ledger-v1.schema.json",
+  "title": "Araripe Processing Ledger v1",
+  "description": "Complete terminal accounting for every expected acquisition date in one candidate release.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "release_id",
+    "monitoring_extent_id",
+    "algorithm_version",
+    "window",
+    "expected_dates",
+    "generated_at",
+    "entries",
+    "summary",
+    "release_eligibility",
+    "integrity",
+    "artifact"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "release_id": {
+      "$ref": "#/$defs/release_id"
+    },
+    "monitoring_extent_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "algorithm_version": {
+      "$ref": "#/$defs/semver"
+    },
+    "window": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start",
+        "end",
+        "end_inclusive",
+        "selection_rule"
+      ],
+      "properties": {
+        "start": {
+          "type": "string",
+          "format": "date"
+        },
+        "end": {
+          "type": "string",
+          "format": "date"
+        },
+        "end_inclusive": {
+          "const": true
+        },
+        "selection_rule": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "expected_dates": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "date"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ledger_entry"
+      },
+      "minItems": 1
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "expected_date_count",
+        "terminal_count",
+        "complete_with_alerts",
+        "complete_zero_alerts",
+        "rejected_low_coverage",
+        "rejected_quality",
+        "failed_download",
+        "failed_missing_input",
+        "failed_processing"
+      ],
+      "properties": {
+        "expected_date_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "terminal_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "complete_with_alerts": {
+          "$ref": "#/$defs/nonnegative_integer"
+        },
+        "complete_zero_alerts": {
+          "$ref": "#/$defs/nonnegative_integer"
+        },
+        "rejected_low_coverage": {
+          "$ref": "#/$defs/nonnegative_integer"
+        },
+        "rejected_quality": {
+          "$ref": "#/$defs/nonnegative_integer"
+        },
+        "failed_download": {
+          "$ref": "#/$defs/nonnegative_integer"
+        },
+        "failed_missing_input": {
+          "$ref": "#/$defs/nonnegative_integer"
+        },
+        "failed_processing": {
+          "$ref": "#/$defs/nonnegative_integer"
+        }
+      }
+    },
+    "release_eligibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "eligible",
+        "failed_statuses_block_release",
+        "one_canonical_acquisition_per_expected_date",
+        "corrected_same_date_requires_new_generation",
+        "accepted_rejection_statuses",
+        "blocking_entry_dates"
+      ],
+      "properties": {
+        "eligible": {
+          "type": "boolean"
+        },
+        "failed_statuses_block_release": {
+          "const": true
+        },
+        "one_canonical_acquisition_per_expected_date": {
+          "const": true
+        },
+        "corrected_same_date_requires_new_generation": {
+          "const": true
+        },
+        "accepted_rejection_statuses": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "rejected_low_coverage",
+              "rejected_quality"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "blocking_entry_dates": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "date"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entries_sha256",
+        "schema_validated",
+        "expected_dates_reconciled",
+        "summary_reconciled"
+      ],
+      "properties": {
+        "entries_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "schema_validated": {
+          "const": true
+        },
+        "expected_dates_reconciled": {
+          "const": true
+        },
+        "summary_reconciled": {
+          "const": true
+        }
+      }
+    },
+    "artifact": {
+      "$ref": "#/$defs/artifact_reference"
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "release_id": {
+      "type": "string",
+      "pattern": "^araripe-[a-z0-9][a-z0-9.-]*$"
+    },
+    "acquisition_id": {
+      "type": "string",
+      "pattern": "^acq-v1-[a-f0-9]{64}$"
+    },
+    "observation_id": {
+      "type": "string",
+      "pattern": "^obs-v1-[a-f0-9]{64}$"
+    },
+    "nonnegative_integer": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "artifact_reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "immutable_path",
+        "sha256",
+        "size_bytes",
+        "media_type"
+      ],
+      "properties": {
+        "immutable_path": {
+          "type": "string",
+          "pattern": "^releases/[a-z0-9][a-z0-9.-]*/.+$"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "media_type": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "attempt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "workflow",
+        "run_id",
+        "attempt_number",
+        "started_at",
+        "terminal_at"
+      ],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "workflow": {
+          "type": "string",
+          "minLength": 1
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "attempt_number": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "terminal_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "source_input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "collection_id",
+        "query_fingerprint_sha256",
+        "scene_ids",
+        "source_count",
+        "checksums_verified"
+      ],
+      "properties": {
+        "provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "collection_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "query_fingerprint_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "scene_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "source_count": {
+          "$ref": "#/$defs/nonnegative_integer"
+        },
+        "checksums_verified": {
+          "type": "boolean"
+        }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "valid_fraction",
+        "minimum_required_fraction",
+        "denominator"
+      ],
+      "properties": {
+        "valid_fraction": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "minimum_required_fraction": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "denominator": {
+          "const": "finite_pixels_within_monitoring_extent"
+        }
+      }
+    },
+    "reason": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]*$"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "entry_output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "observation_count",
+        "observation_ids",
+        "artifact"
+      ],
+      "properties": {
+        "observation_count": {
+          "$ref": "#/$defs/nonnegative_integer"
+        },
+        "observation_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/observation_id"
+          },
+          "uniqueItems": true
+        },
+        "artifact": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/artifact_reference"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "ledger_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "expected_date",
+        "status",
+        "acquisition_id",
+        "attempt",
+        "source_input",
+        "coverage",
+        "output",
+        "rejection_reason",
+        "failure_reason"
+      ],
+      "properties": {
+        "expected_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "status": {
+          "enum": [
+            "complete_with_alerts",
+            "complete_zero_alerts",
+            "rejected_low_coverage",
+            "rejected_quality",
+            "failed_download",
+            "failed_missing_input",
+            "failed_processing"
+          ]
+        },
+        "acquisition_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/acquisition_id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "attempt": {
+          "$ref": "#/$defs/attempt"
+        },
+        "source_input": {
+          "$ref": "#/$defs/source_input"
+        },
+        "coverage": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/coverage"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "output": {
+          "$ref": "#/$defs/entry_output"
+        },
+        "rejection_reason": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/reason"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "failure_reason": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/reason"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "complete_with_alerts"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "acquisition_id": {
+                "$ref": "#/$defs/acquisition_id"
+              },
+              "coverage": {
+                "$ref": "#/$defs/coverage"
+              },
+              "output": {
+                "properties": {
+                  "observation_count": {
+                    "minimum": 1
+                  },
+                  "observation_ids": {
+                    "minItems": 1
+                  },
+                  "artifact": {
+                    "$ref": "#/$defs/artifact_reference"
+                  }
+                }
+              },
+              "rejection_reason": {
+                "type": "null"
+              },
+              "failure_reason": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "complete_zero_alerts"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "acquisition_id": {
+                "$ref": "#/$defs/acquisition_id"
+              },
+              "coverage": {
+                "$ref": "#/$defs/coverage"
+              },
+              "output": {
+                "properties": {
+                  "observation_count": {
+                    "const": 0
+                  },
+                  "observation_ids": {
+                    "maxItems": 0
+                  },
+                  "artifact": {
+                    "$ref": "#/$defs/artifact_reference"
+                  }
+                }
+              },
+              "rejection_reason": {
+                "type": "null"
+              },
+              "failure_reason": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "rejected_low_coverage",
+                  "rejected_quality"
+                ]
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "acquisition_id": {
+                "$ref": "#/$defs/acquisition_id"
+              },
+              "coverage": {
+                "$ref": "#/$defs/coverage"
+              },
+              "output": {
+                "properties": {
+                  "observation_count": {
+                    "const": 0
+                  },
+                  "observation_ids": {
+                    "maxItems": 0
+                  },
+                  "artifact": {
+                    "type": "null"
+                  }
+                }
+              },
+              "rejection_reason": {
+                "$ref": "#/$defs/reason"
+              },
+              "failure_reason": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "failed_download",
+                  "failed_missing_input",
+                  "failed_processing"
+                ]
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "output": {
+                "properties": {
+                  "observation_count": {
+                    "const": 0
+                  },
+                  "observation_ids": {
+                    "maxItems": 0
+                  },
+                  "artifact": {
+                    "type": "null"
+                  }
+                }
+              },
+              "rejection_reason": {
+                "type": "null"
+              },
+              "failure_reason": {
+                "$ref": "#/$defs/reason"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "failed_missing_input"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "acquisition_id": {
+                "type": "null"
+              },
+              "coverage": {
+                "type": "null"
+              },
+              "source_input": {
+                "properties": {
+                  "scene_ids": {
+                    "maxItems": 0
+                  },
+                  "source_count": {
+                    "const": 0
+                  },
+                  "checksums_verified": {
+                    "const": false
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

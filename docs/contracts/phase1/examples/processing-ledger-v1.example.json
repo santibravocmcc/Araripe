@@ -1,0 +1,136 @@
+{
+  "schema_version": "1.0.0",
+  "release_id": "araripe-2026-candidate-20260724t120000z-a1b2c3d4e5f6",
+  "monitoring_extent_id": "araripe-implementation-rectangle-v1",
+  "algorithm_version": "1.0.0",
+  "window": {
+    "start": "2026-07-06",
+    "end": "2026-07-11",
+    "end_inclusive": true,
+    "selection_rule": "Provider-native distinct Sentinel-2 acquisition dates intersecting the registered extent."
+  },
+  "expected_dates": [
+    "2026-07-06",
+    "2026-07-11"
+  ],
+  "generated_at": "2026-07-24T12:00:00Z",
+  "entries": [
+    {
+      "expected_date": "2026-07-06",
+      "status": "complete_zero_alerts",
+      "acquisition_id": "acq-v1-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "attempt": {
+        "repository": "santibravocmcc/Araripe",
+        "workflow": "detect_gee.yml",
+        "run_id": "example-run-1001",
+        "attempt_number": 1,
+        "started_at": "2026-07-24T10:00:00Z",
+        "terminal_at": "2026-07-24T10:20:00Z"
+      },
+      "source_input": {
+        "provider": "ESA Copernicus via Google Earth Engine",
+        "collection_id": "COPERNICUS/S2_SR_HARMONIZED",
+        "query_fingerprint_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "scene_ids": [
+          "COPERNICUS/S2_SR_HARMONIZED/example-scene-20260706"
+        ],
+        "source_count": 1,
+        "checksums_verified": true
+      },
+      "coverage": {
+        "valid_fraction": 0.91,
+        "minimum_required_fraction": 0.2,
+        "denominator": "finite_pixels_within_monitoring_extent"
+      },
+      "output": {
+        "observation_count": 0,
+        "observation_ids": [],
+        "artifact": {
+          "immutable_path": "releases/araripe-2026-candidate-20260724t120000z-a1b2c3d4e5f6/source/alerts/2026-07-06.geojson",
+          "sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+          "size_bytes": 172,
+          "media_type": "application/geo+json"
+        }
+      },
+      "rejection_reason": null,
+      "failure_reason": null
+    },
+    {
+      "expected_date": "2026-07-11",
+      "status": "complete_with_alerts",
+      "acquisition_id": "acq-v1-ce68a55d80fec566cac1b8d978b8edbc9473eb18b1540ae75eb5b82a183ba7e2",
+      "attempt": {
+        "repository": "santibravocmcc/Araripe",
+        "workflow": "detect_gee.yml",
+        "run_id": "example-run-1001",
+        "attempt_number": 1,
+        "started_at": "2026-07-24T10:20:00Z",
+        "terminal_at": "2026-07-24T10:45:00Z"
+      },
+      "source_input": {
+        "provider": "ESA Copernicus via Google Earth Engine",
+        "collection_id": "COPERNICUS/S2_SR_HARMONIZED",
+        "query_fingerprint_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+        "scene_ids": [
+          "COPERNICUS/S2_SR_HARMONIZED/20260711T131251_20260711T131938_T24LWK",
+          "COPERNICUS/S2_SR_HARMONIZED/20260711T131251_20260711T131938_T24LWL"
+        ],
+        "source_count": 2,
+        "checksums_verified": true
+      },
+      "coverage": {
+        "valid_fraction": 0.86,
+        "minimum_required_fraction": 0.2,
+        "denominator": "finite_pixels_within_monitoring_extent"
+      },
+      "output": {
+        "observation_count": 1,
+        "observation_ids": [
+          "obs-v1-94a715b2f86938ea1bad64964d16355db2b6cd8309e0b4891bb5bebf88576f7f"
+        ],
+        "artifact": {
+          "immutable_path": "releases/araripe-2026-candidate-20260724t120000z-a1b2c3d4e5f6/source/alerts/2026-07-11.geojson",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "size_bytes": 2048,
+          "media_type": "application/geo+json"
+        }
+      },
+      "rejection_reason": null,
+      "failure_reason": null
+    }
+  ],
+  "summary": {
+    "expected_date_count": 2,
+    "terminal_count": 2,
+    "complete_with_alerts": 1,
+    "complete_zero_alerts": 1,
+    "rejected_low_coverage": 0,
+    "rejected_quality": 0,
+    "failed_download": 0,
+    "failed_missing_input": 0,
+    "failed_processing": 0
+  },
+  "release_eligibility": {
+    "eligible": true,
+    "failed_statuses_block_release": true,
+    "one_canonical_acquisition_per_expected_date": true,
+    "corrected_same_date_requires_new_generation": true,
+    "accepted_rejection_statuses": [
+      "rejected_low_coverage",
+      "rejected_quality"
+    ],
+    "blocking_entry_dates": []
+  },
+  "integrity": {
+    "entries_sha256": "05041ccf7d519c6e0bea127750a90b48952d88b792fbe0155cc78e691042cc10",
+    "schema_validated": true,
+    "expected_dates_reconciled": true,
+    "summary_reconciled": true
+  },
+  "artifact": {
+    "immutable_path": "releases/araripe-2026-candidate-20260724t120000z-a1b2c3d4e5f6/processing-ledger.json",
+    "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "size_bytes": 8192,
+    "media_type": "application/json"
+  }
+}

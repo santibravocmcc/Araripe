@@ -1,0 +1,106 @@
+{
+  "schema_version": "1.0.0",
+  "state_id": "pst-v1-3333333333333333333333333333333333333333333333333333333333333333",
+  "release_id": "araripe-2026-candidate-20260724t120000z-a1b2c3d4e5f6",
+  "monitoring_extent_id": "araripe-implementation-rectangle-v1",
+  "algorithm_version": "1.0.0",
+  "generated_at": "2026-07-24T12:00:00Z",
+  "load_result": "loaded",
+  "input_state": {
+    "state_id": "pst-v1-4444444444444444444444444444444444444444444444444444444444444444",
+    "etag": "\"previous-state-etag\"",
+    "sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+    "explicitly_missing": false
+  },
+  "watermark": {
+    "acquisition_id": "acq-v1-ce68a55d80fec566cac1b8d978b8edbc9473eb18b1540ae75eb5b82a183ba7e2",
+    "observed_on": "2026-07-11"
+  },
+  "transition_policy": {
+    "contribution_uniqueness": "event_id+acquisition_id",
+    "duplicate_contribution": "no_op",
+    "out_of_order_acquisition": "reject_fail_closed",
+    "load_error": "fail_closed_no_write",
+    "empty_state_initialization": "explicit_not_found_only",
+    "confirmed_min_distinct_acquisitions": 15,
+    "same_date_different_acquisition": "reject_requires_new_generation",
+    "chronological_rebuild_required_for_backfill": true
+  },
+  "write_guard": {
+    "expected_input_state_id": "pst-v1-4444444444444444444444444444444444444444444444444444444444444444",
+    "expected_input_etag": "\"previous-state-etag\"",
+    "conditional_write_required": true,
+    "no_write_after_load_failure": true
+  },
+  "last_transition": {
+    "acquisition_id": "acq-v1-ce68a55d80fec566cac1b8d978b8edbc9473eb18b1540ae75eb5b82a183ba7e2",
+    "observed_on": "2026-07-11",
+    "outcome": "applied",
+    "new_contribution_count": 1,
+    "duplicate_contribution_count": 0,
+    "state_changed": true
+  },
+  "events": [
+    {
+      "event_id": "evt-v1-781debb676f41f10db0c4f7b17183e5758d10b7b5b98e5df8ed76770936fe58e",
+      "persistence_tier": "first_observation",
+      "n_distinct_acquisitions": 1,
+      "first_seen": "2026-07-11",
+      "last_seen": "2026-07-11",
+      "representative_geometry_crs": "EPSG:4326",
+      "representative_geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -39.9,
+              -7.3
+            ],
+            [
+              -39.89,
+              -7.3
+            ],
+            [
+              -39.89,
+              -7.29
+            ],
+            [
+              -39.9,
+              -7.29
+            ],
+            [
+              -39.9,
+              -7.3
+            ]
+          ]
+        ]
+      },
+      "representative_geometry_sha256": "eb9e6757f7a17d2ce3c8745ed56ecb6edeec0bee535f19f6d5f1d77a8a703bdb",
+      "contributions": [
+        {
+          "contribution_key": "pc-v1-cb224fe3e16d8578852a76f61be1997be3ccca9208ad229d4f2339dee737986d",
+          "acquisition_id": "acq-v1-ce68a55d80fec566cac1b8d978b8edbc9473eb18b1540ae75eb5b82a183ba7e2",
+          "observed_on": "2026-07-11",
+          "observation_ids": [
+            "obs-v1-94a715b2f86938ea1bad64964d16355db2b6cd8309e0b4891bb5bebf88576f7f"
+          ]
+        }
+      ],
+      "parent_event_ids": [
+        "evt-v1-1111111111111111111111111111111111111111111111111111111111111111",
+        "evt-v1-2222222222222222222222222222222222222222222222222222222222222222"
+      ],
+      "child_event_ids": []
+    }
+  ],
+  "integrity": {
+    "canonical_payload_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+    "schema_validated": true,
+    "checksum_verified": true
+  },
+  "output_object": {
+    "immutable_path": "releases/araripe-2026-candidate-20260724t120000z-a1b2c3d4e5f6/state/persistence-state-v1.json",
+    "sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+    "media_type": "application/json"
+  }
+}
