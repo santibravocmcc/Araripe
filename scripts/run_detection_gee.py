@@ -41,9 +41,20 @@ _HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(_HERE.parent))  # repo root
 sys.path.insert(0, str(_HERE))         # scripts/ (to import run_detection_from_gee)
 
-from config.settings import ALERTS_DIR, DEFAULT_LANDCOVER_COLLECTION
+from config.settings import (
+    ALERTS_DIR,
+    DEFAULT_LANDCOVER_COLLECTION,
+    GEE_COLLECTION_ID,
+    GEE_COMPOSITE_METHOD_ID,
+    MONITORING_EXTENT_ID,
+    SEARCH_DAYS_BACK,
+)
 from src.acquisition.aoi import get_aoi_bbox_wgs84
 from src.acquisition.gee_download import download_image_tiled, ee_initialize
+from src.detection.identity import (
+    create_acquisition_identity,
+    write_acquisition_metadata,
+)
 from src.utils.logging_setup import configure_run_logging
 
 SCL_CLEAR = [2, 4, 5, 6, 7, 11]
@@ -76,19 +87,35 @@ def _prep(img, ee):
 @click.option("--project", default="ee-araripe", help="Earth Engine / Cloud project id.")
 @click.option("--start", default=None, help="YYYY-MM-DD (default: today - days-back).")
 @click.option("--end", default=None, help="YYYY-MM-DD exclusive (default: tomorrow).")
-@click.option("--days-back", default=16, help="Window when --start omitted (bi-weekly default).")
+@click.option(
+    "--days-back",
+    default=SEARCH_DAYS_BACK,
+    help="Window when --start is omitted (scheduled default: five days).",
+)
 @click.option("--max-cloud", default=60, help="Scene-level cloud filter %% (per-date mosaic is masked anyway).")
 @click.option("--out-dir", default=str(ALERTS_DIR), help="Alerts output dir.")
 @click.option("--work-dir", default=None, help="Where to keep downloaded composites (temp if unset).")
 @click.option("--tile-px", default=1024, help="Max px/side per download tile (getDownloadURL 32MB cap).")
 @click.option("--persistence/--no-persistence", default=True)
+@click.option(
+    "--persistence-mode",
+    type=click.Choice(["live", "rebuild"]),
+    default="live",
+    help="Use rebuild only with isolated state/output for historical ranges.",
+)
+@click.option(
+    "--state-path",
+    default=None,
+    help="Persistence state path; required and isolated for rebuild mode.",
+)
 @click.option("--landcover-collection", default=DEFAULT_LANDCOVER_COLLECTION)
 @click.option("--classify-clearing/--no-classify-clearing", default=True)
 @click.option("--spi/--no-spi", default=True, help="CHIRPS SPI drought widening.")
 @click.option("--log-level", default="INFO", help="Console log level (file always "
               "captures full DEBUG detail under logs/).")
 def main(project, start, end, days_back, max_cloud, out_dir, work_dir, tile_px,
-         persistence, landcover_collection, classify_clearing, spi, log_level):
+         persistence, persistence_mode, state_path, landcover_collection,
+         classify_clearing, spi, log_level):
     configure_run_logging("run_detection_gee", console_level=log_level)
     import ee
 
@@ -121,13 +148,31 @@ def main(project, start, end, days_back, max_cloud, out_dir, work_dir, tile_px,
     got = 0
     for d in dates:
         day = ee.Date(d)
-        comp = (base.filterDate(day, day.advance(1, "day"))
+        daily = base.filterDate(day, day.advance(1, "day"))
+        scene_indices = daily.aggregate_array("system:index").getInfo()
+        scene_ids = [
+            value
+            if str(value).startswith(f"{GEE_COLLECTION_ID}/")
+            else f"{GEE_COLLECTION_ID}/{value}"
+            for value in scene_indices
+        ]
+        acquisition = create_acquisition_identity(
+            collection_id=GEE_COLLECTION_ID,
+            observed_on=d,
+            scene_ids=scene_ids,
+            monitoring_extent_id=MONITORING_EXTENT_ID,
+            composite_method_id=GEE_COMPOSITE_METHOD_ID,
+        )
+        comp = (daily
                 .map(lambda im: _prep(im, ee)).mosaic()
                 .select(BANDS).clip(aoi).unmask(-9999))
         out = work / f"araripe_detect_{d}.tif"
         try:
             download_image_tiled(comp, bbox, out, bands=BANDS, scale=SCALE,
                                  crs=TARGET_CRS, tile_px=tile_px)
+            write_acquisition_metadata(
+                out.with_suffix(".acquisition.json"), acquisition
+            )
             got += 1
         except Exception as e:
             logger.error("Composite download failed for {} ({}); skipping", d, e)
@@ -138,6 +183,8 @@ def main(project, start, end, days_back, max_cloud, out_dir, work_dir, tile_px,
 
     run_detection_on_dir(
         work, out_dir, persistence=persistence,
+        persistence_mode=persistence_mode,
+        state_path=state_path,
         landcover_collection=landcover_collection,
         classify_clearing=classify_clearing, spi=spi,
     )

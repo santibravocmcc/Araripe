@@ -16,7 +16,8 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from config.settings import TARGET_CRS  # noqa: E402
+from config.settings import MONITORING_EXTENT_ID, TARGET_CRS  # noqa: E402
+from src.detection.identity import create_acquisition_identity  # noqa: E402
 import run_detection  # noqa: E402
 
 # realistic metric coords inside UTM 24S near the AOI (clean WGS84 round-trip)
@@ -31,13 +32,23 @@ def _tile(boxes, confidences):
     )
 
 
+def _acquisition(observed_on):
+    return create_acquisition_identity(
+        collection_id="sentinel-2-l2a",
+        observed_on=observed_on,
+        scene_ids=[f"sentinel-2-l2a/{observed_on}"],
+        monitoring_extent_id=MONITORING_EXTENT_ID,
+        composite_method_id="same-date-vector-union-v1",
+    )
+
+
 def test_merge_keeps_all_tiles():
     """Two tiles for one date -> all polygons survive (bug would keep only 1)."""
     t1 = _tile([(X, Y, X + 100, Y + 100), (X + 500, Y + 500, X + 600, Y + 600)], [3, 1])
     t2 = _tile([(X + 2000, Y + 2000, X + 2100, Y + 2100)], [2])
 
     merged, state = run_detection._merge_and_confirm(
-        "2026-05-01", [t1, t2], True, 0.05, None,
+        "2026-05-01", [t1, t2], True, 0.05, None, _acquisition("2026-05-01"),
     )
     assert len(merged) == 3  # would be 1 under the old per-tile overwrite
     assert set(merged["persistence_status"]) == {"first_observation"}  # no prior state
@@ -47,10 +58,24 @@ def test_merge_keeps_all_tiles():
 def test_persistence_gap_tolerant_tiers():
     """With a prior state, an overlapping alert -> candidate (n=2); a far one -> 1ª obs."""
     prev = _tile([(X, Y, X + 100, Y + 100)], [3])
-    _, state = run_detection._merge_and_confirm("2026-04-27", [prev], True, 0.05, None)
+    _, state = run_detection._merge_and_confirm(
+        "2026-04-27",
+        [prev],
+        True,
+        0.05,
+        None,
+        _acquisition("2026-04-27"),
+    )
 
     cur = _tile([(X, Y, X + 100, Y + 100), (X + 9000, Y + 9000, X + 9100, Y + 9100)], [3, 2])
-    merged, state = run_detection._merge_and_confirm("2026-05-01", [cur], True, 0.05, state)
+    merged, state = run_detection._merge_and_confirm(
+        "2026-05-01",
+        [cur],
+        True,
+        0.05,
+        state,
+        _acquisition("2026-05-01"),
+    )
 
     overl = merged.loc[merged.geometry.centroid.x < X + 1000]
     far = merged.loc[merged.geometry.centroid.x > X + 1000]

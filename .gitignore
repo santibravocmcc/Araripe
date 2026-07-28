@@ -255,6 +255,9 @@ data/chirps_aoi/*.tif
 
 # Alerts live in Cloudflare R2, not git (see .gitattributes). Never commit them.
 data/alerts/*.geojson
+# Private/generated Phase 2A working state and per-scene QA records.
+data/persistence_state.geojson
+data/scene_quality/
 
 # temporary reflectance rebuild staging (swapped into data/baselines when complete)
 data/baselines_reflectance/

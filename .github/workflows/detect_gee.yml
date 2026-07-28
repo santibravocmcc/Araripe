@@ -25,7 +25,7 @@ on:
   workflow_dispatch:
     inputs:
       start:
-        description: "Start date YYYY-MM-DD (blank = today - 16 days)"
+        description: "Start date YYYY-MM-DD (blank = today - 5 days)"
         required: false
       end:
         description: "End date YYYY-MM-DD exclusive (blank = tomorrow)"

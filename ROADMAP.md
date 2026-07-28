@@ -276,6 +276,11 @@ No production mutation is required to pass this phase.
 
 **Estimate:** High–Very High, 35k–55k
 
+**Implementation status:** Local backend implementation completed 2026-07-28;
+focused regressions, accepted Phase 1 contract validation, and the full backend
+gate pass. No cloud write, deployment, publication, or historical replay was
+performed. See `docs/implementation/PHASE_2A1_2026-07-28.md`.
+
 - Implement stable observation keys and duplicate no-op behavior.
 - Reject out-of-order live-state mutation; backfills build a new release.
 - Reduce the normal Monday/Thursday lookback to five days.

@@ -47,13 +47,27 @@ HLS_SENTINEL_COLLECTION = "HLSS30.v2.0"
 
 # ─── Processing parameters ───────────────────────────────────────────────────
 MAX_CLOUD_COVER = 20  # percent
-SEARCH_DAYS_BACK = 16  # days to look back for recent imagery
+# Accepted Phase 2A.1 incremental contract: scheduled Monday/Thursday runs
+# overlap by five days. Historical work uses explicit start/end dates and an
+# isolated chronological rebuild state.
+SEARCH_DAYS_BACK = 5
 MAX_ITEMS_PER_SEARCH = 50
 CHUNK_SIZE = 512  # pixels per side for windowed processing
 TARGET_CRS = "EPSG:32724"  # UTM zone 24S (covers Chapada do Araripe)
 SENTINEL2_RESOLUTION = 10  # meters (native for B2/B3/B4/B8)
 SENTINEL2_20M_RESOLUTION = 20  # meters (B5/B6/B7/B8A/B11/B12)
 LANDSAT_RESOLUTION = 30  # meters
+
+# ─── Phase 1/2A deterministic scientific identity ───────────────────────────
+MONITORING_EXTENT_ID = "araripe-implementation-rectangle-v1"
+DETECTION_ALGORITHM_VERSION = "1.0.0"
+# The 72 current baseline objects are audited in Package 2A.2. This prerelease
+# value is deliberately honest and must change when that package freezes the
+# authoritative checksummed baseline generation.
+BASELINE_VERSION = "0.0.0-phase2a2-audit-pending"
+GEE_COLLECTION_ID = "COPERNICUS/S2_SR_HARMONIZED"
+GEE_COMPOSITE_METHOD_ID = "daily_mosaic-v1"
+STREAMING_COMPOSITE_METHOD_ID = "same-date-vector-union-v1"
 
 # ─── Baseline parameters ─────────────────────────────────────────────────────
 BASELINE_YEARS = 5  # number of years of history for baseline computation

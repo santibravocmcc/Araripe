@@ -19,6 +19,10 @@ python3 build_detection_gee.py --project ee-araripe --start 2026-01-01 --end 202
 It queues one export task per acquisition date (each date's Sentinel-2 tiles are
 mosaicked into one AOI-wide image; NDMI/NBR/EVI2/BSI on reflectance). Watch with
 `earthengine task list`. Results land in Google Drive folder `araripe_detection`.
+The script also writes `araripe_detection_acquisitions.json` in Cloud Shell;
+download that provenance manifest into the same local directory as the
+GeoTIFFs. Detection now fails closed when provider-native scene provenance is
+missing instead of inventing an observation identity.
 
 ## Step 2 — download and run detection locally
 
@@ -117,7 +121,9 @@ default so you can validate it before scheduling).
 ### Running it
 
 - **Manually:** GitHub → Actions → "GEE Deforestation Detection (headless)" →
-  *Run workflow*, optionally filling `start` / `end` (blank = last 16 days).
+  *Run workflow*, optionally filling `start` / `end` (blank = last 5 days).
+  An older range is a backfill: run it with `--persistence-mode rebuild`, an
+  explicit isolated `--state-path`, and a separate candidate output directory.
 - **On a schedule:** once a manual run succeeds end-to-end, uncomment the
   `schedule:` block in `detect_gee.yml` **and** disable the `schedule:` in
   `update_data.yml` (running both would double-detect and fight on `git push`).

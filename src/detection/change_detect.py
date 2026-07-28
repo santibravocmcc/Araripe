@@ -20,6 +20,7 @@ from config.settings import (
     Z_THRESHOLD_MEDIUM,
 )
 from src.detection.baseline import compute_delta, compute_zscore
+from src.detection.scene_quality import finite_source_reference_mask
 
 
 def detect_deforestation(
@@ -74,8 +75,11 @@ def detect_deforestation(
 
     available_indices = [
         name for name in current_indices.data_vars
-        if name in baseline_means
+        if name in baseline_means and name in baseline_stds
     ]
+    valid_pixel_mask = finite_source_reference_mask(
+        current_indices, baseline_means, baseline_stds
+    )
 
     for idx_name in available_indices:
         current = current_indices[idx_name]
@@ -95,7 +99,10 @@ def detect_deforestation(
     # ─── Confidence classification ────────────────────────────────────────
     # Start with zeros (no alert)
     reference = list(results.values())[0]
-    confidence = xr.zeros_like(reference, dtype=np.int8)
+    # Preserve invalid pixels as NaN. The prior integer-zero raster made
+    # cloud/nodata pixels indistinguishable from valid non-alert pixels and
+    # therefore inflated the scene-guard denominator.
+    confidence = xr.zeros_like(reference, dtype=np.int8).where(valid_pixel_mask)
 
     # Moisture indices for multi-index confirmation
     moisture_indices = [n for n in available_indices if n in ("ndmi", "nbr")]
@@ -127,7 +134,8 @@ def detect_deforestation(
 
     confidence.name = "confidence"
     results["confidence"] = confidence
-    results["is_alert"] = confidence > 0
+    results["valid_pixel_mask"] = valid_pixel_mask
+    results["is_alert"] = valid_pixel_mask & (confidence > 0)
 
     n_alerts = int(results["is_alert"].sum().values)
     n_high = int((confidence == 3).sum().values)
