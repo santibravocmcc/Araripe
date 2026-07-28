@@ -7,7 +7,13 @@ in particular avoiding strong El Niño / La Niña years, which depress or inflat
 vegetation-moisture signals across the Caatinga/Cerrado and would bias a
 z-score baseline.
 
-This script makes that choice reproducible. For each candidate year it computes:
+This script makes a diagnostic ranking reproducible. It did not automatically
+select the adopted 2017/2019/2021/2022/2025 generation; that historical choice
+was expert-reviewed and is recorded honestly in the authoritative baseline
+manifest. Future selection decisions may use this ranking as evidence, but the
+script does not rewrite an accepted manifest.
+
+For each candidate year it computes:
 
   1. ENSO severity  — the peak absolute Oceanic Niño Index (ONI) reached during
                        the year, from the official NOAA CPC ONI table (embedded
@@ -66,7 +72,13 @@ DJF 2025 -0.45 | JFM 2025 -0.24 | FMA 2025 -0.06 | MAM 2025 0.02 | AMJ 2025 -0.0
 DJF 2026 -0.37 | JFM 2026 -0.14 | FMA 2026 0.13 | MAM 2026 0.51 | AMJ 2026 0.98
 """
 
-AOI_BBOX = [-40.0, -8.0, -39.0, -7.0]  # matches config.settings.AOI_BBOX
+ALGORITHM_VERSION = "1.0.0"
+AOI_BBOX = [
+    -40.89236812577142,
+    -7.840780758480428,
+    -38.95208146319247,
+    -6.957104781339829,
+]  # araripe-implementation-rectangle-v1
 CHIRPS_DIR = Path("data/chirps")
 ONI_URL = "https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt"
 
@@ -148,6 +160,10 @@ def chirps_annual_precip(year: int, bbox=AOI_BBOX, chirps_dir=CHIRPS_DIR):
 @click.option("--json", "json_out", default=None, type=click.Path(), help="Write the ranking as JSON.")
 def main(n, min_year, max_year, max_severity, w_enso, w_precip, refresh_oni, json_out):
     """Rank candidate years by climate anomaly and recommend a baseline set."""
+    print(
+        "Diagnostic ranking only — the authoritative adopted year set is stored "
+        "in config/baseline_manifest_v1.json."
+    )
     print("Loading ONI table...")
     oni = fetch_oni() if refresh_oni else parse_oni(_ONI_SNAPSHOT)
 
@@ -201,10 +217,11 @@ def main(n, min_year, max_year, max_severity, w_enso, w_precip, refresh_oni, jso
     print(f"{'year':>4} {'ENSO':<9} {'ONIpk':>6} {'severity':>9} {'precip_mm':>9} "
           f"{'precip_z':>8} {'score':>6} {'elig':>5}")
     for r in sorted(rows, key=lambda r: r["year"]):
+        precip_z_text = "" if r["precip_z"] is None else f"{r['precip_z']:>8.2f}"
         print(f"{r['year']:>4} {r['enso_state']:<9} {r['oni_peak']:>6.2f} "
               f"{r['severity']:>6.2f} ({r['band'][:4]}) "
               f"{(r['annual_precip_mm'] or float('nan')):>9.1f} "
-              f"{('' if r['precip_z'] is None else f'{r['precip_z']:>8.2f}'):>8} "
+              f"{precip_z_text:>8} "
               f"{r['score']:>6.2f} {'yes' if r['eligible'] else 'NO':>5}")
 
     print(f"\nRECOMMENDED baseline ({n} most-recent quiet years, |ONI|<{max_severity}): "
@@ -214,6 +231,10 @@ def main(n, min_year, max_year, max_severity, w_enso, w_precip, refresh_oni, jso
     print(f"Excluded (strong ENSO, |ONI|>={max_severity}):          {excluded}")
 
     result = {
+        "algorithm_version": ALGORITHM_VERSION,
+        "status": "diagnostic_non_authoritative",
+        "monitoring_extent_id": "araripe-implementation-rectangle-v1",
+        "monitoring_extent_bounds": AOI_BBOX,
         "params": {"n": n, "min_year": min_year, "max_year": hi,
                    "max_severity": max_severity, "w_enso": w_enso, "w_precip": w_precip},
         "candidates": rows,

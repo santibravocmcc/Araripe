@@ -41,8 +41,7 @@ jobs:
           use-mamba: true
           miniforge-version: latest
 
-      - name: Fetch reflectance baselines from R2
-        if: env.R2_ENDPOINT_URL != ''
+      - name: Fetch and checksum authoritative reflectance baselines
         run: python scripts/fetch_baselines_from_r2.py
 
       - name: Fetch persistence state from R2 (gap-tolerant tracking)

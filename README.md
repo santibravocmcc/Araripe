@@ -55,6 +55,10 @@ python scripts/run_detection.py                            # streaming fallback
 # Rebuild baselines (via Google Earth Engine) — see docs/BASELINE_GEE.md
 python scripts/build_baseline_gee.py
 
+# Read-only audit of accepted baseline 1.0.0 / legacy time-series
+python scripts/audit_baselines.py
+python scripts/audit_timeseries.py
+
 # The public dashboard is a separate static site (Cloudflare Pages):
 #   ../site
 ```

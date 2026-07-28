@@ -1,0 +1,172 @@
+{
+  "audit_schema_version": "1.0.0",
+  "source": {
+    "path_label": "data/timeseries/timeseries.db",
+    "bytes": 45056,
+    "sha256": "2768755da91442a34419974dbce2def34f7c0dc104b5c4684ec74d9e8b56b946"
+  },
+  "legacy_schema": {
+    "regional_stats_columns": [
+      "id",
+      "date",
+      "index_name",
+      "region",
+      "mean",
+      "median",
+      "std",
+      "min",
+      "max",
+      "pct_valid",
+      "n_pixels",
+      "created_at"
+    ],
+    "alert_stats_columns": [
+      "id",
+      "date",
+      "total_alerts",
+      "total_area_ha",
+      "high_confidence",
+      "medium_confidence",
+      "low_confidence",
+      "created_at"
+    ],
+    "missing_clean_regional_columns": [
+      "acquisition_id",
+      "algorithm_version",
+      "baseline_version",
+      "coverage_fraction",
+      "generation_id",
+      "monitoring_extent_id",
+      "observed_on",
+      "qa_reason",
+      "qa_status",
+      "scene_ids_json",
+      "source_collection_id",
+      "total_pixels",
+      "valid_pixels"
+    ]
+  },
+  "inventory": {
+    "regional_rows": 126,
+    "regional_dates": 42,
+    "regional_min_date": "2026-01-02",
+    "regional_max_date": "2026-07-15",
+    "alert_rows": 32,
+    "alert_min_date": "2026-01-02",
+    "alert_max_date": "2026-07-15",
+    "indices": [
+      "evi2",
+      "nbr",
+      "ndmi"
+    ],
+    "write_day_groups": [
+      {
+        "day": "2026-04-28",
+        "rows": 9,
+        "min_date": "2026-03-08",
+        "max_date": "2026-04-12"
+      },
+      {
+        "day": "2026-05-14",
+        "rows": 3,
+        "min_date": "2026-04-30",
+        "max_date": "2026-04-30"
+      },
+      {
+        "day": "2026-05-18",
+        "rows": 3,
+        "min_date": "2026-05-05",
+        "max_date": "2026-05-05"
+      },
+      {
+        "day": "2026-05-28",
+        "rows": 3,
+        "min_date": "2026-05-15",
+        "max_date": "2026-05-15"
+      },
+      {
+        "day": "2026-06-04",
+        "rows": 3,
+        "min_date": "2026-05-20",
+        "max_date": "2026-05-20"
+      },
+      {
+        "day": "2026-06-08",
+        "rows": 3,
+        "min_date": "2026-05-25",
+        "max_date": "2026-05-25"
+      },
+      {
+        "day": "2026-06-15",
+        "rows": 3,
+        "min_date": "2026-05-30",
+        "max_date": "2026-05-30"
+      },
+      {
+        "day": "2026-06-18",
+        "rows": 9,
+        "min_date": "2026-06-09",
+        "max_date": "2026-06-16"
+      },
+      {
+        "day": "2026-07-12",
+        "rows": 3,
+        "min_date": "2026-07-15",
+        "max_date": "2026-07-15"
+      },
+      {
+        "day": "2026-07-14",
+        "rows": 87,
+        "min_date": "2026-01-02",
+        "max_date": "2026-07-11"
+      }
+    ],
+    "per_index": [
+      {
+        "index": "evi2",
+        "rows": 42,
+        "minimum_mean": 0.003957160282880068,
+        "maximum_mean": 1.80592300214173,
+        "minimum_coverage_percent": 4.903678113028483,
+        "maximum_coverage_percent": 100.0
+      },
+      {
+        "index": "nbr",
+        "rows": 42,
+        "minimum_mean": 0.11066602170467377,
+        "maximum_mean": 0.6098729968070984,
+        "minimum_coverage_percent": 0.40678162853516875,
+        "maximum_coverage_percent": 99.12384036261443
+      },
+      {
+        "index": "ndmi",
+        "rows": 42,
+        "minimum_mean": -0.08251616358757019,
+        "maximum_mean": 0.31120458245277405,
+        "minimum_coverage_percent": 0.40678162853516875,
+        "maximum_coverage_percent": 99.12384036261443
+      }
+    ]
+  },
+  "quality": {
+    "low_coverage_rows_under_10_percent": 19,
+    "low_coverage_dates_under_10_percent": 9,
+    "inconsistent_coverage_dates": 11,
+    "out_of_range_evi2_rows": 3
+  },
+  "disposition": {
+    "classification": "quarantined_mixed_generation_audit",
+    "publishable": false,
+    "row_level_salvage_permitted": false,
+    "reason": "The missing provenance/version fields make row-level generation assignment unverifiable. Preserve this database unchanged as audit material; build the corrected 2026 series from empty chronology in a new generation."
+  },
+  "issues": [
+    "Rows do not identify a processing generation or canonical acquisition.",
+    "Rows do not record source collection and provider-native scene IDs.",
+    "Rows do not record baseline, algorithm, or monitoring-extent versions.",
+    "Rows do not carry an explicit per-date QA status and reason.",
+    "19 regional rows across 9 dates have under 10% valid coverage.",
+    "11 dates report inconsistent coverage between indices.",
+    "3 EVI2 rows exceed the accepted [-1.5, 1.5] splitter range."
+  ]
+}

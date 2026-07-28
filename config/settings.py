@@ -61,17 +61,25 @@ LANDSAT_RESOLUTION = 30  # meters
 # ─── Phase 1/2A deterministic scientific identity ───────────────────────────
 MONITORING_EXTENT_ID = "araripe-implementation-rectangle-v1"
 DETECTION_ALGORITHM_VERSION = "1.0.0"
-# The 72 current baseline objects are audited in Package 2A.2. This prerelease
-# value is deliberately honest and must change when that package freezes the
-# authoritative checksummed baseline generation.
-BASELINE_VERSION = "0.0.0-phase2a2-audit-pending"
+# Accepted Phase 2A.2 generation. Its exact 72-object inventory, checksums,
+# grids, coverage, ranges, source configuration, and known provenance gaps are
+# frozen in the authoritative manifest.
+BASELINE_VERSION = "1.0.0"
+BASELINE_MANIFEST_PATH = ROOT_DIR / "config" / "baseline_manifest_v1.json"
 GEE_COLLECTION_ID = "COPERNICUS/S2_SR_HARMONIZED"
 GEE_COMPOSITE_METHOD_ID = "daily_mosaic-v1"
 STREAMING_COMPOSITE_METHOD_ID = "same-date-vector-union-v1"
 
 # ─── Baseline parameters ─────────────────────────────────────────────────────
-BASELINE_YEARS = 5  # number of years of history for baseline computation
+BASELINE_SOURCE_YEARS = [2017, 2019, 2021, 2022, 2025]
+BASELINE_YEARS = len(BASELINE_SOURCE_YEARS)
 BASELINE_MONTHS = list(range(1, 13))  # all 12 months
+BASELINE_RESOLUTION = 20  # metres
+BASELINE_MAX_CLOUD_COVER = 40  # scene metadata percentage
+BASELINE_SCL_CLEAR_CLASSES = [2, 4, 5, 6, 7, 11]
+# The accepted v1 rasters were generated over this rounded rectangle, which
+# fully covers the exact approved monitoring extent recorded in the manifest.
+BASELINE_GENERATION_BOUNDS = [-40.90, -7.85, -38.95, -6.95]
 
 # ─── Reflectance scaling (COUPLED with the baseline scale — Task 1) ───────────
 # When True, load_band converts DN → surface reflectance in [0,1] (per-scene

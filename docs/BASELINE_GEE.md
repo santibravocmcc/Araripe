@@ -1,4 +1,13 @@
-# Rebuilding the baseline with Google Earth Engine (recommended)
+# Building a new baseline with Google Earth Engine
+
+The current 72-object baseline was accepted as version `1.0.0` by the
+read-only Phase 2A.2 audit; rebuilding it is not currently required. Its
+authoritative checksums, grid, coverage, ranges, source configuration, and
+known provenance limitations are in `config/baseline_manifest_v1.json` and
+`docs/contracts/phase2a/BASELINE_AND_TIMESERIES_V1.md`.
+
+Use this procedure only when intentionally creating a **new baseline version**.
+Do not overwrite or publish version 1 objects without separate authorization.
 
 **Why:** streaming hundreds of Sentinel-2 scenes from AWS to a home connection in
 Brazil is the bottleneck (~1 MB/s, intermittently throttled — measured). Earth
@@ -51,11 +60,9 @@ CDN and are fast; the whole set is small.)
 ```bash
 python scripts/split_gee_baselines.py --in-dir ~/Downloads/araripe_baselines --out-dir data/baselines
 ```
-This writes the 72 `data/baselines/<index>_month<NN>_{mean,std}.tif` COGs
-(nodata = NaN). **Back up the current DN baselines first** if you want a rollback:
-```bash
-mkdir -p data/baselines_dn_backup && cp data/baselines/*.tif data/baselines_dn_backup/
-```
+This writes the 72
+`data/baselines/<index>_month<NN>_{mean,std}.tif` tiled GeoTIFFs (NoData =
+NaN). The historical `mean` label stores the multi-year median.
 
 ## Step 4 — activate the EVI2 fix (the coupling)
 
@@ -67,15 +74,20 @@ REFLECTANCE_SCALING = True
 Then verify:
 ```bash
 pytest -q
-# quick sanity: rebuilt EVI2 should be ~0.1–0.5 (reflectance), NOT ~0.99 (old DN)
-python -c "import rasterio,numpy as np; a=rasterio.open('data/baselines/evi2_month07_mean.tif').read(1); print('EVI2 median', round(float(np.nanmedian(a[np.isfinite(a)])),3))"
+python scripts/audit_baselines.py --baseline-dir data/baselines
 ```
 
-## Step 5 (production) — publish the new baselines
+The audit command above validates only version 1. A genuinely rebuilt set must
+receive a new version and newly reviewed manifest rather than being made to
+match the old checksums.
 
-The baselines are git-ignored (local data). For the GitHub Actions detection to
-use them, upload the new set to wherever the workflow reads baselines (R2 / HF /
-LFS) — same as any baseline update.
+## Step 5 (production) — separately authorized publication
+
+The baselines are Git-ignored local data. Publication requires explicit scope,
+a complete new manifest, preserved prior objects, an isolated processing
+generation, and download/checksum verification before any detector can select
+the new version. The fixed current R2 prefix is not a version boundary and must
+not be overwritten as an ordinary local build step.
 
 ---
 

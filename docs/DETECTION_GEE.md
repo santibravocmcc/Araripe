@@ -72,24 +72,19 @@ chain (`fetch_alerts_from_r2.py --latest 3`). To pull the whole archive locally:
 
 ---
 
-## Publishing the baselines to R2 (for future automation)
+## Baseline storage and verification
 
-The baselines are git-ignored local data. To make them available off your Mac
-(e.g. for a scheduled CI run), publish them to Cloudflare R2 (10 GB free):
-
-```bash
-# From your Mac (where data/baselines/ exists), with your R2 creds in the env:
-export R2_ENDPOINT_URL=... R2_ACCESS_KEY=... R2_SECRET_KEY=...
-python scripts/upload_to_r2.py            # uploads data/baselines/*.tif -> araripe-cogs/baselines/
-```
-To pull them back on another machine / CI runner:
+The accepted baseline is version `1.0.0`; its authoritative 72-object identity
+is `config/baseline_manifest_v1.json`. To pull it on another machine or CI
+runner:
 ```bash
 export R2_ENDPOINT_URL=... R2_ACCESS_KEY=... R2_SECRET_KEY=...
-python scripts/fetch_baselines_from_r2.py   # -> data/baselines/
+python scripts/fetch_baselines_from_r2.py
 ```
-Set the three `R2_*` values as **GitHub Secrets** on the repo to let a workflow
-fetch them before detection. (Creating the R2 API token is done in the Cloudflare
-dashboard → R2 → Manage API Tokens — that's an account action only you can do.)
+The fetch fails unless all names, sizes, ETags, and downloaded SHA-256 values
+match the manifest. A new build is a new baseline version; uploading or
+replacing baseline objects requires separate authorization and is not part of
+ordinary detection.
 
 ---
 

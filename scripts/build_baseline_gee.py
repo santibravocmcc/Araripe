@@ -49,13 +49,21 @@ import click
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-# Match the local pipeline exactly.
-YEARS = [2017, 2019, 2021, 2022, 2025]
-SCL_CLEAR = [2, 4, 5, 6, 7, 11]           # src/processing/cloud_mask.py S2_CLEAR_CLASSES
-TARGET_CRS = "EPSG:32724"                  # config/settings.py TARGET_CRS
-SCALE_M = 20                               # BASELINE_RESOLUTION
-# AOI bbox from data/aoi/APA_chapada_araripe.gpkg (WGS84), rounded out slightly.
-AOI_BOUNDS = [-40.90, -7.85, -38.95, -6.95]  # [west, south, east, north]
+from config.settings import (  # noqa: E402
+    BASELINE_GENERATION_BOUNDS,
+    BASELINE_MAX_CLOUD_COVER,
+    BASELINE_RESOLUTION,
+    BASELINE_SCL_CLEAR_CLASSES,
+    BASELINE_SOURCE_YEARS,
+    TARGET_CRS,
+)
+
+# Compatibility aliases keep the build record readable while making the
+# effective configuration importable and testable from one source.
+YEARS = BASELINE_SOURCE_YEARS
+SCL_CLEAR = BASELINE_SCL_CLEAR_CLASSES
+SCALE_M = BASELINE_RESOLUTION
+AOI_BOUNDS = BASELINE_GENERATION_BOUNDS
 
 
 def _build_prep_fn(ee):
@@ -77,7 +85,12 @@ def _build_prep_fn(ee):
 
 @click.command()
 @click.option("--project", required=True, help="Your Google Cloud project ID registered with Earth Engine.")
-@click.option("--max-cloud", default=40, help="Max scene CLOUDY_PIXEL_PERCENTAGE to include.")
+@click.option(
+    "--max-cloud",
+    default=BASELINE_MAX_CLOUD_COVER,
+    show_default=True,
+    help="Max scene CLOUDY_PIXEL_PERCENTAGE to include.",
+)
 @click.option("--drive-folder", default="araripe_baselines", help="Google Drive folder for exports.")
 @click.option("--months", default="1,2,3,4,5,6,7,8,9,10,11,12", help="Months to build.")
 @click.option("--dry-run", is_flag=True, help="Print what would be exported without starting tasks.")
