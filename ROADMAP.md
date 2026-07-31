@@ -311,6 +311,19 @@ performed. See `docs/implementation/PHASE_2A2_2026-07-28.md`.
 
 **Estimate:** High, 20k–35k plus qualified reviewer time
 
+**Implementation status:** Local/read-only tooling and a frozen 60-case reviewer
+package completed 2026-07-31. The sampler froze 369,177 provisional legacy
+alert features from 31 checksummed objects (365,405 eligible; 3,772 wholly
+outside the accepted extent) and selected exact balanced margins with seed
+`20260731`; the package provides provenance-recorded evidence, isolated blinded
+reviewer workspaces, and a deterministic 12-case double-review subset. No
+qualified human review or usability finding exists yet, no scientific accuracy
+claim is made, and no cloud-mask, daily-composition, drought, MapBiomas, or
+contextual-signature alternative was selected or activated. Raw detections,
+baseline objects, the quarantined legacy database, cloud state, deployments,
+publications, and releases were not mutated. See
+`docs/implementation/PHASE_2A3_2026-07-31.md`.
+
 - Build the reproducible sampler and desktop review package.
 - Start with approximately 60 balanced locations across confidence, size,
   season, land cover, persistence, and location.

@@ -1,0 +1,174 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://observatoriodachapadadoararipe.com/data/schemas/validation-review-v1.schema.json",
+  "title": "Phase 2A.3 structured human review",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "blind_case_id", "review_status", "reviewer", "change_assessment", "temporal_assessment", "land_cover_assessment", "contextual_signature", "method_comparisons", "usability", "notes"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "blind_case_id": {"type": "string", "pattern": "^p2a3-blind-v1-[0-9a-f]{24}$"},
+    "review_status": {"enum": ["unreviewed", "in_progress", "complete"]},
+    "reviewer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pseudonymous_id", "qualification_attested", "independence_attested"],
+      "properties": {
+        "pseudonymous_id": {"type": ["string", "null"]},
+        "qualification_attested": {"type": ["boolean", "null"]},
+        "independence_attested": {"type": ["boolean", "null"]}
+      }
+    },
+    "change_assessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["change_label", "reason", "evidence_sufficiency", "artifact_flags"],
+      "properties": {
+        "change_label": {"type": ["string", "null"], "enum": ["real_change", "no_change", "uncertain", "unreviewable", null]},
+        "reason": {"type": ["string", "null"]},
+        "evidence_sufficiency": {"type": ["string", "null"], "enum": ["sufficient", "conflicting", "insufficient", null]},
+        "artifact_flags": {"type": "array", "uniqueItems": true, "items": {"enum": ["cloud", "shadow", "haze", "mosaic_seam", "misregistration", "phenology", "fire_like", "low_resolution", "other"]}}
+      }
+    },
+    "temporal_assessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["confidence", "reason"],
+      "properties": {
+        "confidence": {"type": ["string", "null"], "enum": ["high", "medium", "low", "not_assessable", null]},
+        "reason": {"type": ["string", "null"]}
+      }
+    },
+    "land_cover_assessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["context", "confidence", "reason"],
+      "properties": {
+        "context": {"type": ["string", "null"], "enum": ["natural_vegetation", "anthropic_agriculture_pasture", "built_or_extractive", "water_or_wetland", "bare_or_other_natural", "mixed", "unknown", "not_assessable", null]},
+        "confidence": {"type": ["string", "null"], "enum": ["high", "medium", "low", "not_assessable", null]},
+        "reason": {"type": ["string", "null"]}
+      }
+    },
+    "contextual_signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "reason"],
+      "properties": {
+        "label": {"type": ["string", "null"], "enum": ["fire_like", "exposed_soil_or_clearing_like", "mixed_or_uncertain", "not_assessed", null]},
+        "reason": {"type": ["string", "null"]}
+      }
+    },
+    "method_comparisons": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cloud_mask", "daily_composition", "drought_adjustment", "mapbiomas", "contextual_signature"],
+      "properties": {
+        "cloud_mask": {"$ref": "#/$defs/method"},
+        "daily_composition": {"$ref": "#/$defs/method"},
+        "drought_adjustment": {"$ref": "#/$defs/method"},
+        "mapbiomas": {"$ref": "#/$defs/method"},
+        "contextual_signature": {"$ref": "#/$defs/method"}
+      }
+    },
+    "usability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["review_duration_seconds", "missing_or_confusing_evidence", "tool_issue"],
+      "properties": {
+        "review_duration_seconds": {"type": ["number", "null"], "minimum": 0},
+        "missing_or_confusing_evidence": {"type": "array", "items": {"type": "string"}},
+        "tool_issue": {"type": ["string", "null"]}
+      }
+    },
+    "notes": {"type": ["string", "null"]}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"review_status": {"const": "complete"}}},
+      "then": {
+        "properties": {
+          "reviewer": {
+            "properties": {
+              "pseudonymous_id": {"type": "string", "minLength": 1},
+              "qualification_attested": {"const": true},
+              "independence_attested": {"const": true}
+            }
+          },
+          "change_assessment": {
+            "properties": {
+              "change_label": {"type": "string"},
+              "reason": {"type": "string", "minLength": 1},
+              "evidence_sufficiency": {"type": "string"}
+            }
+          },
+          "temporal_assessment": {
+            "properties": {
+              "confidence": {"type": "string"},
+              "reason": {"type": "string", "minLength": 1}
+            }
+          },
+          "land_cover_assessment": {
+            "properties": {
+              "context": {"type": "string"},
+              "confidence": {"type": "string"},
+              "reason": {"type": "string", "minLength": 1}
+            }
+          },
+          "contextual_signature": {
+            "properties": {
+              "label": {"type": "string"},
+              "reason": {"type": "string", "minLength": 1}
+            }
+          },
+          "usability": {
+            "properties": {
+              "review_duration_seconds": {"type": "number", "minimum": 0}
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "method": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["availability", "option_a", "option_b", "display_order", "preference", "reviewer_confidence", "evidence_reason", "selected_or_activated"],
+      "properties": {
+        "availability": {"enum": ["not_generated_in_2a3", "available", "partial", "unreviewable"]},
+        "option_a": {"type": ["string", "null"]},
+        "option_b": {"type": ["string", "null"]},
+        "display_order": {"type": "array", "items": {"enum": ["A", "B"]}, "maxItems": 2},
+        "preference": {"type": ["string", "null"], "enum": ["A", "B", "equivalent", "inconclusive", "unreviewable", null]},
+        "reviewer_confidence": {"type": ["string", "null"], "enum": ["high", "medium", "low", "not_assessable", null]},
+        "evidence_reason": {"type": ["string", "null"]},
+        "selected_or_activated": {"const": false}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"availability": {"const": "not_generated_in_2a3"}}},
+          "then": {
+            "properties": {
+              "option_a": {"type": "null"},
+              "option_b": {"type": "null"},
+              "display_order": {"maxItems": 0},
+              "preference": {"type": "null"},
+              "reviewer_confidence": {"type": "null"},
+              "evidence_reason": {"type": "null"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"availability": {"const": "available"}}},
+          "then": {
+            "properties": {
+              "option_a": {"type": "string", "minLength": 1},
+              "option_b": {"type": "string", "minLength": 1},
+              "display_order": {"minItems": 2, "maxItems": 2, "uniqueItems": true}
+            }
+          }
+        }
+      ]
+    }
+  }
+}

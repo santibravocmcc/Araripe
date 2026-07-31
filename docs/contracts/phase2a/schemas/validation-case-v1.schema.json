@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://observatoriodachapadadoararipe.com/data/schemas/validation-case-v1.schema.json",
+  "title": "Phase 2A.3 blinded reviewer case",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "blind_case_id", "scientific_status", "target_date", "target_geometry", "evidence", "review_fields", "instructions"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "blind_case_id": {"type": "string", "pattern": "^p2a3-blind-v1-[0-9a-f]{24}$"},
+    "scientific_status": {"const": "provisional_method_selection_pilot"},
+    "target_date": {"type": "string", "format": "date"},
+    "target_geometry": {"$ref": "#/$defs/geometry"},
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["before_imagery", "after_imagery", "wider_spatial_context", "provenance_valid_time_series", "independent_source_comparison", "mapbiomas_context_comparison"],
+      "properties": {
+        "before_imagery": {"allOf": [{"$ref": "#/$defs/evidence"}, {"properties": {"role": {"const": "before_imagery"}}}]},
+        "after_imagery": {"allOf": [{"$ref": "#/$defs/evidence"}, {"properties": {"role": {"const": "after_imagery"}}}]},
+        "wider_spatial_context": {"allOf": [{"$ref": "#/$defs/evidence"}, {"properties": {"role": {"const": "wider_spatial_context"}}}]},
+        "provenance_valid_time_series": {"allOf": [{"$ref": "#/$defs/evidence"}, {"properties": {"role": {"const": "provenance_valid_time_series"}}}]},
+        "independent_source_comparison": {"allOf": [{"$ref": "#/$defs/evidence"}, {"properties": {"role": {"const": "independent_source_comparison"}}}]},
+        "mapbiomas_context_comparison": {"allOf": [{"$ref": "#/$defs/evidence"}, {"properties": {"role": {"const": "mapbiomas_context_comparison"}}}]}
+      }
+    },
+    "review_fields": {
+      "type": "object",
+      "required": ["schema_version", "blind_case_id", "review_status", "reviewer", "change_assessment", "temporal_assessment", "land_cover_assessment", "contextual_signature", "method_comparisons", "usability", "notes"]
+    },
+    "instructions": {"type": "object"}
+  },
+  "$defs": {
+    "sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+    "geometry": {
+      "type": "object",
+      "required": ["type", "coordinates"],
+      "properties": {
+        "type": {"enum": ["Polygon", "MultiPolygon"]},
+        "coordinates": {"type": "array", "minItems": 1}
+      },
+      "additionalProperties": false
+    },
+    "evidence": {
+      "type": "object",
+      "required": ["role", "status", "reason", "independence_class", "local_path", "local_bytes", "local_sha256", "source"],
+      "properties": {
+        "role": {"enum": ["before_imagery", "after_imagery", "wider_spatial_context", "provenance_valid_time_series", "independent_source_comparison", "mapbiomas_context_comparison"]},
+        "status": {"enum": ["available", "missing", "unavailable", "insufficient", "error"]},
+        "reason": {"type": ["string", "null"]},
+        "independence_class": {"enum": ["operational_source_same_sensor", "independent_sensor", "contextual_classification", "unverified_basemap"]},
+        "local_path": {"type": ["string", "null"], "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9_.@/-]+$"},
+        "local_bytes": {"type": ["integer", "null"], "minimum": 0},
+        "local_sha256": {"$ref": "#/$defs/sha256"},
+        "source": {"type": ["object", "null"]}
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"enum": ["available", "insufficient"]}}},
+          "then": {
+            "properties": {
+              "local_path": {"type": "string"},
+              "local_bytes": {"type": "integer", "minimum": 1},
+              "local_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+              "source": {"type": "object"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"status": {"const": "insufficient"}}},
+          "then": {
+            "properties": {
+              "reason": {"type": "string", "minLength": 1}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"status": {"enum": ["missing", "unavailable", "error"]}}},
+          "then": {
+            "properties": {
+              "reason": {"type": "string", "minLength": 1},
+              "local_path": {"type": "null"},
+              "local_bytes": {"type": "null"},
+              "local_sha256": {"type": "null"},
+              "source": {"type": "null"}
+            }
+          }
+        }
+      ]
+    }
+  }
+}

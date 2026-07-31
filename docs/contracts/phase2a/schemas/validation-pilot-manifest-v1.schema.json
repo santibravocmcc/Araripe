@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://observatoriodachapadadoararipe.com/data/schemas/validation-pilot-manifest-v1.schema.json",
+  "title": "Phase 2A.3 provisional validation pilot manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "package_id",
+    "package_type",
+    "scientific_status",
+    "method_decision_status",
+    "generated_at",
+    "generation_command",
+    "runtime_versions",
+    "generator_source_inventory",
+    "evidence_generation",
+    "population_snapshot_id",
+    "source_artifact_inventory_sha256",
+    "sampling",
+    "review",
+    "claims",
+    "generation_limitations",
+    "artifact_inventory_rule",
+    "artifact_inventory",
+    "checksum_file"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "package_id": {"type": "string", "pattern": "^p2a3-pilot-package-v1-[0-9a-f]{64}$"},
+    "package_type": {"const": "provisional_method_selection_pilot"},
+    "scientific_status": {"const": "provisional_audit_inputs_only"},
+    "method_decision_status": {"const": "none"},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "generation_command": {"type": "array", "items": {"type": "string"}},
+    "runtime_versions": {
+      "type": "object",
+      "required": ["python", "fiona", "scipy", "shapely"],
+      "additionalProperties": {"type": "string"}
+    },
+    "generator_source_inventory": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/artifact"}
+    },
+    "evidence_generation": {
+      "type": "object",
+      "required": ["mode"],
+      "properties": {"mode": {"type": "string", "minLength": 1}},
+      "additionalProperties": true
+    },
+    "population_snapshot_id": {"type": "string", "pattern": "^p2a3-population-v1-[0-9a-f]{64}$"},
+    "source_artifact_inventory_sha256": {"$ref": "#/$defs/sha256"},
+    "sampling": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["design_version", "random_seed", "source_feature_count", "eligible_count", "excluded_count", "target_size", "actual_size", "balance_status", "sample_margins", "probability_scope"],
+      "properties": {
+        "design_version": {"const": "phase2a3-balanced-location-date-v1"},
+        "random_seed": {"type": "string", "minLength": 1},
+        "source_feature_count": {"type": "integer", "minimum": 1},
+        "eligible_count": {"type": "integer", "minimum": 1},
+        "excluded_count": {"type": "integer", "minimum": 0},
+        "target_size": {"type": "integer", "minimum": 1},
+        "actual_size": {"type": "integer", "minimum": 1},
+        "balance_status": {"enum": ["exact"]},
+        "sample_margins": {"type": "object"},
+        "probability_scope": {"const": "conditional_within_purposively_selected_joint_cells"}
+      }
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primary_case_count", "double_review_case_count", "double_review_fraction", "blinded_order", "human_labels_present", "evidence_status_counts"],
+      "properties": {
+        "primary_case_count": {"type": "integer", "minimum": 1},
+        "double_review_case_count": {"type": "integer", "minimum": 1},
+        "double_review_fraction": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
+        "blinded_order": {"const": true},
+        "human_labels_present": {"const": false},
+        "evidence_status_counts": {"type": "object"}
+      }
+    },
+    "claims": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool_validation_and_usability_only", "scientific_accuracy_claim", "precision_estimate", "recall_estimate", "omission_estimate", "qualified_human_labels_present", "method_promoted_or_activated", "raw_detection_modified"],
+      "properties": {
+        "tool_validation_and_usability_only": {"const": true},
+        "scientific_accuracy_claim": {"const": false},
+        "precision_estimate": {"const": false},
+        "recall_estimate": {"const": false},
+        "omission_estimate": {"const": false},
+        "qualified_human_labels_present": {"const": false},
+        "method_promoted_or_activated": {"const": false},
+        "raw_detection_modified": {"const": false}
+      }
+    },
+    "generation_limitations": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+    "artifact_inventory_rule": {"type": "string", "minLength": 1},
+    "artifact_inventory": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/artifact"}
+    },
+    "checksum_file": {"const": "CHECKSUMS.sha256"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "bytes", "sha256"],
+      "properties": {
+        "path": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9_.@/-]+$"},
+        "bytes": {"type": "integer", "minimum": 0},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  }
+}
