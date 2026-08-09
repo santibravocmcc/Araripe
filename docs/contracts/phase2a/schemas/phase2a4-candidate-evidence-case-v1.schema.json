@@ -1,0 +1,328 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://observatoriodachapadadoararipe.com/data/schemas/phase2a4-candidate-evidence-case-v1.schema.json",
+  "title": "Araripe Phase 2A.4 candidate evidence case v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schema_version",
+    "sample_id",
+    "blind_case_id",
+    "target_date",
+    "target_geometry_sha256",
+    "canonical_observation_id",
+    "canonical_event_id",
+    "status",
+    "case_replaced",
+    "source_query",
+    "source_scenes",
+    "source_window_artifacts",
+    "processing_audit",
+    "grid",
+    "baseline",
+    "drought",
+    "factorial_cells",
+    "candidate_panels",
+    "claims"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "https://observatoriodachapadadoararipe.com/data/schemas/phase2a4-candidate-evidence-case-v1.schema.json"
+    },
+    "schema_version": {"const": "1.0.0"},
+    "sample_id": {"type": "string", "pattern": "^p2a3-sample-v1-[0-9a-f]{64}$"},
+    "blind_case_id": {"type": "string", "pattern": "^p2a3-blind-v1-[0-9a-f]{24}$"},
+    "target_date": {"type": "string", "format": "date"},
+    "target_geometry_sha256": {"$ref": "#/$defs/sha256"},
+    "canonical_observation_id": {"type": "null"},
+    "canonical_event_id": {"type": "null"},
+    "status": {"enum": ["available", "partial", "unavailable"]},
+    "case_replaced": {"const": false},
+    "source_query": {"$ref": "#/$defs/source_query"},
+    "source_scenes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/source_scene"}
+    },
+    "source_window_artifacts": {"type": "array", "items": {"$ref": "#/$defs/artifact"}},
+    "processing_audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mask_candidates", "compositions", "artifacts"],
+      "properties": {
+        "mask_candidates": {"type": "object"},
+        "compositions": {"type": "object"},
+        "artifacts": {"type": "array", "items": {"$ref": "#/$defs/artifact"}}
+      }
+    },
+    "grid": {
+      "type": "object",
+      "required": ["reference_grid", "case_window", "context_window", "coverage_contract"]
+    },
+    "baseline": {"$ref": "#/$defs/baseline"},
+    "drought": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidate_result", "rainfall_reference"],
+      "properties": {
+        "candidate_result": {"type": "object"},
+        "rainfall_reference": {"$ref": "#/$defs/rainfall_reference"}
+      }
+    },
+    "factorial_cells": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "required": ["cell_id", "candidates", "availability", "unavailable_reason", "ordered_source_scene_ids", "contributing_scenes", "coverage", "drought_status", "artifacts"],
+        "properties": {
+          "availability": {
+            "enum": ["available", "rejected_low_coverage", "unavailable", "error"]
+          }
+        }
+      }
+    },
+    "candidate_panels": {"type": "object"},
+    "claims": {
+      "const": {
+        "qualified_human_label_present": false,
+        "scientific_accuracy_claim": false,
+        "method_selected_or_activated": false,
+        "canonical_identity_inferred": false,
+        "case_replaced": false,
+        "desired_total_tuning_performed": false
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "http_metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status_code", "content_length", "etag", "last_modified", "content_type", "accept_ranges"],
+      "properties": {
+        "status_code": {"type": ["integer", "null"], "minimum": 100, "maximum": 599},
+        "content_length": {"type": ["integer", "null"], "minimum": 0},
+        "etag": {"type": ["string", "null"]},
+        "last_modified": {"type": ["string", "null"]},
+        "content_type": {"type": ["string", "null"]},
+        "accept_ranges": {"type": ["string", "null"]}
+      }
+    },
+    "page_trace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["page_index", "item_count", "ordered_item_ids", "ordered_item_json_sha256", "advertised_next_page"],
+      "properties": {
+        "page_index": {"type": "integer", "minimum": 1},
+        "item_count": {"type": "integer", "minimum": 0},
+        "ordered_item_ids": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "ordered_item_json_sha256": {"type": "array", "items": {"$ref": "#/$defs/sha256"}},
+        "advertised_next_page": {"type": "boolean"}
+      }
+    },
+    "query_execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "completed_page_count", "observed_item_count", "retained_unique_item_count", "collector_observed_exhaustion", "duplicate_item_ids", "page_trace", "page_trace_sha256"],
+      "properties": {
+        "status": {"enum": ["complete", "partial", "error"]},
+        "completed_page_count": {"type": "integer", "minimum": 0},
+        "observed_item_count": {"type": "integer", "minimum": 0},
+        "retained_unique_item_count": {"type": "integer", "minimum": 0},
+        "collector_observed_exhaustion": {"type": "boolean"},
+        "duplicate_item_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "page_trace": {"type": "array", "items": {"$ref": "#/$defs/page_trace"}},
+        "page_trace_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "source_query": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["catalog", "stac_endpoint", "collection_id", "catalog_accessed_at", "query", "query_error", "query_execution", "source_scene_ids_sha256"],
+      "properties": {
+        "catalog": {"const": "Element84 Earth Search"},
+        "stac_endpoint": {"const": "https://earth-search.aws.element84.com/v1"},
+        "collection_id": {"const": "sentinel-2-l2a"},
+        "catalog_accessed_at": {"type": "string", "format": "date-time"},
+        "query": {"type": "object"},
+        "query_error": {"type": ["string", "null"]},
+        "query_execution": {"$ref": "#/$defs/query_execution"},
+        "source_scene_ids_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "local_window_data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sha256", "dtype", "shape", "canonicalization"],
+      "properties": {
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "dtype": {"type": "string", "minLength": 1},
+        "shape": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "integer", "minimum": 1}},
+        "canonicalization": {"const": "normalized_decoded_values_plus_validity_and_normalization_RFC8785_SHA256_on_fixed_grid_aligned_context_window_v1"}
+      }
+    },
+    "reflectance_normalization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policy_version", "scale_offset_source", "raw_zero_fill", "negative_scaled_reflectance", "output_dtype", "status", "reason", "scale", "offset"],
+      "properties": {
+        "policy_version": {"const": "sentinel2-l2a-stac-scale-offset-zero-fill-nonnegative-v1"},
+        "scale_offset_source": {"const": "raster:bands[0].scale_and_offset_required"},
+        "raw_zero_fill": {"const": "invalid_before_resampling_and_scaling"},
+        "negative_scaled_reflectance": {"const": "clip_to_zero"},
+        "output_dtype": {"const": "float32"},
+        "status": {"enum": ["available", "error"]},
+        "reason": {"type": ["string", "null"]},
+        "scale": {"type": ["number", "null"]},
+        "offset": {"type": ["number", "null"]}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "available"}}, "required": ["status"]},
+          "then": {
+            "properties": {
+              "reason": {"type": "null"},
+              "scale": {"type": "number", "exclusiveMinimum": 0},
+              "offset": {"type": "number"}
+            }
+          },
+          "else": {
+            "properties": {
+              "reason": {"type": "string", "minLength": 1},
+              "scale": {"type": "null"},
+              "offset": {"type": "null"}
+            }
+          }
+        }
+      ]
+    },
+    "source_asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["asset_key", "status", "reason", "provider_href", "unsigned_href", "href_resolution_policy", "stac_asset_metadata_sha256", "media_type", "read_mode", "http_metadata", "upstream_full_asset_sha256", "reflectance_normalization", "local_window_data", "checksum_scope_limitation"],
+      "properties": {
+        "asset_key": {"enum": ["blue", "red", "nir", "nir08", "swir16", "swir22", "scl", "cloud"]},
+        "status": {"enum": ["available", "missing", "error"]},
+        "reason": {"type": ["string", "null"]},
+        "provider_href": {"type": ["string", "null"], "pattern": "^(?:https|s3)://[^?#]+$"},
+        "unsigned_href": {"type": ["string", "null"], "pattern": "^https://[^?#]+$"},
+        "href_resolution_policy": {"const": "earth-search-provider-https-or-fixed-public-s3-bucket-to-https-v1"},
+        "stac_asset_metadata_sha256": {"oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+        "media_type": {"type": ["string", "null"]},
+        "read_mode": {"const": "remote_raster_range_read_to_aligned_context_window"},
+        "http_metadata": {"$ref": "#/$defs/http_metadata"},
+        "upstream_full_asset_sha256": {"oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+        "reflectance_normalization": {"oneOf": [{"$ref": "#/$defs/reflectance_normalization"}, {"type": "null"}]},
+        "local_window_data": {"oneOf": [{"$ref": "#/$defs/local_window_data"}, {"type": "null"}]},
+        "checksum_scope_limitation": {"const": "local_window_data_sha256_does_not_verify_full_remote_asset"}
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "asset_key": {"enum": ["blue", "red", "nir", "nir08", "swir16", "swir22"]},
+              "status": {"enum": ["available", "error"]}
+            },
+            "required": ["asset_key", "status"]
+          },
+          "then": {"properties": {"reflectance_normalization": {"$ref": "#/$defs/reflectance_normalization"}}},
+          "else": {"properties": {"reflectance_normalization": {"type": "null"}}}
+        }
+      ]
+    },
+    "source_scene": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["catalog", "stac_endpoint", "collection_id", "item_id", "observed_at", "self_href", "stac_item_json_sha256", "assets"],
+      "properties": {
+        "catalog": {"const": "Element84 Earth Search"},
+        "stac_endpoint": {"const": "https://earth-search.aws.element84.com/v1"},
+        "collection_id": {"const": "sentinel-2-l2a"},
+        "item_id": {"type": "string", "minLength": 1},
+        "observed_at": {"type": "string", "format": "date-time"},
+        "self_href": {"type": "string", "format": "uri", "pattern": "^https://[^?#]+$"},
+        "stac_item_json_sha256": {"$ref": "#/$defs/sha256"},
+        "assets": {"type": "array", "minItems": 8, "maxItems": 8, "items": {"$ref": "#/$defs/source_asset"}}
+      }
+    },
+    "baseline_object": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "status", "reason", "manifest_bytes", "manifest_sha256", "manifest_r2_etag", "unsigned_href", "http_metadata", "read_mode", "local_window", "checksum_scope_limitation"],
+      "properties": {
+        "key": {"type": "string", "pattern": "^baselines/(evi2|nbr|ndmi)_month[0-9]{2}_(mean|std)\\.tif$"},
+        "status": {"enum": ["available", "error"]},
+        "reason": {"type": ["string", "null"]},
+        "manifest_bytes": {"type": "integer", "minimum": 1},
+        "manifest_sha256": {"$ref": "#/$defs/sha256"},
+        "manifest_r2_etag": {"type": "string", "minLength": 1},
+        "unsigned_href": {"type": "string", "format": "uri", "pattern": "^https://[^?#]+$"},
+        "http_metadata": {"$ref": "#/$defs/http_metadata"},
+        "read_mode": {"const": "remote_cog_range_read_to_aligned_context_window"},
+        "local_window": {"oneOf": [{"$ref": "#/$defs/artifact"}, {"type": "null"}]},
+        "checksum_scope_limitation": {"type": "string", "minLength": 1}
+      }
+    },
+    "baseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "reason", "baseline_id", "baseline_version", "manifest_sha256", "range_read", "artifacts"],
+      "properties": {
+        "status": {"enum": ["available", "error"]},
+        "reason": {"type": ["string", "null"]},
+        "baseline_id": {"type": "string", "minLength": 1},
+        "baseline_version": {"const": "1.0.0"},
+        "manifest_sha256": {"const": "15a1ed3cea7c804d18d2c82c86a7b9a030687fedb01b315d543965b1f26f0a82"},
+        "range_read": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["month", "status", "reason", "objects"],
+          "properties": {
+            "month": {"type": "integer", "minimum": 1, "maximum": 12},
+            "status": {"enum": ["available", "error"]},
+            "reason": {"type": ["string", "null"]},
+            "objects": {"type": "array", "minItems": 6, "maxItems": 6, "items": {"$ref": "#/$defs/baseline_object"}}
+          }
+        },
+        "artifacts": {"type": "array", "items": {"$ref": "#/$defs/artifact"}}
+      }
+    },
+    "rainfall_reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "reason", "dataset_id", "source_kind", "official_cog_base_url", "official_cog_pattern", "aggregation_version", "coverage_denominator", "reference_start_month", "reference_end_month", "target_ending_month", "complete_reference_window_count", "artifact_id", "manifest_sha256", "plan_sha256", "full_upstream_cog_checksum_available", "checksum_scope_limitation", "artifact"],
+      "properties": {
+        "status": {"enum": ["available", "invalid"]},
+        "reason": {"type": ["string", "null"]},
+        "dataset_id": {"const": "CHIRPS-2.0-monthly"},
+        "source_kind": {"const": "official_direct_monthly_cog_not_stac"},
+        "official_cog_base_url": {"const": "https://data.chc.ucsb.edu/products/CHIRPS-2.0/global_monthly/cogs/"},
+        "official_cog_pattern": {"const": "chirps-v2.0.YYYY.MM.cog"},
+        "aggregation_version": {"const": "cell-center-cos-lat-v1"},
+        "coverage_denominator": {"const": "sum_cosine_latitude_weight_over_all_selected_cell_centers"},
+        "reference_start_month": {"const": "1981-01"},
+        "reference_end_month": {"const": "2025-12"},
+        "target_ending_month": {"type": ["string", "null"]},
+        "complete_reference_window_count": {"type": "integer", "minimum": 0, "maximum": 45},
+        "artifact_id": {"type": "string", "pattern": "^p2a4-rainfall-reference-v1-[0-9a-f]{64}$"},
+        "manifest_sha256": {"$ref": "#/$defs/sha256"},
+        "plan_sha256": {"$ref": "#/$defs/sha256"},
+        "full_upstream_cog_checksum_available": {"const": false},
+        "checksum_scope_limitation": {"const": "local_window_sha256_does_not_verify_full_upstream_cog"},
+        "artifact": {"type": "null"}
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "required": ["path", "bytes", "sha256"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer", "minimum": 1},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  }
+}

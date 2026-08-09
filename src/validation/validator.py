@@ -621,6 +621,11 @@ def validate_review_export(
     """Validate one isolated reviewer export without calculating accuracy."""
     package_root = Path(package_root).resolve()
     review_export_path = Path(review_export_path).resolve()
+    root_manifest = _load_json(package_root / "manifest.json")
+    if root_manifest.get("package_type") == "phase2a4_provisional_blinded_method_comparison_derivative":
+        from src.validation.phase2a4_package import validate_phase2a4_review_export
+
+        return validate_phase2a4_review_export(package_root, review_export_path)
     validate_validation_package(package_root)
     export = _load_json(review_export_path)
     if set(export) != {"schema_version", "reviewer_slot", "reviews"}:

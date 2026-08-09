@@ -110,12 +110,11 @@ def _prep(img, ee):
 )
 @click.option("--landcover-collection", default=DEFAULT_LANDCOVER_COLLECTION)
 @click.option("--classify-clearing/--no-classify-clearing", default=True)
-@click.option("--spi/--no-spi", default=True, help="CHIRPS SPI drought widening.")
 @click.option("--log-level", default="INFO", help="Console log level (file always "
               "captures full DEBUG detail under logs/).")
 def main(project, start, end, days_back, max_cloud, out_dir, work_dir, tile_px,
          persistence, persistence_mode, state_path, landcover_collection,
-         classify_clearing, spi, log_level):
+         classify_clearing, log_level):
     configure_run_logging("run_detection_gee", console_level=log_level)
     import ee
 
@@ -186,7 +185,7 @@ def main(project, start, end, days_back, max_cloud, out_dir, work_dir, tile_px,
         persistence_mode=persistence_mode,
         state_path=state_path,
         landcover_collection=landcover_collection,
-        classify_clearing=classify_clearing, spi=spi,
+        classify_clearing=classify_clearing,
     )
 
 

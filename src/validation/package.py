@@ -391,15 +391,26 @@ def _html_document(
     reviewer_slot: str,
     cases: list[dict[str, Any]],
     reviews: list[dict[str, Any]],
+    method_evidence: Mapping[str, Any] | None = None,
+    package_phase: str = "phase2a3",
+    package_binding: Mapping[str, Any] | None = None,
 ) -> str:
     """Build a self-contained-data shell backed by the audited local app."""
     payload = json.dumps(
-        {"reviewer_slot": reviewer_slot, "cases": cases, "reviews": reviews},
+        {
+            "package_phase": package_phase,
+            "reviewer_slot": reviewer_slot,
+            "cases": cases,
+            "reviews": reviews,
+            "method_evidence": dict(method_evidence or {}),
+            "package_binding": dict(package_binding or {}),
+        },
         ensure_ascii=False,
         sort_keys=True,
         separators=(",", ":"),
     ).replace("<", "\\u003c")
-    title = html.escape(f"Araripe Phase 2A.3 — {reviewer_slot}")
+    phase_title = "2A.4" if package_phase == "phase2a4" else "2A.3"
+    title = html.escape(f"Araripe Phase {phase_title} — {reviewer_slot}")
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{title}</title><link rel="stylesheet" href="reviewer.css"></head>

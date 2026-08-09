@@ -306,21 +306,10 @@ def main(
         cache_dir.mkdir(parents=True, exist_ok=True)
         logger.info("Scene caching enabled: {}", cache_dir)
 
-    # Fetch current drought status via CHIRPS/SPI
-    spi_value = None
-    try:
-        from src.processing.spi import get_current_spi
-
-        spi_value = get_current_spi(aoi_bbox)
-        logger.info("Current 3-month SPI: {:.2f}", spi_value)
-        if spi_value < -1.0:
-            logger.warning(
-                "Drought conditions detected (SPI={:.2f}). "
-                "Z-score thresholds will be widened to reduce false positives.",
-                spi_value,
-            )
-    except Exception as e:
-        logger.warning("Could not compute SPI (CHIRPS unavailable): {}. Proceeding without drought adjustment.", e)
+    logger.info(
+        "Drought adjustment disabled: no qualified method is accepted; "
+        "operational detection always passes spi_3month=None"
+    )
 
     # Stage 1: Query recent imagery
     logger.info("Stage 1: Querying recent imagery...")
@@ -489,12 +478,12 @@ def main(
                 logger.warning("No baselines available, skipping detection")
                 continue
 
-            # Stage 5: Detect changes (with drought adjustment if SPI available)
+            # Stage 5: no drought method is accepted for operational detection.
             detection = detect_deforestation(
                 current_indices=idx_ds,
                 baseline_means=baseline_means,
                 baseline_stds=baseline_stds,
-                spi_3month=spi_value,
+                spi_3month=None,
             )
 
             collection_id = _STREAMING_COLLECTIONS[sensor]

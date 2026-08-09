@@ -336,6 +336,20 @@ publications, and releases were not mutated. See
 
 **Estimate:** Very High, 35k–60k with shared validation work
 
+**Implementation status:** The fixed local/private candidate contract,
+provenance-bound 60-case evidence artifact, and isolated blinded reviewer
+derivative were completed 2026-08-03. All 60 uncapped Earth Search queries
+reached observed exhaustion and retained 70 same-day scenes; the eight
+factorial cells per case reconcile to 202 available, 26 rejected-low-coverage,
+and 252 explicitly unavailable cells. The fresh CHIRPS artifact retained 85 of
+546 requested months and 461 upstream HTTP 403 failures, leaving only seven
+complete season-matched reference windows per case; the drought candidate is
+therefore unavailable and inactive rather than replaced or inferred. No
+qualified review, scientific accuracy result, candidate selection, cloud/mosaic
+lock, drought activation, replay, or publication exists, so the Package 2A.4
+decision gate and Phase 2A exit gate remain open. See
+`docs/implementation/PHASE_2A4_2026-08-03.md`.
+
 - Compute candidate drought status for each acquisition date using a fixed,
   longer, season-matched rainfall reference.
 - Compare detection with and without the corrected drought adjustment.

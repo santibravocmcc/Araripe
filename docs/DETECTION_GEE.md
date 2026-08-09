@@ -31,8 +31,12 @@ then in the Araripe repo:
 
 ```bash
 python scripts/run_detection_from_gee.py --in-dir ~/Downloads/araripe_detection
-# offline/quicker (skip the CHIRPS drought fetch): add --no-spi
 ```
+
+Routine detection does not fetch or apply drought adjustment because no method
+has qualified reviewer acceptance. Operational entry points expose no SPI
+switch and always pass `spi_3month=None`; candidate comparison is isolated in
+the local/private Phase 2A.4 evidence workflow.
 
 This runs the existing pipeline (z-score vs the reflectance baselines → scene-wide
 guard → vectorize → fire/mechanical → land cover → temporal persistence) and writes

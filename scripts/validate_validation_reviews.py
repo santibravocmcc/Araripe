@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate a Phase 2A.3 reviewer export against its isolated assignment."""
+"""Validate a Phase 2A.3 or package-bound Phase 2A.4 reviewer export."""
 
 from __future__ import annotations
 

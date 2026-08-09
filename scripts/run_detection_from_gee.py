@@ -41,7 +41,6 @@ from config.settings import (
     SCENE_ANOMALY_REJECT_FRAC,
     TARGET_CRS,
 )
-from src.acquisition.aoi import get_aoi_bbox_wgs84
 from src.detection.alerts import save_alerts, summarize_alerts, vectorize_alerts
 from src.detection.baseline import load_baseline_pair
 from src.detection.change_detect import classify_fire_vs_mechanical, detect_deforestation
@@ -115,7 +114,7 @@ def _load_composite(path: Path) -> tuple[xr.Dataset, xr.DataArray]:
 def run_detection_on_dir(in_dir, out_dir=ALERTS_DIR, *, min_clear=20.0,
                          persistence=True, min_overlap_frac=DEFAULT_MIN_OVERLAP_FRAC,
                          landcover_collection=DEFAULT_LANDCOVER_COLLECTION,
-                         classify_clearing=True, spi=True, state_path=None,
+                         classify_clearing=True, state_path=None,
                          persistence_mode="live"):
     """Run the existing detection logic over a directory of per-date GEE
     composites (``araripe_detect_YYYY-MM-DD.tif``). Reused by both the manual
@@ -129,17 +128,10 @@ def run_detection_on_dir(in_dir, out_dir=ALERTS_DIR, *, min_clear=20.0,
         logger.error("No araripe_detect_*.tif (with a date) in {}", in_dir); raise SystemExit(1)
     logger.info("Found {} per-date composites in {}", len(files), in_dir)
 
-    # SPI once (drought widening), like run_detection.py.
-    spi_value = None
-    if spi:
-        try:
-            from src.processing.spi import get_current_spi
-            spi_value = get_current_spi(get_aoi_bbox_wgs84())
-            logger.info("Current 3-month SPI: {:.2f}", spi_value)
-        except Exception as e:
-            logger.warning("SPI unavailable ({}); no drought adjustment.", e)
-    else:
-        logger.info("SPI skipped (--no-spi)")
+    logger.info(
+        "Drought adjustment disabled: no qualified method is accepted; "
+        "operational detection always passes spi_3month=None"
+    )
 
     # Deterministic state is loaded once, advanced chronologically by canonical
     # acquisition, and saved only after the bounded batch succeeds.
@@ -189,7 +181,9 @@ def run_detection_on_dir(in_dir, out_dir=ALERTS_DIR, *, min_clear=20.0,
             if not baseline_means:
                 logger.warning("No baselines; skipping {}", date); continue
 
-            detection = detect_deforestation(idx_ds, baseline_means, baseline_stds, spi_3month=spi_value)
+            detection = detect_deforestation(
+                idx_ds, baseline_means, baseline_stds, spi_3month=None
+            )
 
             quality = assess_scene_quality(
                 detection,
@@ -308,19 +302,20 @@ def run_detection_on_dir(in_dir, out_dir=ALERTS_DIR, *, min_clear=20.0,
 @click.option("--min-overlap-frac", default=DEFAULT_MIN_OVERLAP_FRAC)
 @click.option("--landcover-collection", default=DEFAULT_LANDCOVER_COLLECTION)
 @click.option("--classify-clearing/--no-classify-clearing", default=True)
-@click.option("--spi/--no-spi", default=True, help="Fetch CHIRPS SPI for drought "
-              "widening. Use --no-spi to skip (offline, or when CHIRPS is slow).")
 @click.option("--state-path", default=None, help="Persistence-state GeoJSON "
               "(deterministic event state). Default: <out-dir>/../persistence_state.geojson. "
               "In CI, fetch from / push to R2.")
 @click.option("--log-level", default="INFO", help="Console log level (file always "
               "captures full DEBUG detail under logs/). Use DEBUG to mirror everything.")
-def main(in_dir, out_dir, min_clear, persistence, persistence_mode, min_overlap_frac, landcover_collection, classify_clearing, spi, state_path, log_level):
+def main(in_dir, out_dir, min_clear, persistence, persistence_mode,
+         min_overlap_frac, landcover_collection, classify_clearing,
+         state_path, log_level):
     configure_run_logging("run_detection_from_gee", console_level=log_level)
     run_detection_on_dir(
         in_dir, out_dir, min_clear=min_clear, persistence=persistence,
         min_overlap_frac=min_overlap_frac, landcover_collection=landcover_collection,
-        classify_clearing=classify_clearing, spi=spi, state_path=state_path,
+        classify_clearing=classify_clearing,
+        state_path=state_path,
         persistence_mode=persistence_mode,
     )
 

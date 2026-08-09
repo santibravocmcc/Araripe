@@ -26,4 +26,8 @@ fieldset { border: 1px solid #ccd4cc; border-radius: 6px; }
 .checks { display: flex; flex-wrap: wrap; gap: 4px 16px; }
 .check { display: inline-block; }
 .method { margin-top: 10px; padding: 10px; border: 1px solid #d8ddd8; border-radius: 6px; background: #f8faf8; }
+.method-gate { margin-top: 10px; padding: 16px; border: 2px dashed #9aa79e; border-radius: 6px; background: #f8faf8; }
+.method-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
+.method-panel { background: #fff; }
+select:disabled, textarea:disabled, input:disabled { color: #4d574f; background: #e7eae7; opacity: 1; }
 @media (max-width: 650px) { main { padding: 8px; } header { position: static; } }
