@@ -31,6 +31,11 @@ implementation as the runtime source of truth when prose is stale.
 - Treat R2, GEE, GitHub Actions, publication state, and persistence state as
   production systems. Default to local/read-only checks unless live mutation is
   explicitly in scope.
+- Before an external mutation, or whenever a needed credential/connection may
+  be unavailable, load `.agents/skills/araripe-safe-handoff/SKILL.md`. A blocked
+  operation must stop before promotion, save a recoverable checkpoint under
+  `docs/handoffs/`, name the missing capability, and provide a Codex handoff
+  prompt. Never broaden a credential or switch environments silently.
 - Preserve the scientific and publication constraints in `ROADMAP.md`,
   especially the wider monitoring extent, raw detections, immutable releases,
   explicit completeness states, and fail-closed state handling.

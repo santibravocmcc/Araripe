@@ -25,8 +25,8 @@
         "source_sha256": "2ba20d400976020b4e7472a37de04fe1755c6f23631008b39da388001a034f59"
       },
       {
-        "id": "mapbiomas_col10_1_30m_2024",
-        "version": "10.1.0",
+        "id": "mapbiomas_col10_30m_2024_direct_download",
+        "version": "10.0.0",
         "role": "secondary_reference",
         "source_sha256": "1be96442929c98cdbe0126d5c83d65a8142b61642ec14fb0ad1dfdfa3bf68d6c"
       }

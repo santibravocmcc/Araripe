@@ -142,10 +142,12 @@ therefore time-bounded operational requirements, not optional cleanup.
 
 ## 3. MapBiomas national sources acquired for Phase 2
 
-The four files below are local, ignored source inputs under
+The five files below are local, ignored source inputs under
 `data/landcover/updated/`. The browser download-origin metadata records
-2026-07-23 as the acquisition date. The two national rasters were not cropped,
-rewritten, staged, or uploaded during Phase 1.
+2026-07-23 as the acquisition date for the original four inputs; the official
+national Collection 10 legend fixture was acquired and checksum-bound on
+2026-08-11. The two national rasters were not rewritten, staged, or uploaded
+during Phase 1.
 
 ### 3.1 File inventory
 
@@ -153,19 +155,25 @@ rewritten, staged, or uploaded during Phase 1.
 | --- | --- | ---: | --- |
 | `ATBD-Collection-10.1.pdf` | <https://brasil.mapbiomas.org/wp-content/uploads/sites/4/2026/02/ATBD-Collection-10.1.pdf> | 4,476,538 | `859f388422e25aacaaa2fe8024ed631496fc24a1be237a88d58732439ab2ed19` |
 | `ATBD_Col3_10m_Caatinga_v1.pdf` | <https://brasil.mapbiomas.org/wp-content/uploads/sites/4/2026/05/ATBD_Col3_10m_Caatinga_v1.pdf> | 3,364,548 | `21f960d54b75303a33fcf74d59a91b9575959e6421e3e1b101b4523efa1472b4` |
+| `Legenda-Colecao-10-Legend-Code.pdf` | <https://brasil.mapbiomas.org/wp-content/uploads/sites/4/2025/08/Legenda-Colecao-10-Legend-Code.pdf> | 84,039 | `77fb06ebeb938a5155af86227ad13709e10d65312222ff36c8ba1cf4cbc1eb44` |
 | `brazil_coverage_2024.tif` | <https://storage.googleapis.com/mapbiomas-public/initiatives/brasil/collection_10/lulc/coverage/brazil_coverage_2024.tif> | 802,022,037 | `1be96442929c98cdbe0126d5c83d65a8142b61642ec14fb0ad1dfdfa3bf68d6c` |
 | `brazil_lulc_10m_2024.tif` | <https://storage.googleapis.com/mapbiomas-public/initiatives/brasil/lulc_10m/collection_3/brazil_lulc_10m_2024.tif> | 6,766,932,375 | `2ba20d400976020b4e7472a37de04fe1755c6f23631008b39da388001a034f59` |
 
 ### 3.2 Dataset identity and raster headers
 
-**MapBiomas Collection 10.1, 30 m**
+**MapBiomas Collection 10 direct GeoTIFF, 30 m**
 
 - Product: annual land-cover/use series for Brazil, 1985–2024; the 2024 band
   is the acquired classification.
-- Version evidence: Collection 10.1, ATBD Version 1, February 2026.
+- Byte-level version evidence: the exact origin path is `collection_10`; the
+  remote ETag is `dc8434523522eac0c69be51d9473efeb`, equal to the local MD5,
+  and the object was last modified on 2025-08-13. These bytes therefore predate
+  the February 2026 Collection 10.1 release and must not be labelled 10.1.
 - Sensor/resolution: Landsat, nominal 30 m.
-- Official GEE asset:
+- The separate future Collection 10.1 source is the official GEE asset
   `projects/mapbiomas-public/assets/brazil/lulc/collection10_1/mapbiomas_brazil_collection10_1_coverage_v1`.
+  Package 2A.6 must export and checksum its `classification_2024` band before
+  any Collection 10.1 runtime use.
 - Local raster header: one `uint8` band, `154470 × 146483`, EPSG:4326,
   pixel size `0.0002694945852358564` degrees, bounds
   `[-74.02099974839176, -34.04066954489674, -32.39217116700902, 5.435705784207225]`,
@@ -208,16 +216,19 @@ to source attribution:
 The release manifest and every public UI/download that uses these sources must
 carry, at minimum:
 
-- 30 m: `MapBiomas – Coleção 10.1 da série anual de Mapas de Cobertura e Uso
+- 30 m direct download: `Projeto MapBiomas – Coleção 10 da série anual de Mapas de Cobertura e Uso
   da Terra do Brasil, acessado em 2026-07-23 através do link:
   https://storage.googleapis.com/mapbiomas-public/initiatives/brasil/collection_10/lulc/coverage/brazil_coverage_2024.tif`
-- 10 m: `MapBiomas – Coleção 3 (beta) de Mapas Anuais de Cobertura e Uso da
+- 10 m: `Projeto MapBiomas – Coleção 3 (beta) de Mapas Anuais de Cobertura e Uso da
   Terra do Brasil com 10 metros de resolução espacial, acessado em 2026-07-23
   através do link:
   https://storage.googleapis.com/mapbiomas-public/initiatives/brasil/lulc_10m/collection_3/brazil_lulc_10m_2024.tif`
 
-These strings identify the acquired files; scientific outputs must additionally
-cite the corresponding ATBD/method and keep the class legend version.
+The Collection 10.1 attribution must be generated only after the separate GEE
+export exists and must name Collection 10.1, its exact asset/export identity,
+and its actual access/export date. These strings identify acquired files;
+scientific outputs must additionally cite the corresponding ATBD/method and
+keep the class legend version.
 
 ### 3.4 Required Phase 2 crop transform
 
@@ -232,12 +243,18 @@ The accepted transform is not the legacy territory crop:
    required, record source/destination transforms, CRS, resolution, resampling,
    and the exact software version.
 5. Preserve/declare NoData explicitly. Treat class `0` as NoData for the 10 m
-   source and as unknown/NoData for Collection 10.1 until the official
-   fixture-backed interpretation gate passes.
+   source and as unknown/NoData for the direct Collection 10 source. Apply the
+   same conservative project treatment to the future Collection 10.1 export
+   unless its checksum-bound export metadata supplies stronger evidence.
 6. Write a tiled, compressed local crop; compute its SHA-256, pixel dimensions,
    class histogram, bounds, CRS, transform, and NoData.
 7. Register the crop in a release manifest before any consumer can select it.
 8. Keep both national inputs immutable and outside Git/R2 publication.
+
+The crop produced from the direct 30 m file during Package 2A.5 is retained as
+immutable audit evidence only. It is not an authorized Collection 10.1 runtime
+crop. The superseding decision is recorded in
+`docs/decisions/PHASE_2A_SCIENTIFIC_DECISIONS_2026-08-11.md`.
 
 The current `mapbiomas10m_crop.py` defaults to the presentation rectangle,
 an older Collection 2 filename/year, and outdated legend labels. It is not an

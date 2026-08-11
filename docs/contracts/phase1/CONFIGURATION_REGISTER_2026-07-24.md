@@ -461,3 +461,28 @@ Before any implementation, credential, route, or bucket change:
 
 No credential was read, changed, rotated, or tested with a production write
 to accept this register.
+
+## 10. Isolated staging addendum — 2026-08-11
+
+`araripe-v2-staging` now exists as a private, additive object sandbox. It has
+no public managed domain, custom domain, CORS policy, Worker binding, or
+production role. It is separate from the future private-processing and
+public-release buckets.
+
+Claude Code may receive one R2 S3 `Object Read & Write` identity restricted to
+that exact bucket, stored outside the repositories as AWS profile
+`araripe-r2-staging`. It must not receive `CLOUDFLARE_API_TOKEN` in the
+production account. Exact endpoint and setup are versioned in
+`docs/operations/CLOUDFLARE_STAGING_ACCESS_FOR_CLAUDE.md`.
+
+GitHub must use a different identity in Environment `v2-staging`. This
+Environment and identity had not yet been created as of 2026-08-11:
+
+- secrets `R2_STAGING_ACCESS_KEY_ID` and
+  `R2_STAGING_SECRET_ACCESS_KEY`;
+- variables `R2_STAGING_BUCKET`, `R2_ENDPOINT_URL`, and `AWS_REGION=auto`;
+- no Worker/zone/DNS authority and no reuse as a publisher credential.
+
+Object-prefix conventions are not access-control boundaries. Promotion,
+canonical buckets, Workers, routes, DNS, Builds, CORS, lifecycle, and token
+creation remain separately gated Cloudflare control-plane operations.

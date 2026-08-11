@@ -1,0 +1,4 @@
+interface:
+  display_name: "Araripe Safe Handoff"
+  short_description: "Pause safely and hand work between Claude and Codex"
+  default_prompt: "Use $araripe-safe-handoff to preflight this operation and create a recoverable checkpoint if a required capability is unavailable."

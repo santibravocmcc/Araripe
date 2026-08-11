@@ -1,7 +1,7 @@
 # Technical Remediation Roadmap — Observatório da Chapada do Araripe
 
-**Version:** 1.0
-**Decision baseline:** 2026-07-23
+**Version:** 1.2
+**Decision baseline:** 2026-08-11
 **Planning branch:** `codex/technical-review-roadmap`
 **Primary evidence:** `TECHNICAL_REVIEW.md` and `TECHNICAL_REVIEW_SUMMARY.md`
 
@@ -9,11 +9,16 @@
 
 ## 1. Purpose and status
 
-This roadmap consolidates the interactive decisions for Topics 1–34. It is an
-implementation plan, not evidence that any correction has already been made.
-Except for the review documents, planning branch, and this roadmap, the
-scientific pipeline, site, workflows, Cloudflare configuration, R2 objects, and
-published products remain unchanged.
+This roadmap consolidates the interactive decisions for Topics 1–34 and the
+implementation evidence through 2026-08-11. Phases 0 and 1 and the technical
+evidence packages 2A.1–2A.5 are complete. The candidate-generation policy is
+now recorded in `config/phase2a_candidate_generation_decisions_v2.json`; its
+implementation remains Package 2A.6 before replay.
+
+One additive private bucket, `araripe-v2-staging`, was created for isolated
+green object testing. The production workflows, `araripe-cogs`, production
+Worker, routes, DNS, site, canonical state, and public products remain
+unchanged. See `docs/implementation/PHASE_2B0_2026-08-11.md`.
 
 The original review grouped the work into 22 topics. Additional security,
 scientific, workspace, and agent-configuration decisions expanded the final
@@ -46,6 +51,12 @@ ledger to 34 numbered topics, with Topic 21 split into 21A–21C.
   separate approval.
 - The backend and site remain independent Git repositories even when placed
   under one common local workspace.
+- The current production system is the blue environment and remains unchanged
+  through Phases 2B–5. Green workflows, credentials, buckets, Worker, and state
+  are separate; only Phase 6 may switch the final route/pointer.
+- Credentials never enter Git or agent chat. Claude may receive only an R2 S3
+  object credential scoped to `araripe-v2-staging`; Cloudflare control-plane or
+  production work requires the connected capability and the safe-handoff gate.
 
 ### 1.2 Token-estimate interpretation
 
@@ -99,17 +110,17 @@ Intensity bands used below:
 | 21C. Accessibility and mobile usability | **Approved, constrained** | Schedule after core science/publication; preserve ordinary mouse, touch, desktop, map, filter, and data behavior; defer changes with trade-offs. | 15k–25k |
 | 22. Deterministic historical rebuild | **Approved, expanded** | Reprocess all available 2026 imagery after scientific corrections; explicit date batches; new state from empty chronology; preserve old release; atomic promotion; resume five-day schedule from rebuilt watermark. | 45k–75k plus compute time |
 | 23. Independent scientific accuracy assessment | **Approved, modified** | Required desktop-validation pilot of about 60 locations; full sample chosen after pilot; independent imagery/source comparisons and qualified human labels; field checks optional for selected uncertain cases. | 20k–35k pilot; 35k–60k full |
-| 24. Baseline and time-series QA | **Approved, prerequisite** | Audit the 72 baseline files first; manifest/checksum/version them; rebuild only if required; quarantine mixed-generation series; add source, coverage, versions, and QA per date. | 15k–25k audit; 30k–50k if rebuilt |
-| 25. Drought adjustment | **Approved, conditional activation** | Correct per-date, season-matched, longer-history calculation; never fail silently; compare enabled/disabled; activate only if validation improves results. | 20k–35k |
-| 26. Cloud mask and daily composition | **Approved, evidence-selected** | Test accepted SCL classes, cloud/shadow probability, deterministic clearest-pixel/mosaic methods, coverage rejection, and scene provenance; select method from validation. | 20k–35k |
-| 27. Versioned MapBiomas 2024 migration | **Approved, revised** | Preserve/checksum national sources; create wider-area crops for Collection 3 beta 10 m 2024 and Collection 10/10.1 30 m 2024; update class mapping; validate the 50% rule; never erase raw alerts. | 25k–40k |
-| 28. Fire/mechanical label validation | **Approved** | Replace causal wording with fire-like, exposed-soil/clearing-like, mixed/uncertain, or not-assessed spectral signatures; validate before simplified public use; never affect alert existence/strong membership. | 22k–38k |
-| 29. Stable observation and event identities | **Approved** | Deterministic `observation_id` and `event_id`; documented split/merge lineage; persistence carries IDs; distinguish observations, events, and areas. | 24k–40k |
+| 24. Baseline and time-series QA | **Approved; rebuild now required** | The audit is complete. Package 2A.6 rebuilds the 72-object baseline with the selected v2 SCL mask, then revalidates manifest/checksum/grid/coverage; mixed generations remain quarantined. | 30k–50k plus GEE time |
+| 25. Drought adjustment | **Resolved: disabled** | `drought-disabled-v1` is selected for the 2026 candidate. A future CHIRPS v3 spatial context may be tested in Phase 5 but cannot suppress raw detections or activate without qualified evidence. | 8k–15k guard/context; more if revived |
+| 26. Cloud mask and daily composition | **Resolved for candidate implementation** | Implement provisional `scl-explicit-allowlist-v2` and coverage-ranked first-valid composition per physical datatake. Record SCL 7 and all processing baselines; rebuild baseline identically. Phase 5 validates canonical suitability. | 25k–45k plus baseline compute |
+| 27. Versioned MapBiomas 2024 migration | **Resolved with provenance correction** | Collection 3 beta 10 m remains primary context under exact v2 mappings/pixel rules. The direct 30 m GeoTIFF is Collection 10, not 10.1; Package 2A.6 performs a manifest-bound true 10.1 export and regenerates every affected v2 evidence/review artifact. Never erase raw alerts. | 22k–38k remaining |
+| 28. Fire/mechanical label validation | **Resolved for internal candidate; public deferred to validation** | Retain quantitative metrics and use the 60% dominant-share aggregator internally. Causal inference and public labels stay disabled until Phase 5; never affect alert existence/strong membership. | 18k–30k validation |
+| 29. Stable observation and event identities | **Approved; coherent v2 family required** | Implement v2 acquisition/observation/event/lineage/persistence/ledger contracts. Preserve v1 only for audit and conceptual lineage rules. Count persistence at most once per event/date even when multiple datatakes are retained. | 22k–38k remaining |
 | 30. Public terminology and provenance | **Approved** | Correct confidence/persistence/cause/area language, MapBiomas context, sources, release identity, and freshness; preserve site design and final domain. | 14k–24k |
-| 31. Publication completeness gates | **Approved** | Per-date processing ledger; distinguish zero alerts, low coverage, rejection, download failure, missing inputs, and processing failure; incomplete runs never replace the last complete release. | 22k–36k |
+| 31. Publication completeness gates | **Approved** | Record one terminal row per manifest-bound expected acquisition plus a reconciled daily summary; distinguish zero alerts, low coverage, rejection, download failure, missing inputs, and processing failure. Incomplete runs never replace the last complete release. | 22k–36k |
 | 32. Documentation, attribution, and repository hygiene | **Approved** | Data-source register, licence boundaries, MapBiomas attribution, current domain/method/source metadata, active/legacy/obsolete classification, secret/large-data/generated-document hygiene. | 14k–24k |
 | 33. Common workspace and repository consolidation | **Approved, priority prerequisite** | Move `Araripe` under the common parent; retain two independent repositories; inventory/classify other folders; secure credential-looking files first; update paths and verify behavior. | 30k–50k |
-| 34. Cross-tool operating contract and staged skills | **Approved, staged** | Shared `AGENTS.md`; `CLAUDE.md` imports it; portable shared skills exposed to both discovery paths; no permanent agent fleet; release/science skills only after workflows stabilize. | 8k–14k contract; 10k–18k per later skill |
+| 34. Cross-tool operating contract and staged skills | **Approved, active** | Shared instructions are in place. `araripe-safe-handoff` is versioned for Codex and Claude in 2B.0; later release/science skills still wait for stable workflows. No permanent agent fleet. | 2k–6k remaining handoff verification; 10k–18k per later skill |
 
 ---
 
@@ -119,8 +130,10 @@ Intensity bands used below:
 flowchart TD
     A["Phase 0: Secure and consolidate workspace"]
     B["Phase 1: Inventory live system and define contracts"]
-    C["Phase 2A: Scientific corrections and method-selection pilot"]
-    D["Phase 2B: Atomic publication and delivery foundation"]
+    C["Phase 2A.1–2A.5: Evidence and decisions"]
+    C2["Phase 2A.6: Implement selected science and rebuild baseline"]
+    D0["Phase 2B.0: Isolated green foundation"]
+    D["Phase 2B.1–2B.4: Atomic publication and delivery"]
     E["Phase 3: Freeze replay contract and rehearse rollback"]
     F["Phase 4: Reprocess all 2026 data into staging"]
     G["Phase 5: Independent validation and release QA"]
@@ -129,8 +142,10 @@ flowchart TD
 
     A --> B
     B --> C
-    B --> D
-    C --> E
+    C --> C2
+    B --> D0
+    D0 --> D
+    C2 --> E
     D --> E
     E --> F
     F --> G
@@ -345,19 +360,20 @@ and 252 explicitly unavailable cells. The fresh CHIRPS artifact retained 85 of
 546 requested months and 461 upstream HTTP 403 failures, leaving only seven
 complete season-matched reference windows per case; the drought candidate is
 therefore unavailable and inactive rather than replaced or inferred. No
-qualified review, scientific accuracy result, candidate selection, cloud/mosaic
-lock, drought activation, replay, or publication exists, so the Package 2A.4
-decision gate and Phase 2A exit gate remain open. See
-`docs/implementation/PHASE_2A4_2026-08-03.md`.
+qualified review or scientific accuracy result exists in that artifact. A
+separate 2026-08-11 decision record selects drought disabled, rejects both v1
+mask candidates in favor of `scl-explicit-allowlist-v2`, and selects deterministic
+coverage-ranked composition scoped by datatake. Implementation is assigned to
+Package 2A.6. See `docs/implementation/PHASE_2A4_2026-08-03.md` and
+`docs/decisions/PHASE_2A_SCIENTIFIC_DECISIONS_2026-08-11.md`.
 
-- Compute candidate drought status for each acquisition date using a fixed,
-  longer, season-matched rainfall reference.
-- Compare detection with and without the corrected drought adjustment.
-- Compare SCL/cloud-probability/shadow masks and deterministic same-day
-  composition methods.
-- Record contributing scenes and valid coverage.
-- Lock the final cloud/mosaic method from evidence.
-- Activate drought adjustment only if evidence supports it.
+- Preserve the checksum-bound v1 comparison and missing CHIRPS evidence as
+  audit material; do not rewrite it after selection.
+- Keep drought disabled and inaccessible in candidate entrypoints.
+- Implement the datatake-scoped composition and v2 SCL mask in Package 2A.6,
+  with contributing-scene, coverage, contributor-map, and parity evidence.
+- Rebuild the baseline with the identical accepted mask.
+- Treat qualified accuracy and any later method change as Phase 5 decisions.
 
 #### Package 2A.5 — MapBiomas and contextual spectral signatures
 
@@ -371,30 +387,68 @@ and an isolated blinded reviewer derivative now pass the Phase 1 contract gate,
 87 focused Package 2A.5 tests, and the 335-test backend gate. All raw cases and
 missing/partial evidence remain present, both Phase 2A.4 drought-cell bindings
 remain inactive in every spectral stratum, and the original Phase 2A.4
-coordinator mapping remains isolated and byte-identical. No qualified labels,
-accepted observation/event identities, scientific accuracy result, threshold
-or contextual-signature selection, public wording approval, Phase 2A.4 method
-decision, replay, release, deployment, or publication exists. The Package 2A.5
-decision gate and Phase 2A exit gate therefore remain open. See
-`docs/implementation/PHASE_2A5_2026-08-09.md`.
+coordinator mapping remains isolated and byte-identical.
+No qualified labels or scientific accuracy result exists in that artifact.
+The 2026-08-11 decision record selects the 50% majority natural-vegetation
+context subset and the 60% internal contextual aggregator, keeps public/causal
+labels disabled, and closes the old-population requirement. It also corrects a
+provenance error: the direct 30 m GeoTIFF is Collection 10, not 10.1, so true
+Collection 10.1 must be exported separately before replay. See
+`docs/implementation/PHASE_2A5_2026-08-09.md` and
+`docs/decisions/PHASE_2A_SCIENTIFIC_DECISIONS_2026-08-11.md`.
 
-- Preserve the two national 2024 rasters unchanged outside Git.
-- Create and validate versioned regional crops covering the approved wider
-  monitoring extent:
-  `mapbiomas_col3_beta_10m_2024` as primary detailed context and
-  `mapbiomas_col10_1_30m_2024` as a secondary reference/disagreement signal.
-- Resolve Collection 3 classes, including natural vegetation, other natural
-  cover, anthropic cover, uncertain/mixed, and NoData.
-- Compare the current 50% natural-vegetation strong-subset rule with reasonable
-  alternatives; do not tune merely to improve totals.
-- Preserve every raw detection regardless of MapBiomas strong-subset outcome.
-- Replace causal fire/mechanical wording with contextual spectral-signature
-  fields and retain within-polygon proportions.
+- Preserve both national inputs and all v1 crops/evidence unchanged outside
+  Git as audit material.
+- Keep Collection 3 beta 10 m as primary detailed context using the accepted
+  project grouping and inclusive 50% majority subset.
+- Quarantine the current 30 m crop from any Collection 10.1 role; Package 2A.6
+  exports/checksums the true official Collection 10.1 `classification_2024`
+  band and builds a new regional crop.
+- Preserve every raw detection regardless of MapBiomas subset or
+  cross-collection outcome.
+- Retain quantitative spectral context and the 60% internal aggregator; keep
+  causal/public labels disabled pending Phase 5.
 
-**Exit gate P2A:** The algorithm, baseline decision, five-day incremental
-behavior, observation/event identity, cloud/mosaic method, drought activation
-decision, MapBiomas mapping/threshold policy, and contextual-signature policy
-are frozen and versioned for the 2026 candidate generation.
+#### Package 2A.6 — Implement the accepted candidate-generation methods
+
+**Estimate:** Very High, 30k–55k plus GEE/baseline processing time
+
+- Implement a coherent v2 acquisition, observation, event, lineage,
+  persistence-contribution/state, and processing-ledger family. New v2 data
+  must never be serialized into v1 schemas; v1 remains audit-only.
+- Retain every same-day datatake as an independent observation, but finalize at
+  most one persistence contribution per event/UTC date after every
+  run-manifest acquisition for that date is terminal. Test timestamp/ID order,
+  retry idempotency, late-arrival rebuild, and split/merge lineage.
+- Implement `scl-explicit-allowlist-v2`: accept SCL 4/5/6/7, reject
+  0/1/2/3/8/9/10/11, fail closed on missing, unexpected, or unreviewed
+  SCL/processing-baseline metadata, and record SCL 7 fractions plus every
+  observed baseline as separate QA.
+- Make coverage-ranked first-valid ordering explicit locally and in GEE; prove
+  repeatability, input-order invariance, contributor accounting, and parity.
+- Rebuild and fully validate the 72-object baseline with the identical v2 mask.
+- Verify the checksum-bound national legend and implement the exact
+  collection-specific v2 mappings, class-0/27/255 treatment, pixel-centre
+  inclusive 50% majority subset, and internal 60% contextual aggregator.
+- Export/checksum `classification_2024` from the official Collection 10.1 GEE
+  asset under the locked native-grid/nearest-neighbour/NoData-255 manifest,
+  rebuild the regional crop, and prevent runtime or qualified-review use of
+  the mislabeled Collection 10 crop as 10.1.
+- Regenerate the v2 context registry, regional manifest, per-case evidence,
+  cross-collection statistics, blinded panels/crosswalk, and method-comparison
+  package, all bound to the v2 decision-record checksum; preserve v1 as
+  audit-only evidence.
+- Lock drought disabled at every candidate entrypoint and add deterministic,
+  provenance, raw-detection-preservation, and fail-closed regression tests.
+
+Package 2A.6 may run in parallel with Phase 2B, but must close before Phase 3.
+
+**Exit gate P2A:** The candidate-generation policy gate is closed. The
+implementation gate closes only when Package 2A.6 passes and the algorithm,
+compatible baseline, five-day incremental behavior, the complete v2 identity,
+persistence and ledger family, cloud/composition method, drought-disabled state,
+true MapBiomas source/mapping/threshold, and internal-only contextual policy are versioned and
+executable for candidate generation. Accuracy/public claims remain Phase 5.
 
 ---
 
@@ -404,14 +458,53 @@ are frozen and versioned for the 2026 candidate generation.
 **Topics:** 5–20, 31; targeted portions of 16–17
 **Estimated intensity:** Very High, delivered as several resumable packages
 
+**Isolation rule:** Build green in parallel. Do not merge candidate science into
+the old scheduled jobs, push the site candidate branch until Worker Builds
+branch behavior is proven safe, or attach a green Worker/bucket to the final
+domain before Phase 6.
+
+All references to promotion or rollback in Packages 2B.1–2B.4 mean only the
+isolated green/staging pointer. Canonical promotion and any blue shutdown remain
+Phase 6 actions.
+
+#### Package 2B.0 — Isolated green foundation and recoverable handoff
+
+**Estimate:** Medium–High, 12k–25k
+
+**Status:** Started 2026-08-11. Private bucket `araripe-v2-staging` exists with
+no public access, custom domain, CORS, or production binding. No production
+resource changed. The cross-tool `araripe-safe-handoff` skill and Claude setup
+contract are versioned. See `docs/implementation/PHASE_2B0_2026-08-11.md`.
+
+- Keep all blue workflows, schedules, `araripe-cogs`, Worker, routes, domain,
+  and current data paths unchanged through Phases 2B–5.
+- Give Claude only a bucket-scoped R2 S3 object credential stored as the local
+  AWS profile `araripe-r2-staging`; never a production-account Wrangler token.
+- Use a different bucket-only identity in GitHub Environment `v2-staging` and
+  a separate protected promotion identity later.
+- Re-audit Cloudflare Worker Builds before any site branch push. Create a
+  distinct staging Worker/environment with no apex/custom route.
+- Introduce inert/manual v2 workflows that cannot inherit the old schedule,
+  state keys, bucket fallback, bot pushes, or production credentials.
+- Separate concurrency into legacy-live, green-candidate/replay, and serialized
+  pointer-promotion lanes.
+- If a tool lacks a required connection, stop before promotion, save an atomic
+  checkpoint, name the missing capability, and provide a Codex handoff prompt.
+
+**Exit gate 2B.0:** Claude object access succeeds only on staging and is denied
+on `araripe-cogs`; site branch builds and staging Worker isolation are proven;
+v2 workflows cannot run on a schedule or mutate blue; the handoff skill passes
+both discovery paths and execution tests.
+
 #### Package 2B.1 — State safety and workflow coordination
 
 **Estimate:** High, 25k–40k
 
 - Fail closed when R2 state cannot be authenticated, downloaded, parsed, or
   validated.
-- Use a shared concurrency group for every state-mutating scheduled/manual
-  detection path, with `cancel-in-progress: false`.
+- Use `cancel-in-progress: false` with separate green processing and legacy
+  lanes plus a single serialized lock for conditional green staging-pointer
+  promotion. Long green replays must not block unchanged blue schedules.
 - Replace the fixed backend/site clock offset with a validated release signal.
 - Give alerts and rainfall independent execution, retry, and freshness states.
 
@@ -419,17 +512,22 @@ are frozen and versioned for the 2026 candidate generation.
 
 **Estimate:** Very High, 50k–80k
 
-- Implement the versioned release manifest and complete per-date processing
-  ledger.
+- Consume the exact version and checksum of the v2 ledger contract/schema and
+  backend producer owned by Package 2A.6. Package 2B.2 owns publication
+  integration, not a second ledger definition.
+- Require one terminal ledger row per manifest-bound expected acquisition and a
+  derived daily summary that reconciles all same-day rows. Development may run
+  in parallel, but the P2B gate cannot close before integration with the 2A.6
+  producer passes.
 - Publish all artifacts under an immutable release/staging identity.
 - Validate schemas, checksums, expected dates, state watermark, and product
-  completeness before pointer promotion.
+  completeness before green staging-pointer promotion.
 - Use conditional writes so older/racing jobs cannot replace a newer release.
 - Keep the last complete release live when a run is partial or fails.
 - Represent valid zero-alert dates and stale-object tombstones explicitly.
 - Keep operational data publication automatic without PRs or manual merges.
 
-#### Package 2B.3 — R2 separation and production delivery
+#### Package 2B.3 — R2 separation and staged delivery
 
 **Estimate:** Very High, 55k–90k, overlapping Topics 8–12 and 19
 
@@ -437,30 +535,34 @@ are frozen and versioned for the 2026 candidate generation.
 - Introduce least-privilege credentials and step-level secret exposure.
 - Copy and verify before switching consumers; retain the old paths for
   rollback; do not delete during initial migration.
-- Attach the public route to
-  `observatoriodachapadadoararipe.com`, preferably under `/data/...`.
+- Prepare and validate a same-origin `/data/...` route against the isolated
+  staging Worker first. Do not attach or switch the final-domain route until
+  Phase 6.
 - Validate CORS, content types, caching, checksums, downloads, and full-alert
   browser mode.
 - Define conservative lifecycle and rollback retention. Run deletion policies
   in reviewed dry-run form first.
-- Disable the public internal-bucket path only after full verification.
+- Prepare and rehearse disabling the blue public internal-bucket path, but do
+  not execute that step before the Phase 6 cutover.
 
 #### Package 2B.4 — Site artifact, deployment, and dependency migration
 
 **Estimate:** Very High, 35k–60k
 
-- Stop committing large, continuously generated alert archives to site Git.
+- Prepare the green site/build so it does not commit large, continuously
+  generated alert archives to Git; leave the blue job unchanged.
 - Retain small fixtures and schemas for local development and CI.
-- Stop bots from pushing routine generated changes directly to protected
-  source branches, while keeping R2 updates automatic.
-- Pin and script Wrangler deployment/validation/rollback.
+- Configure green workflows to publish routine data automatically to R2
+  without bot pushes or data PRs; blue bot shutdown remains Phase 6.
+- Pin and script the isolated green Wrangler deployment/validation/rollback.
 - Reconcile and lock the Python/Node environments sufficiently to reproduce
   both the scientific replay and the site deployment.
-- Pin GitHub Actions to reviewed commits after the full workflow inventory.
+- Pin GitHub Actions in the green workflow files after the full workflow
+  inventory; do not edit blue workflow activation before Phase 6.
 
-**Exit gate P2B:** A deliberately failed or racing run cannot corrupt canonical
-state or expose a partial release; a staged test release can be promoted and
-rolled back without a manual data PR.
+**Exit gate P2B:** A deliberately failed or racing green run cannot corrupt blue
+or expose a partial release; a staged test release can move and roll back its
+green pointer without a manual data PR or any production effect.
 
 ---
 
@@ -472,8 +574,10 @@ rolled back without a manual data PR.
 
 - Choose and record the replay cutoff date. Queue acquisitions after that
   cutoff for later incremental processing.
-- Pause state-mutating schedules during cutover or route them to an isolated
-  namespace. Do not simply let live state change during the rebuild.
+- Keep blue production schedules running while the green rehearsal/replay is
+  isolated. Queue only green post-cutoff acquisitions. A short blue write freeze
+  is permitted only in the final Phase 6 cutover window, after rollback is
+  rehearsed; do not pause current automation for the long rebuild.
 - Snapshot and checksum the current R2 alerts, baseline objects, persistence
   state, SQLite database, site manifest, public products, and both repository
   commits.
@@ -498,25 +602,30 @@ rollback works, and the full replay can run without mutating the live release.
 time
 
 1. Preserve the old generation as an immutable historical release.
-2. Query every available 2026 acquisition date from January 1 through the
-   recorded cutoff using explicit date ranges.
+2. Query every available 2026 physical acquisition/datatake from January 1
+   through the recorded cutoff using explicit date ranges, grouping only the
+   ledger summaries by UTC date.
 3. Process stateless spectral detection in bounded chronological batches.
-4. Record every expected date as complete-with-alerts, complete-zero-alert,
-   low-coverage, rejected-quality, download-failed, missing-input, or
-   processing-failed.
-5. Verify scene IDs, coverage, checksums, and artifacts before accepting each
-   batch.
+4. Record every manifest-bound expected acquisition as complete-with-alerts,
+   complete-zero-alert, low-coverage, rejected-quality, download-failed,
+   missing-input, or processing-failed; derive a daily summary only after all
+   expected acquisitions for that date are terminal.
+5. Verify acquisition/scene IDs, coverage, checksums, daily reconciliation, and
+   artifacts before accepting each batch.
 6. Apply versioned MapBiomas annotations and contextual signature fields
    without removing raw detections.
-7. Starting from empty state, replay accepted observations once in chronological
-   order using stable observation/event IDs.
+7. Starting from empty state, replay accepted observations once in timestamp
+   and acquisition-ID order using stable v2 IDs, with at most one persistence
+   contribution per event/UTC date.
 8. Regenerate persistence tiers, strong subsets, statistics, and clean 2026
    time-series rows.
 9. Reconcile the candidate release completely and leave it in staging. Do not
    promote it yet.
 
 **Exit gate P4:** One complete, internally consistent, reproducible 2026
-candidate exists in staging with no unresolved date or artifact status.
+candidate exists in staging; every manifest-bound expected acquisition has one
+terminal ledger row, every daily summary reconciles those rows, and no artifact
+status is unresolved.
 
 ---
 
@@ -534,10 +643,10 @@ candidate exists in staging with no unresolved date or artifact status.
 - Treat field visits as optional, targeted follow-up for unresolved cases.
 - Estimate precision, recall, commission, omission, important stratum results,
   and uncertainty.
-- Decide from evidence whether to activate drought adjustment, which
-  cloud/mosaic variant is canonical, which MapBiomas strong-subset policy is
-  defensible, and whether public contextual spectral signatures are reliable
-  enough for approved wording.
+- Validate the accepted defaults: drought remains disabled, the v2 SCL mask
+  and datatake-scoped composition generate the candidate, the 50% majority
+  MapBiomas subset remains contextual, and public spectral labels remain off.
+  Change a default only with recorded qualified evidence.
 - If a conditional method changes, rerun the affected 2026 stages and repeat
   release QA before promotion.
 - Version the sample, labels, calculations, report, and reviewer protocol.
@@ -567,6 +676,9 @@ versioned validation report. Any remaining uncertainty is stated explicitly.
 - Verify the main domain, same-origin data route, CORS, full/strong modes,
   downloads, rainfall, time series, build, deployment, and rollback target.
 - Atomically promote the small release pointer.
+- Only after green production health checks pass, disable the superseded blue
+  schedules, bot writers, and public internal-bucket path while retaining their
+  data and configuration for rollback.
 - Health-check production, retain the prior pointer for rollback, seed the
   scheduled process from the rebuilt watermark, then process queued post-cutoff
   dates through the five-day incremental contract.
@@ -602,6 +714,8 @@ automation continues without a PR or manual merge.
 
 #### 7.3 Cross-tool reusable skills
 
+- Maintain and forward-test the `araripe-safe-handoff` skill created in 2B.0;
+  it remains the mandatory missing-capability checkpoint protocol.
 - After one successful stable release workflow, create
   `araripe-release-guard`, read-only/dry-run by default.
 - After the scientific protocol is accepted and exercised, create
@@ -627,10 +741,11 @@ available consistently in both Codex and Claude Code.
 |---|---|
 | P0 — Workspace | Both repositories and data inputs survive the move; paths/tests/build work; secrets are outside the workspace; Codex/Claude instructions agree. |
 | P1 — Discovery | All repository workflows, Cloudflare controls, credentials, state owners, schemas, and provenance sources are mapped. |
-| P2A — Science | Scientific inputs and conditional methods are versioned and selected through the pilot; targeted tests pass. |
-| P2B — Publication | Staging, manifest, completeness, conditional promotion, rollback, public/private storage, and automatic operation work. |
+| P2A — Candidate science | Candidate-generation policy is closed and Package 2A.6 implements the coherent v2 acquisition/observation/event/lineage/persistence/ledger family, compatible baseline, chosen mask/composition, drought-disabled state, true Collection 10.1, and contextual policies; targeted tests pass. Qualified validation still belongs to P5. |
+| P2B.0 — Isolation | Claude/GitHub staging credentials cannot reach blue; branch builds and staging Worker are isolated; v2 workflows are inert/manual; safe handoff works. |
+| P2B — Publication | Staging, manifest, completeness, conditional green-pointer promotion, rollback, public/private storage, and automatic operation work without affecting blue. |
 | P3 — Replay readiness | Cutoff, queue, snapshots, environment, batch sizes, failure recovery, and rollback rehearsal are complete. |
-| P4 — Candidate | Every expected 2026 date has a terminal status and all candidate artifacts reconcile in staging. |
+| P4 — Candidate | Every manifest-bound 2026 acquisition has one terminal row, each daily summary reconciles all same-day rows, and all candidate artifacts reconcile in staging. |
 | P5 — Validation | Independent desktop review and uncertainty report are versioned; conditional methods are resolved. |
 | P6 — Canonical release | Main-domain/browser/download/health checks pass; pointer is promoted atomically; previous release remains recoverable. |
 | P7 — Hardening | Comprehensive CI, behavior-preserving accessibility, and cross-tool reusable skills are verified. |
@@ -660,10 +775,27 @@ Recommended prompt-sized planning envelopes:
 | 2026 replay orchestration | Multiple 15k–30k sessions plus external run time |
 | Validation tooling/reporting | Multiple 15k–30k sessions plus reviewer time |
 
-With P0 and P1 closed, the next implementation prompt should select exactly
-one Phase 2A package. The default starting point is Package 2A.1
-(persistence, identity, and scene correctness) because later replay and
-publication work depend on its deterministic state behavior.
+### 6.1 Capability routing and recoverable stops
+
+| Task | Claude Code | Codex | If unavailable |
+|---|---|---|---|
+| Local code/tests/docs | Yes | Yes | Save normal Git checkpoint |
+| GitHub repositories/Actions | Yes when its GitHub connection is active | Yes when connected | Name missing GitHub connection and hand off |
+| Earth Engine metadata/export/baseline/parity | Yes only with the approved Earth Engine project and local authentication | Yes with the approved project and an active Earth Engine capability or local authentication | Name the missing Earth Engine project/authentication; save a safe handoff and never switch projects silently |
+| R2 objects in `araripe-v2-staging` | Yes, bucket-scoped S3 profile only | Yes | Name the R2 staging profile; never broaden scope |
+| Cloudflare bucket/Worker/route/DNS/Builds configuration | No production-account token | Yes through the connected Cloudflare capability | Save safe handoff and provide Codex prompt |
+| Production pointer/route/cutover | No | Codex only at the approved Phase 6 gate | Stop before mutation and hand off |
+
+Every external package starts by loading `araripe-safe-handoff`. A missing
+connection is not a partial success: finish only the current atomic unit, verify
+that no partial release was promoted, write `docs/handoffs/<timestamp>_<slug>.md`,
+tell the user exactly what to activate, and provide a self-contained Codex
+handoff prompt. Resume only after rechecking repository and live state.
+
+The next implementation prompt should complete Package 2B.0. After its gate,
+start exactly one bounded Package 2B.1 change. Package 2A.6 is a separate
+parallel scientific branch; both Phase 2A.6 and Phase 2B must close before
+Phase 3.
 
 ---
 

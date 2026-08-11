@@ -1,0 +1,38 @@
+{
+  "slug": "cloudflare-route-access",
+  "task": "Configure an isolated staging Worker route",
+  "missing_capability": "Cloudflare control-plane connector",
+  "target": "staging Worker with no production route",
+  "required_activation": "Open the Cloudflare plugin in Codex",
+  "checkpoint_repository": "/absolute/path/to/Araripe",
+  "repositories": [
+    "/absolute/path/to/Araripe",
+    "/absolute/path/to/site"
+  ],
+  "safety": {
+    "last_atomic_step": "Local configuration contract validated",
+    "canonical_pointer_changed": false,
+    "canonical_pointer_evidence": "No pointer write was attempted",
+    "partial_artifact_public": false,
+    "partial_artifact_evidence": "No public route or domain was attached",
+    "legacy_production_changed": false,
+    "legacy_production_evidence": "Only local files were changed",
+    "rollback_state": "No rollback required because no live mutation occurred"
+  },
+  "completed": [
+    "Prepared and tested the local staging configuration"
+  ],
+  "mutations": [
+    "No external mutation"
+  ],
+  "verification": [
+    "Recorded both repository states"
+  ],
+  "remaining": [
+    "Create and verify the isolated staging Worker"
+  ],
+  "resume_preflight": [
+    "Read the checkpoint and inspect live Worker routes before mutation"
+  ],
+  "codex_prompt": "Use the connected Cloudflare capability only after confirming the target has no production route."
+}
