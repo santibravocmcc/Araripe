@@ -482,8 +482,9 @@ the Worker Builds re-audit proved the existing non-production trigger unsafe
 for candidate pushes, and the isolated Worker
 `observatorio-chapada-v2-staging` now exists with only the staging R2 binding,
 a distinct rate-limit namespace, and no public route. The separate GitHub
-`v2-staging` identity and a reviewed safe replacement for the current
-non-production deploy command remain open. See
+`v2-staging` bucket identity is now verified, but Environment installation
+awaits renewed local GitHub authentication. A reviewed safe replacement for
+the current non-production deploy command also remains open. See
 `docs/implementation/PHASE_2B0_2026-08-11.md`.
 
 - Keep all blue workflows, schedules, `araripe-cogs`, Worker, routes, domain,
