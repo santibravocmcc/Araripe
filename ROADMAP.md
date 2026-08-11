@@ -474,7 +474,12 @@ Phase 6 actions.
 **Status:** Started 2026-08-11. Private bucket `araripe-v2-staging` exists with
 no public access, custom domain, CORS, or production binding. No production
 resource changed. The cross-tool `araripe-safe-handoff` skill and Claude setup
-contract are versioned. See `docs/implementation/PHASE_2B0_2026-08-11.md`.
+contract are versioned. Claude's bucket-scoped credential is verified live:
+object list/put/get/delete succeed only on `araripe-v2-staging` and
+`araripe-cogs` is denied. Inert manual v2 workflows and the three concurrency
+lanes are drafted on the local review branch `claude/phase2b0-green-isolation`;
+the Worker Builds re-audit, staging Worker, and GitHub `v2-staging` identity
+remain open. See `docs/implementation/PHASE_2B0_2026-08-11.md`.
 
 - Keep all blue workflows, schedules, `araripe-cogs`, Worker, routes, domain,
   and current data paths unchanged through Phases 2B–5.

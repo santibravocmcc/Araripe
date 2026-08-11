@@ -1,0 +1,96 @@
+name: v2 green candidate replay (inert, manual only)
+
+# Package 2B.0 green-isolation route. This workflow is the INERT manual entry
+# point for the green (v2) candidate/replay lane. It deliberately contains no
+# candidate science yet: it only proves, on demand, that the green lane runs
+# with staging-only authority and cannot touch blue/production resources.
+#
+# Inertness and isolation guarantees (roadmap Package 2B.0):
+#   - trigger: workflow_dispatch ONLY — no schedule, no push, no inheritance
+#     of the blue Mon/Thu cron in detect_gee.yml;
+#   - permissions: contents read-only — no bot commit/push path exists;
+#   - credentials: GitHub Environment `v2-staging` only. Its identity is a
+#     bucket-scoped R2 key for `araripe-v2-staging` created separately from
+#     Claude's local credential. Production secrets (R2_ACCESS_KEY,
+#     R2_SECRET_KEY, GEE_SA_KEY) are never referenced here;
+#   - concurrency: green candidate lane `araripe-green-candidate`, distinct
+#     from the legacy implicit lanes and from the serialized promotion lane
+#     (see docs/operations/GREEN_CONCURRENCY_LANES.md);
+#   - every write goes under an immutable per-run prefix; nothing is deleted
+#     or overwritten, and no canonical pointer exists in this lane.
+#
+# The job fails closed if the v2-staging environment variables are missing or
+# name any bucket other than the approved staging sandbox.
+
+on:
+  workflow_dispatch:
+    inputs:
+      note:
+        description: "Optional operator note recorded in the probe object"
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: araripe-green-candidate
+  cancel-in-progress: false
+
+jobs:
+  green-isolation-probe:
+    # Repository guard: refuse to run from a fork; dispatch-only by trigger.
+    if: github.event_name == 'workflow_dispatch' && github.repository == 'santibravocmcc/Araripe'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: v2-staging
+    env:
+      R2_STAGING_BUCKET: ${{ vars.R2_STAGING_BUCKET }}
+      R2_ENDPOINT_URL: ${{ vars.R2_ENDPOINT_URL }}
+
+    steps:
+      - name: Fail closed unless the target is exactly the approved staging bucket
+        run: |
+          test "$R2_STAGING_BUCKET" = "araripe-v2-staging" || {
+            echo "refusing: R2_STAGING_BUCKET is not araripe-v2-staging" >&2; exit 1; }
+          test "$R2_ENDPOINT_URL" = "https://9416750169311ee4afc18a8ff3c771d4.r2.cloudflarestorage.com" || {
+            echo "refusing: R2_ENDPOINT_URL is not the approved account endpoint" >&2; exit 1; }
+
+      - name: List staging bucket with the green identity
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_STAGING_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_STAGING_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+        run: aws s3 ls "s3://$R2_STAGING_BUCKET" --endpoint-url "$R2_ENDPOINT_URL"
+
+      - name: Require AccessDenied on the production bucket
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_STAGING_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_STAGING_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+        run: |
+          if aws s3 ls s3://araripe-cogs --endpoint-url "$R2_ENDPOINT_URL" 2>/tmp/denied.log; then
+            echo "FATAL: green identity can read araripe-cogs — isolation broken" >&2
+            exit 1
+          fi
+          grep -q "AccessDenied" /tmp/denied.log || {
+            echo "FATAL: production access failed for a reason other than AccessDenied:" >&2
+            cat /tmp/denied.log >&2; exit 1; }
+          echo "confirmed: araripe-cogs is denied for the green identity"
+
+      - name: Write one immutable per-run probe object and read it back
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_STAGING_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_STAGING_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          NOTE: ${{ github.event.inputs.note }}
+        run: |
+          key="green-isolation-proof/run-${{ github.run_id }}-${{ github.run_attempt }}/probe.json"
+          jq -n --arg run "${{ github.run_id }}" --arg attempt "${{ github.run_attempt }}" \
+                --arg sha "${{ github.sha }}" --arg actor "${{ github.actor }}" \
+                --arg note "$NOTE" \
+                '{lane: "araripe-green-candidate", run: $run, attempt: $attempt,
+                  sha: $sha, actor: $actor, note: $note}' > probe.json
+          aws s3 cp probe.json "s3://$R2_STAGING_BUCKET/$key" --endpoint-url "$R2_ENDPOINT_URL"
+          aws s3 cp "s3://$R2_STAGING_BUCKET/$key" probe_back.json --endpoint-url "$R2_ENDPOINT_URL"
+          cmp probe.json probe_back.json && echo "probe written and verified at $key"
+          # Immutable run prefix: the probe is intentionally NOT deleted here.

@@ -1,0 +1,52 @@
+name: v2 green promotion lane (serialized placeholder)
+
+# Package 2B.0 concurrency-lane scaffolding. This is the SERIALIZED lock lane
+# reserved for conditional green staging-pointer promotion. It is a placeholder
+# no-op: the real promotion logic arrives only with the Package 2B.2
+# publication contract and will use a different protected identity — never the
+# green candidate identity and never Claude's local credential.
+#
+# What this placeholder proves once merged (after review):
+#   - the promotion lane `araripe-green-promotion` exists, is distinct from
+#     both the legacy implicit lanes and `araripe-green-candidate`, and
+#     serializes: GitHub queues at most one pending run behind one running run;
+#   - the lane is inert: workflow_dispatch only, read-only permissions, no
+#     environment, no secrets, no R2 access, no pointer write.
+#
+# Proof procedure (post-merge): dispatch this workflow twice in quick
+# succession with hold_seconds > 0 while a candidate-lane run is active. The
+# two promotion runs must serialize against each other and must not queue
+# against the candidate or legacy lanes. Record run URLs in the 2B.0 gate note.
+
+on:
+  workflow_dispatch:
+    inputs:
+      hold_seconds:
+        description: "Seconds to hold the serialized lock (0-120) for lane proof"
+        required: false
+        default: "0"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: araripe-green-promotion
+  cancel-in-progress: false
+
+jobs:
+  hold-serialized-lock:
+    if: github.event_name == 'workflow_dispatch' && github.repository == 'santibravocmcc/Araripe'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Assert lane identity and hold the lock
+        env:
+          HOLD: ${{ github.event.inputs.hold_seconds }}
+        run: |
+          echo "lane: araripe-green-promotion (serialized, cancel-in-progress: false)"
+          echo "run: ${{ github.run_id }} attempt ${{ github.run_attempt }} by ${{ github.actor }}"
+          hold=$(( HOLD < 0 ? 0 : (HOLD > 120 ? 120 : HOLD) ))
+          echo "holding serialized lock for ${hold}s"
+          sleep "$hold"
+          echo "no promotion logic exists in Package 2B.0 — placeholder exit"
