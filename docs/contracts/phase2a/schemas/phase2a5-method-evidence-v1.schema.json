@@ -1,0 +1,188 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://observatoriodachapadadoararipe.com/data/schemas/phase2a5-method-evidence-v1.schema.json",
+  "title": "Phase 2A.5 blinded per-case context comparison evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schema_version",
+    "evidence_id",
+    "derivative_package_id",
+    "scientific_status",
+    "parent_case",
+    "comparisons",
+    "review_method_metadata",
+    "missing_evidence_policy",
+    "claims",
+    "integrity"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "https://observatoriodachapadadoararipe.com/data/schemas/phase2a5-method-evidence-v1.schema.json"
+    },
+    "schema_version": {"const": "1.0.0"},
+    "evidence_id": {
+      "type": "string",
+      "pattern": "^p2a5-method-evidence-v1-[0-9a-f]{64}$"
+    },
+    "derivative_package_id": {
+      "type": "string",
+      "pattern": "^p2a5-derivative-package-v1-[0-9a-f]{64}$"
+    },
+    "scientific_status": {
+      "const": "provisional_blinded_context_comparison_evidence"
+    },
+    "parent_case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["blind_case_id", "canonical_observation_id", "canonical_event_id"],
+      "properties": {
+        "blind_case_id": {"$ref": "#/$defs/blind_case_id"},
+        "canonical_observation_id": {"type": "null"},
+        "canonical_event_id": {"type": "null"}
+      }
+    },
+    "comparisons": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mapbiomas", "contextual_signature"],
+      "properties": {
+        "mapbiomas": {"$ref": "#/$defs/comparison"},
+        "contextual_signature": {"$ref": "#/$defs/comparison"}
+      }
+    },
+    "review_method_metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mapbiomas", "contextual_signature"],
+      "properties": {
+        "mapbiomas": {"$ref": "#/$defs/blank_method"},
+        "contextual_signature": {"$ref": "#/$defs/blank_method"}
+      }
+    },
+    "missing_evidence_policy": {
+      "const": {
+        "case_replaced": false,
+        "missing_evidence_retained": true,
+        "missing_interpreted_as_zero": false
+      }
+    },
+    "claims": {
+      "const": {
+        "qualified_human_label_present": false,
+        "scientific_accuracy_claim": false,
+        "method_selected_or_activated": false,
+        "raw_detection_modified": false,
+        "canonical_identity_inferred": false,
+        "cause_inferred": false
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "canonical_payload_sha256",
+        "canonical_payload_hash_rule",
+        "artifact_inventory_sha256",
+        "parent_case_reconciled",
+        "blinding_metadata_reconciled"
+      ],
+      "properties": {
+        "canonical_payload_sha256": {"$ref": "#/$defs/sha256"},
+        "canonical_payload_hash_rule": {
+          "const": "RFC8785_SHA256_with_integrity.canonical_payload_sha256_omitted"
+        },
+        "artifact_inventory_sha256": {"$ref": "#/$defs/sha256"},
+        "parent_case_reconciled": {"const": true},
+        "blinding_metadata_reconciled": {"const": true}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "safe_path": {
+      "type": "string",
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9_.@/-]+$"
+    },
+    "blind_case_id": {
+      "type": "string",
+      "pattern": "^p2a3-blind-v1-[0-9a-f]{24}$"
+    },
+    "blind_option_id": {
+      "type": "string",
+      "pattern": "^p2a5-blind-option-v1-[0-9a-f]{24}$"
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "bytes", "sha256", "media_type", "role"],
+      "properties": {
+        "path": {"$ref": "#/$defs/safe_path"},
+        "bytes": {"type": "integer", "minimum": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "media_type": {"type": "string", "minLength": 1},
+        "role": {"const": "blinded_context_comparison_panel"}
+      }
+    },
+    "option": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["blind_option_id", "artifacts"],
+      "properties": {
+        "blind_option_id": {"$ref": "#/$defs/blind_option_id"},
+        "artifacts": {
+          "type": "array",
+          "maxItems": 1,
+          "items": {"$ref": "#/$defs/artifact"}
+        }
+      }
+    },
+    "comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "availability",
+        "reason",
+        "display_order",
+        "option_a",
+        "option_b",
+        "primary_assessment_required_first",
+        "selected_or_activated"
+      ],
+      "properties": {
+        "availability": {"enum": ["available", "partial", "unreviewable"]},
+        "reason": {"type": ["string", "null"]},
+        "display_order": {"const": ["A", "B"]},
+        "option_a": {"$ref": "#/$defs/option"},
+        "option_b": {"$ref": "#/$defs/option"},
+        "primary_assessment_required_first": {"const": true},
+        "selected_or_activated": {"const": false}
+      }
+    },
+    "blank_method": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "availability",
+        "option_a",
+        "option_b",
+        "display_order",
+        "preference",
+        "reviewer_confidence",
+        "evidence_reason",
+        "selected_or_activated"
+      ],
+      "properties": {
+        "availability": {"enum": ["available", "partial", "unreviewable"]},
+        "option_a": {"$ref": "#/$defs/blind_option_id"},
+        "option_b": {"$ref": "#/$defs/blind_option_id"},
+        "display_order": {"const": ["A", "B"]},
+        "preference": {"type": "null"},
+        "reviewer_confidence": {"type": "null"},
+        "evidence_reason": {"type": "null"},
+        "selected_or_activated": {"const": false}
+      }
+    }
+  }
+}

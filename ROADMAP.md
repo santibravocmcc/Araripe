@@ -359,9 +359,24 @@ decision gate and Phase 2A exit gate remain open. See
 - Lock the final cloud/mosaic method from evidence.
 - Activate drought adjustment only if evidence supports it.
 
-#### Package 2A.5 — MapBiomas and contextual cause labels
+#### Package 2A.5 — MapBiomas and contextual spectral signatures
 
 **Estimate:** Very High, 35k–60k with shared validation work
+
+**Implementation status:** Local/private technical evidence completed
+2026-08-11. Both unchanged national 2024 inputs are checksum-bound outside
+Git; deterministic native-grid regional crops, a fixed pre-outcome class and
+candidate registry, provenance-bound evidence for the unchanged 60-case pilot,
+and an isolated blinded reviewer derivative now pass the Phase 1 contract gate,
+87 focused Package 2A.5 tests, and the 335-test backend gate. All raw cases and
+missing/partial evidence remain present, both Phase 2A.4 drought-cell bindings
+remain inactive in every spectral stratum, and the original Phase 2A.4
+coordinator mapping remains isolated and byte-identical. No qualified labels,
+accepted observation/event identities, scientific accuracy result, threshold
+or contextual-signature selection, public wording approval, Phase 2A.4 method
+decision, replay, release, deployment, or publication exists. The Package 2A.5
+decision gate and Phase 2A exit gate therefore remain open. See
+`docs/implementation/PHASE_2A5_2026-08-09.md`.
 
 - Preserve the two national 2024 rasters unchanged outside Git.
 - Create and validate versioned regional crops covering the approved wider
@@ -378,8 +393,8 @@ decision gate and Phase 2A exit gate remain open. See
 
 **Exit gate P2A:** The algorithm, baseline decision, five-day incremental
 behavior, observation/event identity, cloud/mosaic method, drought activation
-decision, MapBiomas mapping/threshold policy, and cause-label policy are frozen
-and versioned for the 2026 candidate generation.
+decision, MapBiomas mapping/threshold policy, and contextual-signature policy
+are frozen and versioned for the 2026 candidate generation.
 
 ---
 
@@ -521,7 +536,8 @@ candidate exists in staging with no unresolved date or artifact status.
   and uncertainty.
 - Decide from evidence whether to activate drought adjustment, which
   cloud/mosaic variant is canonical, which MapBiomas strong-subset policy is
-  defensible, and whether public contextual cause labels are reliable enough.
+  defensible, and whether public contextual spectral signatures are reliable
+  enough for approved wording.
 - If a conditional method changes, rerun the affected 2026 stages and repeat
   release QA before promotion.
 - Version the sample, labels, calculations, report, and reviewer protocol.

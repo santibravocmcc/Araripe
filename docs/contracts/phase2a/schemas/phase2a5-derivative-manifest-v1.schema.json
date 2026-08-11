@@ -1,0 +1,321 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://observatoriodachapadadoararipe.com/data/schemas/phase2a5-derivative-manifest-v1.schema.json",
+  "title": "Phase 2A.5 provisional blinded context-comparison derivative manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schema_version",
+    "package_id",
+    "package_type",
+    "scientific_status",
+    "method_decision_status",
+    "generated_at",
+    "generation_command",
+    "runtime_versions",
+    "generator_source_inventory",
+    "local_only",
+    "parent_bindings",
+    "source_bindings",
+    "schema_bindings",
+    "case_population",
+    "review",
+    "blinding",
+    "decision_state",
+    "claims",
+    "integrity",
+    "generation_limitations",
+    "artifact_inventory_rule",
+    "artifact_inventory",
+    "checksum_file"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "https://observatoriodachapadadoararipe.com/data/schemas/phase2a5-derivative-manifest-v1.schema.json"
+    },
+    "schema_version": {"const": "1.0.0"},
+    "package_id": {
+      "type": "string",
+      "pattern": "^p2a5-derivative-package-v1-[0-9a-f]{64}$"
+    },
+    "package_type": {
+      "const": "phase2a5_provisional_blinded_context_comparison_derivative"
+    },
+    "scientific_status": {"const": "provisional_audit_inputs_only"},
+    "method_decision_status": {"const": "none"},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "generation_command": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "runtime_versions": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"type": "string", "minLength": 1}
+    },
+    "generator_source_inventory": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/artifact"}
+    },
+    "local_only": {"const": true},
+    "parent_bindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["phase2a3", "phase2a4"],
+      "properties": {
+        "phase2a3": {"$ref": "#/$defs/phase2a3_parent"},
+        "phase2a4": {"$ref": "#/$defs/phase2a4_parent"}
+      }
+    },
+    "source_bindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "registry",
+        "context_manifest",
+        "context_checksums",
+        "evidence_manifest",
+        "evidence_checksums"
+      ],
+      "properties": {
+        "registry": {"$ref": "#/$defs/artifact"},
+        "context_manifest": {"$ref": "#/$defs/artifact"},
+        "context_checksums": {"$ref": "#/$defs/artifact"},
+        "evidence_manifest": {"$ref": "#/$defs/artifact"},
+        "evidence_checksums": {"$ref": "#/$defs/artifact"}
+      }
+    },
+    "schema_bindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "method_evidence",
+        "derivative_manifest",
+        "review_export",
+        "validation_review"
+      ],
+      "properties": {
+        "method_evidence": {"$ref": "#/$defs/schema_binding"},
+        "derivative_manifest": {"$ref": "#/$defs/schema_binding"},
+        "review_export": {"$ref": "#/$defs/schema_binding"},
+        "validation_review": {"$ref": "#/$defs/schema_binding"}
+      }
+    },
+    "case_population": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "primary_case_count",
+        "double_review_case_count",
+        "case_replacement_performed",
+        "missing_cases_retained",
+        "blind_case_ids_sha256",
+        "context_evidence_sidecar_count",
+        "comparison_availability_counts"
+      ],
+      "properties": {
+        "primary_case_count": {"const": 60},
+        "double_review_case_count": {"const": 12},
+        "case_replacement_performed": {"const": false},
+        "missing_cases_retained": {"const": true},
+        "blind_case_ids_sha256": {"$ref": "#/$defs/sha256"},
+        "context_evidence_sidecar_count": {"const": 60},
+        "comparison_availability_counts": {
+          "type": "object",
+          "propertyNames": {"enum": ["available", "partial", "unreviewable"]},
+          "additionalProperties": {"type": "integer", "minimum": 0}
+        }
+      }
+    },
+    "review": {
+      "const": {
+        "isolated_reviewer_workflow": true,
+        "primary_assessment_required_before_all_five_family_reveal": true,
+        "primary_fields_locked_after_reveal": true,
+        "human_labels_present": false,
+        "qualified_reviewer_evidence_present": false,
+        "blank_review_state_preserved": true
+      }
+    },
+    "blinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reviewer_option_labels",
+        "true_mapping_coordinator_only",
+        "mapping_artifact",
+        "mapping_distributed_to_reviewers",
+        "exact_balance_per_new_family",
+        "double_review_evidence_identical",
+        "reviewer_packages"
+      ],
+      "properties": {
+        "reviewer_option_labels": {"const": ["A", "B"]},
+        "true_mapping_coordinator_only": {"const": true},
+        "mapping_artifact": {"$ref": "#/$defs/artifact"},
+        "mapping_distributed_to_reviewers": {"const": false},
+        "exact_balance_per_new_family": {"const": true},
+        "double_review_evidence_identical": {"const": true},
+        "reviewer_packages": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {"$ref": "#/$defs/reviewer_package"}
+        }
+      }
+    },
+    "decision_state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["phase2a4", "phase2a5"],
+      "properties": {
+        "phase2a4": {"type": "object"},
+        "phase2a5": {"$ref": "#/$defs/phase2a5_decision"}
+      }
+    },
+    "claims": {
+      "const": {
+        "qualified_human_labels_present": false,
+        "scientific_accuracy_claim": false,
+        "method_promoted_or_activated": false,
+        "raw_detection_modified": false,
+        "missing_evidence_interpreted_as_zero": false,
+        "canonical_identity_inferred": false,
+        "cause_inferred": false,
+        "baseline_rebuilt": false,
+        "current_year_replayed": false,
+        "phase2a4_candidates_modified": false
+      }
+    },
+    "integrity": {
+      "const": {
+        "schema_validated": true,
+        "checksum_file_validated": true,
+        "artifact_inventory_reconciled": true,
+        "phase2a3_parent_reconciled": true,
+        "phase2a4_parent_reconciled": true,
+        "phase2a4_opaque_material_preserved": true,
+        "case_population_reconciled": true,
+        "mapping_bijection_reconciled": true,
+        "reviewer_isolation_reconciled": true,
+        "blank_reviews_reconciled": true,
+        "missing_evidence_retained": true
+      }
+    },
+    "generation_limitations": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "artifact_inventory_rule": {"type": "string", "minLength": 1},
+    "artifact_inventory": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/artifact"}
+    },
+    "checksum_file": {"const": "CHECKSUMS.sha256"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "safe_path": {
+      "type": "string",
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9_.@/-]+$"
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "bytes", "sha256"],
+      "properties": {
+        "path": {"$ref": "#/$defs/safe_path"},
+        "bytes": {"type": "integer", "minimum": 0},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "schema_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "path", "bytes", "sha256"],
+      "properties": {
+        "schema_version": {"const": "1.0.0"},
+        "path": {"$ref": "#/$defs/safe_path"},
+        "bytes": {"type": "integer", "minimum": 1},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "phase2a3_parent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["package_id", "manifest_sha256", "artifact_inventory_sha256", "mutated"],
+      "properties": {
+        "package_id": {
+          "type": "string",
+          "pattern": "^p2a3-pilot-package-v1-[0-9a-f]{64}$"
+        },
+        "manifest_sha256": {"$ref": "#/$defs/sha256"},
+        "artifact_inventory_sha256": {"$ref": "#/$defs/sha256"},
+        "mutated": {"const": false}
+      }
+    },
+    "phase2a4_parent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "package_id",
+        "manifest_sha256",
+        "checksums_sha256",
+        "artifact_inventory_sha256",
+        "mapping_mutated",
+        "candidate_registry_mutated",
+        "method_candidates_modified_or_activated"
+      ],
+      "properties": {
+        "package_id": {
+          "type": "string",
+          "pattern": "^p2a4-derivative-package-v1-[0-9a-f]{64}$"
+        },
+        "manifest_sha256": {"$ref": "#/$defs/sha256"},
+        "checksums_sha256": {"$ref": "#/$defs/sha256"},
+        "artifact_inventory_sha256": {"$ref": "#/$defs/sha256"},
+        "mapping_mutated": {"const": false},
+        "candidate_registry_mutated": {"const": false},
+        "method_candidates_modified_or_activated": {"const": false}
+      }
+    },
+    "reviewer_package": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reviewer_slot",
+        "case_count",
+        "artifact_inventory_sha256",
+        "true_candidate_mapping_present",
+        "coordinator_material_present"
+      ],
+      "properties": {
+        "reviewer_slot": {"enum": ["reviewer-a", "reviewer-b"]},
+        "case_count": {"enum": [12, 60]},
+        "artifact_inventory_sha256": {"$ref": "#/$defs/sha256"},
+        "true_candidate_mapping_present": {"const": false},
+        "coordinator_material_present": {"const": false}
+      }
+    },
+    "phase2a5_decision": {
+      "const": {
+        "selected_candidates": {
+          "mapbiomas": null,
+          "contextual_signature": null
+        },
+        "strong_subset_threshold_selected": false,
+        "contextual_signature_policy_frozen": false,
+        "public_wording_approved": false,
+        "release_or_replay_authorized": false
+      }
+    }
+  }
+}

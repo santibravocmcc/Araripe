@@ -1,0 +1,264 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://observatoriodachapadadoararipe.com/data/schemas/phase2a5-context-evidence-manifest-v1.schema.json",
+  "title": "Araripe Phase 2A.5 contextual evidence manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schema_version",
+    "artifact_type",
+    "evidence_id",
+    "pipeline_version",
+    "generated_at",
+    "runtime_versions",
+    "generator_source_inventory",
+    "schema_bindings",
+    "parents",
+    "candidate_registry",
+    "mapbiomas_context",
+    "case_population",
+    "candidate_families",
+    "cases",
+    "counts",
+    "source_limitations",
+    "claims",
+    "artifact_inventory_rule",
+    "artifact_inventory",
+    "checksum_file"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "https://observatoriodachapadadoararipe.com/data/schemas/phase2a5-context-evidence-manifest-v1.schema.json"
+    },
+    "schema_version": {"const": "1.0.0"},
+    "artifact_type": {"const": "phase2a5_context_evidence"},
+    "evidence_id": {
+      "type": "string",
+      "pattern": "^p2a5-context-evidence-v1-[0-9a-f]{64}$"
+    },
+    "pipeline_version": {"const": "phase2a5-context-evidence-v1"},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "runtime_versions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["python", "numpy", "pillow", "pyproj", "rasterio", "gdal", "shapely", "jsonschema"],
+      "properties": {
+        "python": {"type": "string", "minLength": 1},
+        "numpy": {"type": "string", "minLength": 1},
+        "pillow": {"type": "string", "minLength": 1},
+        "pyproj": {"type": "string", "minLength": 1},
+        "rasterio": {"type": "string", "minLength": 1},
+        "gdal": {"type": "string", "minLength": 1},
+        "shapely": {"type": "string", "minLength": 1},
+        "jsonschema": {"type": "string", "minLength": 1}
+      }
+    },
+    "generator_source_inventory": {
+      "type": "array",
+      "minItems": 3,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/artifact"}
+    },
+    "schema_bindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["manifest", "case"],
+      "properties": {
+        "manifest": {"$ref": "#/$defs/artifact"},
+        "case": {"$ref": "#/$defs/artifact"}
+      }
+    },
+    "parents": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["phase2a3", "phase2a4"],
+      "properties": {
+        "phase2a3": {"$ref": "#/$defs/parent_binding"},
+        "phase2a4": {"$ref": "#/$defs/parent_binding"}
+      }
+    },
+    "candidate_registry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["registry_id", "registry_version", "artifact", "fixed_before_case_outcomes"],
+      "properties": {
+        "registry_id": {"const": "araripe-phase2a5-context-candidates-v1"},
+        "registry_version": {"const": "1.0.0"},
+        "artifact": {"$ref": "#/$defs/external_artifact"},
+        "fixed_before_case_outcomes": {"const": true}
+      }
+    },
+    "mapbiomas_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact_id", "manifest", "crops"],
+      "properties": {
+        "artifact_id": {"type": "string", "minLength": 1},
+        "manifest": {"$ref": "#/$defs/external_artifact"},
+        "crops": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mapbiomas_col3_beta_10m_2024", "mapbiomas_col10_1_30m_2024"],
+          "properties": {
+            "mapbiomas_col3_beta_10m_2024": {"$ref": "#/$defs/crop_binding"},
+            "mapbiomas_col10_1_30m_2024": {"$ref": "#/$defs/crop_binding"}
+          }
+        }
+      }
+    },
+    "case_population": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "case_count",
+        "source_sample",
+        "population_snapshot_id",
+        "original_case_order_sha256",
+        "original_geometry_order_sha256",
+        "preserved_without_replacement",
+        "population_wide_geometry_available",
+        "population_wide_outcomes_computed",
+        "gap"
+      ],
+      "properties": {
+        "case_count": {"const": 60},
+        "source_sample": {"$ref": "#/$defs/external_artifact"},
+        "population_snapshot_id": {"type": "string", "pattern": "^p2a3-population-v1-[0-9a-f]{64}$"},
+        "original_case_order_sha256": {"$ref": "#/$defs/sha256"},
+        "original_geometry_order_sha256": {"$ref": "#/$defs/sha256"},
+        "preserved_without_replacement": {"const": true},
+        "population_wide_geometry_available": {"const": false},
+        "population_wide_outcomes_computed": {"const": false},
+        "gap": {
+          "const": "Geometry is retained for the exact 60 selected cases only; nonselected population units cannot be reconstructed and no population-wide Phase 2A.5 outcome totals are computed."
+        }
+      }
+    },
+    "candidate_families": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mapbiomas", "contextual_signature"],
+      "properties": {
+        "mapbiomas": {
+          "const": ["natural-vegetation-share-0.50-v1", "natural-vegetation-share-0.75-v1"]
+        },
+        "contextual_signature": {
+          "const": ["dominant-assessed-share-0.60-v1", "plurality-assessed-margin-0.15-v1"]
+        }
+      }
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 60,
+      "maxItems": 60,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/case_summary"}
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["case_count", "available", "partial", "unreviewable", "raw_detection_count"],
+      "properties": {
+        "case_count": {"const": 60},
+        "available": {"type": "integer", "minimum": 0, "maximum": 60},
+        "partial": {"type": "integer", "minimum": 0, "maximum": 60},
+        "unreviewable": {"type": "integer", "minimum": 0, "maximum": 60},
+        "raw_detection_count": {"const": 60}
+      }
+    },
+    "source_limitations": {
+      "type": "array",
+      "minItems": 3,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "claims": {
+      "const": {
+        "local_only": true,
+        "provisional_audit_inputs_only": true,
+        "raw_detection_modified": false,
+        "raw_detection_filtered": false,
+        "case_replaced": false,
+        "qualified_human_label_present": false,
+        "accepted_observation_or_event_identity_present": false,
+        "scientific_accuracy_claim": false,
+        "omission_or_recall_claim": false,
+        "threshold_selected_or_activated": false,
+        "contextual_signature_policy_selected_or_activated": false,
+        "phase2a4_method_selected_or_modified": false,
+        "causal_cause_inferred": false,
+        "public_wording_approved": false,
+        "phase2a_exit_gate_closed": false
+      }
+    },
+    "artifact_inventory_rule": {"const": "all files except manifest.json and CHECKSUMS.sha256"},
+    "artifact_inventory": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/artifact"}
+    },
+    "checksum_file": {"const": "CHECKSUMS.sha256"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "safe_path": {"type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"},
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "bytes", "sha256"],
+      "properties": {
+        "path": {"$ref": "#/$defs/safe_path"},
+        "bytes": {"type": "integer", "minimum": 1},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "external_artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "bytes", "sha256", "scope"],
+      "properties": {
+        "path": {"$ref": "#/$defs/safe_path"},
+        "bytes": {"type": "integer", "minimum": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "scope": {"const": "repository_relative_external_input"}
+      }
+    },
+    "parent_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact_id", "manifest", "checksum_file", "case_count", "immutable_input"],
+      "properties": {
+        "artifact_id": {"type": "string", "minLength": 1},
+        "manifest": {"$ref": "#/$defs/external_artifact"},
+        "checksum_file": {"$ref": "#/$defs/external_artifact"},
+        "case_count": {"const": 60},
+        "immutable_input": {"const": true}
+      }
+    },
+    "crop_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["crop_id", "artifact", "source_sha256", "extent_id", "categorical_resampling"],
+      "properties": {
+        "crop_id": {"type": "string", "minLength": 1},
+        "artifact": {"$ref": "#/$defs/external_artifact"},
+        "source_sha256": {"$ref": "#/$defs/sha256"},
+        "extent_id": {"const": "araripe-implementation-rectangle-v1"},
+        "categorical_resampling": {"const": "nearest_only"}
+      }
+    },
+    "case_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sample_id", "blind_case_id", "status", "record"],
+      "properties": {
+        "sample_id": {"type": "string", "pattern": "^p2a3-sample-v1-[0-9a-f]{64}$"},
+        "blind_case_id": {"type": "string", "pattern": "^p2a3-blind-v1-[0-9a-f]{24}$"},
+        "status": {"enum": ["available", "partial", "unreviewable"]},
+        "record": {"$ref": "#/$defs/artifact"}
+      }
+    }
+  }
+}
