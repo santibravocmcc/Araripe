@@ -478,8 +478,13 @@ contract are versioned. Claude's bucket-scoped credential is verified live:
 object list/put/get/delete succeed only on `araripe-v2-staging` and
 `araripe-cogs` is denied. Inert manual v2 workflows and the three concurrency
 lanes are drafted on the local review branch `claude/phase2b0-green-isolation`;
-the Worker Builds re-audit, staging Worker, and GitHub `v2-staging` identity
-remain open. See `docs/implementation/PHASE_2B0_2026-08-11.md`.
+the Worker Builds re-audit proved the existing non-production trigger unsafe
+for candidate pushes, and the isolated Worker
+`observatorio-chapada-v2-staging` now exists with only the staging R2 binding,
+a distinct rate-limit namespace, and no public route. The separate GitHub
+`v2-staging` identity and a reviewed safe replacement for the current
+non-production deploy command remain open. See
+`docs/implementation/PHASE_2B0_2026-08-11.md`.
 
 - Keep all blue workflows, schedules, `araripe-cogs`, Worker, routes, domain,
   and current data paths unchanged through Phases 2B–5.
@@ -487,8 +492,11 @@ remain open. See `docs/implementation/PHASE_2B0_2026-08-11.md`.
   AWS profile `araripe-r2-staging`; never a production-account Wrangler token.
 - Use a different bucket-only identity in GitHub Environment `v2-staging` and
   a separate protected promotion identity later.
-- Re-audit Cloudflare Worker Builds before any site branch push. Create a
-  distinct staging Worker/environment with no apex/custom route.
+- Re-audit Cloudflare Worker Builds before any site branch push. The live audit
+  found a wildcard non-production trigger running `npx wrangler deploy`; keep
+  site candidate branches local until a reviewed staging-only deploy command
+  is installed. Use the distinct staging Worker/environment with no
+  apex/custom route.
 - Introduce inert/manual v2 workflows that cannot inherit the old schedule,
   state keys, bucket fallback, bot pushes, or production credentials.
 - Separate concurrency into legacy-live, green-candidate/replay, and serialized
