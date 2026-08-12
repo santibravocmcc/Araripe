@@ -37,7 +37,8 @@ The initial allowlist is:
    from choosing any Wrangler target or binding. It then reruns the full audit.
 
 The token is technically account-scoped because Cloudflare does not scope
-Workers Scripts or Workers CI permissions to one Worker/trigger. The security
+Workers Scripts or Workers Builds Configuration permissions to one
+Worker/trigger. The security
 boundary therefore combines a token stored only in GitHub, fixed code,
 default-branch protection, CODEOWNERS, Environment approval, exact identifiers,
 and post-mutation read-back. Claude cannot call the token directly.
@@ -63,7 +64,7 @@ Create a custom **user API token** in Cloudflare. Workers Builds currently
 supports user tokens, and the initial broker needs only:
 
 - Account -> Workers Scripts -> Edit;
-- Account -> Workers CI -> Edit;
+- Account -> Workers Builds Configuration -> Edit;
 - Zone -> Workers Routes -> Read, restricted to the exact
   `observatoriodachapadadoararipe.com` zone.
 
