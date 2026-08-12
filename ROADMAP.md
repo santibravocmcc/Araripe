@@ -484,7 +484,11 @@ for candidate pushes, and the isolated Worker
 a distinct rate-limit namespace, and no public route. The separate GitHub
 `v2-staging` bucket identity is now verified, but Environment installation
 awaits renewed local GitHub authentication. A reviewed safe replacement for
-the current non-production deploy command also remains open. See
+the current non-production deploy command also remains open. A restricted
+GitHub Environment broker is drafted locally so Claude can request fixed green
+Cloudflare operations without receiving the account-scoped token; it remains
+inactive pending credential setup, protection review, merge approval, and
+default-branch installation. See
 `docs/implementation/PHASE_2B0_2026-08-11.md`.
 
 - Keep all blue workflows, schedules, `araripe-cogs`, Worker, routes, domain,
@@ -504,6 +508,9 @@ the current non-production deploy command also remains open. See
   pointer-promotion lanes.
 - If a tool lacks a required connection, stop before promotion, save an atomic
   checkpoint, name the missing capability, and provide a Codex handoff prompt.
+- Route Claude Cloudflare control-plane requests only through the protected,
+  fixed-target green broker. Never give Claude its Environment token or add a
+  generic command/resource input. Production and Phase 6 actions are excluded.
 
 **Exit gate 2B.0:** Claude object access succeeds only on staging and is denied
 on `araripe-cogs`; site branch builds and staging Worker isolation are proven;

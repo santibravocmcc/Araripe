@@ -17,6 +17,9 @@ Before changing anything, classify each step as one of:
 - `earth-engine`: asset metadata, export tasks, baseline reconstruction, or
   local/GEE parity under one explicitly approved Earth Engine project;
 - `r2-staging-object`: S3 object operations only in `araripe-v2-staging`;
+- `cloudflare-green-broker`: one already-reviewed named operation dispatched
+  through `.github/workflows/cloudflare_green_control.yml` on the trusted
+  default branch;
 - `cloudflare-control-plane`: buckets, CORS, lifecycle, Workers, routes, DNS,
   Builds, bindings, or credentials;
 - `production`: any canonical pointer, production Worker, public route, current
@@ -45,6 +48,14 @@ Claude's approved credential is an R2 S3 credential restricted to
 `araripe-v2-staging`. It is not a Wrangler or Cloudflare control-plane token.
 Never ask for, accept, print, or save a secret in chat, Git, `AGENTS.md`,
 `CLAUDE.md`, or a repository `.env`.
+
+Claude may request Cloudflare control-plane work only through an operation
+already allowlisted in the protected green broker. The broker Environment
+token must never be copied locally or retrieved. Never edit the broker and
+dispatch that edit in the same task, pass a resource/command/body indirectly,
+approve your own Environment request, or bypass a refusal with Wrangler,
+`curl`, `gh api`, another workflow, or another credential. Production is
+read-only through Phases 2B-5 and is not a broker target.
 
 ## 3. Execute atomically
 

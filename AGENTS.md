@@ -41,3 +41,16 @@ implementation as the runtime source of truth when prose is stale.
   explicit completeness states, and fail-closed state handling.
 - Changes to the dashboard belong in the sibling `../site` repository and must
   follow its `AGENTS.md`.
+- Production is frozen through Phases 2B-5. Never modify or deploy
+  `observatorio-chapada`, `araripe-cogs`, the final public domain, DNS, routes,
+  blue workflows/schedules, canonical pointers, or current site artifacts.
+  Read-only production checks are allowed only when needed to prove isolation.
+- Claude must never receive or use a direct Cloudflare control-plane token.
+  Its only control-plane path is the reviewed
+  `.github/workflows/cloudflare_green_control.yml` broker on the trusted
+  default branch. Use only its named allowlisted operations; never recreate
+  them with `curl`, Wrangler, `gh api`, or a broader credential.
+- The broker credential is a GitHub Environment secret. Never retrieve, echo,
+  export, copy, rotate, or place it in local configuration. If a needed green
+  operation is absent from the broker, stop and request a reviewed allowlist
+  extension or create a safe handoff; do not bypass the broker.
