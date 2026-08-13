@@ -471,10 +471,24 @@ Phase 6 actions.
 
 **Estimate:** Medium–High, 12k–25k
 
-**Status:** Started 2026-08-11. Private bucket `araripe-v2-staging` exists with
-no public access, custom domain, CORS, or production binding. No production
-resource changed. The cross-tool `araripe-safe-handoff` skill and Claude setup
-contract are versioned. See `docs/implementation/PHASE_2B0_2026-08-11.md`.
+**Status:** Closed 2026-08-13 on `main`. The green foundation was installed
+through the minimal additive PR #10 (squash merge `8daa1812`) and closed by
+the documentation PR #11 (merge `3398c687`): restricted Cloudflare
+green-control broker behind the protected reviewer-gated Environment, inert
+manual v2 candidate/promotion lanes with proven serialization and lane
+distinctness (runs `31720230963`, `31720226492`, `31720228888`), broker
+read-only audit (run `31719834876`), and the separately approved
+`disable-site-branch-deploy` mutation (run `31724415945`) that made the
+wildcard non-production site deploy command inert (`exit 0`, known rollback).
+Both GitHub Environments are installed (`v2-staging` without reviewer,
+`cloudflare-green-control` with a required human reviewer). Production was
+never mutated (`production_mutated=false`; byte-identical public content).
+The canonical closure record lives on `main` in
+`docs/implementation/PHASE_2B0_2026-08-11.md` and
+`docs/operations/CLOUDFLARE_GREEN_AFTER_STATE_2026-08-13.md`; this planning
+branch keeps the full scientific roadmap isolated from `main`. A reviewed
+green site deploy remains Package 2B.4 work. **Package 2A.6 is open / not
+started** and proceeds as bounded Packages 2A.6A–2A.6D.
 
 - Keep all blue workflows, schedules, `araripe-cogs`, Worker, routes, domain,
   and current data paths unchanged through Phases 2B–5.
@@ -792,10 +806,12 @@ that no partial release was promoted, write `docs/handoffs/<timestamp>_<slug>.md
 tell the user exactly what to activate, and provide a self-contained Codex
 handoff prompt. Resume only after rechecking repository and live state.
 
-The next implementation prompt should complete Package 2B.0. After its gate,
-start exactly one bounded Package 2B.1 change. Package 2A.6 is a separate
-parallel scientific branch; both Phase 2A.6 and Phase 2B must close before
-Phase 3.
+Package 2B.0 closed 2026-08-13 on `main`. The next scientific implementation
+prompt should start Package 2A.6A (v2 contracts: identity, persistence, and
+ledger) from this branch's lineage; publication work continues separately with
+one bounded Package 2B.1 change. Package 2A.6 remains a separate parallel
+scientific branch divided into Packages 2A.6A–2A.6D; both Phase 2A.6 and
+Phase 2B must close before Phase 3.
 
 ---
 
