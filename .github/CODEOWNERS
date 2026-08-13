@@ -1,0 +1,9 @@
+# Cloudflare broker and operating boundaries require explicit owner review.
+/.github/CODEOWNERS @santibravocmcc
+/.github/workflows/** @santibravocmcc
+/.github/workflows/cloudflare_green_control.yml @santibravocmcc
+/scripts/cloudflare_green_control.py @santibravocmcc
+/tests/test_cloudflare_green_control.py @santibravocmcc
+/docs/operations/RESTRICTED_CLOUDFLARE_BROKER.md @santibravocmcc
+/AGENTS.md @santibravocmcc
+/CLAUDE.md @santibravocmcc

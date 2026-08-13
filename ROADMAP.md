@@ -60,3 +60,39 @@ independent reference clearing layer (e.g. PRODES/DETER or manually digitized
 clearings) that is *not* derived from these alerts. Assembling that layer and
 the visual interpretation itself are human steps (see AUDITORIA_TECNICA.md
 Task 4).
+
+## 5. Package 2B.0 — isolated green foundation and operating policy
+
+**Status:** active. Production (blue) is frozen: the scheduled workflows
+`detect_gee.yml` and `update_data.yml`, Worker `observatorio-chapada`, bucket
+`araripe-cogs`, the final public domain, DNS, and routes stay unchanged until
+the separately approved cutover. The complete remediation plan (34 topics,
+Phases 0–7) is maintained on the planning branch
+`codex/technical-review-roadmap`; this section records only what is installed
+on `main`.
+
+Green components are additive and isolated: the private bucket
+`araripe-v2-staging`, the unrouted Worker `observatorio-chapada-v2-staging`,
+manual-only v2 workflows in distinct concurrency lanes, and the restricted
+Cloudflare green-control broker. See
+`docs/implementation/PHASE_2B0_2026-08-11.md`,
+`docs/operations/RESTRICTED_CLOUDFLARE_BROKER.md`, and
+`docs/operations/GREEN_CONCURRENCY_LANES.md`.
+
+Risk-based approval policy:
+
+- Autonomous (no repeated approval): local development and alternative local
+  branches; object operations in `araripe-v2-staging`; manual green workflows
+  holding only the staging-scoped identity; read-only verifications; commits,
+  branch pushes, and opening pull requests; merging a minimal, additive,
+  inert pull request proven not to change blue runtime files.
+- Explicit human approval: any action with authority or potential effect on
+  production — blue workflows, the production Worker, `araripe-cogs`, the
+  final public domain, DNS, routes, canonical pointers, the public site,
+  cutover steps, and any Cloudflare token with account-level edit permission.
+- GitHub Environment `v2-staging` (bucket-scoped identity) needs no reviewer;
+  `cloudflare-green-control` keeps a required human reviewer because its
+  token can edit at account level. No agent approves its own Environment run
+  or bypasses a pending approval, failure, or broker refusal; a missing
+  broker operation means stop and hand off, never Wrangler, `curl`, direct
+  API, or a different credential.
