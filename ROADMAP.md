@@ -482,13 +482,15 @@ the Worker Builds re-audit proved the existing non-production trigger unsafe
 for candidate pushes, and the isolated Worker
 `observatorio-chapada-v2-staging` now exists with only the staging R2 binding,
 a distinct rate-limit namespace, and no public route. The separate GitHub
-`v2-staging` bucket identity is now verified, but Environment installation
-awaits renewed local GitHub authentication. A reviewed safe replacement for
-the current non-production deploy command also remains open. A restricted
-GitHub Environment broker is drafted locally so Claude can request fixed green
-Cloudflare operations without receiving the account-scoped token; it remains
-inactive pending credential setup, protection review, merge approval, and
-default-branch installation. See
+`v2-staging` bucket identity is installed in the protected `v2-staging`
+Environment (2026-08-13, names verified, values never printed). A reviewed
+safe replacement for the current non-production deploy command remains open.
+A restricted GitHub Environment broker is drafted locally so Claude can
+request fixed green Cloudflare operations without receiving the
+account-scoped token; the user installed its credential and variables in the
+protected `cloudflare-green-control` Environment (2026-08-13), and the broker
+remains inactive pending the owner's `main` ruleset decision, the reviewed
+merge to the default branch, and the post-merge `audit` proof. See
 `docs/implementation/PHASE_2B0_2026-08-11.md`.
 
 - Keep all blue workflows, schedules, `araripe-cogs`, Worker, routes, domain,
