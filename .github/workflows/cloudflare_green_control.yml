@@ -1,0 +1,72 @@
+name: restricted Cloudflare green control
+
+# Narrow control-plane broker for Claude/Codex. The credential is held only by
+# the protected GitHub Environment. Inputs never contain resource names, URLs,
+# commands, paths, or JSON. Production operations do not exist in this file.
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: "Fixed green-only operation"
+        required: true
+        type: choice
+        options:
+          - audit
+          - enforce-worker-isolation
+          - disable-site-branch-deploy
+      confirmation:
+        description: "For mutations enter exactly GREEN-ONLY; leave blank for audit"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: araripe-cloudflare-green-control
+  cancel-in-progress: false
+
+jobs:
+  restricted-control:
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.repository == 'santibravocmcc/Araripe' &&
+      github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: cloudflare-green-control
+
+    steps:
+      - name: Check out the exact trusted workflow revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: Validate fixed environment boundary
+        env:
+          ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          ZONE_ID: ${{ vars.CLOUDFLARE_ZONE_ID }}
+          CONTROL_SCOPE: ${{ vars.CLOUDFLARE_CONTROL_SCOPE }}
+          OPERATION: ${{ inputs.operation }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          test "$ACCOUNT_ID" = "9416750169311ee4afc18a8ff3c771d4"
+          test "$ZONE_ID" = "ffb40294871f38028e925208c3f9110a"
+          test "$CONTROL_SCOPE" = "green-only"
+          case "$OPERATION" in
+            audit) test -z "$CONFIRMATION" ;;
+            enforce-worker-isolation|disable-site-branch-deploy)
+              test "$CONFIRMATION" = "GREEN-ONLY" ;;
+            *) exit 64 ;;
+          esac
+
+      - name: Run fixed-target controller
+        env:
+          CLOUDFLARE_GREEN_CONTROL_TOKEN: ${{ secrets.CLOUDFLARE_GREEN_CONTROL_TOKEN }}
+          OPERATION: ${{ inputs.operation }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: >-
+          python scripts/cloudflare_green_control.py
+          --operation "$OPERATION"
+          --confirmation "$CONFIRMATION"
