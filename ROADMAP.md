@@ -63,19 +63,25 @@ Task 4).
 
 ## 5. Package 2B.0 — isolated green foundation and operating policy
 
-**Status:** active. Production (blue) is frozen: the scheduled workflows
-`detect_gee.yml` and `update_data.yml`, Worker `observatorio-chapada`, bucket
-`araripe-cogs`, the final public domain, DNS, and routes stay unchanged until
-the separately approved cutover. The complete remediation plan (34 topics,
-Phases 0–7) is maintained on the planning branch
+**Status:** closed 2026-08-13 (PR #10, merge `8daa181`; broker audit run
+`31719834876`; green proofs `31720230963`, `31720226492`, `31720228888`;
+approved mutation run `31724415945`). Production (blue) remains frozen: the
+scheduled workflows `detect_gee.yml` and `update_data.yml`, Worker
+`observatorio-chapada`, bucket `araripe-cogs`, the final public domain, DNS,
+and routes stay unchanged until the separately approved cutover. The complete
+remediation plan (34 topics, Phases 0–7) is maintained on the planning branch
 `codex/technical-review-roadmap`; this section records only what is installed
 on `main`.
 
 Green components are additive and isolated: the private bucket
 `araripe-v2-staging`, the unrouted Worker `observatorio-chapada-v2-staging`,
 manual-only v2 workflows in distinct concurrency lanes, and the restricted
-Cloudflare green-control broker. See
-`docs/implementation/PHASE_2B0_2026-08-11.md`,
+Cloudflare green-control broker. The wildcard non-production site deploy
+command is temporarily inert (`exit 0`); a reviewed green site deploy path is
+future Package 2B.4 work. Package 2A.6 (candidate-generation science) is open
+and not started; it proceeds as Packages 2A.6A–2A.6D on the isolated science
+base branch. See `docs/implementation/PHASE_2B0_2026-08-11.md`,
+`docs/operations/CLOUDFLARE_GREEN_AFTER_STATE_2026-08-13.md`,
 `docs/operations/RESTRICTED_CLOUDFLARE_BROKER.md`, and
 `docs/operations/GREEN_CONCURRENCY_LANES.md`.
 
