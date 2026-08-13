@@ -124,6 +124,13 @@ def save_scene_quality(
     scene_ids: list[str],
 ) -> Path:
     """Write a small local QA record for later processing-ledger ingestion."""
+    from src.detection.identity import _require_v1_identity_id
+
+    _require_v1_identity_id(
+        acquisition_id,
+        prefix="acq-v1-",
+        label="scene-quality acquisition_id",
+    )
     output_dir.mkdir(parents=True, exist_ok=True)
     safe_id = "".join(
         character if character.isalnum() or character in "._-" else "_"

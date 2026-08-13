@@ -362,6 +362,18 @@ def save_persistence_state(state: gpd.GeoDataFrame, path) -> None:
 
     from src.detection.identity import canonical_json_bytes
 
+    if isinstance(state, dict) and (
+        state.get("schema_version") == "2.0.0"
+        or str(state.get("state_id", "")).startswith("state-v2-")
+    ):
+        raise TypeError(
+            "persistence-state-v2 cannot be serialized by the audit-only v1 writer"
+        )
+    if isinstance(state, gpd.GeoDataFrame) and "event_id" in state.columns:
+        if any(str(value).startswith("evt-v2-") for value in state["event_id"]):
+            raise TypeError(
+                "v2 event identities cannot be serialized by the audit-only v1 writer"
+            )
     _validate_state_columns(state)
     metadata = _state_metadata(state)
     state_wgs84 = state if str(state.crs) == "EPSG:4326" else state.to_crs("EPSG:4326")

@@ -22,7 +22,7 @@ _SCHEMA_SQL = f"""
 PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS processing_generations (
-    generation_id TEXT PRIMARY KEY,
+    generation_id TEXT PRIMARY KEY CHECK (generation_id NOT GLOB 'gen-v2-*'),
     schema_version TEXT NOT NULL CHECK (schema_version = '{TIMESERIES_SCHEMA_VERSION}'),
     release_id TEXT,
     algorithm_version TEXT NOT NULL,
@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS acquisitions (
         AND substr(observed_on, 5, 1) = '-'
         AND substr(observed_on, 8, 1) = '-'
     ),
-    acquisition_id TEXT NOT NULL,
+    acquisition_id TEXT NOT NULL CHECK (acquisition_id NOT GLOB 'acq-v2-*'),
     source_collection_id TEXT NOT NULL,
     scene_ids_json TEXT NOT NULL CHECK (json_valid(scene_ids_json)),
     source_metadata_sha256 TEXT NOT NULL
@@ -181,6 +181,11 @@ def register_generation(
     quarantine_reason: str | None = None,
 ) -> None:
     """Register one isolated processing generation."""
+    if generation_id.startswith("gen-v2-"):
+        raise ValueError(
+            "v2 generations cannot be serialized into the audit-only v1 "
+            "time-series schema"
+        )
     connection = connect_database(db_path)
     try:
         connection.execute(

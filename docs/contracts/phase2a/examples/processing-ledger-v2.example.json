@@ -1,0 +1,149 @@
+{
+  "schema_version": "2.0.0",
+  "ledger_id": "pl-v2-5010c5fbf123a2178c803e3f27c35d68312c2735f146d3a5ab91683b1e1fbd16",
+  "identity_inputs_sha256": "5010c5fbf123a2178c803e3f27c35d68312c2735f146d3a5ab91683b1e1fbd16",
+  "run_manifest_id": "run-v2-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "run_manifest_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "monitoring_extent_id": "araripe-implementation-rectangle-v1",
+  "algorithm_version": "2.0.0",
+  "generated_at": "2026-04-07T14:10:00Z",
+  "order_policy": {
+    "primary": "acquisition_timestamp_utc",
+    "secondary": "acquisition_id"
+  },
+  "replay_policy": {
+    "duplicate_terminal_row": "no_op",
+    "conflicting_terminal_row": "reject_fail_closed",
+    "late_same_day_acquisition": "requires_new_chronological_generation"
+  },
+  "expected_acquisitions": [
+    {
+      "schema_version": "2.0.0",
+      "acquisition_id": "acq-v2-dfb6739a7cfb63bef475f2e9a83323b19c2588d7144199efa18cd0703a27d9f6",
+      "identity_inputs_sha256": "dfb6739a7cfb63bef475f2e9a83323b19c2588d7144199efa18cd0703a27d9f6",
+      "run_manifest_id": "run-v2-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "run_manifest_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "collection_id": "COPERNICUS/S2_SR_HARMONIZED",
+      "platform": "S2A",
+      "datatake_id": "GS2A_20260407T131241_055725_N05.11",
+      "acquisition_timestamp_utc": "2026-04-07T13:12:41Z",
+      "observed_on": "2026-04-07",
+      "scene_ids": [
+        "COPERNICUS/S2_SR_HARMONIZED/20260407T131241_20260407T131238_T24LWK",
+        "COPERNICUS/S2_SR_HARMONIZED/20260407T131241_20260407T131238_T24LWL"
+      ],
+      "monitoring_extent_id": "araripe-implementation-rectangle-v1",
+      "composite_method_id": "coverage-ranked-first-valid-v1",
+      "grid_id": "araripe-sentinel2-20m-grid-v1"
+    },
+    {
+      "schema_version": "2.0.0",
+      "acquisition_id": "acq-v2-7a790681d99aec03d45e77999c46d23b0207c4cc8ee33aa359d31782e0e7a267",
+      "identity_inputs_sha256": "7a790681d99aec03d45e77999c46d23b0207c4cc8ee33aa359d31782e0e7a267",
+      "run_manifest_id": "run-v2-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "run_manifest_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "collection_id": "COPERNICUS/S2_SR_HARMONIZED",
+      "platform": "S2B",
+      "datatake_id": "GS2B_20260407T132251_041247_N05.11",
+      "acquisition_timestamp_utc": "2026-04-07T13:22:51Z",
+      "observed_on": "2026-04-07",
+      "scene_ids": [
+        "COPERNICUS/S2_SR_HARMONIZED/20260407T132251_20260407T132248_T24LWK",
+        "COPERNICUS/S2_SR_HARMONIZED/20260407T132251_20260407T132248_T24LWL"
+      ],
+      "monitoring_extent_id": "araripe-implementation-rectangle-v1",
+      "composite_method_id": "coverage-ranked-first-valid-v1",
+      "grid_id": "araripe-sentinel2-20m-grid-v1"
+    }
+  ],
+  "terminal_rows": [
+    {
+      "acquisition_id": "acq-v2-dfb6739a7cfb63bef475f2e9a83323b19c2588d7144199efa18cd0703a27d9f6",
+      "acquisition_timestamp_utc": "2026-04-07T13:12:41Z",
+      "observed_on": "2026-04-07",
+      "status": "complete_with_alerts",
+      "terminal_at": "2026-04-07T13:35:00Z",
+      "output": {
+        "observation_count": 1,
+        "observation_ids": [
+          "obs-v2-4341eeacea951ef2ced30c55b49d8daabf6c8a78880033e53d1597f2fdc43c3c"
+        ],
+        "artifact_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "reason": null,
+      "terminal_record_sha256": "5f4e5589b720e476e7322ef34c4a1cc3f381811b8e8bf39ad02d168d135074bc"
+    },
+    {
+      "acquisition_id": "acq-v2-7a790681d99aec03d45e77999c46d23b0207c4cc8ee33aa359d31782e0e7a267",
+      "acquisition_timestamp_utc": "2026-04-07T13:22:51Z",
+      "observed_on": "2026-04-07",
+      "status": "complete_with_alerts",
+      "terminal_at": "2026-04-07T13:50:00Z",
+      "output": {
+        "observation_count": 2,
+        "observation_ids": [
+          "obs-v2-32b0d6a7f75ff92c87659e00a16b4327f60cd4390122cc6dd3921383b975cf72",
+          "obs-v2-659d6687fd8fef6f5aa7453b076b5a33917064dc24d9f482f13ebe42f92c8412"
+        ],
+        "artifact_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      },
+      "reason": null,
+      "terminal_record_sha256": "be5bc2c1959c5416ce726a734e657aae79f3dfa6e21627bd03eecca468b58a5f"
+    }
+  ],
+  "daily_summaries": [
+    {
+      "observed_on": "2026-04-07",
+      "expected_acquisition_ids": [
+        "acq-v2-7a790681d99aec03d45e77999c46d23b0207c4cc8ee33aa359d31782e0e7a267",
+        "acq-v2-dfb6739a7cfb63bef475f2e9a83323b19c2588d7144199efa18cd0703a27d9f6"
+      ],
+      "terminal_acquisition_ids": [
+        "acq-v2-7a790681d99aec03d45e77999c46d23b0207c4cc8ee33aa359d31782e0e7a267",
+        "acq-v2-dfb6739a7cfb63bef475f2e9a83323b19c2588d7144199efa18cd0703a27d9f6"
+      ],
+      "terminal": true,
+      "terminal_rows_sha256": "162e4e3d685e942ef2bb946a66962d1764ceccb7f7195f4a50c0b2335a513d2b",
+      "observation_ids": [
+        "obs-v2-32b0d6a7f75ff92c87659e00a16b4327f60cd4390122cc6dd3921383b975cf72",
+        "obs-v2-4341eeacea951ef2ced30c55b49d8daabf6c8a78880033e53d1597f2fdc43c3c",
+        "obs-v2-659d6687fd8fef6f5aa7453b076b5a33917064dc24d9f482f13ebe42f92c8412"
+      ],
+      "status_counts": {
+        "complete_with_alerts": 2,
+        "complete_zero_alerts": 0,
+        "rejected_low_coverage": 0,
+        "rejected_quality": 0,
+        "failed_download": 0,
+        "failed_missing_input": 0,
+        "failed_processing": 0
+      },
+      "persistence_finalization_allowed": true,
+      "daily_summary_sha256": "7df45bb162cecaf69220254455da9c8ba91145e0a0c2b7b9e18141d5bb82d74a"
+    }
+  ],
+  "summary": {
+    "expected_acquisition_count": 2,
+    "terminal_acquisition_count": 2,
+    "utc_date_count": 1,
+    "terminal_utc_date_count": 1,
+    "status_counts": {
+      "complete_with_alerts": 2,
+      "complete_zero_alerts": 0,
+      "rejected_low_coverage": 0,
+      "rejected_quality": 0,
+      "failed_download": 0,
+      "failed_missing_input": 0,
+      "failed_processing": 0
+    }
+  },
+  "integrity": {
+    "expected_acquisitions_sha256": "252ec9d8d618dcf40cf7a27916f8c07070896f1c840f63f226e5a5ef9cae8f64",
+    "terminal_rows_sha256": "162e4e3d685e942ef2bb946a66962d1764ceccb7f7195f4a50c0b2335a513d2b",
+    "daily_summaries_sha256": "845992532080138e7096eb5c85062d3d582d346705334f83f518b2047e719ed6",
+    "schema_validated": true,
+    "manifest_reconciled": true,
+    "daily_summaries_reconciled": true,
+    "document_sha256": "0d2439951f231d4bc376009f158458b3c2ee2e2e119662db0bc8b0fc13f6bdee"
+  }
+}

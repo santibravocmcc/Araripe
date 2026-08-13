@@ -1,0 +1,543 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://observatoriodachapadadoararipe.com/data/schemas/persistence-state-v2.schema.json",
+  "title": "Araripe replay-safe persistence state v2",
+  "description": "A manifest generation's persistence state counted by distinct finalized UTC observation dates.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "state_id",
+    "identity_inputs_sha256",
+    "generation_id",
+    "run_manifest_id",
+    "run_manifest_sha256",
+    "monitoring_extent_id",
+    "algorithm_version",
+    "baseline_version",
+    "generated_at",
+    "transition_policy",
+    "last_transition",
+    "finalized_dates",
+    "events",
+    "lineage",
+    "contributions",
+    "watermark",
+    "integrity"
+  ],
+  "properties": {
+    "schema_version": { "const": "2.0.0" },
+    "state_id": { "$ref": "#/$defs/state_id" },
+    "identity_inputs_sha256": { "$ref": "#/$defs/sha256" },
+    "generation_id": { "$ref": "#/$defs/generation_id" },
+    "run_manifest_id": { "$ref": "#/$defs/run_manifest_id" },
+    "run_manifest_sha256": { "$ref": "#/$defs/sha256" },
+    "monitoring_extent_id": { "type": "string", "minLength": 1 },
+    "algorithm_version": { "$ref": "#/$defs/semver" },
+    "baseline_version": { "$ref": "#/$defs/semver" },
+    "generated_at": {
+      "description": "Serialized transitioned_at. It must use runtime-normalized canonical UTC form; for a non-empty state it also must not precede the maximum terminal_at for the latest finalized UTC date. Both rules are enforced semantically.",
+      "$ref": "#/$defs/utc_timestamp"
+    },
+    "transition_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contribution_uniqueness",
+        "duplicate_contribution",
+        "chronological_order",
+        "late_same_day_acquisition",
+        "v1_serialization",
+        "confirmed_min_distinct_dates",
+        "event_reconnect_grace_days",
+        "minimum_overlap_fraction"
+      ],
+      "properties": {
+        "contribution_uniqueness": { "const": "event_id+observed_on" },
+        "duplicate_contribution": { "const": "no_op" },
+        "chronological_order": { "const": "acquisition_timestamp_utc+acquisition_id" },
+        "late_same_day_acquisition": { "const": "requires_new_chronological_generation" },
+        "v1_serialization": { "const": "forbidden_audit_only" },
+        "confirmed_min_distinct_dates": { "const": 15 },
+        "event_reconnect_grace_days": { "const": 180 },
+        "minimum_overlap_fraction": { "const": 0.05 }
+      }
+    },
+    "last_transition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "outcome",
+        "observed_on",
+        "date_input_digest",
+        "new_contribution_count",
+        "duplicate_contribution_count",
+        "state_changed"
+      ],
+      "properties": {
+        "outcome": { "enum": ["initialized", "applied"] },
+        "observed_on": {
+          "oneOf": [{ "type": "string", "format": "date" }, { "type": "null" }]
+        },
+        "date_input_digest": {
+          "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }]
+        },
+        "new_contribution_count": { "type": "integer", "minimum": 0 },
+        "duplicate_contribution_count": { "type": "integer", "minimum": 0 },
+        "state_changed": { "type": "boolean" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "outcome": { "const": "initialized" } }, "required": ["outcome"] },
+          "then": {
+            "properties": {
+              "observed_on": { "type": "null" },
+              "date_input_digest": { "type": "null" },
+              "new_contribution_count": { "const": 0 },
+              "duplicate_contribution_count": { "const": 0 },
+              "state_changed": { "const": false }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "outcome": { "const": "applied" } }, "required": ["outcome"] },
+          "then": {
+            "properties": {
+              "observed_on": { "type": "string", "format": "date" },
+              "date_input_digest": { "$ref": "#/$defs/sha256" },
+              "new_contribution_count": { "minimum": 0 },
+              "duplicate_contribution_count": { "const": 0 },
+              "state_changed": { "const": true }
+            }
+          }
+        }
+      ]
+    },
+    "finalized_dates": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/finalized_date" }
+    },
+    "events": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/event_state" },
+      "uniqueItems": true
+    },
+    "lineage": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/lineage_state" },
+      "uniqueItems": true
+    },
+    "contributions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/contribution" },
+      "uniqueItems": true
+    },
+    "watermark": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["acquisition_timestamp_utc", "acquisition_id", "observed_on"],
+          "properties": {
+            "acquisition_timestamp_utc": {
+              "description": "Must equal the runtime-normalized canonical UTC representation; enforced semantically.",
+              "$ref": "#/$defs/utc_timestamp"
+            },
+            "acquisition_id": { "$ref": "#/$defs/acquisition_id" },
+            "observed_on": { "type": "string", "format": "date" }
+          }
+        },
+        { "type": "null" }
+      ]
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "finalized_dates_sha256",
+        "events_sha256",
+        "lineage_sha256",
+        "contributions_sha256",
+        "watermark_sha256",
+        "document_sha256",
+        "schema_validated",
+        "distinct_dates_reconciled",
+        "unique_contribution_per_event_date",
+        "raw_observations_preserved"
+      ],
+      "properties": {
+        "finalized_dates_sha256": { "$ref": "#/$defs/sha256" },
+        "events_sha256": { "$ref": "#/$defs/sha256" },
+        "lineage_sha256": { "$ref": "#/$defs/sha256" },
+        "contributions_sha256": { "$ref": "#/$defs/sha256" },
+        "watermark_sha256": { "$ref": "#/$defs/sha256" },
+        "document_sha256": { "$ref": "#/$defs/sha256" },
+        "schema_validated": { "const": true },
+        "distinct_dates_reconciled": { "const": true },
+        "unique_contribution_per_event_date": { "const": true },
+        "raw_observations_preserved": { "const": true }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "state_id": { "type": "string", "pattern": "^state-v2-[a-f0-9]{64}$" },
+    "generation_id": { "type": "string", "pattern": "^gen-v2-[a-f0-9]{64}$" },
+    "run_manifest_id": { "type": "string", "pattern": "^run-v2-[a-f0-9]{64}$" },
+    "acquisition_id": { "type": "string", "pattern": "^acq-v2-[a-f0-9]{64}$" },
+    "observation_id": { "type": "string", "pattern": "^obs-v2-[a-f0-9]{64}$" },
+    "event_id": { "type": "string", "pattern": "^evt-v2-[a-f0-9]{64}$" },
+    "lineage_id": { "type": "string", "pattern": "^lin-v2-[a-f0-9]{64}$" },
+    "contribution_key": { "type": "string", "pattern": "^pc-v2-[a-f0-9]{64}$" },
+    "utc_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$"
+    },
+    "finalized_date": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "observed_on",
+        "run_manifest_id",
+        "run_manifest_sha256",
+        "date_input_digest",
+        "daily_summary_sha256",
+        "contribution_keys"
+      ],
+      "properties": {
+        "observed_on": { "type": "string", "format": "date" },
+        "run_manifest_id": { "$ref": "#/$defs/run_manifest_id" },
+        "run_manifest_sha256": { "$ref": "#/$defs/sha256" },
+        "date_input_digest": { "$ref": "#/$defs/sha256" },
+        "daily_summary_sha256": { "$ref": "#/$defs/sha256" },
+        "contribution_keys": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/contribution_key" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "event_state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "event_id",
+        "identity_inputs_sha256",
+        "run_manifest_id",
+        "run_manifest_sha256",
+        "identity_basis",
+        "monitoring_extent_id",
+        "status",
+        "observation_dates",
+        "n_distinct_observation_dates",
+        "observation_ids",
+        "acquisition_ids",
+        "contribution_keys",
+        "incoming_lineage_ids",
+        "outgoing_lineage_ids",
+        "first_observed_on",
+        "last_observed_on",
+        "representative_geometry_crs",
+        "representative_geometry",
+        "representative_geometry_sha256",
+        "raw_observations_preserved",
+        "created_at",
+        "updated_at",
+        "persistence_tier"
+      ],
+      "properties": {
+        "schema_version": { "const": "2.0.0" },
+        "event_id": { "$ref": "#/$defs/event_id" },
+        "identity_inputs_sha256": { "$ref": "#/$defs/sha256" },
+        "run_manifest_id": { "$ref": "#/$defs/run_manifest_id" },
+        "run_manifest_sha256": { "$ref": "#/$defs/sha256" },
+        "identity_basis": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "first_observation_id", "parent_event_ids", "trigger_observation_ids"],
+          "properties": {
+            "kind": { "enum": ["origin", "split", "merge"] },
+            "first_observation_id": {
+              "description": "For origin, equals the sole trigger and must belong to this event's contribution on first_observed_on; enforced semantically across state collections.",
+              "oneOf": [{ "$ref": "#/$defs/observation_id" }, { "type": "null" }]
+            },
+            "parent_event_ids": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/event_id" },
+              "uniqueItems": true
+            },
+            "trigger_observation_ids": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/observation_id" },
+              "minItems": 1,
+              "uniqueItems": true
+            }
+          },
+          "allOf": [
+            {
+              "if": { "properties": { "kind": { "const": "origin" } }, "required": ["kind"] },
+              "then": {
+                "properties": {
+                  "first_observation_id": { "$ref": "#/$defs/observation_id" },
+                  "parent_event_ids": { "maxItems": 0 },
+                  "trigger_observation_ids": { "minItems": 1, "maxItems": 1 }
+                }
+              }
+            },
+            {
+              "if": { "properties": { "kind": { "const": "split" } }, "required": ["kind"] },
+              "then": {
+                "properties": {
+                  "first_observation_id": { "type": "null" },
+                  "parent_event_ids": { "minItems": 1, "maxItems": 1 }
+                }
+              }
+            },
+            {
+              "if": { "properties": { "kind": { "const": "merge" } }, "required": ["kind"] },
+              "then": {
+                "properties": {
+                  "first_observation_id": { "type": "null" },
+                  "parent_event_ids": { "minItems": 2 }
+                }
+              }
+            }
+          ]
+        },
+        "monitoring_extent_id": { "type": "string", "minLength": 1 },
+        "status": { "enum": ["active", "superseded"] },
+        "observation_dates": {
+          "type": "array",
+          "items": { "type": "string", "format": "date" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "n_distinct_observation_dates": { "type": "integer", "minimum": 1 },
+        "observation_ids": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/observation_id" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "acquisition_ids": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/acquisition_id" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "contribution_keys": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/contribution_key" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "incoming_lineage_ids": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/lineage_id" },
+          "uniqueItems": true
+        },
+        "outgoing_lineage_ids": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/lineage_id" },
+          "uniqueItems": true
+        },
+        "first_observed_on": { "type": "string", "format": "date" },
+        "last_observed_on": { "type": "string", "format": "date" },
+        "representative_geometry_crs": { "const": "EPSG:4326" },
+        "representative_geometry": {
+          "oneOf": [{ "$ref": "#/$defs/polygon" }, { "$ref": "#/$defs/multipolygon" }]
+        },
+        "representative_geometry_sha256": {
+          "description": "Together with at least one event acquisition ID and the state algorithm/baseline versions, must recompute to an observation ID retained by this event; enforced semantically.",
+          "$ref": "#/$defs/sha256"
+        },
+        "raw_observations_preserved": { "const": true },
+        "created_at": { "$ref": "#/$defs/utc_timestamp" },
+        "updated_at": { "$ref": "#/$defs/utc_timestamp" },
+        "persistence_tier": { "enum": ["first_observation", "candidate", "confirmed"] }
+      }
+    },
+    "lineage_state": {
+      "description": "Executable lineage. Semantic validation requires continuation self-edges and exact split/merge child identities and trigger ownership; JSON Schema expresses only cardinality.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "lineage_id",
+        "identity_inputs_sha256",
+        "run_manifest_id",
+        "run_manifest_sha256",
+        "relation",
+        "parent_event_ids",
+        "child_event_ids",
+        "trigger_observation_ids",
+        "effective_acquisition_id",
+        "effective_timestamp_utc",
+        "observed_on",
+        "algorithm_version",
+        "raw_observations_preserved",
+        "created_at"
+      ],
+      "properties": {
+        "schema_version": { "const": "2.0.0" },
+        "lineage_id": { "$ref": "#/$defs/lineage_id" },
+        "identity_inputs_sha256": { "$ref": "#/$defs/sha256" },
+        "run_manifest_id": { "$ref": "#/$defs/run_manifest_id" },
+        "run_manifest_sha256": { "$ref": "#/$defs/sha256" },
+        "relation": {
+          "description": "Continuation parent IDs equal child IDs; split and merge children are deterministically derived from parent and trigger identities.",
+          "enum": ["continuation", "split", "merge"]
+        },
+        "parent_event_ids": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/event_id" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "child_event_ids": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/event_id" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "trigger_observation_ids": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/observation_id" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "effective_acquisition_id": { "$ref": "#/$defs/acquisition_id" },
+        "effective_timestamp_utc": {
+          "description": "Must equal the runtime-normalized canonical UTC representation; enforced semantically.",
+          "$ref": "#/$defs/utc_timestamp"
+        },
+        "observed_on": { "type": "string", "format": "date" },
+        "algorithm_version": { "$ref": "#/$defs/semver" },
+        "raw_observations_preserved": { "const": true },
+        "created_at": { "$ref": "#/$defs/utc_timestamp" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "relation": { "const": "continuation" } }, "required": ["relation"] },
+          "then": {
+            "properties": {
+              "parent_event_ids": { "minItems": 1, "maxItems": 1 },
+              "child_event_ids": { "minItems": 1, "maxItems": 1 }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "relation": { "const": "split" } }, "required": ["relation"] },
+          "then": {
+            "properties": {
+              "parent_event_ids": { "minItems": 1, "maxItems": 1 },
+              "child_event_ids": { "minItems": 2 }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "relation": { "const": "merge" } }, "required": ["relation"] },
+          "then": {
+            "properties": {
+              "parent_event_ids": { "minItems": 2 },
+              "child_event_ids": { "minItems": 1, "maxItems": 1 }
+            }
+          }
+        }
+      ]
+    },
+    "position": {
+      "type": "array",
+      "prefixItems": [{ "type": "number" }, { "type": "number" }],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "linear_ring": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/position" },
+      "minItems": 4
+    },
+    "polygon_coordinates": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/linear_ring" },
+      "minItems": 1
+    },
+    "polygon": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "coordinates"],
+      "properties": {
+        "type": { "const": "Polygon" },
+        "coordinates": { "$ref": "#/$defs/polygon_coordinates" }
+      }
+    },
+    "multipolygon": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "coordinates"],
+      "properties": {
+        "type": { "const": "MultiPolygon" },
+        "coordinates": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/polygon_coordinates" },
+          "minItems": 1
+        }
+      }
+    },
+    "contribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "contribution_key",
+        "identity_inputs_sha256",
+        "run_manifest_id",
+        "run_manifest_sha256",
+        "event_id",
+        "observed_on",
+        "source_acquisition_ids",
+        "source_observation_ids",
+        "daily_summary_sha256",
+        "finalization_status",
+        "finalization_condition",
+        "duplicate_policy",
+        "finalized_at"
+      ],
+      "properties": {
+        "schema_version": { "const": "2.0.0" },
+        "contribution_key": { "$ref": "#/$defs/contribution_key" },
+        "identity_inputs_sha256": { "$ref": "#/$defs/sha256" },
+        "run_manifest_id": { "$ref": "#/$defs/run_manifest_id" },
+        "run_manifest_sha256": { "$ref": "#/$defs/sha256" },
+        "event_id": { "$ref": "#/$defs/event_id" },
+        "observed_on": { "type": "string", "format": "date" },
+        "source_acquisition_ids": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/acquisition_id" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "source_observation_ids": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/observation_id" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "daily_summary_sha256": { "$ref": "#/$defs/sha256" },
+        "finalization_status": { "const": "finalized" },
+        "finalization_condition": { "const": "all_manifest_expected_acquisitions_for_utc_date_terminal" },
+        "duplicate_policy": { "const": "no_op" },
+        "finalized_at": {
+          "description": "Must not precede the maximum terminal_at among all manifest-expected acquisitions for observed_on; enforced semantically with the ledger.",
+          "$ref": "#/$defs/utc_timestamp"
+        }
+      }
+    }
+  }
+}

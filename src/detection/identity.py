@@ -23,6 +23,23 @@ UNIT_SEPARATOR = "\x1f"
 LINE_FEED = "\n"
 
 
+def _require_sha256(value: str, *, label: str) -> str:
+    if (
+        not isinstance(value, str)
+        or len(value) != 64
+        or any(character not in "0123456789abcdef" for character in value)
+    ):
+        raise ValueError(f"{label} must be a lowercase SHA-256 hex digest")
+    return value
+
+
+def _require_v1_identity_id(value: str, *, prefix: str, label: str) -> str:
+    if not isinstance(value, str) or not value.startswith(prefix):
+        raise ValueError(f"{label} must use the {prefix} identity major")
+    _require_sha256(value[len(prefix) :], label=label)
+    return value
+
+
 def _encode_string(value: str) -> str:
     """Encode a string using the JSON/JCS escaping rules."""
     out = ['"']
@@ -280,6 +297,15 @@ class AcquisitionIdentity:
 
     @classmethod
     def from_dict(cls, value: dict[str, Any]) -> "AcquisitionIdentity":
+        _require_v1_identity_id(
+            value.get("acquisition_id"),
+            prefix="acq-v1-",
+            label="acquisition metadata acquisition_id",
+        )
+        _require_sha256(
+            value.get("identity_inputs_sha256"),
+            label="acquisition metadata identity_inputs_sha256",
+        )
         created = create_acquisition_identity(
             collection_id=value["collection_id"],
             observed_on=value["observed_on"],
@@ -328,6 +354,10 @@ def observation_id(
     algorithm_version: str,
     baseline_version: str,
 ) -> str:
+    _require_v1_identity_id(
+        acquisition_id, prefix="acq-v1-", label="acquisition_id"
+    )
+    _require_sha256(geometry_sha256, label="geometry_sha256")
     digest = identity_sha256(
         "observation-v1",
         acquisition_id,
@@ -339,6 +369,11 @@ def observation_id(
 
 
 def origin_event_id(first_observation_id: str) -> str:
+    _require_v1_identity_id(
+        first_observation_id,
+        prefix="obs-v1-",
+        label="first_observation_id",
+    )
     return "evt-v1-" + identity_sha256(
         "event-v1", "origin", first_observation_id
     )
@@ -355,6 +390,16 @@ def child_event_id(
     triggers = _sorted_unique(
         trigger_observation_ids, label="trigger_observation_ids"
     )
+    for parent_event_id in parents:
+        _require_v1_identity_id(
+            parent_event_id, prefix="evt-v1-", label="parent_event_ids item"
+        )
+    for trigger_observation_id in triggers:
+        _require_v1_identity_id(
+            trigger_observation_id,
+            prefix="obs-v1-",
+            label="trigger_observation_ids item",
+        )
     return "evt-v1-" + identity_sha256(
         "event-v1",
         operation,
@@ -380,6 +425,25 @@ def lineage_id(
     triggers = _sorted_unique(
         trigger_observation_ids, label="trigger_observation_ids"
     )
+    for parent_event_id in parents:
+        _require_v1_identity_id(
+            parent_event_id, prefix="evt-v1-", label="parent_event_ids item"
+        )
+    for child_event_id_value in children:
+        _require_v1_identity_id(
+            child_event_id_value,
+            prefix="evt-v1-",
+            label="child_event_ids item",
+        )
+    _require_v1_identity_id(
+        acquisition_id, prefix="acq-v1-", label="acquisition_id"
+    )
+    for trigger_observation_id in triggers:
+        _require_v1_identity_id(
+            trigger_observation_id,
+            prefix="obs-v1-",
+            label="trigger_observation_ids item",
+        )
     return "lin-v1-" + identity_sha256(
         "lineage-v1",
         relation,
@@ -393,6 +457,10 @@ def lineage_id(
 
 
 def contribution_key(event_id: str, acquisition_id: str) -> str:
+    _require_v1_identity_id(event_id, prefix="evt-v1-", label="event_id")
+    _require_v1_identity_id(
+        acquisition_id, prefix="acq-v1-", label="acquisition_id"
+    )
     return "pc-v1-" + identity_sha256(
         "persistence-contribution-v1", event_id, acquisition_id
     )
@@ -401,6 +469,11 @@ def contribution_key(event_id: str, acquisition_id: str) -> str:
 def write_acquisition_metadata(
     path: Path, acquisition: AcquisitionIdentity
 ) -> Path:
+    if not isinstance(acquisition, AcquisitionIdentity):
+        raise TypeError(
+            "the v1 acquisition writer accepts AcquisitionIdentity only; "
+            "v2 payloads require their versioned serializer"
+        )
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps(
