@@ -8,13 +8,15 @@ name: Streaming Detection (manual fallback)
 #
 # Same R2 data flow as detect_gee.yml: baselines + recent alerts fetched from
 # R2; new alerts uploaded to R2 (not committed); only the time-series DB is
-# committed.
+# committed — and, since `main` is ruleset-protected, that commit reaches `main`
+# through an automatic PR (see the publish step) instead of a direct push.
 
 on:
   workflow_dispatch:       # Manual trigger only
 
 permissions:
   contents: write
+  pull-requests: write   # the time-series DB reaches `main` via a PR, not a push
 
 jobs:
   detect:
@@ -63,12 +65,46 @@ jobs:
         if: success() && env.R2_ENDPOINT_URL != ''
         run: python scripts/r2_state.py put data/persistence_state.geojson
 
-      - name: Commit time-series DB
+      - name: Publish time-series DB through a pull request
+        # Same lane as detect_gee.yml: the ruleset "Protect main — pull requests
+        # only" has no bypass actors, so the bot merges a PR instead of pushing.
         if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/timeseries/
-          git diff --staged --quiet || git commit -m "chore: update time-series $(date +%Y-%m-%d)"
-          git pull --rebase origin main
-          git push
+          if git diff --staged --quiet; then
+            echo "time-series unchanged; nothing to publish"
+            exit 0
+          fi
+          unexpected="$(git diff --staged --name-only | grep -v '^data/timeseries/' || true)"
+          if [ -n "$unexpected" ]; then
+            echo "::error::refusing to open a PR touching paths outside data/timeseries/"
+            echo "$unexpected"
+            exit 1
+          fi
+          git commit -m "chore: update time-series $(date +%Y-%m-%d)"
+          git fetch origin main
+          if ! git rebase origin/main; then
+            echo "::error::rebase onto origin/main failed (concurrent time-series change?)"
+            git rebase --abort || true
+            exit 1
+          fi
+          branch="auto/timeseries-${GITHUB_RUN_ID}"
+          git push origin "HEAD:refs/heads/${branch}"
+          pr_url="$(gh pr create --base main --head "${branch}" \
+            --title "chore: update time-series $(date +%Y-%m-%d)" \
+            --body "Automated time-series DB update from ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}. Only \`data/timeseries/\` changes; alerts themselves live in R2.")"
+          echo "opened ${pr_url}"
+          for attempt in 1 2 3 4 5; do
+            if gh pr merge "${pr_url}" --squash --delete-branch; then
+              echo "merged ${pr_url}"
+              exit 0
+            fi
+            echo "merge not ready yet (attempt ${attempt}); retrying in 15s"
+            sleep 15
+          done
+          echo "::error::${pr_url} was opened but not merged automatically; merge it by hand"
+          exit 1

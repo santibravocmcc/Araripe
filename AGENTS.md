@@ -31,6 +31,12 @@ implementation as the runtime source of truth when prose is stale.
 - Treat R2, GEE, GitHub Actions, publication state, and persistence state as
   production systems. Default to local/read-only checks unless live mutation is
   explicitly in scope.
+- `main` is pull-request-only: the ruleset "Protect main — pull requests only"
+  has an empty bypass list, so nobody — including `github-actions[bot]` — can
+  push to it. Land every change through a pull request, and expect the
+  scheduled workflows to publish `data/timeseries/` through the automatic PR
+  lane recorded in `ROADMAP.md` §6. Never add a bypass actor, relax the
+  ruleset, or flip repository settings to restore a direct push.
 - Before an external mutation, or whenever a needed credential/connection may
   be unavailable, load `.agents/skills/araripe-safe-handoff/SKILL.md`. A blocked
   operation must stop before promotion, save a recoverable checkpoint under

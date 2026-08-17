@@ -102,3 +102,52 @@ Risk-based approval policy:
   or bypasses a pending approval, failure, or broker refusal; a missing
   broker operation means stop and hand off, never Wrangler, `curl`, direct
   API, or a different credential.
+
+## 6. Time-series publication lane (2026-08-17 incident)
+
+**Status:** fixed 2026-08-17 on branch `fix/timeseries-pr-lane`; one manual
+repository setting is still required (below).
+
+On 2026-08-13 the repository ruleset "Protect main — pull requests only"
+(id 20803594, empty bypass list) was installed. The first scheduled run after
+it — `detect_gee.yml` run `32004421793`, 2026-08-17 — completed detection and
+every R2 write, then failed with `GH013` on the final `git push`:
+`github-actions[bot]` can no longer push to `main`. Nothing was lost (alerts
+for 2026-08-02/05/10/15 reached `araripe-cogs`, and the persistence state was
+saved), but the `data/timeseries/` commit was rejected, so the published series
+stalled at 2026-08-10 and the job reported failure.
+
+Decision: keep `main` strictly pull-request-only and give automation its own PR
+lane. `detect_gee.yml` and `update_data.yml` now commit `data/timeseries/` on a
+throwaway branch `auto/timeseries-<run id>`, open a pull request, and
+squash-merge it — the ruleset requires zero approvals, so the `GITHUB_TOKEN`
+can merge its own PR. The step refuses to open a PR that stages anything
+outside `data/timeseries/`, and no new credential was introduced: the token
+only gains `pull-requests: write`.
+
+Required manual step (human, once): enable Settings > Actions > General >
+"Allow GitHub Actions to create and approve pull requests". Without it the
+`GITHUB_TOKEN` cannot open the PR and the lane fails. Granting it is
+inconsequential for review integrity here because the ruleset requires zero
+approving reviews anyway.
+
+Rejected alternatives: a GitHub App token or deploy key on the ruleset bypass
+list (a new credential whose only purpose is to restore direct writes to
+`main`; the `GITHUB_TOKEN` itself cannot be a bypass actor), and
+`continue-on-error` on the step (green runs with a silently frozen series).
+
+Recovery of the missed date is automatic: time-series writes are
+`INSERT OR REPLACE` keyed by `UNIQUE(date, index_name, region)` and the
+detection window on `main` is `SEARCH_DAYS_BACK = 16`, so the first successful
+run before ~2026-08-31 recomputes 2026-08-15 and closes the gap.
+
+Structural follow-up (not scheduled): move `timeseries.db` out of git into R2
+beside the alerts so no automated write to `main` is needed at all. That moves
+the canonical DB and drops its git history, so it belongs in a reviewed
+package, not in this fix.
+
+Schedule spacing: the site refresh
+(`../site/.github/workflows/update-data.yml`) moved from Mon/Thu 07:30 UTC to
+Tue/Fri 06:00 UTC — a full 24 h after the backend run instead of 90 min. On
+2026-08-17 GitHub started the backend cron 67 min late, which is enough to make
+the site read a `main` whose time-series PR has not landed yet.

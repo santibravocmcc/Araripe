@@ -20,6 +20,11 @@ name: GEE Deforestation Detection (headless)
 #                           (it lacks computations.create / thumbnails.create).
 #   - secrets R2_ENDPOINT_URL / R2_ACCESS_KEY / R2_SECRET_KEY
 #   - var     EE_PROJECT   : Earth Engine project id (defaults to ee-araripe)
+#   - setting Actions > General > "Allow GitHub Actions to create and approve
+#                           pull requests" MUST be enabled: `main` is protected
+#                           by the ruleset "Protect main — pull requests only"
+#                           (no bypass actors), so this job publishes the
+#                           time-series DB through a PR instead of pushing.
 
 on:
   workflow_dispatch:
@@ -35,6 +40,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write   # the time-series DB reaches `main` via a PR, not a push
 
 jobs:
   detect-gee:
@@ -94,12 +100,53 @@ jobs:
         if: success() && env.R2_ENDPOINT_URL != ''
         run: python scripts/r2_state.py put data/persistence_state.geojson
 
-      - name: Commit time-series DB
+      - name: Publish time-series DB through a pull request
+        # `main` is protected by the repository ruleset "Protect main — pull
+        # requests only" with an empty bypass list, so github-actions[bot]
+        # cannot push here (GH013). It pushes a throwaway branch and merges it
+        # through a PR instead; the ruleset requires zero approvals, so the
+        # GITHUB_TOKEN can merge its own PR.
         if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/timeseries/
-          git diff --staged --quiet || git commit -m "chore: update time-series $(date +%Y-%m-%d)"
-          git pull --rebase origin main
-          git push
+          if git diff --staged --quiet; then
+            echo "time-series unchanged; nothing to publish"
+            exit 0
+          fi
+          # This lane must never carry anything but the time-series DB.
+          # (Captured `grep -v` instead of `grep -qv`: the -q/-v combination is
+          # not portable across grep implementations.)
+          unexpected="$(git diff --staged --name-only | grep -v '^data/timeseries/' || true)"
+          if [ -n "$unexpected" ]; then
+            echo "::error::refusing to open a PR touching paths outside data/timeseries/"
+            echo "$unexpected"
+            exit 1
+          fi
+          git commit -m "chore: update time-series $(date +%Y-%m-%d)"
+          git fetch origin main
+          if ! git rebase origin/main; then
+            echo "::error::rebase onto origin/main failed (concurrent time-series change?)"
+            git rebase --abort || true
+            exit 1
+          fi
+          branch="auto/timeseries-${GITHUB_RUN_ID}"
+          git push origin "HEAD:refs/heads/${branch}"
+          pr_url="$(gh pr create --base main --head "${branch}" \
+            --title "chore: update time-series $(date +%Y-%m-%d)" \
+            --body "Automated time-series DB update from ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}. Only \`data/timeseries/\` changes; alerts themselves live in R2.")"
+          echo "opened ${pr_url}"
+          # Mergeability is computed asynchronously, so retry for a short while.
+          for attempt in 1 2 3 4 5; do
+            if gh pr merge "${pr_url}" --squash --delete-branch; then
+              echo "merged ${pr_url}"
+              exit 0
+            fi
+            echo "merge not ready yet (attempt ${attempt}); retrying in 15s"
+            sleep 15
+          done
+          echo "::error::${pr_url} was opened but not merged automatically; merge it by hand"
+          exit 1

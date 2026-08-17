@@ -14,6 +14,14 @@ Phase 6 cutover. If a task would touch production, change the broker itself,
 or require an operation not already allowlisted, stop and use the
 `araripe-safe-handoff` skill.
 
+# Claude-specific branch boundary
+
+`main` is pull-request-only (`AGENTS.md`; rationale in `ROADMAP.md` §6). Never
+push to it, never add yourself or the Actions bot to a ruleset bypass list, and
+never change repository settings to work around the ruleset. Automated
+time-series publication has its own PR lane; if that lane breaks, fix the lane
+or hand off — do not restore a direct push.
+
 Autonomy follows the risk-based policy in `AGENTS.md`: staging-scoped object
 work, manual green workflows with staging-only credentials, read-only checks,
 commits, branch pushes, pull requests, and a proven-inert minimal merge
