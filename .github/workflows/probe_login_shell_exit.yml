@@ -1,35 +1,29 @@
 name: probe login-shell exit status
 
 # THROWAWAY DIAGNOSTIC — must never reach `main`.
-# Why the "Publish time-series DB through a pull request" step exits 1 right
-# after printing "merged <pr url>" (runs 20/08 and 24/08).
 #
-# Probe v1 (no conda) showed `bash -l {0}` + explicit `exit 0` PASSES, so the
-# login shell alone is not the cause. Missing factor found in the failing log:
-# conda-incubator/setup-miniconda deletes ~/.bashrc, ~/.bash_profile and
-# ~/.profile, then writes a ~/.profile ending in
-#     set -eo pipefail
-#     conda activate "araripe"
-# so every `bash -l {0}` step in that job runs with `-e` inherited from the
-# profile. A non-interactive login shell runs ~/.bash_logout only when `exit`
-# is called explicitly, and the runner's ~/.bash_logout runs
-# `/usr/bin/clear_console -q` (SHLVL=1), which fails without a TTY. Under `-e`
-# that failure may replace the requested status. This probe settles it.
+# v1 (no conda) and v2 (with conda) both showed that `bash -l {0}` + explicit
+# `exit 0` PASSES, even with `set -eo pipefail` inherited from the ~/.profile
+# that setup-miniconda writes, SHLVL=1 and the Ubuntu ~/.bash_logout in place.
+# So the shell is NOT the cause. v3 replicates the actual git + gh sequence of
+# the failing step, against a throwaway base branch (never `main`), and
+# contrasts the current shape (explicit `exit 0`) with the proposed fix shape.
 
 on:
   push:
     branches: ['probe/**']
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
 
 jobs:
-  with-conda:
+  repro:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     defaults:
       run:
-        shell: bash -l {0}   # exactly the detect_gee.yml default
+        shell: bash -l {0}
 
     steps:
       - uses: actions/checkout@v4
@@ -43,107 +37,115 @@ jobs:
           use-mamba: true
           miniforge-version: latest
 
-      - name: Shell state inherited by every step
+      - name: Throwaway base branch (never main)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "BASH_VERSION=$BASH_VERSION SHLVL=$SHLVL CONDA_PREFIX=$CONDA_PREFIX"
-          echo "--- set -o (errexit/pipefail?) ---"
-          set -o | grep -E 'errexit|pipefail'
-          echo "--- trap -p ---"
-          trap -p || echo "(no traps)"
-          echo "--- tail ~/.profile ---"
-          tail -8 ~/.profile 2>&1 || echo "(no ~/.profile)"
-          echo "--- ~/.bash_logout ---"
-          cat ~/.bash_logout 2>&1 || echo "(no ~/.bash_logout)"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          base="probe-base-${GITHUB_RUN_ID}"
+          git push origin "HEAD:refs/heads/${base}"
+          echo "BASE=${base}" >> "$GITHUB_ENV"
+          echo "base branch: ${base}"
 
-      - id: a
-        name: 'A: conda + login shell + explicit exit 0'
+      - id: p1
+        name: 'P1: real git+gh sequence, CURRENT shape (explicit exit 0)'
         continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo body
-          exit 0
-
-      - id: b
-        name: 'B: conda + login shell, ends at EOF'
-        continue-on-error: true
-        run: |
-          echo body
-          true
-
-      - id: c
-        name: 'C: conda + plain bash + explicit exit 0'
-        shell: bash
-        continue-on-error: true
-        run: |
-          echo body
-          exit 0
-
-      - id: e
-        name: 'E: conda + login shell + set +e + explicit exit 0'
-        continue-on-error: true
-        run: |
-          set +e
-          echo body
-          exit 0
-
-      - id: f
-        name: 'F: conda + login shell, real failing shape (for/if/exit 0)'
-        continue-on-error: true
-        run: |
+          head="probe-head1-${GITHUB_RUN_ID}"
+          echo "p1" > probe_marker.txt
+          git add probe_marker.txt
+          git commit -m "probe p1"
+          git push origin "HEAD:refs/heads/${head}"
+          pr_url="$(gh pr create --base "$BASE" --head "${head}" \
+            --title "probe p1" --body "throwaway diagnostic")"
+          echo "opened ${pr_url}"
           for attempt in 1 2 3 4 5; do
-            if true; then
-              echo "merged (simulated)"
+            if gh pr merge "${pr_url}" --squash --delete-branch; then
+              echo "merged ${pr_url}"
               exit 0
             fi
-            echo "not ready (attempt ${attempt})"
-            sleep 1
+            echo "merge not ready yet (attempt ${attempt}); retrying in 15s"
+            sleep 15
           done
-          echo "::error::simulated failure"
+          echo "::error::${pr_url} was opened but not merged automatically"
           exit 1
 
-      - id: g
-        name: 'G: conda + login shell, PROPOSED FIX (no explicit exit 0)'
+      - id: p2
+        name: 'P2: real git+gh sequence, PROPOSED shape (no explicit exit 0)'
         continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          git fetch origin "$BASE"
+          git reset --hard "origin/$BASE"
+          head="probe-head2-${GITHUB_RUN_ID}"
+          echo "p2" > probe_marker.txt
+          git add probe_marker.txt
+          git commit -m "probe p2"
+          git push origin "HEAD:refs/heads/${head}"
+          pr_url="$(gh pr create --base "$BASE" --head "${head}" \
+            --title "probe p2" --body "throwaway diagnostic")"
+          echo "opened ${pr_url}"
           merged=0
           for attempt in 1 2 3 4 5; do
-            if true; then
+            if gh pr merge "${pr_url}" --squash --delete-branch; then
               merged=1
               break
             fi
-            echo "not ready (attempt ${attempt})"
-            sleep 1
+            echo "merge not ready yet (attempt ${attempt}); retrying in 15s"
+            sleep 15
           done
           if [ "$merged" -ne 1 ]; then
-            echo "::error::simulated failure"
+            echo "::error::${pr_url} was opened but not merged automatically"
             exit 1
           fi
-          echo "merged (simulated)"
+          echo "merged ${pr_url}"
 
-      - id: h
-        name: 'H: conda + plain bash, PROPOSED FIX'
+      - id: p3
+        name: 'P3: same as P1 but plain bash (non-login) shell'
         shell: bash
         continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          merged=0
+          git fetch origin "$BASE"
+          git reset --hard "origin/$BASE"
+          head="probe-head3-${GITHUB_RUN_ID}"
+          echo "p3" > probe_marker.txt
+          git add probe_marker.txt
+          git commit -m "probe p3"
+          git push origin "HEAD:refs/heads/${head}"
+          pr_url="$(gh pr create --base "$BASE" --head "${head}" \
+            --title "probe p3" --body "throwaway diagnostic")"
+          echo "opened ${pr_url}"
           for attempt in 1 2 3 4 5; do
-            if true; then
-              merged=1
-              break
+            if gh pr merge "${pr_url}" --squash --delete-branch; then
+              echo "merged ${pr_url}"
+              exit 0
             fi
-            sleep 1
+            echo "merge not ready yet (attempt ${attempt}); retrying in 15s"
+            sleep 15
           done
-          if [ "$merged" -ne 1 ]; then
-            echo "::error::simulated failure"
-            exit 1
-          fi
-          echo "merged (simulated)"
+          echo "::error::not merged"
+          exit 1
 
       - name: Verdict
         run: |
-          echo "A  conda login + exit 0            : ${{ steps.a.outcome }}"
-          echo "B  conda login + EOF               : ${{ steps.b.outcome }}"
-          echo "C  conda plain + exit 0            : ${{ steps.c.outcome }}"
-          echo "E  conda login + set +e + exit 0   : ${{ steps.e.outcome }}"
-          echo "F  conda login + real shape        : ${{ steps.f.outcome }}"
-          echo "G  conda login + PROPOSED FIX      : ${{ steps.g.outcome }}"
-          echo "H  conda plain + PROPOSED FIX      : ${{ steps.h.outcome }}"
+          echo "P1 login + real sequence + exit 0   : ${{ steps.p1.outcome }}"
+          echo "P2 login + real sequence, no exit 0 : ${{ steps.p2.outcome }}"
+          echo "P3 plain + real sequence + exit 0   : ${{ steps.p3.outcome }}"
+
+      - name: Clean up throwaway branches
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for b in "probe-base-${GITHUB_RUN_ID}" \
+                   "probe-head1-${GITHUB_RUN_ID}" \
+                   "probe-head2-${GITHUB_RUN_ID}" \
+                   "probe-head3-${GITHUB_RUN_ID}"; do
+            git push origin --delete "$b" 2>/dev/null && echo "deleted $b" || echo "already gone: $b"
+          done
