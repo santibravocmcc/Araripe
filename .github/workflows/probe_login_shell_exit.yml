@@ -1,11 +1,20 @@
 name: probe login-shell exit status
 
 # THROWAWAY DIAGNOSTIC — must never reach `main`.
-# Reproduces, on a real runner, why the "Publish time-series DB through a pull
-# request" step exits 1 right after printing "merged <pr url>" (runs 20/08 and
-# 24/08): the job default shell is `bash -l {0}`, and a NON-INTERACTIVE login
-# shell runs ~/.bash_logout only when the `exit` builtin is called explicitly.
-# Steps that end at EOF never touch it, which is why every other step passes.
+# Why the "Publish time-series DB through a pull request" step exits 1 right
+# after printing "merged <pr url>" (runs 20/08 and 24/08).
+#
+# Probe v1 (no conda) showed `bash -l {0}` + explicit `exit 0` PASSES, so the
+# login shell alone is not the cause. Missing factor found in the failing log:
+# conda-incubator/setup-miniconda deletes ~/.bashrc, ~/.bash_profile and
+# ~/.profile, then writes a ~/.profile ending in
+#     set -eo pipefail
+#     conda activate "araripe"
+# so every `bash -l {0}` step in that job runs with `-e` inherited from the
+# profile. A non-interactive login shell runs ~/.bash_logout only when `exit`
+# is called explicitly, and the runner's ~/.bash_logout runs
+# `/usr/bin/clear_console -q` (SHLVL=1), which fails without a TTY. Under `-e`
+# that failure may replace the requested status. This probe settles it.
 
 on:
   push:
@@ -15,51 +24,108 @@ permissions:
   contents: read
 
 jobs:
-  probe:
+  with-conda:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 25
     defaults:
       run:
-        shell: bash -l {0}   # exactly the detect_gee.yml / update_data.yml default
+        shell: bash -l {0}   # exactly the detect_gee.yml default
 
     steps:
-      - name: Environment facts
+      - uses: actions/checkout@v4
+
+      - name: Set up Conda (same as detect_gee.yml)
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          environment-file: environment.yml
+          activate-environment: araripe
+          auto-activate-base: false
+          use-mamba: true
+          miniforge-version: latest
+
+      - name: Shell state inherited by every step
         run: |
-          echo "BASH_VERSION=$BASH_VERSION"
-          echo "SHLVL=$SHLVL"
+          echo "BASH_VERSION=$BASH_VERSION SHLVL=$SHLVL CONDA_PREFIX=$CONDA_PREFIX"
+          echo "--- set -o (errexit/pipefail?) ---"
+          set -o | grep -E 'errexit|pipefail'
+          echo "--- trap -p ---"
+          trap -p || echo "(no traps)"
+          echo "--- tail ~/.profile ---"
+          tail -8 ~/.profile 2>&1 || echo "(no ~/.profile)"
           echo "--- ~/.bash_logout ---"
           cat ~/.bash_logout 2>&1 || echo "(no ~/.bash_logout)"
-          echo "--- /usr/bin/clear_console ---"
-          ls -l /usr/bin/clear_console 2>&1 || echo "(absent)"
 
       - id: a
-        name: 'A: login shell + explicit exit 0'
+        name: 'A: conda + login shell + explicit exit 0'
         continue-on-error: true
         run: |
           echo body
           exit 0
 
       - id: b
-        name: 'B: login shell, ends at EOF'
+        name: 'B: conda + login shell, ends at EOF'
         continue-on-error: true
         run: |
           echo body
           true
 
       - id: c
-        name: 'C: plain bash + explicit exit 0'
+        name: 'C: conda + plain bash + explicit exit 0'
         shell: bash
         continue-on-error: true
         run: |
           echo body
           exit 0
 
-      - id: d
-        name: 'D: login shell, proposed fixed structure (no explicit exit 0)'
+      - id: e
+        name: 'E: conda + login shell + set +e + explicit exit 0'
+        continue-on-error: true
+        run: |
+          set +e
+          echo body
+          exit 0
+
+      - id: f
+        name: 'F: conda + login shell, real failing shape (for/if/exit 0)'
+        continue-on-error: true
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if true; then
+              echo "merged (simulated)"
+              exit 0
+            fi
+            echo "not ready (attempt ${attempt})"
+            sleep 1
+          done
+          echo "::error::simulated failure"
+          exit 1
+
+      - id: g
+        name: 'G: conda + login shell, PROPOSED FIX (no explicit exit 0)'
         continue-on-error: true
         run: |
           merged=0
-          for attempt in 1 2 3; do
+          for attempt in 1 2 3 4 5; do
+            if true; then
+              merged=1
+              break
+            fi
+            echo "not ready (attempt ${attempt})"
+            sleep 1
+          done
+          if [ "$merged" -ne 1 ]; then
+            echo "::error::simulated failure"
+            exit 1
+          fi
+          echo "merged (simulated)"
+
+      - id: h
+        name: 'H: conda + plain bash, PROPOSED FIX'
+        shell: bash
+        continue-on-error: true
+        run: |
+          merged=0
+          for attempt in 1 2 3 4 5; do
             if true; then
               merged=1
               break
@@ -67,14 +133,17 @@ jobs:
             sleep 1
           done
           if [ "$merged" -ne 1 ]; then
-            echo "::error::simulated merge failure"
+            echo "::error::simulated failure"
             exit 1
           fi
           echo "merged (simulated)"
 
       - name: Verdict
         run: |
-          echo "A  login shell + exit 0        : ${{ steps.a.outcome }}"
-          echo "B  login shell + EOF           : ${{ steps.b.outcome }}"
-          echo "C  plain bash  + exit 0        : ${{ steps.c.outcome }}"
-          echo "D  login shell + fixed shape   : ${{ steps.d.outcome }}"
+          echo "A  conda login + exit 0            : ${{ steps.a.outcome }}"
+          echo "B  conda login + EOF               : ${{ steps.b.outcome }}"
+          echo "C  conda plain + exit 0            : ${{ steps.c.outcome }}"
+          echo "E  conda login + set +e + exit 0   : ${{ steps.e.outcome }}"
+          echo "F  conda login + real shape        : ${{ steps.f.outcome }}"
+          echo "G  conda login + PROPOSED FIX      : ${{ steps.g.outcome }}"
+          echo "H  conda plain + PROPOSED FIX      : ${{ steps.h.outcome }}"
