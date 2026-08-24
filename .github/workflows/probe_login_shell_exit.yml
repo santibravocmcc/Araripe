@@ -1,0 +1,80 @@
+name: probe login-shell exit status
+
+# THROWAWAY DIAGNOSTIC — must never reach `main`.
+# Reproduces, on a real runner, why the "Publish time-series DB through a pull
+# request" step exits 1 right after printing "merged <pr url>" (runs 20/08 and
+# 24/08): the job default shell is `bash -l {0}`, and a NON-INTERACTIVE login
+# shell runs ~/.bash_logout only when the `exit` builtin is called explicitly.
+# Steps that end at EOF never touch it, which is why every other step passes.
+
+on:
+  push:
+    branches: ['probe/**']
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        shell: bash -l {0}   # exactly the detect_gee.yml / update_data.yml default
+
+    steps:
+      - name: Environment facts
+        run: |
+          echo "BASH_VERSION=$BASH_VERSION"
+          echo "SHLVL=$SHLVL"
+          echo "--- ~/.bash_logout ---"
+          cat ~/.bash_logout 2>&1 || echo "(no ~/.bash_logout)"
+          echo "--- /usr/bin/clear_console ---"
+          ls -l /usr/bin/clear_console 2>&1 || echo "(absent)"
+
+      - id: a
+        name: 'A: login shell + explicit exit 0'
+        continue-on-error: true
+        run: |
+          echo body
+          exit 0
+
+      - id: b
+        name: 'B: login shell, ends at EOF'
+        continue-on-error: true
+        run: |
+          echo body
+          true
+
+      - id: c
+        name: 'C: plain bash + explicit exit 0'
+        shell: bash
+        continue-on-error: true
+        run: |
+          echo body
+          exit 0
+
+      - id: d
+        name: 'D: login shell, proposed fixed structure (no explicit exit 0)'
+        continue-on-error: true
+        run: |
+          merged=0
+          for attempt in 1 2 3; do
+            if true; then
+              merged=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$merged" -ne 1 ]; then
+            echo "::error::simulated merge failure"
+            exit 1
+          fi
+          echo "merged (simulated)"
+
+      - name: Verdict
+        run: |
+          echo "A  login shell + exit 0        : ${{ steps.a.outcome }}"
+          echo "B  login shell + EOF           : ${{ steps.b.outcome }}"
+          echo "C  plain bash  + exit 0        : ${{ steps.c.outcome }}"
+          echo "D  login shell + fixed shape   : ${{ steps.d.outcome }}"
