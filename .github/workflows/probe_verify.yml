@@ -1,0 +1,168 @@
+name: probe verify merged fix
+
+# THROWAWAY. Runs the publish step EXACTLY as merged on `main` (only the git/gh
+# target branch is swapped for a throwaway base, so nothing reaches `main`),
+# inside a job with the same `bash -l {0}` default and the same conda setup.
+# Exercises both formerly-broken paths: something to publish, nothing to publish.
+
+on:
+  push:
+    branches: ['probe/**']
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Conda (same as detect_gee.yml)
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          environment-file: environment.yml
+          activate-environment: araripe
+          auto-activate-base: false
+          use-mamba: true
+          miniforge-version: latest
+
+      - name: Throwaway base branch, checked out locally (mimics being on main)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          base="probe-base-${GITHUB_RUN_ID}"
+          git push origin "HEAD:refs/heads/${base}"
+          git fetch origin "${base}"
+          git checkout -B "${base}" "origin/${base}"
+          echo "BASE=${base}" >> "$GITHUB_ENV"
+
+      - name: Stage a change under data/timeseries/
+        run: |
+          echo "probe ${GITHUB_RUN_ID}" > data/timeseries/probe_marker.txt
+
+      - id: publish_changed
+        name: 'REAL STEP, path "something to publish"'
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/timeseries/
+          if git diff --staged --quiet; then
+            echo "time-series unchanged; nothing to publish"
+          else
+            # This lane must never carry anything but the time-series DB.
+            # (Captured `grep -v` instead of `grep -qv`: the -q/-v combination is
+            # not portable across grep implementations.)
+            unexpected="$(git diff --staged --name-only | grep -v '^data/timeseries/' || true)"
+            if [ -n "$unexpected" ]; then
+              echo "::error::refusing to open a PR touching paths outside data/timeseries/"
+              echo "$unexpected"
+              exit 1
+            fi
+            git commit -m "chore: update time-series $(date +%Y-%m-%d)"
+            git fetch origin "$BASE"
+            if ! git rebase "origin/$BASE"; then
+              echo "::error::rebase onto origin/main failed (concurrent time-series change?)"
+              git rebase --abort || true
+              exit 1
+            fi
+            branch="auto/timeseries-${GITHUB_RUN_ID}"
+            git push origin "HEAD:refs/heads/${branch}"
+            pr_url="$(gh pr create --base "$BASE" --head "${branch}" \
+              --title "chore: update time-series $(date +%Y-%m-%d)" \
+              --body "Automated time-series DB update from ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}. Only \`data/timeseries/\` changes; alerts themselves live in R2.")"
+            echo "opened ${pr_url}"
+            # Mergeability is computed asynchronously, so retry for a short while.
+            merged=0
+            for attempt in 1 2 3 4 5; do
+              if gh pr merge "${pr_url}" --squash --delete-branch; then
+                merged=1
+                break
+              fi
+              echo "merge not ready yet (attempt ${attempt}); retrying in 15s"
+              sleep 15
+            done
+            if [ "$merged" -ne 1 ]; then
+              echo "::error::${pr_url} was opened but not merged automatically; merge it by hand"
+              exit 1
+            fi
+            echo "merged ${pr_url}"
+          fi
+
+      - id: publish_unchanged
+        name: 'REAL STEP, path "nothing to publish"'
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/timeseries/
+          if git diff --staged --quiet; then
+            echo "time-series unchanged; nothing to publish"
+          else
+            # This lane must never carry anything but the time-series DB.
+            # (Captured `grep -v` instead of `grep -qv`: the -q/-v combination is
+            # not portable across grep implementations.)
+            unexpected="$(git diff --staged --name-only | grep -v '^data/timeseries/' || true)"
+            if [ -n "$unexpected" ]; then
+              echo "::error::refusing to open a PR touching paths outside data/timeseries/"
+              echo "$unexpected"
+              exit 1
+            fi
+            git commit -m "chore: update time-series $(date +%Y-%m-%d)"
+            git fetch origin "$BASE"
+            if ! git rebase "origin/$BASE"; then
+              echo "::error::rebase onto origin/main failed (concurrent time-series change?)"
+              git rebase --abort || true
+              exit 1
+            fi
+            branch="auto/timeseries-${GITHUB_RUN_ID}"
+            git push origin "HEAD:refs/heads/${branch}"
+            pr_url="$(gh pr create --base "$BASE" --head "${branch}" \
+              --title "chore: update time-series $(date +%Y-%m-%d)" \
+              --body "Automated time-series DB update from ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}. Only \`data/timeseries/\` changes; alerts themselves live in R2.")"
+            echo "opened ${pr_url}"
+            # Mergeability is computed asynchronously, so retry for a short while.
+            merged=0
+            for attempt in 1 2 3 4 5; do
+              if gh pr merge "${pr_url}" --squash --delete-branch; then
+                merged=1
+                break
+              fi
+              echo "merge not ready yet (attempt ${attempt}); retrying in 15s"
+              sleep 15
+            done
+            if [ "$merged" -ne 1 ]; then
+              echo "::error::${pr_url} was opened but not merged automatically; merge it by hand"
+              exit 1
+            fi
+            echo "merged ${pr_url}"
+          fi
+
+      - name: Verdict
+        run: |
+          echo "something to publish : ${{ steps.publish_changed.outcome }}"
+          echo "nothing to publish   : ${{ steps.publish_unchanged.outcome }}"
+
+      - name: Clean up
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for b in "probe-base-${GITHUB_RUN_ID}" "auto/timeseries-${GITHUB_RUN_ID}"; do
+            git push origin --delete "$b" 2>/dev/null && echo "deleted $b" || echo "already gone: $b"
+          done
