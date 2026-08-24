@@ -2,12 +2,17 @@ name: probe login-shell exit status
 
 # THROWAWAY DIAGNOSTIC — must never reach `main`.
 #
-# v1 (no conda) and v2 (with conda) both showed that `bash -l {0}` + explicit
-# `exit 0` PASSES, even with `set -eo pipefail` inherited from the ~/.profile
-# that setup-miniconda writes, SHLVL=1 and the Ubuntu ~/.bash_logout in place.
-# So the shell is NOT the cause. v3 replicates the actual git + gh sequence of
-# the failing step, against a throwaway base branch (never `main`), and
-# contrasts the current shape (explicit `exit 0`) with the proposed fix shape.
+# Ruled out so far, all on real runners:
+#   v1 no conda            : bash -l {0} + explicit `exit 0` -> PASSES
+#   v2 with conda          : same, with `set -eo pipefail` inherited from the
+#                            ~/.profile setup-miniconda writes -> PASSES
+#   v3 real git+gh sequence: commit/push/gh pr create/gh pr merge --squash
+#                            --delete-branch/echo/exit 0 -> PASSES
+# In v3 the local checkout was on `main` while the PR base was a throwaway
+# branch. In the real job the local checkout IS the PR's base branch, and the
+# squash merge makes local `main` diverge from `origin/main` — so
+# `gh pr merge --delete-branch` takes its "current branch is the base branch"
+# path. v4 reproduces exactly that topology, and instruments gh's exit code.
 
 on:
   push:
@@ -37,7 +42,7 @@ jobs:
           use-mamba: true
           miniforge-version: latest
 
-      - name: Throwaway base branch (never main)
+      - name: Throwaway base branch, checked out locally (mimics being on main)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -45,49 +50,65 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           base="probe-base-${GITHUB_RUN_ID}"
           git push origin "HEAD:refs/heads/${base}"
+          git fetch origin "${base}"
+          git checkout -B "${base}" "origin/${base}"
           echo "BASE=${base}" >> "$GITHUB_ENV"
-          echo "base branch: ${base}"
+          git status --short --branch
 
-      - id: p1
-        name: 'P1: real git+gh sequence, CURRENT shape (explicit exit 0)'
+      - id: q1
+        name: 'Q1: local checkout IS the PR base + explicit exit 0 (instrumented)'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           head="probe-head1-${GITHUB_RUN_ID}"
-          echo "p1" > probe_marker.txt
+          echo "q1" > probe_marker.txt
           git add probe_marker.txt
-          git commit -m "probe p1"
+          git commit -m "probe q1"
+          git fetch origin "$BASE"
+          if ! git rebase "origin/$BASE"; then
+            echo "::error::rebase failed"
+            git rebase --abort || true
+            exit 1
+          fi
           git push origin "HEAD:refs/heads/${head}"
           pr_url="$(gh pr create --base "$BASE" --head "${head}" \
-            --title "probe p1" --body "throwaway diagnostic")"
+            --title "probe q1" --body "throwaway diagnostic")"
           echo "opened ${pr_url}"
           for attempt in 1 2 3 4 5; do
-            if gh pr merge "${pr_url}" --squash --delete-branch; then
+            set +e
+            gh pr merge "${pr_url}" --squash --delete-branch
+            rc=$?
+            set -e
+            echo "### gh pr merge exit code = ${rc}"
+            echo "### git status after gh:"
+            git status --short --branch || true
+            if [ "$rc" -eq 0 ]; then
               echo "merged ${pr_url}"
+              echo "### about to run: exit 0"
               exit 0
             fi
             echo "merge not ready yet (attempt ${attempt}); retrying in 15s"
             sleep 15
           done
-          echo "::error::${pr_url} was opened but not merged automatically"
+          echo "::error::not merged"
           exit 1
 
-      - id: p2
-        name: 'P2: real git+gh sequence, PROPOSED shape (no explicit exit 0)'
+      - id: q2
+        name: 'Q2: same topology, PROPOSED shape (no explicit exit 0)'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git fetch origin "$BASE"
-          git reset --hard "origin/$BASE"
+          git checkout -B "$BASE" "origin/$BASE"
           head="probe-head2-${GITHUB_RUN_ID}"
-          echo "p2" > probe_marker.txt
+          echo "q2" > probe_marker.txt
           git add probe_marker.txt
-          git commit -m "probe p2"
+          git commit -m "probe q2"
           git push origin "HEAD:refs/heads/${head}"
           pr_url="$(gh pr create --base "$BASE" --head "${head}" \
-            --title "probe p2" --body "throwaway diagnostic")"
+            --title "probe q2" --body "throwaway diagnostic")"
           echo "opened ${pr_url}"
           merged=0
           for attempt in 1 2 3 4 5; do
@@ -99,44 +120,15 @@ jobs:
             sleep 15
           done
           if [ "$merged" -ne 1 ]; then
-            echo "::error::${pr_url} was opened but not merged automatically"
+            echo "::error::not merged"
             exit 1
           fi
           echo "merged ${pr_url}"
 
-      - id: p3
-        name: 'P3: same as P1 but plain bash (non-login) shell'
-        shell: bash
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git fetch origin "$BASE"
-          git reset --hard "origin/$BASE"
-          head="probe-head3-${GITHUB_RUN_ID}"
-          echo "p3" > probe_marker.txt
-          git add probe_marker.txt
-          git commit -m "probe p3"
-          git push origin "HEAD:refs/heads/${head}"
-          pr_url="$(gh pr create --base "$BASE" --head "${head}" \
-            --title "probe p3" --body "throwaway diagnostic")"
-          echo "opened ${pr_url}"
-          for attempt in 1 2 3 4 5; do
-            if gh pr merge "${pr_url}" --squash --delete-branch; then
-              echo "merged ${pr_url}"
-              exit 0
-            fi
-            echo "merge not ready yet (attempt ${attempt}); retrying in 15s"
-            sleep 15
-          done
-          echo "::error::not merged"
-          exit 1
-
       - name: Verdict
         run: |
-          echo "P1 login + real sequence + exit 0   : ${{ steps.p1.outcome }}"
-          echo "P2 login + real sequence, no exit 0 : ${{ steps.p2.outcome }}"
-          echo "P3 plain + real sequence + exit 0   : ${{ steps.p3.outcome }}"
+          echo "Q1 on-base + exit 0   : ${{ steps.q1.outcome }}"
+          echo "Q2 on-base + fix shape: ${{ steps.q2.outcome }}"
 
       - name: Clean up throwaway branches
         if: always()
@@ -145,7 +137,6 @@ jobs:
         run: |
           for b in "probe-base-${GITHUB_RUN_ID}" \
                    "probe-head1-${GITHUB_RUN_ID}" \
-                   "probe-head2-${GITHUB_RUN_ID}" \
-                   "probe-head3-${GITHUB_RUN_ID}"; do
+                   "probe-head2-${GITHUB_RUN_ID}"; do
             git push origin --delete "$b" 2>/dev/null && echo "deleted $b" || echo "already gone: $b"
           done
