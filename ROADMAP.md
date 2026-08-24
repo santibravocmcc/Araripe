@@ -150,4 +150,54 @@ Schedule spacing: the site refresh
 (`../site/.github/workflows/update-data.yml`) moved from Mon/Thu 07:30 UTC to
 Tue/Fri 06:00 UTC — a full 24 h after the backend run instead of 90 min. On
 2026-08-17 GitHub started the backend cron 67 min late, which is enough to make
-the site read a `main` whose time-series PR has not landed yet.
+the site read a `main` whose time-series PR has not landed yet. **Pending:** the
+change lives on the site branch `fix/site-cron-24h` and is NOT merged, so the
+site still runs Mon/Thu 07:30 UTC (run of 2026-08-24 confirms it).
+
+### 6.1 The PR lane worked but still reported failure (fixed 2026-08-24)
+
+The runs of 2026-08-20 (`32341699596`) and 2026-08-24 (`32700387452`) both
+**published successfully** — PRs #13 and #14 are squash-merged on `main` and the
+series is current — and both reported failure. The log ends:
+
+```
+opened  https://github.com/santibravocmcc/Araripe/pull/14
+merged  https://github.com/santibravocmcc/Araripe/pull/14
+##[error]Process completed with exit code 1.
+```
+
+Root cause: three ingredients, none sufficient alone.
+
+1. `conda-incubator/setup-miniconda` deletes `~/.bashrc`, `~/.bash_profile` and
+   `~/.profile`, then writes a `~/.profile` ending in `set -eo pipefail`. Every
+   `bash -l {0}` step in the job therefore inherits **errexit**.
+2. A non-interactive login shell sources `~/.bash_logout` **only when the `exit`
+   builtin runs explicitly** (bash manual). Steps that end at EOF never do.
+3. The runner's `~/.bash_logout` runs `/usr/bin/clear_console -q` when
+   `SHLVL = 1` (it is, and the binary exists), which fails with no TTY. Under
+   errexit that failure replaces the requested status, so `exit 0` yields 1.
+
+Only the publish step ends with an explicit `exit 0`, which is exactly why it
+was the only step that failed while the whole pipeline succeeded.
+
+Verified on real runners (throwaway branch `probe/login-shell-exit`, deleted):
+`bash -l` + `exit 0` fails **only** with conda's profile present; adding
+`set +e` to the same step makes it pass; a non-login `shell: bash` passes; and
+the fixed shape — no explicit `exit 0` — passes in every combination, including
+a full replay of the real `git commit` / `push` / `gh pr create` /
+`gh pr merge --squash --delete-branch` sequence against a throwaway base.
+Note when reading such probes: with `continue-on-error: true` the API's
+`conclusion` field reads `success` even for a failed step; use `outcome`.
+
+Fix (branch `fix/publish-step-exit-status`): the publish step in both workflows
+declares `shell: bash` (it is pure git/gh and needs no conda env, so the login
+shell buys nothing) **and** no longer calls `exit 0` — the "nothing to publish"
+case became an `else` branch and the merge loop sets a flag and `break`s. Either
+change alone is sufficient; both are kept so the step stays correct if someone
+later changes the shell back. Behaviour is otherwise identical, and all four
+paths were re-tested locally (no change / DB only / DB + stray path refused /
+merge never ready).
+
+Bug class to remember: **never end a `bash -l {0}` step with an explicit
+`exit 0`** in a job that uses `setup-miniconda`. Ending at EOF, or overriding to
+`shell: bash`, is safe.

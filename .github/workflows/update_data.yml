@@ -68,7 +68,10 @@ jobs:
       - name: Publish time-series DB through a pull request
         # Same lane as detect_gee.yml: the ruleset "Protect main — pull requests
         # only" has no bypass actors, so the bot merges a PR instead of pushing.
+        # `shell: bash` and the absence of any explicit `exit 0` are deliberate —
+        # see the long comment on the same step in detect_gee.yml and ROADMAP.md §6.
         if: success()
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -77,34 +80,38 @@ jobs:
           git add data/timeseries/
           if git diff --staged --quiet; then
             echo "time-series unchanged; nothing to publish"
-            exit 0
-          fi
-          unexpected="$(git diff --staged --name-only | grep -v '^data/timeseries/' || true)"
-          if [ -n "$unexpected" ]; then
-            echo "::error::refusing to open a PR touching paths outside data/timeseries/"
-            echo "$unexpected"
-            exit 1
-          fi
-          git commit -m "chore: update time-series $(date +%Y-%m-%d)"
-          git fetch origin main
-          if ! git rebase origin/main; then
-            echo "::error::rebase onto origin/main failed (concurrent time-series change?)"
-            git rebase --abort || true
-            exit 1
-          fi
-          branch="auto/timeseries-${GITHUB_RUN_ID}"
-          git push origin "HEAD:refs/heads/${branch}"
-          pr_url="$(gh pr create --base main --head "${branch}" \
-            --title "chore: update time-series $(date +%Y-%m-%d)" \
-            --body "Automated time-series DB update from ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}. Only \`data/timeseries/\` changes; alerts themselves live in R2.")"
-          echo "opened ${pr_url}"
-          for attempt in 1 2 3 4 5; do
-            if gh pr merge "${pr_url}" --squash --delete-branch; then
-              echo "merged ${pr_url}"
-              exit 0
+          else
+            unexpected="$(git diff --staged --name-only | grep -v '^data/timeseries/' || true)"
+            if [ -n "$unexpected" ]; then
+              echo "::error::refusing to open a PR touching paths outside data/timeseries/"
+              echo "$unexpected"
+              exit 1
             fi
-            echo "merge not ready yet (attempt ${attempt}); retrying in 15s"
-            sleep 15
-          done
-          echo "::error::${pr_url} was opened but not merged automatically; merge it by hand"
-          exit 1
+            git commit -m "chore: update time-series $(date +%Y-%m-%d)"
+            git fetch origin main
+            if ! git rebase origin/main; then
+              echo "::error::rebase onto origin/main failed (concurrent time-series change?)"
+              git rebase --abort || true
+              exit 1
+            fi
+            branch="auto/timeseries-${GITHUB_RUN_ID}"
+            git push origin "HEAD:refs/heads/${branch}"
+            pr_url="$(gh pr create --base main --head "${branch}" \
+              --title "chore: update time-series $(date +%Y-%m-%d)" \
+              --body "Automated time-series DB update from ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}. Only \`data/timeseries/\` changes; alerts themselves live in R2.")"
+            echo "opened ${pr_url}"
+            merged=0
+            for attempt in 1 2 3 4 5; do
+              if gh pr merge "${pr_url}" --squash --delete-branch; then
+                merged=1
+                break
+              fi
+              echo "merge not ready yet (attempt ${attempt}); retrying in 15s"
+              sleep 15
+            done
+            if [ "$merged" -ne 1 ]; then
+              echo "::error::${pr_url} was opened but not merged automatically; merge it by hand"
+              exit 1
+            fi
+            echo "merged ${pr_url}"
+          fi
