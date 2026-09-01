@@ -1,0 +1,25 @@
+{
+  "schema_version": "3.0.0",
+  "lineage_id": "lin-v3-6015cb09ebc3edc873ba9891bc0810618c73c1e9a64a0ecef559966ec1c005fb",
+  "identity_inputs_sha256": "6015cb09ebc3edc873ba9891bc0810618c73c1e9a64a0ecef559966ec1c005fb",
+  "run_manifest_id": "run-v3-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "run_manifest_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "relation": "split",
+  "parent_event_ids": [
+    "evt-v3-407fdd0d26ef9925d6a78880d03fba36e9d850a50969f4c87f42866bccc4ae66"
+  ],
+  "child_event_ids": [
+    "evt-v3-095b5bf088f53eb46b7eed4d259aee03939c9c2bf6b58795748693f670981e61",
+    "evt-v3-9090fe6ac865fd6fd36289cd4beb2597ced7dc15c95f04868e070dc742574976"
+  ],
+  "trigger_observation_ids": [
+    "obs-v3-49bb529a430def030a5fe1bc0799876625a210e419c0ed9ecfdbb277de785282",
+    "obs-v3-bea9a5e086842896ede95d844d9a48245ec66a12faf2faf1f52f796877789cc7"
+  ],
+  "effective_acquisition_id": "acq-v3-3235699f3269dd51814ae92cfc3b1eda9ff173839a0b97b2b804bbca47144ec6",
+  "effective_timestamp_utc": "2026-04-07T13:22:51Z",
+  "observed_on": "2026-04-07",
+  "algorithm_version": "2.0.0",
+  "raw_observations_preserved": true,
+  "created_at": "2026-04-07T14:00:00Z"
+}

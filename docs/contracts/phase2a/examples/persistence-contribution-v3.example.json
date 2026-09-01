@@ -1,0 +1,20 @@
+{
+  "schema_version": "3.0.0",
+  "contribution_key": "pc-v3-541d6c9b2e1efc03de4652e3fcfec7d8fa5cb91e5a5e4d8ae6af26420ba23dcc",
+  "identity_inputs_sha256": "541d6c9b2e1efc03de4652e3fcfec7d8fa5cb91e5a5e4d8ae6af26420ba23dcc",
+  "run_manifest_id": "run-v3-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "run_manifest_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "event_id": "evt-v3-407fdd0d26ef9925d6a78880d03fba36e9d850a50969f4c87f42866bccc4ae66",
+  "observed_on": "2026-04-07",
+  "source_acquisition_ids": [
+    "acq-v3-dcb7dafaee610620b685a4cf0a06e541da32e25593a8c0b8a8e1a0c585b9259a"
+  ],
+  "source_observation_ids": [
+    "obs-v3-3db6deec69f88dc301cd7c2e06547d6349080a5182f291229ed4e73d3a976c13"
+  ],
+  "daily_summary_sha256": "5d4530c41624b7255e83f8d5d5369802bb70df0f020a7fd56be7190bd6207adc",
+  "finalization_status": "finalized",
+  "finalization_condition": "all_manifest_expected_acquisitions_for_utc_date_terminal",
+  "duplicate_policy": "no_op",
+  "finalized_at": "2026-04-07T14:00:00Z"
+}

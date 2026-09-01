@@ -1,0 +1,193 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://observatoriodachapadadoararipe.com/data/schemas/event-v3.schema.json",
+  "title": "Araripe event v3",
+  "description": "A durable event grouping v3 observations while referring to standalone split/merge lineage records.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "event_id",
+    "identity_inputs_sha256",
+    "run_manifest_id",
+    "run_manifest_sha256",
+    "identity_basis",
+    "monitoring_extent_id",
+    "status",
+    "first_observed_on",
+    "last_observed_on",
+    "observation_dates",
+    "n_distinct_observation_dates",
+    "observation_ids",
+    "acquisition_ids",
+    "contribution_keys",
+    "incoming_lineage_ids",
+    "outgoing_lineage_ids",
+    "representative_geometry_crs",
+    "representative_geometry",
+    "representative_geometry_sha256",
+    "raw_observations_preserved",
+    "persistence_tier",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "schema_version": { "const": "3.0.0" },
+    "event_id": { "$ref": "#/$defs/event_id" },
+    "identity_inputs_sha256": { "$ref": "#/$defs/sha256" },
+    "run_manifest_id": { "$ref": "#/$defs/run_manifest_id" },
+    "run_manifest_sha256": { "$ref": "#/$defs/sha256" },
+    "identity_basis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "first_observation_id", "parent_event_ids", "trigger_observation_ids"],
+      "properties": {
+        "kind": { "enum": ["origin", "split", "merge"] },
+        "first_observation_id": {
+          "description": "For origin, equals the sole trigger and must belong to this event's contribution on first_observed_on; the cross-record membership rule is enforced semantically.",
+          "oneOf": [{ "$ref": "#/$defs/observation_id" }, { "type": "null" }]
+        },
+        "parent_event_ids": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/event_id" },
+          "uniqueItems": true
+        },
+        "trigger_observation_ids": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/observation_id" },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "origin" } }, "required": ["kind"] },
+          "then": {
+            "properties": {
+              "first_observation_id": { "$ref": "#/$defs/observation_id" },
+              "parent_event_ids": { "maxItems": 0 },
+              "trigger_observation_ids": { "minItems": 1, "maxItems": 1 }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "split" } }, "required": ["kind"] },
+          "then": {
+            "properties": {
+              "first_observation_id": { "type": "null" },
+              "parent_event_ids": { "minItems": 1, "maxItems": 1 }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "merge" } }, "required": ["kind"] },
+          "then": {
+            "properties": {
+              "first_observation_id": { "type": "null" },
+              "parent_event_ids": { "minItems": 2 }
+            }
+          }
+        }
+      ]
+    },
+    "monitoring_extent_id": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["active", "superseded"] },
+    "first_observed_on": { "type": "string", "format": "date" },
+    "last_observed_on": { "type": "string", "format": "date" },
+    "observation_dates": {
+      "type": "array",
+      "items": { "type": "string", "format": "date" },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "n_distinct_observation_dates": { "type": "integer", "minimum": 1 },
+    "observation_ids": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/observation_id" },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "acquisition_ids": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/acquisition_id" },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "contribution_keys": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/contribution_key" },
+      "uniqueItems": true
+    },
+    "incoming_lineage_ids": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/lineage_id" },
+      "uniqueItems": true
+    },
+    "outgoing_lineage_ids": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/lineage_id" },
+      "uniqueItems": true
+    },
+    "representative_geometry_crs": { "const": "EPSG:4326" },
+    "representative_geometry": {
+      "oneOf": [{ "$ref": "#/$defs/polygon" }, { "$ref": "#/$defs/multipolygon" }]
+    },
+    "representative_geometry_sha256": { "$ref": "#/$defs/sha256" },
+    "raw_observations_preserved": { "const": true },
+    "persistence_tier": { "enum": ["first_observation", "candidate", "confirmed"] },
+    "created_at": { "$ref": "#/$defs/utc_timestamp" },
+    "updated_at": { "$ref": "#/$defs/utc_timestamp" }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "acquisition_id": { "type": "string", "pattern": "^acq-v3-[a-f0-9]{64}$" },
+    "observation_id": { "type": "string", "pattern": "^obs-v3-[a-f0-9]{64}$" },
+    "event_id": { "type": "string", "pattern": "^evt-v3-[a-f0-9]{64}$" },
+    "lineage_id": { "type": "string", "pattern": "^lin-v3-[a-f0-9]{64}$" },
+    "contribution_key": { "type": "string", "pattern": "^pc-v3-[a-f0-9]{64}$" },
+    "run_manifest_id": { "type": "string", "pattern": "^run-v3-[a-f0-9]{64}$" },
+    "utc_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$"
+    },
+    "position": {
+      "type": "array",
+      "prefixItems": [{ "type": "number" }, { "type": "number" }],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "linear_ring": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/position" },
+      "minItems": 4
+    },
+    "polygon_coordinates": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/linear_ring" },
+      "minItems": 1
+    },
+    "polygon": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "coordinates"],
+      "properties": {
+        "type": { "const": "Polygon" },
+        "coordinates": { "$ref": "#/$defs/polygon_coordinates" }
+      }
+    },
+    "multipolygon": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "coordinates"],
+      "properties": {
+        "type": { "const": "MultiPolygon" },
+        "coordinates": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/polygon_coordinates" },
+          "minItems": 1
+        }
+      }
+    }
+  }
+}

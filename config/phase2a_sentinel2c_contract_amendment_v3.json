@@ -1,0 +1,139 @@
+{
+  "schema_version": "1.0.0",
+  "amendment_id": "araripe-phase2a6b1-sentinel2c-v3-contract-amendment",
+  "amendment_date": "2026-09-01",
+  "status": "accepted_for_implementation",
+  "authorization": {
+    "authorized_by": "project_owner",
+    "authorized_on": "2026-09-01",
+    "scope": "pre_replay_sentinel2c_platform_representation",
+    "rationale": "GS2C_* datatakes are valid Sentinel-2 constellation data and must be neither discarded nor relabeled",
+    "silent_v2_contract_mutation_permitted": false,
+    "s2c_to_s2a_fallback_permitted": false,
+    "s2c_to_s2b_fallback_permitted": false,
+    "production_mutation_permitted": false,
+    "gee_r2_workflow_credential_mutation_permitted": false,
+    "phase2a6c_start_before_local_gates_pass_permitted": false
+  },
+  "compatibility_policy_basis": {
+    "path": "docs/contracts/phase1/DATA_CONTRACTS_V1.md",
+    "section": "9. Semantic-version compatibility",
+    "rule": "an enum change is a major (incompatible) change and consumers never silently coerce an unknown enum",
+    "consequence": "the platform enum widens only through a coherent new-major contract family"
+  },
+  "parent_bindings": {
+    "phase2a_candidate_generation_decisions_v2": {
+      "path": "config/phase2a_candidate_generation_decisions_v2.json",
+      "sha256": "ac61fd1e6da376a147013a610652e38a6d3d119dcb8479b01001e156625cf69e",
+      "required_in_clean_clone": true,
+      "science_decisions_superseded": false
+    },
+    "phase2a4_pilot_platform_evidence": {
+      "source": "data/validation/phase2a4-candidate-evidence-v1 retained source scenes (checksum-bound outside Git)",
+      "scene_count": 70,
+      "observed_platforms": { "sentinel-2a": 17, "sentinel-2b": 33, "sentinel-2c": 20 },
+      "observed_processing_baselines": { "05.11": 8, "05.12": 62 }
+    }
+  },
+  "platform_representation": {
+    "v2_platform_enum": ["S2A", "S2B"],
+    "v3_platform_enum": ["S2A", "S2B", "S2C"],
+    "normalization": "mechanical_provider_label_to_unit_token",
+    "relabeling_permitted": false,
+    "unlisted_platform_policy": "unavailable_fail_closed",
+    "s2d_and_later_units_reviewed": false
+  },
+  "identity": {
+    "contract_family": {
+      "selected_major": 3,
+      "implementation_status": "required_before_phase2a6c",
+      "required_contracts": [
+        "acquisition-v3",
+        "observation-v3",
+        "event-v3",
+        "lineage-v3",
+        "persistence-contribution-v3",
+        "persistence-state-v3",
+        "processing-ledger-v3"
+      ],
+      "v1_runtime_serialization_permitted": false,
+      "v2_runtime_serialization_permitted": false,
+      "v1_artifacts_preserved_for_audit": true,
+      "v2_artifacts_preserved_for_audit": true,
+      "all_v3_contracts_schemas_examples_and_validators_required": true,
+      "delta_from_v2": [
+        "platform enum widened to include S2C",
+        "identity domain strings and ID prefixes moved to the v3 major",
+        "schema_version fixed to 3.0.0",
+        "transition policy declares v1 and v2 serialization forbidden audit-only"
+      ],
+      "delta_proof": "tests/test_v3_structural_equivalence.py"
+    },
+    "acquisition": {
+      "selected_contract": "acquisition-v3-datatake-scene-set",
+      "id_prefix": "acq-v3-",
+      "implementation_status": "required",
+      "physical_grouping_key": "sentinel2_platform_plus_datatake_identifier_plus_acquisition_timestamp_utc",
+      "same_day_different_datatakes_are_distinct": true,
+      "native_scene_ids_utf8_sorted": true,
+      "method_and_grid_bindings_required": true
+    },
+    "observation": {
+      "selected_contract": "observation-v3",
+      "id_prefix": "obs-v3-",
+      "scope": "newly_generated_v3_acquisitions_only",
+      "binds_acquisition_v3": true
+    },
+    "event": {
+      "selected_contract": "event-v3",
+      "id_prefix": "evt-v3-",
+      "scope": "fresh_2026_chronological_replay_only",
+      "split_merge_lineage_required": true
+    },
+    "lineage": {
+      "selected_contract": "lineage-v3",
+      "id_prefix": "lin-v3-",
+      "conceptual_semantics": "preserve_v2_origin_split_merge_lineage_under_v3_ids"
+    },
+    "persistence": {
+      "contribution_contract": "persistence-contribution-v3",
+      "contribution_key_prefix": "pc-v3-",
+      "contribution_unit": "event_id_plus_utc_observation_date",
+      "maximum_contributions_per_event_per_utc_date": 1,
+      "same_day_observation_policy": "retain_all_observations_and_create_one_date_contribution",
+      "contribution_finalization_condition": "all_expected_acquisitions_for_utc_date_are_terminal",
+      "source_acquisition_and_observation_ids_utf8_sorted": true,
+      "state_contract": "persistence-state-v3",
+      "duplicate_contribution_policy": "no_op",
+      "late_same_day_acquisition_policy": "new_chronological_candidate_generation"
+    },
+    "processing_ledger": {
+      "selected_contract": "processing-ledger-v3",
+      "accounting_unit": "expected_acquisition",
+      "expected_acquisition_set_bound_to_run_manifest": true,
+      "same_day_multiple_acquisitions_permitted": true,
+      "date_summary_required": true,
+      "date_terminal_condition": "every_expected_acquisition_for_date_is_terminal",
+      "chronological_order_key": [
+        "acquisition_timestamp_utc",
+        "acquisition_id"
+      ]
+    },
+    "legacy_pilot_identity_promotion_permitted": false
+  },
+  "science_bindings_unchanged": {
+    "cloud_mask": "scl-explicit-allowlist-v2",
+    "composition": "coverage-ranked-first-valid-v1",
+    "composition_scope": "datatake-scoped-v2",
+    "reviewed_processing_baseline_registry": "araripe-reviewed-processing-baselines-v1",
+    "unreviewed_scl_or_baseline_policy": "unavailable_fail_closed",
+    "drought": "drought-disabled-v1",
+    "mask_or_composition_reimplementation_permitted": false
+  },
+  "v2_family_status": {
+    "role": "audit_only_executable",
+    "schemas_examples_validator_runtime_unchanged": true,
+    "v3_to_v2_serialization_permitted": false,
+    "v2_to_v3_silent_upgrade_permitted": false
+  }
+}
