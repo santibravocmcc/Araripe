@@ -26,13 +26,6 @@ from src.detection.baseline_manifest import (
     expected_filenames,
     load_manifest as load_manifest_v1,
 )
-
-# The consumed (immutable) Package 2A.2 auditor reads rasterio's deprecated
-# ``is_tiled`` property; that pre-existing warning belongs to the v1 module,
-# not to this package's code.
-pytestmark = pytest.mark.filterwarnings(
-    "ignore:is_tiled will be removed:PendingDeprecationWarning"
-)
 from src.detection.baseline_manifest_v2 import (
     BASELINE_V1_KEY_PREFIX,
     BASELINE_V2_KEY_PREFIX,
@@ -51,7 +44,14 @@ from src.detection.baseline_manifest_v2 import (
 from src.processing.baseline_rebuild_v2 import (
     BASELINE_REBUILD_PLAN_VERSION,
     BASELINE_V1_MANIFEST_SHA256,
+    BASELINE_V2_DRIVE_FOLDER,
+    BASELINE_V2_EXPORT_PREFIX,
+    REBUILD_INDEX_NAMES,
     base_rebuild_registry,
+    baseline_query_fingerprint,
+    contribution_count_filename,
+    contribution_count_summary,
+    month_export_filename,
     build_baseline_rebuild_plan,
     compose_rebuild_datatake,
     compute_monthly_baseline_statistics,
@@ -63,6 +63,14 @@ from src.processing.scl_mask_v2 import (
     SCL_ACCEPTED_CLASSES,
     SCL_MASK_METHOD_ID,
     SCL_REJECTED_CLASSES,
+)
+
+
+# The consumed (immutable) Package 2A.2 auditor reads rasterio's deprecated
+# ``is_tiled`` property; that pre-existing warning belongs to the v1 module,
+# not to this package's code.
+pytestmark = pytest.mark.filterwarnings(
+    "ignore:is_tiled will be removed:PendingDeprecationWarning"
 )
 
 
@@ -179,16 +187,33 @@ def world(tmp_path_factory):
         )
         entry = manifest_datatake_entry_from_composition(record)
         total_scenes += entry["scene_count"]
+        # The fixture rasters are fully finite, so every pixel must show at
+        # least one contribution and no zero tail.
+        grid_pixels = FIXTURE_CONTRACT["width"] * FIXTURE_CONTRACT["height"]
         months.append(
             {
                 "month": month,
                 "gee_task_id": f"FIXTURE_TASK_{month:02d}",
                 "export_file": {
-                    "name": f"araripe_baseline_v2_month{month:02d}.tif",
+                    "name": month_export_filename(month),
                     "bytes": 1000 + month,
                     "sha256": _sha(f"export-{month}"),
                 },
                 "month_evidence_sha256": stats.month_evidence_sha256,
+                "contribution_counts": {
+                    index: {
+                        "file": contribution_count_filename(index, month),
+                        "bytes": 500 + month,
+                        "sha256": _sha(f"count-{index}-{month}"),
+                        "total_pixels": grid_pixels,
+                        "minimum": 1,
+                        "maximum": 4,
+                        "median": 3.0,
+                        "pixels_with_zero_contributions": 0,
+                        "pixels_below_three_contributions": 2,
+                    }
+                    for index in REBUILD_INDEX_NAMES
+                },
                 "datatakes": [entry],
             }
         )
@@ -201,7 +226,9 @@ def world(tmp_path_factory):
         "earth_engine": {
             "project_id": "ee-fixture-project",
             "image_collection_id": settings.GEE_COLLECTION_ID,
-            "query_fingerprint_sha256": _sha("query"),
+            "query_fingerprint_sha256": baseline_query_fingerprint(),
+            "drive_folder": BASELINE_V2_DRIVE_FOLDER,
+            "file_name_prefix": BASELINE_V2_EXPORT_PREFIX,
         },
         "months": months,
         "totals": {"datatake_count": 12, "scene_count": total_scenes},
@@ -708,3 +735,164 @@ def test_cli_enforces_the_production_grid_contract(world, tmp_path):
     assert result.exit_code != 0
     assert "pinned baseline 2.0.0 contract" in result.output
     assert not output.exists()
+
+
+# ─── Contribution-depth evidence ─────────────────────────────────────────────
+
+
+def test_manifest_requires_contribution_depth_for_every_index(world):
+    for month_entry in world.manifest["rebuild_execution"]["months"]:
+        assert sorted(month_entry["contribution_counts"]) == sorted(
+            REBUILD_INDEX_NAMES
+        )
+    assert (
+        "per-index monthly contribution depth"
+        in world.manifest["source"]["provenance_completeness"]["retained"]
+    )
+    assert (
+        world.manifest["statistics"]["contribution_count_recorded"] is True
+    )
+
+
+@pytest.mark.parametrize(
+    "mutate, match",
+    [
+        (
+            lambda m: m["rebuild_execution"]["months"][0].pop(
+                "contribution_counts"
+            ),
+            "contribution_counts",
+        ),
+        (
+            lambda m: m["rebuild_execution"]["months"][0][
+                "contribution_counts"
+            ].pop("nbr"),
+            "contribution_counts",
+        ),
+        (
+            lambda m: m["rebuild_execution"]["months"][0]["contribution_counts"][
+                "nbr"
+            ].update(file="nbr_month01_mean.tif"),
+            "file must be",
+        ),
+        (
+            lambda m: m["rebuild_execution"]["months"][0]["contribution_counts"][
+                "nbr"
+            ].update(sha256="nope"),
+            "sha256",
+        ),
+        (
+            lambda m: m["rebuild_execution"]["months"][0]["contribution_counts"][
+                "nbr"
+            ].update(minimum=5, maximum=4),
+            "below minimum",
+        ),
+        (
+            lambda m: m["rebuild_execution"]["months"][0]["contribution_counts"][
+                "nbr"
+            ].update(maximum=0, minimum=0, pixels_with_zero_contributions=16),
+            "at least one contribution",
+        ),
+        (
+            lambda m: m["rebuild_execution"]["months"][0]["contribution_counts"][
+                "nbr"
+            ].update(pixels_below_three_contributions=0,
+                     pixels_with_zero_contributions=1, minimum=0),
+            "below-three tail",
+        ),
+        (
+            lambda m: m["rebuild_execution"]["months"][0]["contribution_counts"][
+                "nbr"
+            ].update(pixels_with_zero_contributions=1),
+            "minimum and the zero tail disagree",
+        ),
+        (
+            lambda m: m["rebuild_execution"]["months"][0]["contribution_counts"][
+                "nbr"
+            ].update(pixels_below_three_contributions=10**9),
+            "exceeds the grid pixel count",
+        ),
+    ],
+)
+def test_manifest_rejects_tampered_contribution_depth(world, mutate, match):
+    _reject(world, mutate, match=match)
+
+
+def test_contribution_depth_and_finite_pixels_must_reconcile(world):
+    # Claiming a zero tail while the audited raster is fully finite is the
+    # exact fabrication this identity exists to catch.
+    def fake_zero_tail(manifest):
+        block = manifest["rebuild_execution"]["months"][0][
+            "contribution_counts"
+        ]["evi2"]
+        block["minimum"] = 0
+        block["pixels_with_zero_contributions"] = 4
+        block["pixels_below_three_contributions"] = 6
+
+    _reject(world, fake_zero_tail, match="contribution-depth evidence implies")
+
+
+def test_contribution_count_summary_measures_the_shallow_tail():
+    counts = np.asarray([[0, 1], [2, 7]], dtype=np.int32)
+    summary = contribution_count_summary(counts)
+    assert summary["total_pixels"] == 4
+    assert summary["minimum"] == 0 and summary["maximum"] == 7
+    assert summary["pixels_with_zero_contributions"] == 1
+    assert summary["pixels_below_three_contributions"] == 3
+    assert summary["median"] == 1.5
+    with pytest.raises(Exception):
+        contribution_count_summary(np.asarray([[-1]], dtype=np.int32))
+    with pytest.raises(Exception):
+        contribution_count_summary(np.asarray([[1.5]], dtype=np.float64))
+
+
+# ─── Export identity isolation ───────────────────────────────────────────────
+
+
+def test_export_naming_is_disjoint_from_the_v1_generation():
+    assert month_export_filename(3) == "araripe_baseline_v2_month03.tif"
+    # The v1 export prefix must not be a prefix of the v2 one, so a v1 file
+    # can never satisfy the v2 canonical-name gate.
+    assert not month_export_filename(3).startswith("araripe_baseline_month")
+    assert BASELINE_V2_DRIVE_FOLDER != "araripe_baselines"
+    counts_name = contribution_count_filename("ndmi", 7)
+    assert counts_name == "ndmi_month07_count.tif"
+    assert counts_name not in expected_filenames()
+
+
+def test_manifest_rejects_v1_export_names_and_foreign_destinations(world):
+    _reject(
+        world,
+        lambda m: m["rebuild_execution"]["months"][0]["export_file"].update(
+            name="araripe_baseline_month01.tif"
+        ),
+        match="canonical v2 export",
+    )
+    _reject(
+        world,
+        lambda m: m["rebuild_execution"]["earth_engine"].update(
+            drive_folder="araripe_baselines"
+        ),
+        match="isolated v2 folder",
+    )
+    _reject(
+        world,
+        lambda m: m["rebuild_execution"]["earth_engine"].update(
+            file_name_prefix="araripe_baseline_month"
+        ),
+        match="isolated v2 prefix",
+    )
+
+
+def test_query_fingerprint_is_deterministic_and_recorded(world):
+    fingerprint = baseline_query_fingerprint()
+    assert fingerprint == baseline_query_fingerprint()
+    assert len(fingerprint) == 64
+    # The 2A.2 audit could not reconstruct the historical query; the v2
+    # manifest carries it, and validation rejects any other value.
+    assert (
+        world.manifest["rebuild_execution"]["earth_engine"][
+            "query_fingerprint_sha256"
+        ]
+        == fingerprint
+    )

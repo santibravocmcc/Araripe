@@ -6,7 +6,13 @@ authoritative checksums, grid, coverage, ranges, source configuration, and
 known provenance limitations are in `config/baseline_manifest_v1.json` and
 `docs/contracts/phase2a/BASELINE_AND_TIMESERIES_V1.md`.
 
-Use this procedure only when intentionally creating a **new baseline version**.
+**Superseded for new versions.** This page documents how the accepted `1.0.0`
+generation was built and is retained as audit material. It uses the legacy SCL
+policy (clear classes `{2,4,5,6,7,11}`) that the 2026-08-11 decision record
+replaced, so it must not be used to build a new baseline. The current
+procedure is `docs/BASELINE_V2_EXECUTION.md` (Package 2A.6C, baseline
+`2.0.0`).
+
 Do not overwrite or publish version 1 objects without separate authorization.
 
 **Why:** streaming hundreds of Sentinel-2 scenes from AWS to a home connection in

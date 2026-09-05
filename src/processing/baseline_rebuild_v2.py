@@ -140,6 +140,39 @@ REBUILD_INDEX_FORMULAS = MappingProxyType(
     }
 )
 
+# ─── Export identity (deliberately disjoint from the v1 generation) ──────────
+# Nothing about a v2 export may be confusable with a v1 one: different Drive
+# folder, different file prefix, different local directories.  A v1 artifact
+# can therefore never be split into the v2 inventory by accident.
+BASELINE_V2_DRIVE_FOLDER = "araripe_baselines_v2"
+BASELINE_V2_EXPORT_PREFIX = "araripe_baseline_v2_month"
+BASELINE_V2_EXPORT_SUFFIX = ".tif"
+
+# Nine bands per monthly export: the six baseline statistics plus the
+# per-index contribution depth.  The v1 generation could not express how many
+# observations backed a pixel, so a pixel whose statistics rest on a single
+# composite was indistinguishable from a well-observed one.  Detection divides
+# by this baseline's dispersion, so that depth is recorded, not inferred.
+REBUILD_EXPORT_BAND_NAMES = (
+    "ndmi_median",
+    "nbr_median",
+    "evi2_median",
+    "ndmi_std",
+    "nbr_std",
+    "evi2_std",
+    "ndmi_count",
+    "nbr_count",
+    "evi2_count",
+)
+# Earth Engine writes masked pixels as 0 in a GeoTIFF, which is a valid index
+# value, so statistics are unmasked to a sentinel far outside every accepted
+# range and restored to NaN locally.  A contribution count needs no sentinel:
+# zero contributions is the honest value for a masked pixel.
+STATISTIC_EXPORT_SENTINEL = -9999.0
+COUNT_EXPORT_FILL = 0
+CONTRIBUTION_COUNT_STATISTIC = "count"
+CONTRIBUTION_COUNT_DTYPE = "int16"
+
 MONTHLY_CENTRAL_STATISTIC = "median"
 MONTHLY_DISPERSION_STATISTIC = "population_standard_deviation"
 STATISTICS_COMPUTATION_DTYPE = "float64"
@@ -993,6 +1026,16 @@ def build_baseline_rebuild_plan(
                 "recomputed counts must equal the plan's expected counts "
                 "before any composite is trusted"
             ),
+            "export": {
+                "destination": "google_drive",
+                "drive_folder": BASELINE_V2_DRIVE_FOLDER,
+                "file_name_prefix": BASELINE_V2_EXPORT_PREFIX,
+                "one_export_per_month": True,
+                "band_names": list(REBUILD_EXPORT_BAND_NAMES),
+                "statistic_export_sentinel": STATISTIC_EXPORT_SENTINEL,
+                "count_export_fill": COUNT_EXPORT_FILL,
+                "v1_artifacts_never_reused": True,
+            },
         },
         "platform_policy": dict(PLATFORM_POLICY),
         "statistics": {
@@ -1003,6 +1046,13 @@ def build_baseline_rebuild_plan(
             "composite_stack_order_policy": list(COMPOSITE_STACK_ORDER_POLICY),
             "nonfinite_index_policy": NONFINITE_INDEX_POLICY,
             "unit_of_contribution": "one_datatake_composite",
+            "contribution_count_recorded": True,
+            "contribution_count_policy": (
+                "per index and month the number of contributing datatake "
+                "composites is exported, split, checksummed, and summarised; "
+                "a minimum-depth rejection threshold is deliberately NOT "
+                "applied here and remains an owner/Phase 5 decision"
+            ),
         },
         "output_contract": {
             "expected_object_count": 72,
@@ -1041,3 +1091,84 @@ def run_manifest_binding_from_plan(
         "rebuild plan checksum does not match its contents",
     )
     return "run-v3-" + plan_sha256, plan_sha256
+
+
+# ─── Export naming, query fingerprint, and contribution-depth evidence ───────
+
+
+def month_export_filename(month: int) -> str:
+    """Return the canonical v2 monthly export filename for one month."""
+
+    _require(month in range(1, 13), f"month {month} must be 1..12")
+    return f"{BASELINE_V2_EXPORT_PREFIX}{month:02d}{BASELINE_V2_EXPORT_SUFFIX}"
+
+
+def contribution_count_filename(index: str, month: int) -> str:
+    """Return the canonical contribution-count filename for one index/month.
+
+    The ``_count`` statistic is deliberately outside the audited 72-name
+    inventory (which carries only ``_mean`` and ``_std``), so a count raster
+    can never be mistaken for a baseline object.
+    """
+
+    _require(
+        index in REBUILD_INDEX_NAMES,
+        f"index {index!r} is not one of {REBUILD_INDEX_NAMES}",
+    )
+    _require(month in range(1, 13), f"month {month} must be 1..12")
+    return f"{index}_month{month:02d}_{CONTRIBUTION_COUNT_STATISTIC}.tif"
+
+
+def baseline_query_fingerprint() -> str:
+    """Return the deterministic fingerprint of the baseline source query.
+
+    The 2A.2 audit could not reconstruct the historical query; recording a
+    canonical fingerprint of the exact source selection makes a future
+    generation comparable to this one instead of merely similar.
+    """
+
+    return canonical_sha256(
+        {
+            "query_fingerprint_version": "phase2a6c-baseline-query-v1",
+            "collection_id": GEE_COLLECTION_ID,
+            "years": list(BASELINE_SOURCE_YEARS),
+            "months": list(range(1, 13)),
+            "scene_cloud_filter_percent": BASELINE_MAX_CLOUD_COVER,
+            "monitoring_extent_id": MONITORING_EXTENT_ID,
+            "monitoring_extent_bounds": list(MONITORING_EXTENT_BOUNDS),
+            "grid": dict(BASELINE_V2_GRID_CONTRACT),
+            "band_names": list(REBUILD_BAND_NAMES),
+            "reflectance_scale_divisor": REFLECTANCE_SCALE_DIVISOR,
+        }
+    )
+
+
+def contribution_count_summary(counts: Any) -> dict[str, Any]:
+    """Summarise one index/month contribution-depth grid.
+
+    Detection divides an observation's departure by this baseline's monthly
+    dispersion.  A pixel backed by a single datatake composite has a
+    population standard deviation of exactly zero, and two composites give a
+    dispersion that is arithmetically defined but statistically meaningless,
+    so the shallow tail is measured explicitly rather than left implicit.
+
+    No rejection threshold is applied: choosing a minimum depth is an owner
+    and Phase 5 scientific decision, not a build-time one.
+    """
+
+    array = np.asarray(counts)
+    _require(array.ndim == 2 and array.size > 0, "counts must be a 2-D grid")
+    _require(
+        array.dtype.kind in "iu",
+        f"contribution counts must be integer-typed, got {array.dtype}",
+    )
+    _require(int(array.min()) >= 0, "contribution counts cannot be negative")
+    flat = array.reshape(-1)
+    return {
+        "total_pixels": int(array.size),
+        "minimum": int(flat.min()),
+        "maximum": int(flat.max()),
+        "median": float(np.median(flat)),
+        "pixels_with_zero_contributions": int((flat == 0).sum()),
+        "pixels_below_three_contributions": int((flat < 3).sum()),
+    }

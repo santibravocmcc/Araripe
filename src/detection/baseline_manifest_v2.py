@@ -60,6 +60,8 @@ from src.processing.baseline_rebuild_v2 import (
     BASELINE_V1_INVENTORY_SHA256,
     BASELINE_V1_MANIFEST_SHA256,
     BASELINE_V1_VERSION,
+    BASELINE_V2_DRIVE_FOLDER,
+    BASELINE_V2_EXPORT_PREFIX,
     BASELINE_V2_GRID_CONTRACT,
     BASELINE_V2_GRID_ID,
     BASELINE_V2_VERSION,
@@ -79,6 +81,8 @@ from src.processing.baseline_rebuild_v2 import (
     STATISTICS_OUTPUT_DTYPE,
     RebuildDatatakeCompositionV2,
     build_rebuild_gee_plan,
+    contribution_count_filename,
+    month_export_filename,
 )
 from src.processing.composition_v2 import (
     COMPOSITION_METHOD_ID,
@@ -105,6 +109,15 @@ BASELINE_V2_STATUS = "rebuilt_candidate_generation"
 BASELINE_V2_KEY_PREFIX = "baselines_v2/2.0.0/"
 BASELINE_V1_KEY_PREFIX = "baselines/"
 BASELINE_V2_LOCAL_DIR = DATA_DIR / "baselines_v2" / "2.0.0"
+# Contribution-depth rasters live OUTSIDE the audited directory: the auditor
+# requires that directory to hold exactly the canonical 72 rasters.
+BASELINE_V2_COUNTS_LOCAL_DIR = (
+    DATA_DIR / "baselines_v2" / "2.0.0_evidence" / "counts"
+)
+# Downloaded monthly exports are transient and are deleted as the rebuild
+# advances; they never share a directory with either baseline generation.
+BASELINE_V2_EXPORTS_LOCAL_DIR = DATA_DIR / "baselines_v2" / "exports"
+BASELINE_V2_SPLIT_EVIDENCE_FILENAME = "contribution_counts.json"
 BASELINE_V2_MANIFEST_PATH = ROOT_DIR / "config" / "baseline_manifest_v2.json"
 
 EXPECTED_OBJECT_COUNT = 72
@@ -133,6 +146,7 @@ REQUIRED_PROVENANCE_RETAINED = (
     "12 month-export checksums",
     "per-datatake GEE plan checksums",
     "monthly statistics evidence checksums",
+    "per-index monthly contribution depth",
 )
 
 _SHA256_HEX = frozenset("0123456789abcdef")
@@ -418,7 +432,96 @@ def _expected_statistics_block() -> dict[str, Any]:
         "composite_stack_order_policy": list(COMPOSITE_STACK_ORDER_POLICY),
         "nonfinite_index_policy": NONFINITE_INDEX_POLICY,
         "unit_of_contribution": "one_datatake_composite",
+        "contribution_count_recorded": True,
+        "contribution_count_policy": (
+            "per index and month the number of contributing datatake "
+            "composites is exported, split, checksummed, and summarised; "
+            "a minimum-depth rejection threshold is deliberately NOT "
+            "applied here and remains an owner/Phase 5 decision"
+        ),
     }
+
+
+def _validate_contribution_counts(
+    month_entry: Mapping[str, Any], *, month: int
+) -> dict[str, int]:
+    """Validate one month's contribution-depth evidence.
+
+    Returns the per-index count of pixels with zero contributions, which the
+    object loop then reconciles exactly against the audited rasters: a
+    monthly statistic is finite precisely where at least one datatake
+    composite contributed.
+    """
+
+    counts = month_entry.get("contribution_counts")
+    _require(
+        isinstance(counts, Mapping)
+        and sorted(counts) == sorted(REBUILD_INDEX_NAMES),
+        f"month {month:02d}: contribution_counts must cover exactly the "
+        f"indices {sorted(REBUILD_INDEX_NAMES)}",
+    )
+    zero_by_index: dict[str, int] = {}
+    for index in sorted(REBUILD_INDEX_NAMES):
+        entry = counts[index]
+        label = f"month {month:02d} contribution_counts[{index}]"
+        _require(isinstance(entry, Mapping), f"{label} must be a mapping")
+        _require(
+            entry.get("file") == contribution_count_filename(index, month),
+            f"{label}: file must be "
+            f"{contribution_count_filename(index, month)}",
+        )
+        _require(
+            isinstance(entry.get("bytes"), int) and entry["bytes"] > 0,
+            f"{label}: needs a positive byte size",
+        )
+        _require_sha256(entry.get("sha256"), label=f"{label}.sha256")
+        for field in (
+            "total_pixels",
+            "minimum",
+            "maximum",
+            "pixels_with_zero_contributions",
+            "pixels_below_three_contributions",
+        ):
+            value = entry.get(field)
+            _require(
+                isinstance(value, int) and not isinstance(value, bool)
+                and value >= 0,
+                f"{label}: {field} must be a non-negative integer",
+            )
+        _require(
+            isinstance(entry.get("median"), (int, float))
+            and not isinstance(entry.get("median"), bool)
+            and entry["median"] >= 0,
+            f"{label}: median must be a non-negative number",
+        )
+        _require(
+            entry["maximum"] >= entry["minimum"],
+            f"{label}: maximum is below minimum",
+        )
+        _require(
+            entry["maximum"] >= 1,
+            f"{label}: a rebuilt month must have at least one contribution "
+            "somewhere on the grid",
+        )
+        zero = entry["pixels_with_zero_contributions"]
+        _require(
+            entry["pixels_below_three_contributions"] >= zero,
+            f"{label}: the below-three tail must include the zero tail",
+        )
+        for field in (
+            "pixels_with_zero_contributions",
+            "pixels_below_three_contributions",
+        ):
+            _require(
+                entry[field] <= entry["total_pixels"],
+                f"{label}: {field} exceeds the grid pixel count",
+            )
+        _require(
+            (entry["minimum"] == 0) == (zero > 0),
+            f"{label}: minimum and the zero tail disagree",
+        )
+        zero_by_index[index] = zero
+    return zero_by_index
 
 
 def _validate_datatake_entry(
@@ -721,6 +824,16 @@ def validate_manifest_v2(
         earth_engine.get("query_fingerprint_sha256"),
         label="earth_engine.query_fingerprint_sha256",
     )
+    _require(
+        earth_engine.get("drive_folder") == BASELINE_V2_DRIVE_FOLDER,
+        "earth_engine.drive_folder must be the isolated v2 folder "
+        f"{BASELINE_V2_DRIVE_FOLDER}; the v1 export folder is never reused",
+    )
+    _require(
+        earth_engine.get("file_name_prefix") == BASELINE_V2_EXPORT_PREFIX,
+        "earth_engine.file_name_prefix must be the isolated v2 prefix "
+        f"{BASELINE_V2_EXPORT_PREFIX}",
+    )
 
     months = execution.get("months")
     _require(
@@ -734,6 +847,7 @@ def validate_manifest_v2(
     physical_keys: set[tuple[str, str]] = set()
     acquisition_ids: set[str] = set()
     export_names: dict[int, str] = {}
+    zero_contributions: dict[tuple[str, int], int] = {}
     total_datatakes = 0
     total_scenes = 0
     for month_entry in months:
@@ -755,11 +869,21 @@ def validate_manifest_v2(
             export_file.get("sha256"),
             label=f"month {month:02d} export_file.sha256",
         )
+        _require(
+            export_file["name"] == month_export_filename(month),
+            f"month {month:02d}: export_file name must be the canonical v2 "
+            f"export {month_export_filename(month)}; a v1 export file name is "
+            "never a v2 source",
+        )
         export_names[month] = export_file["name"]
         _require_sha256(
             month_entry.get("month_evidence_sha256"),
             label=f"month {month:02d} month_evidence_sha256",
         )
+        for index, zero in _validate_contribution_counts(
+            month_entry, month=month
+        ).items():
+            zero_contributions[(index, month)] = zero
         datatakes = month_entry.get("datatakes")
         _require(
             isinstance(datatakes, list) and bool(datatakes),
@@ -901,6 +1025,19 @@ def validate_manifest_v2(
             obj.get("derived_from_month_export")
             == export_names[parsed["month"]],
             f"{obj['key']} is not bound to its month's export file",
+        )
+        # A monthly statistic is finite exactly where at least one datatake
+        # composite contributed, so this identity binds the audited raster to
+        # the contribution-depth evidence.  Fabricated coverage on one side
+        # cannot survive the other.
+        grid_pixels = contract["width"] * contract["height"]
+        expected_finite = (
+            grid_pixels - zero_contributions[(parsed["index"], parsed["month"])]
+        )
+        _require(
+            obj.get("finite_pixels") == expected_finite,
+            f"{obj['key']} has {obj.get('finite_pixels')} finite pixels but "
+            f"its contribution-depth evidence implies {expected_finite}",
         )
 
     aggregate = manifest.get("aggregate", {})

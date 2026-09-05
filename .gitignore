@@ -233,6 +233,13 @@ data/scene_cache/
 # Local pre-cutoff backup of baselines (only used to roll back the 2025 cutoff)
 data/baselines/_pre_2026cutoff_backup/
 
+# Package 2A.6C baseline 2.0.0 rebuild: the 72 rebuilt rasters, the transient
+# monthly exports, and the contribution-depth rasters are large local data.
+# Their identity lives in config/baseline_manifest_v2.json, not in Git.
+# The split-evidence JSON in there is an intermediate too: its content is
+# absorbed, checksummed, into the manifest, which is the authoritative record.
+data/baselines_v2/
+
 # macOS metadata
 .DS_Store
 **/.DS_Store
