@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import warnings
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -667,3 +668,62 @@ def load_baseline_rebuild_registry_from_dict(extension):
         path = Path(tmp) / "extension.json"
         path.write_text(json.dumps(extension), encoding="utf-8")
         return load_baseline_rebuild_registry(path)
+
+
+# ─── The committed owner review of the source-year processing baselines ──────
+
+
+COMMITTED_REVIEW_PATH = (
+    Path(__file__).resolve().parent.parent
+    / "config"
+    / "phase2a6c_baseline_processing_baseline_review_v1.json"
+)
+
+
+def test_committed_review_admits_only_the_collection1_lineage():
+    registry = load_baseline_rebuild_registry(COMMITTED_REVIEW_PATH)
+    assert registry.effective_values == (
+        "05.00",
+        "05.09",
+        "05.10",
+        "05.11",
+        "05.12",
+    )
+    payload = registry.registry_dict()
+    assert payload["added_reviewed_values"] == ["05.00", "05.09", "05.10"]
+    recorded = payload["recorded_review_extension"]
+    assert recorded["reviewed_by"] == "project_owner"
+    assert recorded["review_date"] == "2026-09-05"
+    # Every admitted value carries its own recorded basis and observation.
+    for entry in recorded["added_values"]:
+        assert entry["review_basis"].strip()
+        assert "PHASE_2A6C_PHASE1_BASELINE_GATE_2026-09-05.json" in (
+            entry["observed_in"]
+        )
+
+
+@pytest.mark.parametrize(
+    "rejected", ["02.11", "02.12", "02.13", "02.14", "03.00", "03.01", "04.00"]
+)
+def test_pre_collection1_baselines_stay_fail_closed_under_the_review(rejected):
+    registry = load_baseline_rebuild_registry(COMMITTED_REVIEW_PATH)
+    datatake = _datatake(baseline=rejected)
+    with pytest.raises(UnreviewedProcessingBaselineError):
+        compose_rebuild_datatake(
+            datatake,
+            registry=registry,
+            run_manifest_id=RUN_ID,
+            run_manifest_sha256=RUN_SHA,
+        )
+
+
+def test_admitted_collection1_baseline_composes_under_the_review():
+    registry = load_baseline_rebuild_registry(COMMITTED_REVIEW_PATH)
+    record = compose_rebuild_datatake(
+        _datatake(baseline="05.00"),
+        registry=registry,
+        run_manifest_id=RUN_ID,
+        run_manifest_sha256=RUN_SHA,
+    )
+    assert record.composite.observed_processing_baselines == ("05.00",)
+    assert record.parity_evidence["parity"] is True
