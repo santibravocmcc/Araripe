@@ -44,7 +44,12 @@ from src.detection.alerts import save_alerts, summarize_alerts, vectorize_alerts
 from src.detection.baseline import load_baseline_pair
 from src.detection.change_detect import detect_deforestation
 from src.detection.landcover import annotate_alerts_all_collections
-from src.detection.persistence import DEFAULT_MIN_OVERLAP_FRAC, save_persistence_state, update_tracks
+from src.detection.persistence import (
+    DEFAULT_MIN_OVERLAP_FRAC,
+    load_persistence_state,
+    save_persistence_state,
+    update_tracks,
+)
 from src.processing.cloud_mask import (
     compute_clear_percentage,
     mask_hls,
@@ -531,15 +536,10 @@ def main(
     # file is saved before the next date's previous-file lookup runs, so one run
     # confirms its own consecutive dates as well as against prior history.
     all_alerts = []
-    import geopandas as gpd
     state_path = ALERTS_DIR.parent / "persistence_state.geojson"
-    state = None
-    if persistence and state_path.exists():
-        try:
-            state = gpd.read_file(str(state_path))
-            logger.info("Persistência: estado carregado ({} tracks)", len(state))
-        except Exception as e:
-            logger.warning("Não foi possível ler o estado de persistência ({}); do zero", e)
+    # Fail-closed (Package 2B.1): ver run_detection_from_gee.py — um estado
+    # ilegível para a execução, nunca vira um estado vazio.
+    state = load_persistence_state(state_path) if persistence else None
     for scene_date in sorted(alerts_by_date):
         parts = alerts_by_date[scene_date]
         merged, state = _merge_and_confirm(
@@ -554,11 +554,11 @@ def main(
             scene_date, summary["total_alerts"], len(parts), summary["total_area_ha"],
         )
     if persistence and state is not None:
-        try:
-            save_persistence_state(state, state_path)
-            logger.info("Persistência: estado salvo ({} tracks) -> {}", len(state), state_path)
-        except Exception as e:
-            logger.warning("Falha ao salvar o estado de persistência ({})", e)
+        # Fail-closed: engolir esta falha deixava o run VERDE com o estado
+        # anterior ainda no disco, que o `r2_state.py put` seguinte reenviava
+        # ao R2 — perdendo as atualizações desta execução sem nenhum sinal.
+        save_persistence_state(state, state_path)
+        logger.info("Persistência: estado salvo ({} tracks) -> {}", len(state), state_path)
 
     # Summary
     if all_alerts:
