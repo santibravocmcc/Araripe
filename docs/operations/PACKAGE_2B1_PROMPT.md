@@ -54,6 +54,30 @@ That is the fourth bullet.
 
 ## 3. The prompt
 
+**NEXT SESSION MODEL: Opus 5**
+**EFFORT: high**
+
+*Why this pairing.* Three of the four scope items are judgment-heavy on a
+small code surface, which is the shape that rewards a strong model rather
+than a long search. Distinguishing a genuine first run from an
+authentication, network, or corruption failure is a subtle correctness
+problem whose wrong answers are both silent and production-affecting; the
+concurrency work is interaction reasoning across blue and green lanes; and
+the cadence discrepancy is a design decision with a live schedule attached.
+Only the fourth item (splitting the site's alert and rainfall jobs) is
+mechanical. High effort rather than max: the file surface is tiny —
+`scripts/r2_state.py` is about fifty lines and the rest is YAML — so the
+gain is care per decision, not breadth of search. The package is also
+production-adjacent (`detect_gee.yml` runs on a real schedule against real
+R2 state and is **not** idempotent), which is the usual reason to keep the
+stronger model rather than economise.
+
+*Session shape.* One session is enough: the roadmap sizes this at 25k–40k
+and there is no hours-long external wait like the Earth Engine exports. Be
+reachable near the end — item 3 needs an owner call on whether the
+instruction file or the crons are wrong, and item 2's blue-lane change needs
+approval before merge.
+
 > Continue o Observatório da Chapada do Araripe com o **Package 2B.1 — State
 > safety and workflow coordination**, a próxima fatia da Phase 2B.
 >
