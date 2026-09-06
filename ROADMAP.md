@@ -154,18 +154,25 @@ instead of 90 min. On 2026-08-17 GitHub started the backend cron 67 min late,
 which is enough to make the site read a `main` whose time-series PR has not
 landed yet.
 
-That change sat unmerged on the site branch `fix/site-cron-24h` for three
-weeks, so the workspace `AGENTS.md` documented "Tue/Fri 06:00 UTC … a
-deliberate 24 h gap" while both crons actually ran Mon/Thu, 90 min apart. The
-drift between the instruction file and the workflows was itself a symptom: a
-clock offset is an *assumption* about someone else's completion, so nothing
-fails when it stops holding — not the pipeline, and not the documentation.
+**Correction (2026-09-06):** the "Pending" note this paragraph used to carry
+was already stale. The change was merged into the site's `main` as PR #13
+(`01564f6`), and the Earthdata transient-skip fix as PR #14 (`b9b8120`), both
+by squash merge — which is why the source branches `fix/site-cron-24h` and
+`fix/earthdata-transient-skip` still read as unmerged by ancestry and why a
+reader checking them, or the older `codex/workspace-consolidation` branch,
+sees the pre-#13 cron. The site has been running Tue/Fri 06:00 UTC since. The
+workspace `AGENTS.md` was correct; this file was not.
 
-Package 2B.1 resolves both halves:
+The episode is worth keeping because it is the same failure mode one level up:
+a claim about someone else's state that nothing re-checks goes stale silently.
+That is exactly why a clock offset cannot be the correctness mechanism — an
+*assumption* about another system's completion fails quietly when it stops
+holding, in the pipeline and in the documentation alike.
 
-- The cron does move to `0 6 * * 2,5` (Tue/Fri 06:00 UTC), carried forward from
-  `fix/site-cron-24h`, so document and workflow agree. It is now defence in
-  depth — a comfortable margin — not the correctness mechanism.
+Package 2B.1 therefore keeps the schedule and replaces what it was carrying:
+
+- The 24 h gap stays (`0 6 * * 2,5`), now as defence in depth — a comfortable
+  margin — rather than the thing correctness rests on.
 - The correctness mechanism is a **validated release signal**. Every successful
   backend run writes `data/timeseries/RELEASE.json`
   (`scripts/write_release_signal.py`) inside the directory the publish step
