@@ -1,0 +1,587 @@
+{
+  "aggregate": {
+    "inventory_sha256": "b892d217629fb9bf90f4b271f3dd2ae24b25ffec859bcd913f0488df877223ba",
+    "maximum_extent_coverage_fraction": 0.9999942271561304,
+    "minimum_extent_coverage_fraction": 0.9991319324973338,
+    "object_count": 72,
+    "range_violation_pixels": 0,
+    "total_bytes": 13612116280
+  },
+  "baseline_version": "2.0.0",
+  "earth_engine": {
+    "drive_folder": "araripe_baselines_v2",
+    "earthengine_api_version": "1.7.42",
+    "file_name_prefix": "araripe_baseline_v2_month",
+    "image_collection_id": "COPERNICUS/S2_SR_HARMONIZED",
+    "noncommercial_quota_state_at_end": "restricted_mode",
+    "principal": "owner interactive local authentication",
+    "production_service_account_used": false,
+    "project_id": "ee-araripe-baseline-v2",
+    "query_fingerprint_sha256": "b6d6391088c9750f11d7fe60d73e46e60baf7060ee55242466fac8b72f8f83f4"
+  },
+  "evidence_version": "phase2a6c1-execution-evidence-v1",
+  "generated_on": "2026-09-06",
+  "grid_pixels": 53854227,
+  "manifest_inventory_sha256": "b892d217629fb9bf90f4b271f3dd2ae24b25ffec859bcd913f0488df877223ba",
+  "months": [
+    {
+      "contribution_depth": {
+        "evi2": {
+          "maximum": 25,
+          "median": 4.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 11582430,
+          "pixels_with_zero_contributions": 45648
+        },
+        "nbr": {
+          "maximum": 25,
+          "median": 4.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 11582430,
+          "pixels_with_zero_contributions": 45648
+        },
+        "ndmi": {
+          "maximum": 25,
+          "median": 4.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 11582430,
+          "pixels_with_zero_contributions": 45648
+        }
+      },
+      "datatake_count": 32,
+      "extent_coverage_fraction": 0.9991319324973338,
+      "gee_task_id": "XYWNAHUMUM4VUAEUIOROX7AG",
+      "month": 1,
+      "scene_count": 97,
+      "source_regime": "wet-season-mixed-lineage-v1"
+    },
+    {
+      "contribution_depth": {
+        "evi2": {
+          "maximum": 21,
+          "median": 6.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 890582,
+          "pixels_with_zero_contributions": 2637
+        },
+        "nbr": {
+          "maximum": 21,
+          "median": 6.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 890582,
+          "pixels_with_zero_contributions": 2637
+        },
+        "ndmi": {
+          "maximum": 21,
+          "median": 6.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 890582,
+          "pixels_with_zero_contributions": 2637
+        }
+      },
+      "datatake_count": 35,
+      "extent_coverage_fraction": 0.9999504338273053,
+      "gee_task_id": "U4BDB72AMGOKGFQKP62EP6T6",
+      "month": 2,
+      "scene_count": 118,
+      "source_regime": "wet-season-mixed-lineage-v1"
+    },
+    {
+      "contribution_depth": {
+        "evi2": {
+          "maximum": 25,
+          "median": 6.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 553965,
+          "pixels_with_zero_contributions": 1238
+        },
+        "nbr": {
+          "maximum": 25,
+          "median": 6.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 553965,
+          "pixels_with_zero_contributions": 1238
+        },
+        "ndmi": {
+          "maximum": 25,
+          "median": 6.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 553965,
+          "pixels_with_zero_contributions": 1238
+        }
+      },
+      "datatake_count": 41,
+      "extent_coverage_fraction": 0.9999800817771123,
+      "gee_task_id": "YSOSLXJRSKOAECO42V7BPKOZ",
+      "month": 3,
+      "scene_count": 131,
+      "source_regime": "wet-season-mixed-lineage-v1"
+    },
+    {
+      "contribution_depth": {
+        "evi2": {
+          "maximum": 32,
+          "median": 7.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 210800,
+          "pixels_with_zero_contributions": 2202
+        },
+        "nbr": {
+          "maximum": 32,
+          "median": 7.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 210800,
+          "pixels_with_zero_contributions": 2202
+        },
+        "ndmi": {
+          "maximum": 32,
+          "median": 7.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 210800,
+          "pixels_with_zero_contributions": 2202
+        }
+      },
+      "datatake_count": 47,
+      "extent_coverage_fraction": 0.9999606223232738,
+      "gee_task_id": "NGRRIT4WSGLTZ7MI7KUNBLWZ",
+      "month": 4,
+      "scene_count": 169,
+      "source_regime": "wet-season-mixed-lineage-v1"
+    },
+    {
+      "contribution_depth": {
+        "evi2": {
+          "maximum": 22,
+          "median": 3.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 8862129,
+          "pixels_with_zero_contributions": 47667
+        },
+        "nbr": {
+          "maximum": 22,
+          "median": 3.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 8862129,
+          "pixels_with_zero_contributions": 47667
+        },
+        "ndmi": {
+          "maximum": 22,
+          "median": 3.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 8862129,
+          "pixels_with_zero_contributions": 47667
+        }
+      },
+      "datatake_count": 23,
+      "extent_coverage_fraction": 0.9991365393032032,
+      "gee_task_id": "2QOBX32HH3Z7LCJZPJEQPFNA",
+      "month": 5,
+      "scene_count": 69,
+      "source_regime": "dry-season-collection1-v1"
+    },
+    {
+      "contribution_depth": {
+        "evi2": {
+          "maximum": 26,
+          "median": 6.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 868024,
+          "pixels_with_zero_contributions": 3168
+        },
+        "nbr": {
+          "maximum": 26,
+          "median": 6.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 868024,
+          "pixels_with_zero_contributions": 3168
+        },
+        "ndmi": {
+          "maximum": 26,
+          "median": 6.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 868024,
+          "pixels_with_zero_contributions": 3168
+        }
+      },
+      "datatake_count": 30,
+      "extent_coverage_fraction": 0.9999401497544516,
+      "gee_task_id": "VZH45Q4OFRAWDRX5TCLZYNNV",
+      "month": 6,
+      "scene_count": 107,
+      "source_regime": "dry-season-collection1-v1"
+    },
+    {
+      "contribution_depth": {
+        "evi2": {
+          "maximum": 40,
+          "median": 6.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 13470,
+          "pixels_with_zero_contributions": 3218
+        },
+        "nbr": {
+          "maximum": 40,
+          "median": 6.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 13470,
+          "pixels_with_zero_contributions": 3218
+        },
+        "ndmi": {
+          "maximum": 40,
+          "median": 6.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 13470,
+          "pixels_with_zero_contributions": 3218
+        }
+      },
+      "datatake_count": 41,
+      "extent_coverage_fraction": 0.9999392322163531,
+      "gee_task_id": "VDZ5633SD47DKTXOIMNKQBQS",
+      "month": 7,
+      "scene_count": 147,
+      "source_regime": "dry-season-collection1-v1"
+    },
+    {
+      "contribution_depth": {
+        "evi2": {
+          "maximum": 45,
+          "median": 13.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 3195,
+          "pixels_with_zero_contributions": 939
+        },
+        "nbr": {
+          "maximum": 45,
+          "median": 13.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 3195,
+          "pixels_with_zero_contributions": 939
+        },
+        "ndmi": {
+          "maximum": 45,
+          "median": 13.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 3195,
+          "pixels_with_zero_contributions": 939
+        }
+      },
+      "datatake_count": 46,
+      "extent_coverage_fraction": 0.9999823947377355,
+      "gee_task_id": "KEQR664PYAVMY35NBIHR5SAE",
+      "month": 8,
+      "scene_count": 209,
+      "source_regime": "dry-season-collection1-v1"
+    },
+    {
+      "contribution_depth": {
+        "evi2": {
+          "maximum": 45,
+          "median": 9.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 2027,
+          "pixels_with_zero_contributions": 479
+        },
+        "nbr": {
+          "maximum": 45,
+          "median": 9.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 2027,
+          "pixels_with_zero_contributions": 479
+        },
+        "ndmi": {
+          "maximum": 45,
+          "median": 9.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 2027,
+          "pixels_with_zero_contributions": 479
+        }
+      },
+      "datatake_count": 46,
+      "extent_coverage_fraction": 0.9999908437343923,
+      "gee_task_id": "A3RDEHOJZGDRMEZH6JQGILZW",
+      "month": 9,
+      "scene_count": 190,
+      "source_regime": "dry-season-collection1-v1"
+    },
+    {
+      "contribution_depth": {
+        "evi2": {
+          "maximum": 33,
+          "median": 10.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 3705,
+          "pixels_with_zero_contributions": 869
+        },
+        "nbr": {
+          "maximum": 33,
+          "median": 10.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 3705,
+          "pixels_with_zero_contributions": 869
+        },
+        "ndmi": {
+          "maximum": 33,
+          "median": 10.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 3705,
+          "pixels_with_zero_contributions": 869
+        }
+      },
+      "datatake_count": 35,
+      "extent_coverage_fraction": 0.9999838283910144,
+      "gee_task_id": "V72KWYS6ULPO35P2C5M37K2J",
+      "month": 10,
+      "scene_count": 139,
+      "source_regime": "dry-season-collection1-v1"
+    },
+    {
+      "contribution_depth": {
+        "evi2": {
+          "maximum": 25,
+          "median": 11.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 1186,
+          "pixels_with_zero_contributions": 304
+        },
+        "nbr": {
+          "maximum": 25,
+          "median": 11.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 1186,
+          "pixels_with_zero_contributions": 304
+        },
+        "ndmi": {
+          "maximum": 25,
+          "median": 11.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 1186,
+          "pixels_with_zero_contributions": 304
+        }
+      },
+      "datatake_count": 29,
+      "extent_coverage_fraction": 0.9999942271561304,
+      "gee_task_id": "ANC3OGCR6O7GTHLQYWRLYSWT",
+      "month": 11,
+      "scene_count": 131,
+      "source_regime": "dry-season-collection1-v1"
+    },
+    {
+      "contribution_depth": {
+        "evi2": {
+          "maximum": 19,
+          "median": 4.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 6324329,
+          "pixels_with_zero_contributions": 3827
+        },
+        "nbr": {
+          "maximum": 19,
+          "median": 4.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 6324329,
+          "pixels_with_zero_contributions": 3827
+        },
+        "ndmi": {
+          "maximum": 19,
+          "median": 4.0,
+          "minimum": 0,
+          "pixels_below_three_contributions": 6324329,
+          "pixels_with_zero_contributions": 3827
+        }
+      },
+      "datatake_count": 20,
+      "extent_coverage_fraction": 0.9999279350285155,
+      "gee_task_id": "7N54BW6T3U2LAAFUOQQXH7NK",
+      "month": 12,
+      "scene_count": 69,
+      "source_regime": "dry-season-collection1-v1"
+    }
+  ],
+  "observed_platforms": [
+    "S2A",
+    "S2B",
+    "S2C"
+  ],
+  "observed_processing_baselines": [
+    "02.11",
+    "02.14",
+    "03.00",
+    "03.01",
+    "04.00",
+    "05.00",
+    "05.09",
+    "05.10",
+    "05.11"
+  ],
+  "open_scientific_question": {
+    "imposed_here": false,
+    "note": "the rebuild measures and reports depth; it deliberately sets no threshold",
+    "owner": "project owner and Phase 5",
+    "question": "whether a minimum contribution depth should gate detection"
+  },
+  "query_fingerprint_sha256": "b6d6391088c9750f11d7fe60d73e46e60baf7060ee55242466fac8b72f8f83f4",
+  "rebuild_plan_sha256": "fb4460675980802ad2bfebd073804a57170a6c3689076213dc0b2acdc7b58537",
+  "run_manifest_id": "run-v3-fb4460675980802ad2bfebd073804a57170a6c3689076213dc0b2acdc7b58537",
+  "source_regimes": [
+    {
+      "months": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "provenance_state": "mixed_lineage_pending_esa_reprocessing",
+      "recorded_reviews": [
+        "config/phase2a6c_baseline_processing_baseline_review_v1.json",
+        "config/phase2a6c1_wet_season_processing_baseline_review_v1.json"
+      ],
+      "regime_id": "wet-season-mixed-lineage-v1",
+      "reviewed_processing_baseline_registry": {
+        "added_reviewed_values": [
+          "05.00",
+          "05.09",
+          "05.10",
+          "02.11",
+          "02.14",
+          "03.00",
+          "03.01",
+          "04.00"
+        ],
+        "base_reviewed_values": [
+          "05.11",
+          "05.12"
+        ],
+        "extension_policy": "recorded_review_only_never_fallback",
+        "recorded_review_extension": {
+          "added_values": [
+            {
+              "observed_in": "Package 2A.6C Phase 1 metadata pass 2026-09-05: 485 scenes across 142 datatakes, sensing years 2017, 2019, 2021; enumerated in docs/implementation/PHASE_2A6C_PHASE1_BASELINE_GATE_2026-09-05.json",
+              "review_basis": "ESA Collection-1 archive reprocessing. Sensed 2017, 2019 and 2021 but processed in 2022-2023, so these products already carry the modern Sen2Cor lineage and are not subject to further reprocessing. This value alone carries the whole of source year 2017.",
+              "value": "05.00"
+            },
+            {
+              "observed_in": "Package 2A.6C Phase 1 metadata pass 2026-09-05: 27 scenes across 7 datatakes, sensing year 2022, processed 2022; enumerated in docs/implementation/PHASE_2A6C_PHASE1_BASELINE_GATE_2026-09-05.json",
+              "review_basis": "Operational baseline generated under the Collection-1 lineage; same processing family as the already-reviewed 05.11 and separated from it only by routine operational increments.",
+              "value": "05.09"
+            },
+            {
+              "observed_in": "Package 2A.6C Phase 1 metadata pass 2026-09-05: 26 scenes across 11 datatakes, sensing year 2022, processed 2024; enumerated in docs/implementation/PHASE_2A6C_PHASE1_BASELINE_GATE_2026-09-05.json",
+              "review_basis": "Collection-1 lineage product for source year 2022, sensed 2022 and processed 2024, so it is reprocessed rather than original-epoch output and is stable against further reprocessing.",
+              "value": "05.10"
+            },
+            {
+              "observed_in": "Package 2A.6C.1 wet-season measurement 2026-09-05: 134 scenes across 40 datatakes, sensing year 2019, months 1-4, under the regime cloud filter of 60; enumerated from docs/implementation/PHASE_2A6C_PHASE1_BASELINE_GATE_2026-09-05.json",
+              "review_basis": "Pre-Collection-1 operational product, admitted only for the wet season because the Collection-1 lineage does not yet cover these months and the accepted coverage contract cannot otherwise be met. Not yet reprocessed by ESA, which is the reason the regime declares a pending-reprocessing provenance state and a retirement condition.",
+              "value": "02.11"
+            },
+            {
+              "observed_in": "Package 2A.6C.1 wet-season measurement 2026-09-05: 75 scenes across 21 datatakes, sensing year 2021, months 1-3, under the regime cloud filter of 60",
+              "review_basis": "Pre-Collection-1 operational product, admitted only for the wet season on the same necessity and with the same declared provenance state and retirement condition as 02.11.",
+              "value": "02.14"
+            },
+            {
+              "observed_in": "Package 2A.6C.1 wet-season measurement 2026-09-05: 58 scenes across 11 datatakes, sensing year 2021, month 4, under the regime cloud filter of 60",
+              "review_basis": "Pre-Collection-1 operational product of a later generation than the 02.xx family, admitted only for the wet season on the same necessity; it carries the whole of April 2021 in this regime.",
+              "value": "03.00"
+            },
+            {
+              "observed_in": "Package 2A.6C.1 wet-season measurement 2026-09-05: 22 scenes across 6 datatakes, sensing year 2022, month 1, under the regime cloud filter of 60",
+              "review_basis": "Pre-Collection-1 operational product, admitted only for the wet season on the same necessity and with the same declared provenance state and retirement condition.",
+              "value": "03.01"
+            },
+            {
+              "observed_in": "Package 2A.6C.1 wet-season measurement 2026-09-05: 72 scenes across 26 datatakes, sensing year 2022, months 1-4, under the regime cloud filter of 60",
+              "review_basis": "Pre-Collection-1 operational product of the generation immediately preceding Collection-1, admitted only for the wet season on the same necessity; it is the most widely represented rejected value in this regime.",
+              "value": "04.00"
+            }
+          ],
+          "extension_id": "araripe-baseline-v2-collection1-lineage-review-2026-09-05+araripe-baseline-v2-wet-season-mixed-lineage-review-2026-09-05",
+          "review_date": "2026-09-05",
+          "review_scope": "Sentinel-2 L2A processing baselines observed across the accepted baseline 2.0.0 source years 2017, 2019, 2021, 2022 and 2025, enumerated by the Package 2A.6C Phase 1 metadata pass | Sentinel-2 L2A processing baselines admitted ONLY for the wet-season source regime wet-season-mixed-lineage-v1, which owns calendar months 1, 2, 3 and 4 of the accepted baseline 2.0.0 source years. These values remain unavailable_fail_closed in the dry-season regime dry-season-collection1-v1, which keeps the Collection-1 restriction of the 2026-09-05 review unchanged.",
+          "reviewed_by": "project_owner"
+        },
+        "registry_id": "araripe-reviewed-processing-baselines-v1",
+        "reviewed_values": [
+          "02.11",
+          "02.14",
+          "03.00",
+          "03.01",
+          "04.00",
+          "05.00",
+          "05.09",
+          "05.10",
+          "05.11",
+          "05.12"
+        ],
+        "unreviewed_value_policy": "unavailable_fail_closed"
+      },
+      "scene_cloud_filter_percent": 60
+    },
+    {
+      "months": [
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "provenance_state": "collection1_lineage_stable",
+      "recorded_reviews": [
+        "config/phase2a6c_baseline_processing_baseline_review_v1.json"
+      ],
+      "regime_id": "dry-season-collection1-v1",
+      "reviewed_processing_baseline_registry": {
+        "added_reviewed_values": [
+          "05.00",
+          "05.09",
+          "05.10"
+        ],
+        "base_reviewed_values": [
+          "05.11",
+          "05.12"
+        ],
+        "extension_policy": "recorded_review_only_never_fallback",
+        "recorded_review_extension": {
+          "added_values": [
+            {
+              "observed_in": "Package 2A.6C Phase 1 metadata pass 2026-09-05: 485 scenes across 142 datatakes, sensing years 2017, 2019, 2021; enumerated in docs/implementation/PHASE_2A6C_PHASE1_BASELINE_GATE_2026-09-05.json",
+              "review_basis": "ESA Collection-1 archive reprocessing. Sensed 2017, 2019 and 2021 but processed in 2022-2023, so these products already carry the modern Sen2Cor lineage and are not subject to further reprocessing. This value alone carries the whole of source year 2017.",
+              "value": "05.00"
+            },
+            {
+              "observed_in": "Package 2A.6C Phase 1 metadata pass 2026-09-05: 27 scenes across 7 datatakes, sensing year 2022, processed 2022; enumerated in docs/implementation/PHASE_2A6C_PHASE1_BASELINE_GATE_2026-09-05.json",
+              "review_basis": "Operational baseline generated under the Collection-1 lineage; same processing family as the already-reviewed 05.11 and separated from it only by routine operational increments.",
+              "value": "05.09"
+            },
+            {
+              "observed_in": "Package 2A.6C Phase 1 metadata pass 2026-09-05: 26 scenes across 11 datatakes, sensing year 2022, processed 2024; enumerated in docs/implementation/PHASE_2A6C_PHASE1_BASELINE_GATE_2026-09-05.json",
+              "review_basis": "Collection-1 lineage product for source year 2022, sensed 2022 and processed 2024, so it is reprocessed rather than original-epoch output and is stable against further reprocessing.",
+              "value": "05.10"
+            }
+          ],
+          "extension_id": "araripe-baseline-v2-collection1-lineage-review-2026-09-05",
+          "review_date": "2026-09-05",
+          "review_scope": "Sentinel-2 L2A processing baselines observed across the accepted baseline 2.0.0 source years 2017, 2019, 2021, 2022 and 2025, enumerated by the Package 2A.6C Phase 1 metadata pass",
+          "reviewed_by": "project_owner"
+        },
+        "registry_id": "araripe-reviewed-processing-baselines-v1",
+        "reviewed_values": [
+          "05.00",
+          "05.09",
+          "05.10",
+          "05.11",
+          "05.12"
+        ],
+        "unreviewed_value_policy": "unavailable_fail_closed"
+      },
+      "scene_cloud_filter_percent": 40
+    }
+  ],
+  "totals": {
+    "datatake_count": 425,
+    "scene_count": 1576
+  }
+}

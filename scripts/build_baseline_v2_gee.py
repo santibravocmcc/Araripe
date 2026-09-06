@@ -583,20 +583,22 @@ def _reconcile(ee, entry: dict, plan: dict) -> dict:
                 f"{entry['datatake_id']}: scene {scene_id} contributed "
                 f"{ranks[rank]} pixels but only {expected[scene_id]} are valid"
             )
-    return {
-        "counts_reconciled": True,
-        "contributor_accounting_reconciled": True,
-        "kind": "gee_recomputed_counts_and_contributor_partition",
-        "composed_pixel_count": composed,
-        "partition_anomaly_pixels": anomalies,
-        "contributor_partition_reduction_residual": (
-            sum(ranks.values()) - composed
-        ),
-        "contributor_rank_pixels": {
-            str(rank): ranks[rank] for rank in sorted(ranks)
-        },
-        "recomputed_scene_valid_pixel_counts": recomputed,
-    }
+    return _verification_evidence(
+        {
+            "counts_reconciled": True,
+            "contributor_accounting_reconciled": True,
+            "kind": "gee_recomputed_counts_and_contributor_partition",
+            "composed_pixel_count": composed,
+            "partition_anomaly_pixels": anomalies,
+            "contributor_partition_reduction_residual": (
+                sum(ranks.values()) - composed
+            ),
+            "contributor_rank_pixels": {
+                str(rank): ranks[rank] for rank in sorted(ranks)
+            },
+            "recomputed_scene_valid_pixel_counts": recomputed,
+        }
+    )
 
 
 def _indices(ee, composite):
