@@ -113,7 +113,7 @@ def main(
 
     aggregate = manifest["aggregate"]
     click.echo(
-        "baseline 2.0.0 manifest written: "
+        f"baseline {manifest['baseline_version']} manifest written: "
         f"{target} ({aggregate['object_count']} objects, "
         f"{aggregate['total_bytes']} bytes, inventory "
         f"{aggregate['inventory_sha256']})"
