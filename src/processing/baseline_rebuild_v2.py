@@ -108,6 +108,26 @@ AMENDMENT_V3_PATH = "config/phase2a_sentinel2c_contract_amendment_v3.json"
 AMENDMENT_V3_SHA256 = (
     "0bb853259f5902ea93b34ed689662b46b66f5f696a9282482820f36f101414da"
 )
+# Package 2A.6C.1: the accepted seasonal source-regime amendment.  A regime
+# owns a disjoint set of calendar months and carries its own reviewed-baseline
+# registry, scene cloud filter and provenance state, so the wet season can be
+# admitted on different terms from the dry season *explicitly* instead of the
+# whole year being widened silently.
+AMENDMENT_REGIME_V1_PATH = (
+    "config/phase2a6c1_seasonal_source_regime_amendment_v1.json"
+)
+AMENDMENT_REGIME_V1_SHA256 = (
+    "2bde0d223f7e5192d35961f0a616eb54eb97b39d901189cb0ce0e59c392d8deb"
+)
+SOURCE_REGIME_CONTRACT_ID = "araripe-baseline-source-regime-v1"
+# The single-regime form of a plan: one regime owning every month under the
+# unextended source policy.  It keeps a plan expressible without an amendment.
+DEFAULT_SOURCE_REGIME_ID = "all-months-single-policy-v1"
+SOURCE_REGIME_PROVENANCE_STATES = (
+    "collection1_lineage_stable",
+    "mixed_lineage_pending_esa_reprocessing",
+    "single_policy_unscoped",
+)
 
 BASELINE_V2_GRID_ID = "araripe-baseline-epsg32724-20m-grid-v1"
 # The audited baseline 1.0.0 grid is retained unchanged so a rebuilt object is
@@ -360,27 +380,300 @@ def validate_registry_extension(extension: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def load_baseline_rebuild_registry(
-    extension_path: Path | None,
+    extension_path: Path | Iterable[Path] | None,
 ) -> BaselineRebuildRegistryV2:
-    """Load the effective registry, optionally extended by a recorded review."""
+    """Load the effective registry from zero or more recorded reviews.
+
+    Several reviews compose only when each validates on its own and none
+    repeats a value another already added: a value must be admitted by exactly
+    one recorded review, so a duplicate is a drafting error rather than a
+    harmless restatement, and it fails closed.
+    """
 
     if extension_path is None:
         return base_rebuild_registry()
-    path = Path(extension_path)
-    try:
-        raw = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        raise BaselineRebuildError(
-            f"cannot read registry extension {path}: {exc}"
-        ) from exc
-    extension = validate_registry_extension(raw)
+    if isinstance(extension_path, (str, Path)):
+        paths = [Path(extension_path)]
+    else:
+        paths = [Path(item) for item in extension_path]
+    if not paths:
+        return base_rebuild_registry()
+
+    extensions: list[dict[str, Any]] = []
+    added: list[str] = []
+    for path in paths:
+        try:
+            raw = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise BaselineRebuildError(
+                f"cannot read registry extension {path}: {exc}"
+            ) from exc
+        extension = validate_registry_extension(raw)
+        for entry in extension["added_values"]:
+            value = entry["value"]
+            _require(
+                value not in added,
+                f"processing baseline {value} is added by more than one "
+                "recorded review; a value is admitted by exactly one",
+            )
+            added.append(value)
+        extensions.append(extension)
+
+    if len(extensions) == 1:
+        composed: Mapping[str, Any] | None = MappingProxyType(extensions[0])
+    else:
+        composed = MappingProxyType(
+            {
+                "schema_version": "1.0.0",
+                "extension_id": "+".join(
+                    item["extension_id"] for item in extensions
+                ),
+                "base_registry_id": REVIEWED_PROCESSING_BASELINE_REGISTRY_ID,
+                "base_reviewed_values": list(REVIEWED_PROCESSING_BASELINES),
+                "reviewed_by": "; ".join(
+                    dict.fromkeys(item["reviewed_by"] for item in extensions)
+                ),
+                "review_date": max(item["review_date"] for item in extensions),
+                "review_scope": " | ".join(
+                    item["review_scope"] for item in extensions
+                ),
+                "added_values": [
+                    entry
+                    for item in extensions
+                    for entry in item["added_values"]
+                ],
+                "composed_from": [
+                    item["extension_id"] for item in extensions
+                ],
+            }
+        )
     return BaselineRebuildRegistryV2(
         registry_id=REVIEWED_PROCESSING_BASELINE_REGISTRY_ID,
         base_values=tuple(REVIEWED_PROCESSING_BASELINES),
-        added_values=tuple(
-            entry["value"] for entry in extension["added_values"]
-        ),
-        extension=MappingProxyType(extension),
+        added_values=tuple(added),
+        extension=composed,
+    )
+
+
+# ─── Seasonal source regimes (Package 2A.6C.1) ───────────────────────────────
+
+
+@dataclass(frozen=True)
+class SourceRegimeV2:
+    """One calendar-month-scoped source policy of the rebuild.
+
+    A regime owns a disjoint set of calendar months and fixes, for those
+    months only, the reviewed-baseline registry, the scene metadata cloud
+    filter and a declared provenance state.  The provenance state is the point
+    of the construct: a regime that admits products ESA has not yet
+    reprocessed says so in a machine-readable field, so a later package can
+    retire it against a precise target instead of a prose reminder.
+    """
+
+    regime_id: str
+    months: tuple[int, ...]
+    registry: BaselineRebuildRegistryV2
+    scene_cloud_filter_percent: int
+    provenance_state: str
+    recorded_reviews: tuple[str, ...]
+
+    def regime_dict(self) -> dict[str, Any]:
+        return {
+            "regime_id": self.regime_id,
+            "months": list(self.months),
+            "scene_cloud_filter_percent": self.scene_cloud_filter_percent,
+            "provenance_state": self.provenance_state,
+            "recorded_reviews": list(self.recorded_reviews),
+            "reviewed_processing_baseline_registry": (
+                self.registry.registry_dict()
+            ),
+        }
+
+
+def build_source_regime(
+    *,
+    regime_id: str,
+    months: Iterable[int],
+    registry: BaselineRebuildRegistryV2,
+    scene_cloud_filter_percent: int,
+    provenance_state: str,
+    recorded_reviews: Iterable[str] = (),
+) -> SourceRegimeV2:
+    """Validate and build one source regime."""
+
+    regime_id = require_nonempty(regime_id, label="regime_id")
+    month_values = tuple(months)
+    _require(bool(month_values), f"regime {regime_id} owns no month")
+    for month in month_values:
+        _require(
+            isinstance(month, int) and not isinstance(month, bool)
+            and month in range(1, 13),
+            f"regime {regime_id} month {month!r} must be an integer 1..12",
+        )
+    _require(
+        len(set(month_values)) == len(month_values),
+        f"regime {regime_id} repeats a calendar month",
+    )
+    _require(
+        month_values == tuple(sorted(month_values)),
+        f"regime {regime_id} months must be ascending",
+    )
+    _require(
+        isinstance(registry, BaselineRebuildRegistryV2),
+        f"regime {regime_id} needs a BaselineRebuildRegistryV2",
+    )
+    _require(
+        isinstance(scene_cloud_filter_percent, int)
+        and not isinstance(scene_cloud_filter_percent, bool)
+        and 0 < scene_cloud_filter_percent <= 100,
+        f"regime {regime_id} scene cloud filter must be an integer in 1..100",
+    )
+    _require(
+        provenance_state in SOURCE_REGIME_PROVENANCE_STATES,
+        f"regime {regime_id} provenance_state must be one of "
+        f"{SOURCE_REGIME_PROVENANCE_STATES}",
+    )
+    return SourceRegimeV2(
+        regime_id=regime_id,
+        months=month_values,
+        registry=registry,
+        scene_cloud_filter_percent=scene_cloud_filter_percent,
+        provenance_state=provenance_state,
+        recorded_reviews=tuple(recorded_reviews),
+    )
+
+
+def validate_source_regimes(
+    regimes: Iterable[SourceRegimeV2],
+) -> tuple[SourceRegimeV2, ...]:
+    """Require the regimes to partition calendar months 1-12 exactly.
+
+    A gap would leave a month with no source policy and an overlap would give
+    it two; either is a silent scientific ambiguity, so both fail closed.
+    """
+
+    ordered = tuple(regimes)
+    _require(bool(ordered), "a rebuild plan needs at least one source regime")
+    seen: dict[int, str] = {}
+    identifiers: set[str] = set()
+    for regime in ordered:
+        _require(
+            isinstance(regime, SourceRegimeV2),
+            "every source regime must be a SourceRegimeV2",
+        )
+        _require(
+            regime.regime_id not in identifiers,
+            f"duplicate source regime {regime.regime_id}",
+        )
+        identifiers.add(regime.regime_id)
+        for month in regime.months:
+            _require(
+                month not in seen,
+                f"calendar month {month:02d} is claimed by both "
+                f"{seen.get(month)} and {regime.regime_id}",
+            )
+            seen[month] = regime.regime_id
+    missing = [month for month in range(1, 13) if month not in seen]
+    _require(
+        not missing,
+        f"calendar month(s) {missing} have no source regime; the regimes must "
+        "partition 1..12 exactly",
+    )
+    return tuple(
+        sorted(ordered, key=lambda item: (item.months[0], item.regime_id))
+    )
+
+
+def default_source_regimes(
+    registry: BaselineRebuildRegistryV2,
+) -> tuple[SourceRegimeV2, ...]:
+    """The single-regime form: one policy for every month."""
+
+    return validate_source_regimes(
+        [
+            build_source_regime(
+                regime_id=DEFAULT_SOURCE_REGIME_ID,
+                months=range(1, 13),
+                registry=registry,
+                scene_cloud_filter_percent=BASELINE_MAX_CLOUD_COVER,
+                provenance_state="single_policy_unscoped",
+            )
+        ]
+    )
+
+
+def load_source_regimes(
+    amendment_path: Path | str = AMENDMENT_REGIME_V1_PATH,
+    *,
+    root: Path | None = None,
+) -> tuple[SourceRegimeV2, ...]:
+    """Build the accepted regimes from the seasonal-regime amendment.
+
+    The regimes are not free-form: they come from the accepted amendment
+    document, whose checksum the plan and the manifest pin.
+    """
+
+    base = Path(root) if root is not None else Path(".")
+    path = Path(amendment_path)
+    if not path.is_absolute():
+        path = base / path
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise BaselineRebuildError(
+            f"cannot read source-regime amendment {path}: {exc}"
+        ) from exc
+    contract = document.get("source_regime_contract", {})
+    _require(
+        contract.get("contract_id") == SOURCE_REGIME_CONTRACT_ID,
+        f"amendment must declare contract {SOURCE_REGIME_CONTRACT_ID}",
+    )
+    _require(
+        contract.get("regimes_must_partition_calendar_months") is True,
+        "amendment must require the regimes to partition calendar months",
+    )
+    _require(
+        contract.get("gap_or_overlap_policy") == "unavailable_fail_closed",
+        "amendment must keep gaps and overlaps fail-closed",
+    )
+    declared = contract.get("regimes")
+    _require(
+        isinstance(declared, list) and bool(declared),
+        "amendment declares no source regime",
+    )
+    regimes = []
+    for entry in declared:
+        reviews = tuple(entry.get("recorded_reviews", ()))
+        review_paths = [
+            (item if Path(item).is_absolute() else base / item)
+            for item in reviews
+        ]
+        regimes.append(
+            build_source_regime(
+                regime_id=entry.get("regime_id"),
+                months=entry.get("months", ()),
+                registry=load_baseline_rebuild_registry(review_paths or None),
+                scene_cloud_filter_percent=entry.get(
+                    "scene_cloud_filter_percent"
+                ),
+                provenance_state=entry.get("provenance_state"),
+                recorded_reviews=reviews,
+            )
+        )
+    return validate_source_regimes(regimes)
+
+
+def regime_for_month(
+    regimes: Iterable[SourceRegimeV2], month: int
+) -> SourceRegimeV2:
+    """Return the single regime owning one calendar month."""
+
+    _require(month in range(1, 13), f"month {month} must be 1..12")
+    for regime in regimes:
+        if month in regime.months:
+            return regime
+    raise BaselineRebuildError(
+        f"no source regime owns calendar month {month:02d}"
     )
 
 
@@ -929,21 +1222,91 @@ def compute_monthly_baseline_statistics(
 # ─── The deterministic rebuild plan (run-manifest binding for v3 IDs) ────────
 
 
+def union_registry(
+    regimes: Iterable[SourceRegimeV2],
+) -> BaselineRebuildRegistryV2:
+    """The registry of every value admitted by any regime.
+
+    This is a statement of what the rebuild admits *somewhere*; it is never
+    the admission test. A scene is always checked against the registry of the
+    regime that owns its month.
+    """
+
+    ordered = tuple(regimes)
+    added: list[str] = []
+    extensions: list[Mapping[str, Any]] = []
+    for regime in ordered:
+        for value in regime.registry.added_values:
+            if value not in added:
+                added.append(value)
+                if regime.registry.extension is not None:
+                    extensions.append(regime.registry.extension)
+    if not added:
+        return base_rebuild_registry()
+    seen_ids: list[str] = []
+    merged_added: list[dict[str, Any]] = []
+    for extension in extensions:
+        if extension["extension_id"] in seen_ids:
+            continue
+        seen_ids.append(extension["extension_id"])
+        for entry in extension["added_values"]:
+            if entry["value"] not in {e["value"] for e in merged_added}:
+                merged_added.append(dict(entry))
+    merged_added.sort(key=lambda entry: added.index(entry["value"]))
+    composed = MappingProxyType(
+        {
+            "schema_version": "1.0.0",
+            "extension_id": "+".join(seen_ids),
+            "base_registry_id": REVIEWED_PROCESSING_BASELINE_REGISTRY_ID,
+            "base_reviewed_values": list(REVIEWED_PROCESSING_BASELINES),
+            "reviewed_by": "project_owner",
+            "review_date": max(
+                dict(extension)["review_date"] for extension in extensions
+            ),
+            "review_scope": (
+                "union of every recorded review applying to any source regime"
+            ),
+            "added_values": merged_added,
+        }
+    )
+    return BaselineRebuildRegistryV2(
+        registry_id=REVIEWED_PROCESSING_BASELINE_REGISTRY_ID,
+        base_values=tuple(REVIEWED_PROCESSING_BASELINES),
+        added_values=tuple(added),
+        extension=composed,
+    )
+
+
 def build_baseline_rebuild_plan(
     *,
-    registry: BaselineRebuildRegistryV2,
+    registry: BaselineRebuildRegistryV2 | None = None,
+    regimes: Iterable[SourceRegimeV2] | None = None,
 ) -> dict[str, Any]:
     """Build the deterministic Package 2A.6C rebuild plan document.
 
     The plan is the executable instruction sheet for the Earth Engine rebuild.
     Its canonical checksum is the v3 run-manifest binding for every rebuild
     acquisition, so identical plans always bind identical identities.
+
+    Supply ``regimes`` for the Package 2A.6C.1 seasonal form, or ``registry``
+    for the single-policy form, which is the same document with one regime
+    owning every month.
     """
 
     _require(
-        isinstance(registry, BaselineRebuildRegistryV2),
-        "registry must be a BaselineRebuildRegistryV2",
+        (registry is None) != (regimes is None),
+        "supply exactly one of registry= (single policy) or regimes= "
+        "(seasonal source regimes)",
     )
+    if regimes is None:
+        _require(
+            isinstance(registry, BaselineRebuildRegistryV2),
+            "registry must be a BaselineRebuildRegistryV2",
+        )
+        regime_set = default_source_regimes(registry)
+    else:
+        regime_set = validate_source_regimes(regimes)
+    registry = union_registry(regime_set)
     body: dict[str, Any] = {
         "rebuild_plan_version": BASELINE_REBUILD_PLAN_VERSION,
         "baseline_id": "araripe-s2-sr-harmonized-monthly",
@@ -965,16 +1328,22 @@ def build_baseline_rebuild_plan(
                 "path": AMENDMENT_V3_PATH,
                 "sha256": AMENDMENT_V3_SHA256,
             },
+            "seasonal_source_regime_amendment_v1": {
+                "path": AMENDMENT_REGIME_V1_PATH,
+                "sha256": AMENDMENT_REGIME_V1_SHA256,
+            },
         },
         "source": {
             "collection_id": GEE_COLLECTION_ID,
             "years": list(BASELINE_SOURCE_YEARS),
             "months": list(range(1, 13)),
             "scene_cloud_filter_percent": BASELINE_MAX_CLOUD_COVER,
+            "scene_cloud_filter_is_regime_scoped": True,
             "scene_admission_note": (
-                "scene metadata filter carried unchanged from the accepted "
-                "baseline 1.0.0 configuration; the per-pixel mask is the "
-                "selected v2 allowlist"
+                "the default scene metadata filter is carried unchanged from "
+                "the accepted baseline 1.0.0 configuration; each source "
+                "regime declares the filter that actually applies to its "
+                "months, and the per-pixel mask is the selected v2 allowlist"
             ),
             "reflectance_scale_divisor": REFLECTANCE_SCALE_DIVISOR,
             "band_names": list(REBUILD_BAND_NAMES),
@@ -1004,6 +1373,18 @@ def build_baseline_rebuild_plan(
             "identical_to_candidate_generation": True,
         },
         "reviewed_processing_baseline_registry": registry.registry_dict(),
+        "source_regime_contract": {
+            "contract_id": SOURCE_REGIME_CONTRACT_ID,
+            "regimes_partition_calendar_months": True,
+            "gap_or_overlap_policy": "unavailable_fail_closed",
+            "registry_scope": "per_regime_never_global",
+            "note": (
+                "a scene is admitted only by the registry of the regime that "
+                "owns its calendar month; the plan-level registry is the "
+                "union of what is admitted somewhere and is never the test"
+            ),
+        },
+        "source_regimes": [regime.regime_dict() for regime in regime_set],
         "composition": {
             "composite_method_id": COMPOSITION_METHOD_ID,
             "composition_scope_version": COMPOSITION_SCOPE_VERSION,
@@ -1119,28 +1500,45 @@ def contribution_count_filename(index: str, month: int) -> str:
     return f"{index}_month{month:02d}_{CONTRIBUTION_COUNT_STATISTIC}.tif"
 
 
-def baseline_query_fingerprint() -> str:
+def baseline_query_fingerprint(
+    regimes: Iterable[SourceRegimeV2] | None = None,
+) -> str:
     """Return the deterministic fingerprint of the baseline source query.
 
     The 2A.2 audit could not reconstruct the historical query; recording a
     canonical fingerprint of the exact source selection makes a future
-    generation comparable to this one instead of merely similar.
+    generation comparable to this one instead of merely similar.  With
+    seasonal regimes the selection is no longer one filter over twelve
+    months, so every regime's months, filter and reviewed values enter the
+    fingerprint — otherwise two materially different rebuilds would share one.
     """
 
-    return canonical_sha256(
-        {
-            "query_fingerprint_version": "phase2a6c-baseline-query-v1",
-            "collection_id": GEE_COLLECTION_ID,
-            "years": list(BASELINE_SOURCE_YEARS),
-            "months": list(range(1, 13)),
-            "scene_cloud_filter_percent": BASELINE_MAX_CLOUD_COVER,
-            "monitoring_extent_id": MONITORING_EXTENT_ID,
-            "monitoring_extent_bounds": list(MONITORING_EXTENT_BOUNDS),
-            "grid": dict(BASELINE_V2_GRID_CONTRACT),
-            "band_names": list(REBUILD_BAND_NAMES),
-            "reflectance_scale_divisor": REFLECTANCE_SCALE_DIVISOR,
-        }
-    )
+    body: dict[str, Any] = {
+        "query_fingerprint_version": "phase2a6c-baseline-query-v1",
+        "collection_id": GEE_COLLECTION_ID,
+        "years": list(BASELINE_SOURCE_YEARS),
+        "months": list(range(1, 13)),
+        "scene_cloud_filter_percent": BASELINE_MAX_CLOUD_COVER,
+        "monitoring_extent_id": MONITORING_EXTENT_ID,
+        "monitoring_extent_bounds": list(MONITORING_EXTENT_BOUNDS),
+        "grid": dict(BASELINE_V2_GRID_CONTRACT),
+        "band_names": list(REBUILD_BAND_NAMES),
+        "reflectance_scale_divisor": REFLECTANCE_SCALE_DIVISOR,
+    }
+    if regimes is not None:
+        body["query_fingerprint_version"] = "phase2a6c1-baseline-query-v2"
+        body["source_regimes"] = [
+            {
+                "regime_id": regime.regime_id,
+                "months": list(regime.months),
+                "scene_cloud_filter_percent": (
+                    regime.scene_cloud_filter_percent
+                ),
+                "reviewed_values": list(regime.registry.effective_values),
+            }
+            for regime in validate_source_regimes(regimes)
+        ]
+    return canonical_sha256(body)
 
 
 def contribution_count_summary(counts: Any) -> dict[str, Any]:

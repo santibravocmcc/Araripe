@@ -54,6 +54,11 @@ from src.detection.identity_v3 import (
     normalize_utc_timestamp,
 )
 from src.processing.baseline_rebuild_v2 import (
+    AMENDMENT_REGIME_V1_PATH,
+    AMENDMENT_REGIME_V1_SHA256,
+    DEFAULT_SOURCE_REGIME_ID,
+    SOURCE_REGIME_CONTRACT_ID,
+    SOURCE_REGIME_PROVENANCE_STATES,
     AMENDMENT_V3_PATH,
     AMENDMENT_V3_SHA256,
     BASELINE_REBUILD_PLAN_VERSION,
@@ -147,6 +152,7 @@ REQUIRED_PROVENANCE_RETAINED = (
     "per-datatake GEE plan checksums",
     "monthly statistics evidence checksums",
     "per-index monthly contribution depth",
+    "per-month source regime and its declared provenance state",
 )
 
 _SHA256_HEX = frozenset("0123456789abcdef")
@@ -524,6 +530,88 @@ def _validate_contribution_counts(
     return zero_by_index
 
 
+def _validate_source_regimes_block(
+    manifest: Mapping[str, Any],
+) -> tuple[dict[int, str], dict[int, tuple[str, ...]]]:
+    """Validate the seasonal source regimes and resolve them per month.
+
+    Returns the regime id and the effective reviewed registry for each of the
+    twelve calendar months. The registry a scene is admitted by is always its
+    own month's, never the manifest-level union.
+    """
+
+    contract = manifest.get("source_regime_contract", {})
+    _require(
+        contract.get("contract_id") == SOURCE_REGIME_CONTRACT_ID,
+        f"source_regime_contract must be {SOURCE_REGIME_CONTRACT_ID}",
+    )
+    _require(
+        contract.get("regimes_partition_calendar_months") is True
+        and contract.get("gap_or_overlap_policy") == "unavailable_fail_closed"
+        and contract.get("registry_scope") == "per_regime_never_global",
+        "source_regime_contract must keep the partition and fail-closed "
+        "per-regime scoping",
+    )
+    regimes = manifest.get("source_regimes")
+    _require(
+        isinstance(regimes, list) and bool(regimes),
+        "manifest must declare at least one source regime",
+    )
+    owner: dict[int, str] = {}
+    registries: dict[int, tuple[str, ...]] = {}
+    identifiers: set[str] = set()
+    for regime in regimes:
+        _require(isinstance(regime, Mapping), "each source regime is a mapping")
+        regime_id = regime.get("regime_id")
+        _require(
+            isinstance(regime_id, str) and bool(regime_id.strip()),
+            "each source regime needs a regime_id",
+        )
+        _require(
+            regime_id not in identifiers, f"duplicate source regime {regime_id}"
+        )
+        identifiers.add(regime_id)
+        _require(
+            regime.get("provenance_state") in SOURCE_REGIME_PROVENANCE_STATES,
+            f"regime {regime_id} provenance_state must be one of "
+            f"{SOURCE_REGIME_PROVENANCE_STATES}",
+        )
+        cloud = regime.get("scene_cloud_filter_percent")
+        _require(
+            isinstance(cloud, int) and not isinstance(cloud, bool)
+            and 0 < cloud <= 100,
+            f"regime {regime_id} scene cloud filter must be 1..100",
+        )
+        months = regime.get("months")
+        _require(
+            isinstance(months, list) and bool(months),
+            f"regime {regime_id} owns no calendar month",
+        )
+        effective = _validate_registry_block(
+            regime.get("reviewed_processing_baseline_registry", {})
+        )
+        for month in months:
+            _require(
+                isinstance(month, int) and not isinstance(month, bool)
+                and month in range(1, 13),
+                f"regime {regime_id} month {month!r} must be 1..12",
+            )
+            _require(
+                month not in owner,
+                f"calendar month {month:02d} is claimed by both "
+                f"{owner.get(month)} and {regime_id}",
+            )
+            owner[month] = regime_id
+            registries[month] = effective
+    missing = [month for month in range(1, 13) if month not in owner]
+    _require(
+        not missing,
+        f"calendar month(s) {missing} have no source regime; the regimes must "
+        "partition 1..12 exactly",
+    )
+    return owner, registries
+
+
 def _validate_datatake_entry(
     entry: Mapping[str, Any],
     *,
@@ -719,6 +807,14 @@ def validate_manifest_v2(
         == {"path": AMENDMENT_V3_PATH, "sha256": AMENDMENT_V3_SHA256},
         "manifest must bind the Sentinel-2C v3 amendment by checksum",
     )
+    _require(
+        bindings.get("seasonal_source_regime_amendment_v1", {})
+        == {
+            "path": AMENDMENT_REGIME_V1_PATH,
+            "sha256": AMENDMENT_REGIME_V1_SHA256,
+        },
+        "manifest must bind the seasonal source-regime amendment by checksum",
+    )
 
     _require(
         manifest.get("mask_baseline_identity") == _expected_mask_identity(),
@@ -790,9 +886,12 @@ def validate_manifest_v2(
         "a v2 rebuild may not declare missing provenance",
     )
 
-    effective_registry = _validate_registry_block(
+    # The manifest-level registry states what the rebuild admits *somewhere*;
+    # the admission test is always the registry of the month's own regime.
+    _validate_registry_block(
         manifest.get("reviewed_processing_baseline_registry", {})
     )
+    regime_by_month, registry_by_month = _validate_source_regimes_block(manifest)
 
     execution = manifest.get("rebuild_execution", {})
     plan_sha256 = _require_sha256(
@@ -890,6 +989,11 @@ def validate_manifest_v2(
             f"month {month:02d}: a rebuilt month needs at least one "
             "datatake composite",
         )
+        _require(
+            month_entry.get("source_regime") == regime_by_month[month],
+            f"month {month:02d}: source_regime must be "
+            f"{regime_by_month[month]!r}, the regime owning this month",
+        )
         for entry in datatakes:
             summary = _validate_datatake_entry(
                 entry,
@@ -897,7 +1001,7 @@ def validate_manifest_v2(
                 run_manifest_id=run_manifest_id,
                 run_manifest_sha256=run_manifest_sha256,
                 image_collection_id=earth_engine["image_collection_id"],
-                effective_registry=effective_registry,
+                effective_registry=registry_by_month[month],
                 grid_id=contract.get("grid_id", BASELINE_V2_GRID_ID),
             )
             physical = (summary["platform"], summary["datatake_id"])
@@ -1079,8 +1183,14 @@ def build_manifest_v2(
     registry_block: Mapping[str, Any],
     build_date: str,
     raster_contract: Mapping[str, Any] | None = None,
+    source_regimes: Iterable[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Assemble and fully validate the baseline 2.0.0 manifest."""
+    """Assemble and fully validate the baseline 2.0.0 manifest.
+
+    ``source_regimes`` carries the Package 2A.6C.1 seasonal policy. Omitted, a
+    single regime owning every month is derived from ``registry_block``, which
+    is the single-policy form of the same document.
+    """
 
     contract = raster_contract or RASTER_CONTRACT_V2
     object_list = [dict(obj) for obj in objects]
@@ -1107,6 +1217,31 @@ def build_manifest_v2(
             for datatake in month_entry.get("datatakes", [])
         }
     )
+    if source_regimes is None:
+        regime_blocks = [
+            {
+                "regime_id": DEFAULT_SOURCE_REGIME_ID,
+                "months": list(range(1, 13)),
+                "scene_cloud_filter_percent": BASELINE_MAX_CLOUD_COVER,
+                "provenance_state": "single_policy_unscoped",
+                "recorded_reviews": [],
+                "reviewed_processing_baseline_registry": json.loads(
+                    json.dumps(registry_block)
+                ),
+            }
+        ]
+    else:
+        regime_blocks = json.loads(json.dumps(list(source_regimes)))
+    regime_of_month = {
+        month: block["regime_id"]
+        for block in regime_blocks
+        for month in block["months"]
+    }
+    for month_entry in months:
+        month_entry.setdefault(
+            "source_regime", regime_of_month.get(month_entry.get("month"))
+        )
+
     manifest: dict[str, Any] = {
         "schema_version": BASELINE_V2_SCHEMA_VERSION,
         "baseline_id": BASELINE_ID,
@@ -1130,7 +1265,18 @@ def build_manifest_v2(
                 "path": AMENDMENT_V3_PATH,
                 "sha256": AMENDMENT_V3_SHA256,
             },
+            "seasonal_source_regime_amendment_v1": {
+                "path": AMENDMENT_REGIME_V1_PATH,
+                "sha256": AMENDMENT_REGIME_V1_SHA256,
+            },
         },
+        "source_regime_contract": {
+            "contract_id": SOURCE_REGIME_CONTRACT_ID,
+            "regimes_partition_calendar_months": True,
+            "gap_or_overlap_policy": "unavailable_fail_closed",
+            "registry_scope": "per_regime_never_global",
+        },
+        "source_regimes": regime_blocks,
         "mask_baseline_identity": _expected_mask_identity(),
         "composition": _expected_composition_block(),
         "statistics": _expected_statistics_block(),
