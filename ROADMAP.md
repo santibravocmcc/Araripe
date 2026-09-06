@@ -110,7 +110,7 @@ Intensity bands used below:
 | 21C. Accessibility and mobile usability | **Approved, constrained** | Schedule after core science/publication; preserve ordinary mouse, touch, desktop, map, filter, and data behavior; defer changes with trade-offs. | 15k–25k |
 | 22. Deterministic historical rebuild | **Approved, expanded** | Reprocess all available 2026 imagery after scientific corrections; explicit date batches; new state from empty chronology; preserve old release; atomic promotion; resume five-day schedule from rebuilt watermark. | 45k–75k plus compute time |
 | 23. Independent scientific accuracy assessment | **Approved, modified** | Required desktop-validation pilot of about 60 locations; full sample chosen after pilot; independent imagery/source comparisons and qualified human labels; field checks optional for selected uncertain cases. | 20k–35k pilot; 35k–60k full |
-| 24. Baseline and time-series QA | **Approved; rebuild now required** | The audit is complete. Package 2A.6 rebuilds the 72-object baseline with the selected v2 SCL mask, then revalidates manifest/checksum/grid/coverage; mixed generations remain quarantined. | 30k–50k plus GEE time |
+| 24. Baseline and time-series QA | **Approved; rebuild complete** | The audit is complete. Packages 2A.6C/2A.6C.1 rebuilt the 72-object baseline as version `2.0.0` with the selected v2 SCL mask under seasonal source regimes; manifest, checksums, grid and coverage revalidate and baseline `1.0.0` is retained unchanged as audit material. Runtime activation belongs to the replay packages. | done |
 | 25. Drought adjustment | **Resolved: disabled** | `drought-disabled-v1` is selected for the 2026 candidate. A future CHIRPS v3 spatial context may be tested in Phase 5 but cannot suppress raw detections or activate without qualified evidence. | 8k–15k guard/context; more if revived |
 | 26. Cloud mask and daily composition | **Resolved for candidate implementation** | Implement provisional `scl-explicit-allowlist-v2` and coverage-ranked first-valid composition per physical datatake. Record SCL 7 and all processing baselines; rebuild baseline identically. Phase 5 validates canonical suitability. | 25k–45k plus baseline compute |
 | 27. Versioned MapBiomas 2024 migration | **Resolved with provenance correction** | Collection 3 beta 10 m remains primary context under exact v2 mappings/pixel rules. The direct 30 m GeoTIFF is Collection 10, not 10.1; Package 2A.6 performs a manifest-bound true 10.1 export and regenerates every affected v2 evidence/review artifact. Never erase raw alerts. | 22k–38k remaining |
@@ -487,8 +487,11 @@ The canonical closure record lives on `main` in
 `docs/implementation/PHASE_2B0_2026-08-11.md` and
 `docs/operations/CLOUDFLARE_GREEN_AFTER_STATE_2026-08-13.md`; this planning
 branch keeps the full scientific roadmap isolated from `main`. A reviewed
-green site deploy remains Package 2B.4 work. **Package 2A.6 is open / not
-started** and proceeds as bounded Packages 2A.6A–2A.6D.
+green site deploy remains Package 2B.4 work. **Package 2A.6 is open** and
+proceeds as bounded Packages 2A.6A–2A.6D. Packages 2A.6A, 2A.6B, 2A.6B.1,
+2A.6C and 2A.6C.1 are closed on `claude/phase2a6c-baseline`; the rebuilt
+baseline `2.0.0` manifest exists and validates. **Package 2A.6D is the only
+remaining slice.**
 
 - Keep all blue workflows, schedules, `araripe-cogs`, Worker, routes, domain,
   and current data paths unchanged through Phases 2B–5.
@@ -806,12 +809,24 @@ that no partial release was promoted, write `docs/handoffs/<timestamp>_<slug>.md
 tell the user exactly what to activate, and provide a self-contained Codex
 handoff prompt. Resume only after rechecking repository and live state.
 
-Package 2B.0 closed 2026-08-13 on `main`. The next scientific implementation
-prompt should start Package 2A.6A (v2 contracts: identity, persistence, and
-ledger) from this branch's lineage; publication work continues separately with
-one bounded Package 2B.1 change. Package 2A.6 remains a separate parallel
-scientific branch divided into Packages 2A.6A–2A.6D; both Phase 2A.6 and
-Phase 2B must close before Phase 3.
+Package 2B.0 closed 2026-08-13 on `main`. The scientific branch has since
+closed Packages 2A.6A (v2 contracts), 2A.6B (SCL mask and datatake
+composition), 2A.6B.1 (Sentinel-2C v3 amendment), 2A.6C (baseline 2.0.0
+rebuild) and 2A.6C.1 (seasonal source regimes, which produced
+`config/baseline_manifest_v2.json`). The next scientific implementation prompt
+should start **Package 2A.6D** from the final commit of
+`claude/phase2a6c-baseline`; publication work continues separately with one
+bounded Package 2B.1 change. Both Phase 2A.6 and Phase 2B must close before
+Phase 3.
+
+Two constraints carry into 2A.6D. The Earth Engine project
+`ee-araripe-baseline-v2` entered noncommercial **restricted mode** during the
+2A.6C.1 execution, and 2A.6D's Collection 10.1 export needs that same
+capability, so the quota should be resolved first. The baseline `2.0.0`
+wet-season regime carries the provenance state
+`mixed_lineage_pending_esa_reprocessing` and a retirement condition: when ESA
+finishes reprocessing months 1–4 of the accepted source years onto the
+Collection-1 lineage, the wet season should be rebuilt and the regime retired.
 
 ---
 
