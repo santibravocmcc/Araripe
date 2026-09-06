@@ -43,7 +43,12 @@ from src.detection.alerts import save_alerts, summarize_alerts, vectorize_alerts
 from src.detection.baseline import load_baseline_pair
 from src.detection.change_detect import classify_fire_vs_mechanical, detect_deforestation
 from src.detection.landcover import annotate_alerts_all_collections
-from src.detection.persistence import DEFAULT_MIN_OVERLAP_FRAC, save_persistence_state, update_tracks
+from src.detection.persistence import (
+    DEFAULT_MIN_OVERLAP_FRAC,
+    load_persistence_state,
+    save_persistence_state,
+    update_tracks,
+)
 from src.timeseries.builder import store_alert_stats, store_regional_stats
 from src.utils.logging_setup import configure_run_logging
 
@@ -132,15 +137,12 @@ def run_detection_on_dir(in_dir, out_dir=ALERTS_DIR, *, min_clear=20.0,
     # Persistência (gap-tolerant): o estado é carregado uma vez, atualizado por
     # data e salvo ao final. No CI ele é buscado de / enviado ao R2, garantindo a
     # tolerância a buracos (até 180d) e a permanência dos tracks "confirmados".
-    import geopandas as gpd
     state_path = Path(state_path) if state_path else Path(out_dir).parent / "persistence_state.geojson"
-    state = None
-    if persistence and state_path.exists():
-        try:
-            state = gpd.read_file(str(state_path))
-            logger.info("Persistência: estado carregado ({} tracks) de {}", len(state), state_path.name)
-        except Exception as e:
-            logger.warning("Não foi possível ler o estado de persistência ({}); começando do zero", e)
+    # Fail-closed (Package 2B.1): um estado ilegível PARA a execução em vez de
+    # recomeçar do zero — um reset silencioso apagaria n_sightings/first_seen/
+    # last_seen de todas as tracks e não há como distingui-lo, depois, de uma
+    # leva real de primeiras observações.
+    state = load_persistence_state(state_path) if persistence else None
 
     n_written = 0
     for f in files:

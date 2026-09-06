@@ -146,13 +146,50 @@ beside the alerts so no automated write to `main` is needed at all. That moves
 the canonical DB and drops its git history, so it belongs in a reviewed
 package, not in this fix.
 
-Schedule spacing: the site refresh
-(`../site/.github/workflows/update-data.yml`) moved from Mon/Thu 07:30 UTC to
-Tue/Fri 06:00 UTC — a full 24 h after the backend run instead of 90 min. On
-2026-08-17 GitHub started the backend cron 67 min late, which is enough to make
-the site read a `main` whose time-series PR has not landed yet. **Pending:** the
-change lives on the site branch `fix/site-cron-24h` and is NOT merged, so the
-site still runs Mon/Thu 07:30 UTC (run of 2026-08-24 confirms it).
+Schedule spacing, and why spacing alone was the wrong fix (Package 2B.1):
+
+The site refresh (`../site/.github/workflows/update-data.yml`) was to move from
+Mon/Thu 07:30 UTC to Tue/Fri 06:00 UTC — a full 24 h after the backend run
+instead of 90 min. On 2026-08-17 GitHub started the backend cron 67 min late,
+which is enough to make the site read a `main` whose time-series PR has not
+landed yet.
+
+**Correction (2026-09-06):** the "Pending" note this paragraph used to carry
+was already stale. The change was merged into the site's `main` as PR #13
+(`01564f6`), and the Earthdata transient-skip fix as PR #14 (`b9b8120`), both
+by squash merge — which is why the source branches `fix/site-cron-24h` and
+`fix/earthdata-transient-skip` still read as unmerged by ancestry and why a
+reader checking them, or the older `codex/workspace-consolidation` branch,
+sees the pre-#13 cron. The site has been running Tue/Fri 06:00 UTC since. The
+workspace `AGENTS.md` was correct; this file was not.
+
+The episode is worth keeping because it is the same failure mode one level up:
+a claim about someone else's state that nothing re-checks goes stale silently.
+That is exactly why a clock offset cannot be the correctness mechanism — an
+*assumption* about another system's completion fails quietly when it stops
+holding, in the pipeline and in the documentation alike.
+
+Package 2B.1 therefore keeps the schedule and replaces what it was carrying:
+
+- The 24 h gap stays (`0 6 * * 2,5`), now as defence in depth — a comfortable
+  margin — rather than the thing correctness rests on.
+- The correctness mechanism is a **validated release signal**. Every successful
+  backend run writes `data/timeseries/RELEASE.json`
+  (`scripts/write_release_signal.py`) inside the directory the publish step
+  already guards, so it is squash-merged in the same commit as `timeseries.db`
+  and is atomic with it by construction. It records the run identity, the
+  publication time, the latest observation date, and the DB's SHA-256.
+  Before publishing, the site validates that signal
+  (`../site/scripts/check_backend_release.py`): schema, checksum against the
+  `timeseries.db` it actually holds, and publication age. A stale, missing,
+  mismatched or unparseable signal stops the site refresh instead of quietly
+  republishing an old series.
+- The signal is rewritten on every successful run, including runs where the
+  series did not change, so "the backend is healthy but quiet" stays
+  distinguishable from "the backend has been broken for a week".
+
+Package 2B.2 owns the manifest and ledger and absorbs this signal's role; the
+signal is deliberately minimal so the two do not become competing definitions.
 
 ### 6.1 The PR lane worked but still reported failure (fixed 2026-08-24)
 

@@ -18,6 +18,16 @@ permissions:
   contents: write
   pull-requests: write   # the time-series DB reaches `main` via a PR, not a push
 
+# One writer at a time for the blue persistence state (Package 2B.1). This file
+# and `update_data.yml` both read-modify-write the SAME R2 object
+# (`persistence_state.geojson`), so they share ONE group: separate groups would
+# serialize each workflow against itself and still let the two interleave. The
+# lane never cancels — a detection run that is killed mid-flight has already
+# written alerts to R2 and would leave the state behind them.
+concurrency:
+  group: araripe-legacy-state
+  cancel-in-progress: false
+
 jobs:
   detect:
     runs-on: ubuntu-latest
@@ -48,8 +58,10 @@ jobs:
         run: python scripts/fetch_baselines_from_r2.py
 
       - name: Fetch persistence state from R2 (gap-tolerant tracking)
+        # `--require-existing`: see detect_gee.yml — an absent state here is a
+        # deletion or a misconfiguration, never a first run.
         if: env.R2_ENDPOINT_URL != ''
-        run: python scripts/r2_state.py get data/persistence_state.geojson
+        run: python scripts/r2_state.py get data/persistence_state.geojson --require-existing
 
       - name: Run detection pipeline
         env:
@@ -64,6 +76,20 @@ jobs:
       - name: Upload persistence state to R2
         if: success() && env.R2_ENDPOINT_URL != ''
         run: python scripts/r2_state.py put data/persistence_state.geojson
+
+      - name: Write the time-series release signal
+        # Replaces the site's fixed clock offset with something it can validate
+        # (Package 2B.1). Written BEFORE `git add data/timeseries/`, so it rides
+        # the same squash-merged PR as the DB and is atomic with it; the site
+        # refuses to publish unless the DB it holds matches this checksum.
+        #
+        # Deliberate: this runs on EVERY successful run, including runs where
+        # the series did not change, so the file always advances. That is what
+        # makes it a freshness signal — otherwise a broken backend and a quiet
+        # one would look identical to the site. The cost is one small commit
+        # per run. See ROADMAP.md §6.
+        if: success()
+        run: python scripts/write_release_signal.py
 
       - name: Publish time-series DB through a pull request
         # Same lane as detect_gee.yml: the ruleset "Protect main — pull requests

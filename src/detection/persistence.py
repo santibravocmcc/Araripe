@@ -275,6 +275,50 @@ _ST_CONFIRMED = "confirmed"
 _STATE_COLS = ["n_sightings", "first_seen", "last_seen"]
 
 
+class PersistenceStateError(RuntimeError):
+    """The saved track state exists but cannot be trusted.
+
+    Raised instead of starting from zero. The track counters (`n_sightings`,
+    `first_seen`, `last_seen`) are the scientific product, they only ever grow
+    across runs, and nothing downstream can tell a reset apart from a genuine
+    wave of first observations — so an unreadable state must stop the run, not
+    silently become an empty one.
+    """
+
+
+def load_persistence_state(path) -> gpd.GeoDataFrame | None:
+    """Read the track state from ``path``, failing closed.
+
+    Returns ``None`` only when the file is genuinely absent (the first-ever run,
+    which legitimately starts with every alert as a 1ª observação). A file that
+    exists but cannot be parsed, or that parses without the track columns,
+    raises `PersistenceStateError`.
+    """
+    from pathlib import Path
+
+    p = Path(path)
+    if not p.exists():
+        logger.info("Persistência: nenhum estado em {} — primeira execução", p.name)
+        return None
+    try:
+        state = gpd.read_file(str(p))
+    except Exception as e:
+        raise PersistenceStateError(
+            f"não foi possível ler o estado de persistência {p}: {e}"
+        ) from e
+    # An empty state is legitimate (no alert ever seen); geopandas may return it
+    # without any of the track columns, so only a NON-empty frame must carry them.
+    if len(state):
+        missing = [c for c in _STATE_COLS if c not in state.columns]
+        if missing:
+            raise PersistenceStateError(
+                f"estado de persistência {p} sem as colunas {', '.join(missing)} — "
+                "arquivo corrompido ou de outro esquema"
+            )
+    logger.info("Persistência: estado carregado ({} tracks) de {}", len(state), p.name)
+    return state
+
+
 def save_persistence_state(state: gpd.GeoDataFrame, path) -> None:
     """Salva o estado de tracks em GeoJSON compacto (precisão de coordenada
     limitada) — mantém o arquivo pequeno para o CI buscar/enviar a cada run."""

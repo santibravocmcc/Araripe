@@ -33,6 +33,9 @@ dependencies:
   - python-dotenv>=1.0.0
   - tqdm>=4.66.0
   - click>=8.1.0
+  # Já vinha como dependência transitiva do dask; declarado porque
+  # tests/test_workflow_lanes.py lê os workflows do Actions diretamente.
+  - pyyaml>=6.0
   # ─── Testing ─────────────────────────────────────────────────────────────
   - pytest>=8.0.0
   # ─── Pip-only packages (not on conda-forge or newer versions needed) ────
