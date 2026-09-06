@@ -55,6 +55,34 @@ jobs:
           printf '%s' "$GEE_SA_KEY" > "$HOME/ee-key.json"
           echo "GOOGLE_APPLICATION_CREDENTIALS=$HOME/ee-key.json" >> "$GITHUB_ENV"
 
+      - name: Confirm the service account can reach the chosen project
+        env:
+          EE_WATCH_PROJECT: ${{ vars.EE_WATCH_PROJECT || 'ee-araripe-baseline-v2' }}
+        run: |
+          # The detection service account is registered against the production
+          # Earth Engine project. If EE_WATCH_PROJECT names a different one --
+          # the baseline project, say -- the account may have no access there,
+          # and the failure would otherwise surface as an opaque Earth Engine
+          # error. Say plainly what happened and how to fix it.
+          python - <<'PY'
+          import os, sys
+          import ee
+          project = os.environ["EE_WATCH_PROJECT"]
+          try:
+              ee.Initialize(project=project)
+              ee.Number(1).getInfo()
+          except Exception as exc:
+              print(f"::error::the service account in GEE_SA_KEY cannot use Earth "
+                    f"Engine project '{project}': {exc}")
+              print("::error::fix it either by pointing the watch at a project the "
+                    "account already uses -- gh variable set EE_WATCH_PROJECT "
+                    "--body ee-araripe -- or by granting the account access to "
+                    f"'{project}'. The watch is a read-only metadata query, so any "
+                    "Earth Engine enabled project gives the same answer.")
+              sys.exit(1)
+          print(f"service account can use Earth Engine project {project}")
+          PY
+
       - name: Measure the reprocessing progress
         id: check
         env:
