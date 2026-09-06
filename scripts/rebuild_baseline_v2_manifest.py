@@ -93,6 +93,9 @@ def main(
         evidence = json.loads(execution_evidence.read_text(encoding="utf-8"))
         registry_block = evidence["reviewed_processing_baseline_registry"]
         execution_block = evidence["rebuild_execution"]
+        # Package 2A.6C.1: the seasonal source regimes, when the rebuild used
+        # them. Absent, the manifest falls back to the single-policy form.
+        source_regimes = evidence.get("source_regimes")
 
         click.echo(f"auditing 72 rebuilt rasters in {baselines_dir} ...")
         objects = audit_rebuilt_baseline_directory(baselines_dir)
@@ -102,6 +105,7 @@ def main(
             execution_block,
             registry_block=registry_block,
             build_date=build_date,
+            source_regimes=source_regimes,
         )
         target = write_manifest_v2(manifest, output)
     except (BaselineManifestV2Error, KeyError, ValueError, OSError) as exc:
@@ -121,6 +125,12 @@ def main(
     click.echo(
         "observed platforms: " + ", ".join(manifest["observed_platforms"])
     )
+    for regime in manifest["source_regimes"]:
+        click.echo(
+            f"source regime {regime['regime_id']}: months {regime['months']}, "
+            f"cloud <{regime['scene_cloud_filter_percent']}, "
+            f"provenance {regime['provenance_state']}"
+        )
 
 
 if __name__ == "__main__":

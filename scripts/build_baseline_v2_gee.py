@@ -43,7 +43,8 @@ Two Earth Engine behaviours are corrected here rather than inherited:
 
 Phases (each resumable; state in the evidence directory):
 
-    counts    Phase 1 (resumed) — per-scene valid-pixel counts under the v2 mask
+    enumerate Phase 1 (metadata) — enumerate source scenes regime by regime
+    counts    Phase 1 (counts) — per-scene valid-pixel counts under the v2 mask
     export    Phase 2 — plans, reconciliation, monthly statistics, 12 exports
     tasks     poll the export tasks
     fetch     Phase 3 — download one monthly export from the v2 Drive folder
@@ -81,8 +82,14 @@ from src.detection.baseline_manifest_v2 import (  # noqa: E402
     require_baseline_v1_untouched,
 )
 from src.detection.identity_v3 import create_acquisition_v3  # noqa: E402
-from src.processing.composition_v2 import COMPOSITION_METHOD_ID  # noqa: E402
-from src.processing.scl_mask_v2 import SCL_ACCEPTED_CLASSES  # noqa: E402
+from src.processing.composition_v2 import (  # noqa: E402
+    COMPOSITION_METHOD_ID,
+    normalize_platform,
+)
+from src.processing.scl_mask_v2 import (  # noqa: E402
+    SCL_ACCEPTED_CLASSES,
+    normalize_processing_baseline_value,
+)
 from src.processing.baseline_rebuild_v2 import (  # noqa: E402
     BASELINE_V2_DRIVE_FOLDER,
     BASELINE_V2_EXPORT_PREFIX,
@@ -97,17 +104,27 @@ from src.processing.baseline_rebuild_v2 import (  # noqa: E402
     baseline_query_fingerprint,
     build_baseline_rebuild_plan,
     build_rebuild_gee_plan,
-    load_baseline_rebuild_registry,
+    load_source_regimes,
     month_export_filename,
+    regime_for_month,
     run_manifest_binding_from_plan,
+    union_registry,
 )
 
 PROJECT_ID = "ee-araripe-baseline-v2"
-REVIEW_PATH = Path("config/phase2a6c_baseline_processing_baseline_review_v1.json")
-PHASE1_PATH = Path(
-    "docs/implementation/PHASE_2A6C_PHASE1_BASELINE_GATE_2026-09-05.json"
-)
 STATE_PATH = BASELINE_V2_COUNTS_LOCAL_DIR.parent / "rebuild_state.json"
+ENUMERATION_PATH = (
+    BASELINE_V2_COUNTS_LOCAL_DIR.parent / "source_enumeration.json"
+)
+SCENE_PROPERTIES = (
+    "system:index",
+    "PRODUCT_ID",
+    "DATATAKE_IDENTIFIER",
+    "SPACECRAFT_NAME",
+    "PROCESSING_BASELINE",
+    "MGRS_TILE",
+    "CLOUDY_PIXEL_PERCENTAGE",
+)
 
 
 class ExecutorError(click.ClickException):
@@ -140,12 +157,23 @@ def _save_state(state: dict) -> None:
     tmp.replace(STATE_PATH)
 
 
-def _effective_registry():
-    return load_baseline_rebuild_registry(REVIEW_PATH)
+def _regimes():
+    """The accepted seasonal source regimes (Package 2A.6C.1)."""
+
+    return load_source_regimes()
 
 
-def _admitted_datatakes(registry) -> list[dict]:
-    """Return the datatakes every one of whose scenes is reviewed.
+def _load_enumeration() -> dict:
+    if not ENUMERATION_PATH.exists():
+        raise ExecutorError(
+            f"no source enumeration at {ENUMERATION_PATH}; run the enumerate "
+            "phase first"
+        )
+    return json.loads(ENUMERATION_PATH.read_text(encoding="utf-8"))
+
+
+def _admitted_datatakes(regimes) -> list[dict]:
+    """Datatakes whose every scene is reviewed **by its own month's regime**.
 
     A datatake that mixes admitted and rejected baselines fails closed: the
     composition is scoped to one physical datatake and the mask is undefined
@@ -153,20 +181,21 @@ def _admitted_datatakes(registry) -> list[dict]:
     smaller valid input — it is an invalid one.
     """
 
-    effective = set(registry.effective_values)
-    enumeration = json.loads(PHASE1_PATH.read_text(encoding="utf-8"))
+    enumeration = _load_enumeration()
     admitted, mixed = [], []
     for entry in enumeration["datatakes"]:
+        regime = regime_for_month(regimes, entry["month"])
+        effective = set(regime.registry.effective_values)
         observed = set(entry["observed_processing_baselines"])
         if observed <= effective:
-            admitted.append(entry)
+            admitted.append({**entry, "source_regime": regime.regime_id})
         elif observed & effective:
             mixed.append(entry)
     if mixed:
         raise ExecutorError(
             f"{len(mixed)} datatake(s) mix reviewed and unreviewed processing "
-            "baselines; the datatake-scoped composition cannot admit a subset "
-            "of one physical acquisition"
+            "baselines under their own month's regime; the datatake-scoped "
+            "composition cannot admit a subset of one physical acquisition"
         )
     admitted.sort(key=lambda e: (e["acquisition_timestamp_utc"], e["datatake_id"]))
     return admitted
@@ -255,6 +284,130 @@ def cli() -> None:
     """Earth Engine executor for the baseline 2.0.0 rebuild."""
 
 
+@cli.command("enumerate")
+def enumerate_cmd() -> None:
+    """Phase 1 (metadata): enumerate the source scenes regime by regime.
+
+    Each regime is queried with **its own** scene cloud filter, so the wet
+    season is enumerated at its filter and the dry season at the accepted
+    default. The result is the input to every later phase.
+    """
+
+    ee = _init_ee()
+    regimes = _regimes()
+    aoi = _region(ee)
+    records: list[dict] = []
+    for regime in regimes:
+        click.echo(
+            f"regime {regime.regime_id}: months {list(regime.months)}, "
+            f"cloud <{regime.scene_cloud_filter_percent}"
+        )
+        for year in BASELINE_SOURCE_YEARS:
+            for month in regime.months:
+                start = ee.Date.fromYMD(year, month, 1)
+                collection = (
+                    ee.ImageCollection(GEE_COLLECTION_ID)
+                    .filterBounds(aoi)
+                    .filterDate(start, start.advance(1, "month"))
+                    .filter(
+                        ee.Filter.lt(
+                            "CLOUDY_PIXEL_PERCENTAGE",
+                            regime.scene_cloud_filter_percent,
+                        )
+                    )
+                )
+                rows = _retry(
+                    lambda c=collection: c.reduceColumns(
+                        ee.Reducer.toList(len(SCENE_PROPERTIES), 1),
+                        list(SCENE_PROPERTIES),
+                    ).getInfo().get("list", []),
+                    label=f"enumerate {year}-{month:02d}",
+                )
+                for row in rows:
+                    record = dict(zip(SCENE_PROPERTIES, row))
+                    record["year"] = year
+                    record["month"] = month
+                    record["source_regime"] = regime.regime_id
+                    records.append(record)
+            click.echo(f"  {year}: {sum(1 for r in records if r['year'] == year)} scenes")
+
+    # Group into physical datatakes. The acquisition timestamp is the datatake
+    # instant embedded in the identifier, never system:time_start, which is the
+    # per-granule instant and disagrees with it for every scene.
+    grouped: dict[tuple[str, str], list[dict]] = {}
+    for record in records:
+        platform = normalize_platform(record["SPACECRAFT_NAME"])
+        grouped.setdefault((platform, record["DATATAKE_IDENTIFIER"]), []).append(record)
+
+    datatakes = []
+    for (platform, datatake_id), rows in sorted(grouped.items(), key=lambda kv: kv[0][1]):
+        instant = datetime.strptime(
+            datatake_id.split("_")[1], "%Y%m%dT%H%M%S"
+        ).replace(tzinfo=timezone.utc)
+        baselines = sorted(
+            {
+                normalize_processing_baseline_value(
+                    row["PROCESSING_BASELINE"],
+                    source_field="GEE PROCESSING_BASELINE",
+                )
+                for row in rows
+            }
+        )
+        datatakes.append(
+            {
+                "platform": platform,
+                "datatake_id": datatake_id,
+                "acquisition_timestamp_utc": instant.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "year": instant.year,
+                "month": instant.month,
+                "source_regime": rows[0]["source_regime"],
+                "scene_count": len(rows),
+                "observed_processing_baselines": baselines,
+                "scenes": [
+                    {
+                        "scene_id": row["system:index"],
+                        "product_id": row["PRODUCT_ID"],
+                        "processing_baseline": normalize_processing_baseline_value(
+                            row["PROCESSING_BASELINE"],
+                            source_field="GEE PROCESSING_BASELINE",
+                        ),
+                        "mgrs_tile": row["MGRS_TILE"],
+                        "cloudy_pixel_percentage": row["CLOUDY_PIXEL_PERCENTAGE"],
+                    }
+                    for row in sorted(
+                        rows, key=lambda r: r["system:index"].encode("utf-8")
+                    )
+                ],
+            }
+        )
+
+    document = {
+        "enumeration_version": "phase2a6c1-source-enumeration-v1",
+        "collection_id": GEE_COLLECTION_ID,
+        "years": list(BASELINE_SOURCE_YEARS),
+        "monitoring_extent_id": MONITORING_EXTENT_ID,
+        "source_regimes": [regime.regime_dict() for regime in regimes],
+        "totals": {
+            "scene_count": len(records),
+            "datatake_count": len(datatakes),
+        },
+        "datatakes": datatakes,
+    }
+    ENUMERATION_PATH.parent.mkdir(parents=True, exist_ok=True)
+    ENUMERATION_PATH.write_text(
+        json.dumps(document, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    click.echo(
+        f"\n{len(records)} scenes / {len(datatakes)} datatakes -> {ENUMERATION_PATH}"
+    )
+    admitted = _admitted_datatakes(regimes)
+    click.echo(
+        f"admitted under their own regime: {len(admitted)} datatakes / "
+        f"{sum(e['scene_count'] for e in admitted)} scenes"
+    )
+
+
 @cli.command("counts")
 @click.option("--workers", default=6, show_default=True, type=int)
 @click.option("--limit", default=0, type=int, help="Stop after N datatakes (0 = all).")
@@ -262,9 +415,14 @@ def counts_cmd(workers: int, limit: int) -> None:
     """Phase 1 (resumed): per-scene valid-pixel counts under the v2 mask."""
 
     ee = _init_ee()
-    registry = _effective_registry()
-    click.echo(f"effective reviewed registry: {list(registry.effective_values)}")
-    admitted = _admitted_datatakes(registry)
+    regimes = _regimes()
+    for regime in regimes:
+        click.echo(
+            f"regime {regime.regime_id}: months {list(regime.months)} "
+            f"cloud <{regime.scene_cloud_filter_percent} "
+            f"registry {list(regime.registry.effective_values)}"
+        )
+    admitted = _admitted_datatakes(regimes)
     state = _load_state()
     todo = [e for e in admitted if e["datatake_id"] not in state["scene_counts"]]
     if limit:
@@ -503,13 +661,18 @@ def export_cmd(months: str, workers: int, dry_run: bool) -> None:
     v1 = require_baseline_v1_untouched()
     click.echo(f"baseline 1.0.0 verified untouched ({v1})")
 
-    registry = _effective_registry()
-    plan = build_baseline_rebuild_plan(registry=registry)
+    regimes = _regimes()
+    plan = build_baseline_rebuild_plan(regimes=regimes)
     run_manifest_id, plan_sha256 = run_manifest_binding_from_plan(plan)
     click.echo(f"rebuild plan {plan_sha256}")
     click.echo(f"run manifest {run_manifest_id}")
+    for regime in regimes:
+        click.echo(
+            f"  regime {regime.regime_id}: months {list(regime.months)} "
+            f"cloud <{regime.scene_cloud_filter_percent}"
+        )
 
-    admitted = _admitted_datatakes(registry)
+    admitted = _admitted_datatakes(regimes)
     state = _load_state()
     missing = [
         e["datatake_id"] for e in admitted
@@ -565,6 +728,9 @@ def export_cmd(months: str, workers: int, dry_run: bool) -> None:
                 grid_id=BASELINE_V2_GRID_ID,
             )
             state["datatakes"][entry["datatake_id"]] = {
+                "source_regime": regime_for_month(
+                    regimes, entry["month"]
+                ).regime_id,
                 "acquisition_id": acquisition.acquisition_id,
                 "platform": entry["platform"],
                 "datatake_id": entry["datatake_id"],
@@ -743,7 +909,7 @@ def fetch_cmd(month: int, out_dir: Path) -> None:
                 f"'{folder['id']}' in parents and name contains '{prefix}' "
                 "and trashed=false"
             ),
-            fields="files(id,name,size)",
+            fields="files(id,name,size,createdTime)",
         ).execute().get("files", []):
             if item["name"].startswith(prefix):
                 found.append({**item, "folder_id": folder["id"]})
@@ -751,13 +917,34 @@ def fetch_cmd(month: int, out_dir: Path) -> None:
         raise ExecutorError(
             f"no export named {prefix}* in {BASELINE_V2_DRIVE_FOLDER}"
         )
+    # A re-export leaves the superseded file in Drive under the same canonical
+    # name. Which one to take is not a tiebreak to guess: the answer is the
+    # file produced by the export task this run recorded, so candidates are
+    # bound to that task by its start time. A month with no recorded task, or
+    # more than one file after it, still fails closed.
     if len(found) > 1:
-        raise ExecutorError(
-            f"month {month:02d} resolved to {len(found)} Drive files "
-            f"({[f['name'] for f in found]}); Earth Engine sharded the export "
-            "or a duplicate exists, and the canonical single-file split "
-            "contract accepts neither"
+        record = _load_state()["tasks"].get(str(month))
+        if record is None or not record.get("started_utc"):
+            raise ExecutorError(
+                f"month {month:02d} resolved to {len(found)} Drive files and "
+                "no export task is recorded to disambiguate them"
+            )
+        started = record["started_utc"]
+        fresh = [
+            item for item in found if item.get("createdTime", "") >= started
+        ]
+        if len(fresh) != 1:
+            raise ExecutorError(
+                f"month {month:02d} resolved to {len(found)} Drive files, of "
+                f"which {len(fresh)} were created after its recorded export "
+                f"task started ({started}); exactly one is required"
+            )
+        superseded = [item for item in found if item not in fresh]
+        click.echo(
+            f"note: {len(superseded)} superseded Drive file(s) for month "
+            f"{month:02d} left untouched"
         )
+        found = fresh
     entry = found[0]
     if entry["name"] != canonical:
         raise ExecutorError(
@@ -816,8 +1003,8 @@ def evidence_cmd(output: Path) -> None:
         contribution_count_filename,
     )
 
-    registry = _effective_registry()
-    plan = build_baseline_rebuild_plan(registry=registry)
+    regimes = _regimes()
+    plan = build_baseline_rebuild_plan(regimes=regimes)
     run_manifest_id, plan_sha256 = run_manifest_binding_from_plan(plan)
     state = _load_state()
 
@@ -909,12 +1096,16 @@ def evidence_cmd(output: Path) -> None:
                 {s["processing_baseline"] for d in datatakes for s in d["scenes"]}
             ),
             "observed_platforms": sorted({d["platform"] for d in datatakes}),
-            "reviewed_processing_baseline_registry": registry.registry_dict(),
+            "source_regime": regime_for_month(regimes, month).regime_id,
+            "reviewed_processing_baseline_registry": (
+                regime_for_month(regimes, month).registry.registry_dict()
+            ),
             "arrays": arrays,
         }
         months.append(
             {
                 "month": month,
+                "source_regime": regime_for_month(regimes, month).regime_id,
                 "gee_task_id": state["tasks"][key]["task_id"],
                 "export_file": split["export_file"],
                 "month_evidence_sha256": canonical_sha256(body),
@@ -924,7 +1115,10 @@ def evidence_cmd(output: Path) -> None:
         )
 
     document = {
-        "reviewed_processing_baseline_registry": registry.registry_dict(),
+        "reviewed_processing_baseline_registry": union_registry(
+            regimes
+        ).registry_dict(),
+        "source_regimes": [regime.regime_dict() for regime in regimes],
         "rebuild_execution": {
             "rebuild_plan_version": plan["rebuild_plan_version"],
             "rebuild_plan_sha256": plan_sha256,
@@ -933,7 +1127,7 @@ def evidence_cmd(output: Path) -> None:
             "earth_engine": {
                 "project_id": PROJECT_ID,
                 "image_collection_id": GEE_COLLECTION_ID,
-                "query_fingerprint_sha256": baseline_query_fingerprint(),
+                "query_fingerprint_sha256": baseline_query_fingerprint(regimes),
                 "drive_folder": BASELINE_V2_DRIVE_FOLDER,
                 "file_name_prefix": BASELINE_V2_EXPORT_PREFIX,
             },
