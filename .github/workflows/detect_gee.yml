@@ -42,6 +42,16 @@ permissions:
   contents: write
   pull-requests: write   # the time-series DB reaches `main` via a PR, not a push
 
+# One writer at a time for the blue persistence state (Package 2B.1). This file
+# and `update_data.yml` both read-modify-write the SAME R2 object
+# (`persistence_state.geojson`), so they share ONE group: separate groups would
+# serialize each workflow against itself and still let the two interleave. The
+# lane never cancels — a detection run that is killed mid-flight has already
+# written alerts to R2 and would leave the state behind them.
+concurrency:
+  group: araripe-legacy-state
+  cancel-in-progress: false
+
 jobs:
   detect-gee:
     runs-on: ubuntu-latest
@@ -80,9 +90,12 @@ jobs:
       - name: Fetch persistence state from R2 (gap-tolerant tracking)
         # The gap-tolerant persistence chains alerts across runs via a running
         # track state (n_sightings, first/last_seen) instead of re-reading recent
-        # alert files. First run: no state yet -> starts fresh (all 1ª observação).
+        # alert files. `--require-existing` because this deployment's state DOES
+        # exist: after 2B.1 an absent object is a deletion or a wrong
+        # bucket/endpoint, not a first run, and starting fresh would silently
+        # reset every track. Drop the flag only to bootstrap a new deployment.
         if: env.R2_ENDPOINT_URL != ''
-        run: python scripts/r2_state.py get data/persistence_state.geojson
+        run: python scripts/r2_state.py get data/persistence_state.geojson --require-existing
 
       - name: Run GEE detection
         env:
