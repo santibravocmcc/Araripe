@@ -32,6 +32,7 @@ Usage:
 from __future__ import annotations
 
 import json
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -43,6 +44,41 @@ WATCH_QUERY_PATH = (
     / "config"
     / "esa_reprocessing_watch_query_v1.json"
 )
+
+
+def _ee_initialize(project: str) -> None:
+    """Initialize Earth Engine, preferring a service-account key.
+
+    ``ee.Initialize`` does **not** read ``GOOGLE_APPLICATION_CREDENTIALS``. On a
+    headless runner the credentials must be built explicitly, or Earth Engine
+    reports the misleading "authorize access ... run earthengine authenticate"
+    even though a perfectly good key is present. The precedence mirrors
+    ``ee_initialize`` in ``src/acquisition/gee_download.py``, inlined rather
+    than imported because this script is deliberately standalone (see the
+    module docstring).
+
+      1. ``GEE_SA_KEY``      -- the service-account JSON key *string*.
+      2. ``GEE_SA_KEY_FILE`` -- path to that JSON key file.
+      3. interactive credentials already on the machine (local dev).
+    """
+    import ee
+
+    key_str = os.environ.get("GEE_SA_KEY")
+    key_file = os.environ.get("GEE_SA_KEY_FILE")
+    if key_str:
+        # key_data takes the JSON *string*; the SA email is read from the JSON,
+        # so the email argument is ignored.
+        ee.Initialize(
+            ee.ServiceAccountCredentials(email="", key_data=key_str),
+            project=project,
+        )
+    elif key_file:
+        ee.Initialize(
+            ee.ServiceAccountCredentials(email="", key_file=key_file),
+            project=project,
+        )
+    else:
+        ee.Initialize(project=project)
 
 
 def _load_query(path: Path) -> dict:
@@ -97,7 +133,7 @@ def main(
     def is_collection1(baseline: str) -> bool:
         return str(baseline) >= floor
 
-    ee.Initialize(project=project)
+    _ee_initialize(project)
     aoi = ee.Geometry.Rectangle(
         list(query["monitoring_extent_bounds"]), None, False
     )

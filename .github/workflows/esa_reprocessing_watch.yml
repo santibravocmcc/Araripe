@@ -16,9 +16,12 @@
 # ACTIVATION: GitHub only runs scheduled workflows from the DEFAULT branch, so
 # this file does nothing until it is merged to `main` through the usual pull
 # request. Merging is the owner's decision, as is which credential it uses:
-#   - repository variable  EE_WATCH_PROJECT  (default: ee-araripe-baseline-v2)
+#   - repository variable  EE_WATCH_PROJECT  (default: ee-araripe)
 #   - repository secret    GEE_SA_KEY        (the existing detection secret)
-# The query is light enough that either Earth Engine project can absorb it.
+# The default names the production project because that is the one GEE_SA_KEY's
+# service account is registered against -- the same pair the blue detection lane
+# already runs on. Pointing the watch at the baseline project would also spend
+# that project's restricted-mode quota, which the Phase 2A rebuild needs.
 
 name: ESA reprocessing watch (baseline wet season)
 
@@ -34,6 +37,9 @@ permissions:
 jobs:
   watch:
     runs-on: ubuntu-latest
+    env:
+      GEE_SA_KEY: ${{ secrets.GEE_SA_KEY }}
+      EE_WATCH_PROJECT: ${{ vars.EE_WATCH_PROJECT || 'ee-araripe' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -44,21 +50,50 @@ jobs:
       - name: Install the metadata-query dependencies
         run: pip install --quiet earthengine-api click
 
-      - name: Authenticate to Earth Engine
-        env:
-          GEE_SA_KEY: ${{ secrets.GEE_SA_KEY }}
+      - name: Confirm the service account key is present
         run: |
           if [ -z "$GEE_SA_KEY" ]; then
             echo "::error::GEE_SA_KEY is not set; the watch cannot query Earth Engine"
             exit 1
           fi
-          printf '%s' "$GEE_SA_KEY" > "$HOME/ee-key.json"
-          echo "GOOGLE_APPLICATION_CREDENTIALS=$HOME/ee-key.json" >> "$GITHUB_ENV"
+          echo "GEE_SA_KEY is present"
+
+      - name: Confirm the service account can reach the chosen project
+        run: |
+          # The detection service account is registered against the production
+          # Earth Engine project. If EE_WATCH_PROJECT names a different one --
+          # the baseline project, say -- the account may have no access there,
+          # and the failure would otherwise surface as an opaque Earth Engine
+          # error. Say plainly what happened and how to fix it.
+          python - <<'PY'
+          import os, sys
+          import ee
+          project = os.environ["EE_WATCH_PROJECT"]
+          try:
+              # ee.Initialize does NOT read GOOGLE_APPLICATION_CREDENTIALS; the
+              # service-account credentials must be built explicitly, exactly as
+              # scripts/check_esa_reprocessing.py now does.
+              ee.Initialize(
+                  ee.ServiceAccountCredentials(
+                      email="", key_data=os.environ["GEE_SA_KEY"]
+                  ),
+                  project=project,
+              )
+              ee.Number(1).getInfo()
+          except Exception as exc:
+              print(f"::error::the service account in GEE_SA_KEY cannot use Earth "
+                    f"Engine project '{project}': {exc}")
+              print("::error::fix it either by pointing the watch at a project the "
+                    "account already uses -- gh variable set EE_WATCH_PROJECT "
+                    "--body <project-id> -- or by granting the account access to "
+                    f"'{project}'. The watch is a read-only metadata query, so any "
+                    "Earth Engine enabled project gives the same answer.")
+              sys.exit(1)
+          print(f"service account can use Earth Engine project {project}")
+          PY
 
       - name: Measure the reprocessing progress
         id: check
-        env:
-          EE_WATCH_PROJECT: ${{ vars.EE_WATCH_PROJECT || 'ee-araripe-baseline-v2' }}
         run: |
           set +e
           python scripts/check_esa_reprocessing.py \
