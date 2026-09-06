@@ -100,6 +100,20 @@ jobs:
         if: success() && env.R2_ENDPOINT_URL != ''
         run: python scripts/r2_state.py put data/persistence_state.geojson
 
+      - name: Write the time-series release signal
+        # Replaces the site's fixed clock offset with something it can validate
+        # (Package 2B.1). Written BEFORE `git add data/timeseries/`, so it rides
+        # the same squash-merged PR as the DB and is atomic with it; the site
+        # refuses to publish unless the DB it holds matches this checksum.
+        #
+        # Deliberate: this runs on EVERY successful run, including runs where
+        # the series did not change, so the file always advances. That is what
+        # makes it a freshness signal — otherwise a broken backend and a quiet
+        # one would look identical to the site. The cost is one small commit
+        # per run. See ROADMAP.md §6.
+        if: success()
+        run: python scripts/write_release_signal.py
+
       - name: Publish time-series DB through a pull request
         # `main` is protected by the repository ruleset "Protect main — pull
         # requests only" with an empty bypass list, so github-actions[bot]

@@ -1,0 +1,13 @@
+{
+  "latest_observation": "2026-08-30",
+  "published_utc": "2026-09-06T21:19:12Z",
+  "run_id": null,
+  "run_url": null,
+  "schema": "araripe.timeseries.release/1",
+  "timeseries": {
+    "bytes": 57344,
+    "path": "data/timeseries/timeseries.db",
+    "sha256": "d3a59201b8d5c7716fc05c2ff69b1dfe45614b4a3adf20940dee9de702866c88"
+  },
+  "workflow": null
+}
