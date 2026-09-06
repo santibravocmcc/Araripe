@@ -1,0 +1,93 @@
+# Monthly watch on the ESA Collection-1 reprocessing of the baseline wet season.
+#
+# Package 2A.6C.1 admitted pre-Collection-1 products for calendar months 1-4
+# under the provenance state `mixed_lineage_pending_esa_reprocessing`, with a
+# retirement condition: when ESA finishes reprocessing those months, the wet
+# season should be rebuilt on the Collection-1 lineage alone.
+#
+# This workflow measures that progress once a month and opens (or updates) a
+# GitHub issue when the threshold is crossed, which is what delivers the email
+# notification -- GitHub mails issue activity to the repository watchers.
+#
+# READ-ONLY. It queries Earth Engine scene *metadata* only: no pixels, no
+# export, no R2 write, no publication, and it never touches baseline 1.0.0,
+# the blue detection lane, or any production artifact.
+#
+# ACTIVATION: GitHub only runs scheduled workflows from the DEFAULT branch, so
+# this file does nothing until it is merged to `main` through the usual pull
+# request. Merging is the owner's decision, as is which credential it uses:
+#   - repository variable  EE_WATCH_PROJECT  (default: ee-araripe-baseline-v2)
+#   - repository secret    GEE_SA_KEY        (the existing detection secret)
+# The query is light enough that either Earth Engine project can absorb it.
+
+name: ESA reprocessing watch (baseline wet season)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 7 1 * *'   # 07:00 UTC on the 1st of each month
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install the metadata-query dependencies
+        run: pip install --quiet earthengine-api click
+
+      - name: Authenticate to Earth Engine
+        env:
+          GEE_SA_KEY: ${{ secrets.GEE_SA_KEY }}
+        run: |
+          if [ -z "$GEE_SA_KEY" ]; then
+            echo "::error::GEE_SA_KEY is not set; the watch cannot query Earth Engine"
+            exit 1
+          fi
+          printf '%s' "$GEE_SA_KEY" > "$HOME/ee-key.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$HOME/ee-key.json" >> "$GITHUB_ENV"
+
+      - name: Measure the reprocessing progress
+        id: check
+        env:
+          EE_WATCH_PROJECT: ${{ vars.EE_WATCH_PROJECT || 'ee-araripe-baseline-v2' }}
+        run: |
+          set +e
+          python scripts/check_esa_reprocessing.py \
+            --project "$EE_WATCH_PROJECT" \
+            --json-out esa_progress.json | tee progress.txt
+          status=${PIPESTATUS[0]}
+          set -e
+          echo "ready=$([ "$status" -eq 9 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          if [ "$status" -ne 0 ] && [ "$status" -ne 9 ]; then exit "$status"; fi
+
+      - name: Always keep the progress report as an artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: esa-reprocessing-progress
+          path: |
+            esa_progress.json
+            progress.txt
+
+      - name: Notify when the wet season is ready to rebuild
+        if: steps.check.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          title="Baseline 2.0.0: the wet season is ready to rebuild on Collection-1"
+          existing=$(gh issue list --state open --search "$title" --json number \
+                       --jq '.[0].number // empty')
+          body=$'ESA has now reprocessed the baseline wet season onto the Collection-1 lineage past the readiness threshold.\n\n```\n'"$(cat progress.txt)"$'\n```\n\nThis retires the `mixed_lineage_pending_esa_reprocessing` provenance state recorded in `config/baseline_manifest_v2.json`.\n\nTo rebuild, follow `docs/operations/WET_SEASON_REBUILD_PROMPT.md` — it contains the complete, self-contained prompt.\n\n(Opened automatically by `.github/workflows/esa_reprocessing_watch.yml`. Read-only check; nothing was rebuilt or published.)'
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create --title "$title" --body "$body"
+          fi
