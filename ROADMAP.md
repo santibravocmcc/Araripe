@@ -813,11 +813,11 @@ Package 2B.0 closed 2026-08-13 on `main`. The scientific branch has since
 closed Packages 2A.6A (v2 contracts), 2A.6B (SCL mask and datatake
 composition), 2A.6B.1 (Sentinel-2C v3 amendment), 2A.6C (baseline 2.0.0
 rebuild) and 2A.6C.1 (seasonal source regimes, which produced
-`config/baseline_manifest_v2.json`). The next scientific implementation prompt
-should start **Package 2A.6D** from the final commit of
-`claude/phase2a6c-baseline`; publication work continues separately with one
-bounded Package 2B.1 change. Both Phase 2A.6 and Phase 2B must close before
-Phase 3.
+`config/baseline_manifest_v2.json`). Package 2A.6D closed 2026-09-06 on
+`claude/phase2a6d-mapbiomas`, closing the Package 2A.6 implementation gate
+against exit gate P2A. The next scientific work is Phase 2B (continuing with
+one bounded Package 2B.1 change); both Phase 2A.6 and Phase 2B must close
+before Phase 3, and Phase 2A.6 now has.
 
 Two constraints carry into 2A.6D. The Earth Engine project
 `ee-araripe-baseline-v2` entered noncommercial **restricted mode** during the

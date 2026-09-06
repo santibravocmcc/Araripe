@@ -12,13 +12,22 @@ from config.settings import (
     DELTA_THRESHOLD_MEDIUM,
     DNBR_HIGH_SEVERITY,
     DNBR_LOW_SEVERITY,
-    DROUGHT_Z_ADJUSTMENT,
     NBR_POST_FIRE_THRESHOLD,
-    SPI_DROUGHT_THRESHOLD,
     Z_THRESHOLD_HIGH,
     Z_THRESHOLD_LOW,
     Z_THRESHOLD_MEDIUM,
 )
+
+# The accepted candidate-generation policy is drought-disabled-v1
+# (config/phase2a_candidate_generation_decisions_v2.json): activation must be
+# INACCESSIBLE at every candidate entrypoint, not merely unused. Any non-None
+# SPI therefore fails closed here. A future CHIRPS v3 contextual analysis
+# belongs to Phase 5 evidence and may never suppress a raw detection.
+DROUGHT_POLICY_ID = "drought-disabled-v1"
+
+
+class DroughtAdjustmentDisabledError(RuntimeError):
+    """Raised when a caller tries to reach the disabled drought adjustment."""
 from src.detection.baseline import compute_delta, compute_zscore
 from src.detection.scene_quality import finite_source_reference_mask
 
@@ -42,9 +51,11 @@ def detect_deforestation(
         Monthly baseline means keyed by index name.
     baseline_stds : dict[str, xr.DataArray]
         Monthly baseline stds keyed by index name.
-    spi_3month : float, optional
-        3-month Standardized Precipitation Index. When < -1.0, thresholds
-        are widened to reduce false positives during drought.
+    spi_3month : None
+        Retained for signature compatibility only. The accepted policy is
+        ``drought-disabled-v1``: passing anything but ``None`` raises
+        :class:`DroughtAdjustmentDisabledError`, so the drought adjustment is
+        unreachable rather than dormant.
 
     Returns
     -------
@@ -55,19 +66,16 @@ def detect_deforestation(
         - confidence: 0 (none), 1 (low), 2 (medium), 3 (high)
         - is_alert: boolean mask of any detection
     """
-    # Adjust thresholds during drought
-    z_adj = 0.0
-    if spi_3month is not None and spi_3month < SPI_DROUGHT_THRESHOLD:
-        z_adj = DROUGHT_Z_ADJUSTMENT
-        logger.warning(
-            "Drought detected (SPI={:.2f}), widening z-thresholds by {:.1f}σ",
-            spi_3month,
-            z_adj,
+    if spi_3month is not None:
+        raise DroughtAdjustmentDisabledError(
+            f"the accepted candidate policy is {DROUGHT_POLICY_ID}: the "
+            "drought threshold adjustment is locked out of every candidate "
+            "entrypoint and cannot be activated by argument"
         )
 
-    z_high = Z_THRESHOLD_HIGH - z_adj
-    z_med = Z_THRESHOLD_MEDIUM - z_adj
-    z_low = Z_THRESHOLD_LOW - z_adj
+    z_high = Z_THRESHOLD_HIGH
+    z_med = Z_THRESHOLD_MEDIUM
+    z_low = Z_THRESHOLD_LOW
 
     results = {}
     z_flags = {}
