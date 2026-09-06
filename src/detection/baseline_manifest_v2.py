@@ -111,19 +111,26 @@ BASELINE_ID = "araripe-s2-sr-harmonized-monthly"
 BASELINE_V2_STATUS = "rebuilt_candidate_generation"
 # Completely disjoint from the immutable v1 prefix ``baselines/`` so no v1
 # listing, fetch, or object key can ever collide with a v2 object.
-BASELINE_V2_KEY_PREFIX = "baselines_v2/2.0.0/"
+BASELINE_V2_KEY_PREFIX = "baselines_v2/2.1.0/"
 BASELINE_V1_KEY_PREFIX = "baselines/"
-BASELINE_V2_LOCAL_DIR = DATA_DIR / "baselines_v2" / "2.0.0"
+BASELINE_V2_LOCAL_DIR = DATA_DIR / "baselines_v2" / "2.1.0"
 # Contribution-depth rasters live OUTSIDE the audited directory: the auditor
 # requires that directory to hold exactly the canonical 72 rasters.
 BASELINE_V2_COUNTS_LOCAL_DIR = (
-    DATA_DIR / "baselines_v2" / "2.0.0_evidence" / "counts"
+    DATA_DIR / "baselines_v2" / "2.1.0_evidence" / "counts"
 )
 # Downloaded monthly exports are transient and are deleted as the rebuild
 # advances; they never share a directory with either baseline generation.
 BASELINE_V2_EXPORTS_LOCAL_DIR = DATA_DIR / "baselines_v2" / "exports"
 BASELINE_V2_SPLIT_EVIDENCE_FILENAME = "contribution_counts.json"
-BASELINE_V2_MANIFEST_PATH = ROOT_DIR / "config" / "baseline_manifest_v2.json"
+# Baseline manifests are immutable once written, so 2.1.0 gets its own path
+# and config/baseline_manifest_v2.json stays as the 2.0.0 record.
+BASELINE_V2_MANIFEST_PATH = (
+    ROOT_DIR / "config" / "baseline_manifest_v2_1.json"
+)
+BASELINE_V2_SUPERSEDED_MANIFEST_PATH = (
+    ROOT_DIR / "config" / "baseline_manifest_v2.json"
+)
 
 EXPECTED_OBJECT_COUNT = 72
 MIN_EXTENT_COVERAGE = 0.99

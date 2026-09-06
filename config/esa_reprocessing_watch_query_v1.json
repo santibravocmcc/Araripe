@@ -1,0 +1,39 @@
+{
+  "collection1_processing_baseline_floor": "05.",
+  "config_id": "araripe-esa-reprocessing-watch-query-v1",
+  "default_ready_fraction": 0.9,
+  "derived_from": {
+    "provenance_state": "mixed_lineage_pending_esa_reprocessing",
+    "regime_id": "wet-season-mixed-lineage-v1",
+    "seasonal_source_regime_amendment": {
+      "path": "config/phase2a6c1_seasonal_source_regime_amendment_v2.json",
+      "sha256": "717d0726a7d87606e0fa899b0ae37ac1c24b5ccdefac6b981c5075eaa47bf026"
+    }
+  },
+  "purpose": "Standalone query parameters for scripts/check_esa_reprocessing.py, so the monthly watch can run from the default branch without importing the Phase 2A rebuild machinery. Every value is derived from the accepted regime contract below and is verified against it by tests/test_esa_watch_query_config.py on the science branch, so this file cannot drift silently.",
+  "query": {
+    "collection_id": "COPERNICUS/S2_SR_HARMONIZED",
+    "monitoring_extent_bounds": [
+      -40.89236812577142,
+      -7.840780758480428,
+      -38.95208146319247,
+      -6.957104781339829
+    ],
+    "monitoring_extent_id": "araripe-implementation-rectangle-v1",
+    "months": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "scene_cloud_filter_percent": 60,
+    "source_years": [
+      2017,
+      2019,
+      2021,
+      2022,
+      2025
+    ]
+  },
+  "schema_version": "1.0.0"
+}

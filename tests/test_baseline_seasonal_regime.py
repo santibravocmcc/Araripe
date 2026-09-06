@@ -66,12 +66,13 @@ def test_accepted_amendment_matches_its_pinned_checksum():
     assert digest == AMENDMENT_REGIME_V1_SHA256
 
 
-def test_accepted_amendment_declares_two_partitioning_regimes():
+def test_accepted_amendment_declares_three_partitioning_regimes():
     regimes = load_source_regimes()
-    assert [r.regime_id for r in regimes] == [
+    assert {r.regime_id for r in regimes} == {
         "wet-season-mixed-lineage-v1",
+        "shoulder-season-collection1-v1",
         "dry-season-collection1-v1",
-    ]
+    }
     assert sorted(m for r in regimes for m in r.months) == list(range(1, 13))
 
 
@@ -96,10 +97,43 @@ def test_month_resolution_follows_the_declared_months():
     regimes = load_source_regimes()
     for month in (1, 2, 3, 4):
         assert regime_for_month(regimes, month).regime_id == "wet-season-mixed-lineage-v1"
-    for month in (5, 8, 12):
+    for month in (5, 12):
+        assert regime_for_month(regimes, month).regime_id == (
+            "shoulder-season-collection1-v1"
+        )
+    for month in (6, 8, 11):
         assert regime_for_month(regimes, month).regime_id == "dry-season-collection1-v1"
     with pytest.raises(BaselineRebuildError):
         regime_for_month(regimes, 13)
+
+
+def test_shoulder_regime_buys_depth_without_a_reproducibility_cost():
+    """The shoulder months needed a looser filter, not a wider registry.
+
+    May and December were the shallowest months of baseline 2.0.0. Measurement
+    showed a cloud filter of 60 recovers most of that depth while every
+    admitted product stays on the Collection-1 lineage -- so the regime differs
+    from the dry season *only* by its filter, and its provenance state says so.
+    """
+    regimes = {r.regime_id: r for r in load_source_regimes()}
+    shoulder = regimes["shoulder-season-collection1-v1"]
+    dry = regimes["dry-season-collection1-v1"]
+    wet = regimes["wet-season-mixed-lineage-v1"]
+
+    assert shoulder.months == (5, 12)
+    assert shoulder.provenance_state == "collection1_lineage_stable"
+    # Same admissions as the dry season; only the filter differs.
+    assert shoulder.registry.effective_values == dry.registry.effective_values
+    assert shoulder.scene_cloud_filter_percent == 60
+    assert dry.scene_cloud_filter_percent == 40
+    # And it must not have inherited the wet season's mixed-lineage admissions.
+    wet_only = set(wet.registry.effective_values) - set(dry.registry.effective_values)
+    assert wet_only and not (wet_only & set(shoulder.registry.effective_values))
+
+
+def test_dry_season_keeps_only_the_months_that_gain_nothing_from_a_looser_filter():
+    regimes = {r.regime_id: r for r in load_source_regimes()}
+    assert regimes["dry-season-collection1-v1"].months == (6, 7, 8, 9, 10, 11)
 
 
 # ─── the partition property ──────────────────────────────────────────────────

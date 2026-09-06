@@ -90,7 +90,11 @@ from src.processing.scl_mask_v2 import (
 
 BASELINE_REBUILD_PLAN_VERSION = "phase2a6c-baseline-rebuild-plan-v1"
 BASELINE_REBUILD_MONTH_EVIDENCE_VERSION = "phase2a6c-baseline-month-evidence-v1"
-BASELINE_V2_VERSION = "2.0.0"
+# Baseline 2.1.0 supersedes 2.0.0: amendment v2 moved May and December to a
+# shoulder regime, so two months of pixels differ. The version changes because
+# a result computed against "the v2 baseline" must mean exactly one thing.
+BASELINE_V2_VERSION = "2.1.0"
+BASELINE_V2_SUPERSEDED_VERSION = "2.0.0"
 BASELINE_V1_VERSION = "1.0.0"
 # Exact bytes of the accepted, immutable baseline 1.0.0 identity.
 BASELINE_V1_MANIFEST_SHA256 = (
@@ -114,9 +118,16 @@ AMENDMENT_V3_SHA256 = (
 # admitted on different terms from the dry season *explicitly* instead of the
 # whole year being widened silently.
 AMENDMENT_REGIME_V1_PATH = (
-    "config/phase2a6c1_seasonal_source_regime_amendment_v1.json"
+    "config/phase2a6c1_seasonal_source_regime_amendment_v2.json"
 )
 AMENDMENT_REGIME_V1_SHA256 = (
+    "717d0726a7d87606e0fa899b0ae37ac1c24b5ccdefac6b981c5075eaa47bf026"
+)
+# The v1 amendment produced baseline 2.0.0 and is retained as audit material.
+AMENDMENT_REGIME_SUPERSEDED_PATH = (
+    "config/phase2a6c1_seasonal_source_regime_amendment_v1.json"
+)
+AMENDMENT_REGIME_SUPERSEDED_SHA256 = (
     "2bde0d223f7e5192d35961f0a616eb54eb97b39d901189cb0ce0e59c392d8deb"
 )
 SOURCE_REGIME_CONTRACT_ID = "araripe-baseline-source-regime-v1"

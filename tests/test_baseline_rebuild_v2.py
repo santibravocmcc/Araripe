@@ -18,6 +18,7 @@ import pytest
 
 from src.detection.identity_v3 import create_acquisition_v3
 from src.processing.baseline_rebuild_v2 import (
+    BASELINE_V2_VERSION,
     BASELINE_REBUILD_PLAN_VERSION,
     BASELINE_V2_GRID_ID,
     REBUILD_BAND_NAMES,
@@ -631,7 +632,7 @@ def test_rebuild_plan_is_deterministic_and_binds_the_run_manifest():
     plan_b = build_baseline_rebuild_plan(registry=registry)
     assert plan_a == plan_b
     assert plan_a["rebuild_plan_version"] == BASELINE_REBUILD_PLAN_VERSION
-    assert plan_a["baseline_version"] == "2.0.0"
+    assert plan_a["baseline_version"] == BASELINE_V2_VERSION
     assert plan_a["predecessor"]["baseline_version"] == "1.0.0"
     assert plan_a["predecessor"]["immutable"] is True
     assert plan_a["mask"]["accepted_scl_classes"] == [4, 5, 6, 7]

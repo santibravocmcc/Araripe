@@ -11,6 +11,14 @@ This script measures that progress. It is a **metadata-only** query -- it reads
 scene properties and touches no pixels -- so it is cheap enough to run monthly
 without meaningfully consuming the project's Earth Engine compute quota.
 
+It is deliberately **standalone**: it imports nothing from the repository, so
+it can run from the default branch, where the Phase 2A rebuild machinery does
+not exist. Its query parameters come from
+``config/esa_reprocessing_watch_query_v1.json``, which is generated from the
+accepted regime contract and verified against it by
+``tests/test_esa_watch_query_config.py`` on the science branch -- so the two
+cannot drift apart silently.
+
 Exit status:
     0  progress reported, not yet ready
     9  every wet-season month has crossed the readiness threshold
@@ -30,34 +38,36 @@ from pathlib import Path
 
 import click
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
-from config.settings import BASELINE_SOURCE_YEARS, GEE_COLLECTION_ID  # noqa: E402
-from src.detection.baseline_manifest import (  # noqa: E402
-    MONITORING_EXTENT_BOUNDS,
-)
-from src.processing.baseline_rebuild_v2 import (  # noqa: E402
-    load_source_regimes,
+WATCH_QUERY_PATH = (
+    Path(__file__).resolve().parent.parent
+    / "config"
+    / "esa_reprocessing_watch_query_v1.json"
 )
 
-# A product is on the Collection-1 lineage when its processing baseline is
-# 05.00 or later; this is the same criterion the owner's 2026-09-05 review used.
-COLLECTION1_FLOOR = "05."
 
-
-def _is_collection1(baseline: str) -> bool:
-    return str(baseline) >= COLLECTION1_FLOOR
+def _load_query(path: Path) -> dict:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise click.ClickException(f"cannot read watch query {path}: {exc}")
 
 
 @click.command()
 @click.option("--project", default="ee-araripe-baseline-v2", show_default=True)
 @click.option(
-    "--ready-fraction",
-    default=0.90,
+    "--query-config",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    default=str(WATCH_QUERY_PATH),
     show_default=True,
+)
+@click.option(
+    "--ready-fraction",
+    default=None,
+    type=float,
     help=(
         "Per-month share of wet-season scenes that must be on the Collection-1 "
-        "lineage before the rebuild is worth attempting."
+        "lineage before the rebuild is worth attempting "
+        "(default: from the query config)."
     ),
 )
 @click.option(
@@ -66,40 +76,51 @@ def _is_collection1(baseline: str) -> bool:
     default=None,
     help="Write the machine-readable progress report here.",
 )
-def main(project: str, ready_fraction: float, json_out: Path | None) -> None:
+def main(
+    project: str,
+    query_config: Path,
+    ready_fraction: float | None,
+    json_out: Path | None,
+) -> None:
     import ee
 
-    ee.Initialize(project=project)
-    aoi = ee.Geometry.Rectangle(list(MONITORING_EXTENT_BOUNDS), None, False)
+    config = _load_query(query_config)
+    query = config["query"]
+    floor = config["collection1_processing_baseline_floor"]
+    if ready_fraction is None:
+        ready_fraction = config["default_ready_fraction"]
+    months = list(query["months"])
+    cloud = query["scene_cloud_filter_percent"]
+    years = list(query["source_years"])
+    collection_id = query["collection_id"]
 
-    wet = next(
-        regime
-        for regime in load_source_regimes()
-        if regime.provenance_state == "mixed_lineage_pending_esa_reprocessing"
+    def is_collection1(baseline: str) -> bool:
+        return str(baseline) >= floor
+
+    ee.Initialize(project=project)
+    aoi = ee.Geometry.Rectangle(
+        list(query["monitoring_extent_bounds"]), None, False
     )
     click.echo(
-        f"regime {wet.regime_id}: months {list(wet.months)}, "
-        f"cloud <{wet.scene_cloud_filter_percent}"
+        f"regime {config['derived_from']['regime_id']}: months {months}, "
+        f"cloud <{cloud}"
     )
     click.echo(f"readiness threshold: {ready_fraction:.0%} of scenes per month\n")
 
     per_month: dict[int, dict] = {}
-    for month in wet.months:
+    for month in months:
         total = 0
         modern = 0
         modern_datatakes: set[str] = set()
         all_datatakes: set[str] = set()
-        for year in BASELINE_SOURCE_YEARS:
+        for year in years:
             start = ee.Date.fromYMD(year, month, 1)
             collection = (
-                ee.ImageCollection(GEE_COLLECTION_ID)
+                ee.ImageCollection(collection_id)
                 .filterBounds(aoi)
                 .filterDate(start, start.advance(1, "month"))
                 .filter(
-                    ee.Filter.lt(
-                        "CLOUDY_PIXEL_PERCENTAGE",
-                        wet.scene_cloud_filter_percent,
-                    )
+                    ee.Filter.lt("CLOUDY_PIXEL_PERCENTAGE", cloud)
                 )
             )
             rows = collection.reduceColumns(
@@ -109,7 +130,7 @@ def main(project: str, ready_fraction: float, json_out: Path | None) -> None:
             for baseline, datatake in rows:
                 total += 1
                 all_datatakes.add(datatake)
-                if _is_collection1(baseline):
+                if is_collection1(baseline):
                     modern += 1
                     modern_datatakes.add(datatake)
         share = (modern / total) if total else 0.0
@@ -134,9 +155,10 @@ def main(project: str, ready_fraction: float, json_out: Path | None) -> None:
         "report_version": "phase2a6c1-esa-reprocessing-watch-v1",
         "checked_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "earth_engine_project": project,
-        "regime_id": wet.regime_id,
-        "regime_months": list(wet.months),
-        "scene_cloud_filter_percent": wet.scene_cloud_filter_percent,
+        "regime_id": config["derived_from"]["regime_id"],
+        "regime_months": months,
+        "scene_cloud_filter_percent": cloud,
+        "query_config": config["derived_from"],
         "ready_fraction": ready_fraction,
         "months": {str(k): v for k, v in per_month.items()},
         "ready_to_rebuild": ready,
