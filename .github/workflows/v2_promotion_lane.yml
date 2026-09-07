@@ -1,28 +1,70 @@
-name: v2 green promotion lane (serialized placeholder)
+name: v2 green promotion lane (serialized)
 
-# Package 2B.0 concurrency-lane scaffolding. This is the SERIALIZED lock lane
-# reserved for conditional green staging-pointer promotion. It is a placeholder
-# no-op: the real promotion logic arrives only with the Package 2B.2
+# Package 2B.0 created this file as the SERIALIZED lock lane reserved for
+# conditional green staging-pointer promotion, as an empty placeholder whose
+# own comment said the real logic "arrives only with the Package 2B.2
 # publication contract and will use a different protected identity — never the
-# green candidate identity and never Claude's local credential.
+# green candidate identity and never Claude's local credential".
 #
-# What this placeholder proves once merged (after review):
-#   - the promotion lane `araripe-green-promotion` exists, is distinct from
-#     both the legacy implicit lanes and `araripe-green-candidate`, and
-#     serializes: GitHub queues at most one pending run behind one running run;
-#   - the lane is inert: workflow_dispatch only, read-only permissions, no
-#     environment, no secrets, no R2 access, no pointer write.
+# Package 2B.2B fills it in as far as it can be filled without that identity.
 #
-# Proof procedure (post-merge): dispatch this workflow twice in quick
-# succession with hold_seconds > 0 while a candidate-lane run is active. The
-# two promotion runs must serialize against each other and must not queue
-# against the candidate or legacy lanes. Record run URLs in the 2B.0 gate note.
+# What this lane now does, and where it deliberately stops:
+#
+#   contract-check (default) — verify the pinned processing-ledger contract and
+#     run the completeness gate against the producer's own fixture. Read-only,
+#     no credential, no object store, no network beyond checkout and pip.
+#   plan — build and validate a full green release from a ledger committed in
+#     this repository: identity, schemas, checksums, expected dates, state
+#     watermark, product completeness and the zero-alert classification. Still
+#     no object store: `plan` prints what would be written and contacts nothing.
+#   promote / rollback — STOP. These need the protected promotion identity,
+#     which is deliberately separate from the green candidate identity and is
+#     not provisioned. The job names the missing capability and exits non-zero
+#     rather than substituting a broader credential, which is the Package 2B.0
+#     handoff rule ("if a tool lacks a required connection, stop before
+#     promotion, name the missing capability, and provide a handoff prompt").
+#   lane-proof — the Package 2B.0 behaviour, preserved unchanged: hold the
+#     serialized lock so the four-concurrent-run lane proof can still be run.
+#     That proof is a 2B.0 gate item and is still outstanding.
+#
+# Inertness, unchanged from Package 2B.0:
+#   - trigger: workflow_dispatch ONLY. No schedule, no push, no inheritance of
+#     the blue Mon/Thu cron in detect_gee.yml;
+#   - permissions: contents read-only — no bot commit or push path exists;
+#   - no `environment:` and no secret is referenced, so this file carries no
+#     authority at all and remains dispatchable from any ref. The Environment
+#     `v2-staging` would not help: its branch policy admits only `main`, and
+#     its identity is the candidate identity, which this lane must never use;
+#   - concurrency: araripe-green-promotion, cancel-in-progress: false, distinct
+#     from the legacy implicit lanes and from araripe-green-candidate
+#     (docs/operations/GREEN_CONCURRENCY_LANES.md).
+#
+# Nothing here can reach production. The publication library refuses the bucket
+# araripe-cogs by name before a credential is read
+# (src/publication/conditional_store.py, assert_staging_target), and no mode
+# reachable from this file performs an object operation at all.
 
 on:
   workflow_dispatch:
     inputs:
+      mode:
+        description: "contract-check | plan | promote | rollback | lane-proof"
+        required: false
+        default: "contract-check"
+      ledger:
+        description: "plan: path to a processing-ledger-v3 document in this repo"
+        required: false
+        default: "docs/contracts/phase2a/examples/processing-ledger-v3.example.json"
+      state_sha256:
+        description: "plan: sha256 of the persistence state the run wrote"
+        required: false
+        default: ""
+      state_bytes:
+        description: "plan: byte length of that persistence state"
+        required: false
+        default: ""
       hold_seconds:
-        description: "Seconds to hold the serialized lock (0-120) for lane proof"
+        description: "lane-proof: seconds to hold the serialized lock (0-120)"
         required: false
         default: "0"
 
@@ -34,19 +76,112 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  hold-serialized-lock:
+  green-promotion:
     if: github.event_name == 'workflow_dispatch' && github.repository == 'santibravocmcc/Araripe'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
 
     steps:
-      - name: Assert lane identity and hold the lock
+      - name: Announce the lane and refuse an unknown mode
+        env:
+          MODE: ${{ github.event.inputs.mode }}
+        run: |
+          set -euo pipefail
+          echo "lane: araripe-green-promotion (serialized, cancel-in-progress: false)"
+          echo "run: ${{ github.run_id }} attempt ${{ github.run_attempt }} by ${{ github.actor }}"
+          echo "mode: ${MODE}"
+          case "${MODE}" in
+            contract-check|plan|promote|rollback|lane-proof) ;;
+            *) echo "::error::unknown mode ${MODE}" >&2; exit 1 ;;
+          esac
+
+      - name: Stop where authority begins
+        if: github.event.inputs.mode == 'promote' || github.event.inputs.mode == 'rollback'
+        run: |
+          set -euo pipefail
+          echo "::error::missing capability: the protected green promotion identity" >&2
+          cat >&2 <<'MISSING'
+
+          Moving or rolling back the green staging pointer writes to
+          pointers/green/current.json in araripe-v2-staging. That needs an R2
+          identity which, by the Package 2B.0 lane definition, must NOT be the
+          green candidate identity in the v2-staging Environment and must not be
+          any locally held credential.
+
+          What is missing, precisely:
+            * a GitHub Environment holding a bucket-scoped R2 key for
+              araripe-v2-staging, distinct from R2_STAGING_ACCESS_KEY_ID /
+              R2_STAGING_SECRET_ACCESS_KEY, exposed here as
+              R2_PROMOTION_ACCESS_KEY_ID / R2_PROMOTION_SECRET_ACCESS_KEY;
+            * a deployment branch policy for it, decided deliberately — the
+              v2-staging policy admits only `main`.
+
+          Creating an Environment is a repository configuration change and is
+          owner-approved work, not agent work. Until it exists, run the
+          promotion locally against the staging bucket:
+
+            python scripts/publish_green_release.py apply  --ledger … --artifact …
+            python scripts/publish_green_release.py rollback --to rel-g1-…
+
+          The logic this lane would run is the same code, fully covered by
+          tests/test_atomic_publish.py.
+          MISSING
+          exit 1
+
+      - name: Hold the serialized lock (Package 2B.0 lane proof)
+        if: github.event.inputs.mode == 'lane-proof'
         env:
           HOLD: ${{ github.event.inputs.hold_seconds }}
         run: |
-          echo "lane: araripe-green-promotion (serialized, cancel-in-progress: false)"
-          echo "run: ${{ github.run_id }} attempt ${{ github.run_attempt }} by ${{ github.actor }}"
-          hold=$(( HOLD < 0 ? 0 : (HOLD > 120 ? 120 : HOLD) ))
+          set -euo pipefail
+          # Matched against digits before any arithmetic: $(( )) evaluates its
+          # operand as an expression, so an input reaching it is a code path,
+          # not a number.
+          case "${HOLD}" in
+            ''|*[!0-9]*) hold=0 ;;
+            *) hold=$(( HOLD > 120 ? 120 : HOLD )) ;;
+          esac
           echo "holding serialized lock for ${hold}s"
           sleep "$hold"
-          echo "no promotion logic exists in Package 2B.0 — placeholder exit"
+          echo "lane proof: this run held araripe-green-promotion and wrote nothing"
+
+      - name: Check out the publication code
+        if: github.event.inputs.mode == 'contract-check' || github.event.inputs.mode == 'plan'
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Install the one dependency the gate needs
+        if: github.event.inputs.mode == 'contract-check' || github.event.inputs.mode == 'plan'
+        # The runner's own Python is used deliberately: installing the blue
+        # environment.yml here would couple this green lane to the file the blue
+        # workflows solve, and jsonschema is the only import the gate adds.
+        run: |
+          set -euo pipefail
+          python3 --version
+          python3 -m pip install --quiet --disable-pip-version-check 'jsonschema>=4.23.0'
+
+      - name: Verify the pinned contract and run the completeness gate
+        if: github.event.inputs.mode == 'contract-check' || github.event.inputs.mode == 'plan'
+        run: |
+          set -euo pipefail
+          python3 scripts/check_processing_ledger.py --binding
+          python3 scripts/check_processing_ledger.py --self-test
+
+      - name: Validate a release plan, contacting no object store
+        if: github.event.inputs.mode == 'plan'
+        env:
+          LEDGER: ${{ github.event.inputs.ledger }}
+          STATE_SHA256: ${{ github.event.inputs.state_sha256 }}
+          STATE_BYTES: ${{ github.event.inputs.state_bytes }}
+        run: |
+          set -euo pipefail
+          case "${LEDGER}" in
+            *..*|/*) echo "::error::ledger must be a relative path inside the repository" >&2; exit 1 ;;
+          esac
+          test -f "${LEDGER}" || { echo "::error::${LEDGER} does not exist" >&2; exit 1; }
+          test -n "${STATE_SHA256}" || { echo "::error::plan needs state_sha256" >&2; exit 1; }
+          test -n "${STATE_BYTES}" || { echo "::error::plan needs state_bytes" >&2; exit 1; }
+          python3 scripts/publish_green_release.py plan \
+            --ledger "${LEDGER}" \
+            --state-sha256 "${STATE_SHA256}" \
+            --state-bytes "${STATE_BYTES}"
+          echo "plan validated; no object store was contacted and no pointer moved"
