@@ -149,3 +149,68 @@ execução proibida.
 **Aberto:** o escopo da credencial (§2) — depende do dono; a publicação
 end-to-end no modo `promote`, que não deve ser disparada antes de §2; e a
 integração com um ledger de rodada real do 2A.6, que o gate P2B exige.
+
+---
+
+## 6. Publicação operacional de ponta a ponta, contra o R2 real
+
+Depois de o dono recriar a chave restrita ao bucket, o probe voltou **9 de 9**
+(run [34166180531](https://github.com/santibravocmcc/Araripe/actions/runs/34166180531)),
+com `araripe-cogs is refused for this identity — code AccessDenied`. Com a
+credencial provada, a cadeia 2B.2A → 2B.2B → 2B.2C foi exercitada inteira
+contra o R2, **sem nenhum pull request no caminho do dado**.
+
+A rodada de teste foi montada à mão e enviada para `runs/<run-id>/` com a
+identidade **local** de staging — a peça que o Package 2B.2C deixou para uma
+pessoa ("o sistema sabe publicar uma rodada; quem a monta ainda é uma pessoa").
+O script que a montou vive fora do repositório, no scratchpad da sessão: ele é
+andaime de prova, não produto.
+
+| # | Rodada | Cobertura | Esperado | Resultado |
+| --- | --- | --- | --- | --- |
+| 1 | `proof-a-2026-09-07` | 04-07 … 04-10 | publica e promove | **4 created**, ponteiro em **sequence 1** |
+| 2 | a mesma, de novo | idem | no-op idempotente | **0 created, 4 already identical**, ponteiro **unchanged**, sequence **continua 1** |
+| 3 | `proof-b-older` | 04-01 | **recusa** | `PromotionRefused … [coverage_regression]` |
+| 4 | `proof-c-newer` | 04-07 … 04-13 | promove com tombstone | **sequence 2**, supersede de A, **1 tombstone** |
+
+### O que cada linha estabelece, e que não era estabelecível antes
+
+**Linha 1 — a identidade derivada é reprodutível entre máquinas.** O
+`release_id` que o runner calculou,
+`rel-g1-ae3f6e1db152ac608f5e63d2fe2d6f4357f0f311ad5582070dfabf9e91828827`, é
+**byte a byte o mesmo** que o `plan` local havia impresso horas antes para o
+mesmo ledger, noutra máquina e noutro sistema operacional. A propriedade
+"mesmo ledger → mesmo prefixo" deixou de ser um teste e passou a ser um fato
+observado.
+
+**Linha 2 — republicar é grátis.** `0 created, 4 already identical` prova que o
+caminho do `412` seguido de comparação de bytes funciona no R2 de verdade, e
+que a sequência do ponteiro **não** avança num no-op.
+
+**Linha 3 — a regra que mais importa.** A recusa veio com a mensagem inteira:
+
+> the candidate covers through 2026-04-01 while the live release … covers
+> through 2026-04-10. An older run may not replace a newer release; use
+> rollback to move the pointer backwards deliberately.
+
+E o detalhe que mostra o desenho funcionando: os objetos da rodada antiga
+**foram publicados** (`3 created`) sob o prefixo imutável dela, e o ponteiro
+**não se moveu** — verificado depois, ainda em `sequence 1`. Publicar é seguro
+e idempotente; promover é o passo com portão. Uma rodada antiga não corrompe
+nada: ela só não é servida.
+
+**Linha 4 — supersede e tombstone reais.** O ponteiro foi para `sequence 2`,
+registrou `supersedes` com a cobertura de A, e produziu **um** tombstone:
+`absent_from_successor` para `2026-04-10` — o artefato do dia de zero alertas
+que a rodada C não republica. Nada foi apagado.
+
+### O que continua NÃO provado executavelmente
+
+**Reverter.** O gate P2B pede *"move **and roll back** its green pointer"*, e o
+movimento está provado. A reversão não: `v2_operational_publish.yml` não tem
+modo de reversão, e o modo `rollback` de `v2_promotion_lane.yml` ainda **para**
+com uma mensagem que dizia faltar a identidade protegida — **mensagem agora
+obsoleta**, porque o Environment `v2-promotion` existe e está provado. A
+reversão só é exercitável do CI, porque a credencial de promoção vive apenas no
+Environment e não deve existir localmente. Ligar aquele modo é o passo que
+fecha a cláusula.
