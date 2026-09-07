@@ -176,11 +176,29 @@ broker and inert workflows (#10)"), verified by
 `git show --stat 8daa181 -- .github/workflows/`. What the proof still needs is
 the dispatch itself.
 
-Runnable proof: dispatch two promotion runs with `mode=lane-proof` and
-`hold_seconds > 0` while one candidate run is active and a legacy manual run
-executes. Expected result: the promotion runs serialize against each other
-only; candidate and legacy runs proceed unaffected. Record the four run URLs in
-the Package 2B.0 gate note.
+**Executed 2026-09-07 — three runs, not four, and the fourth must never be
+dispatched.** Evidence and timings in
+[`GREEN_PROOFS_2026-09-07.md`](GREEN_PROOFS_2026-09-07.md) §3.
+
+This paragraph used to ask for four runs, including "a legacy manual run
+executes". That instruction was written on 2026-08-11, **before** production
+was frozen, and it aged without anyone noticing. The manual member of lane 1 is
+`update_data.yml`, which fetches baselines and the persistence state from the
+**production** bucket, runs detection, and uploads alerts and state back to
+`araripe-cogs`. Dispatching it is a production mutation, forbidden through
+Phases 2B–5 — and detection is not idempotent, so an extra run inflates
+`n_sightings`.
+
+Runnable proof, corrected: dispatch two promotion runs with `mode=lane-proof`
+and `hold_seconds > 0` while one candidate run is active. Expected result, and
+what was observed: the second promotion run sits `pending` until the first
+releases the lock, while the candidate run completes *inside* that window,
+unaffected.
+
+The blue half of the property needs no execution. Concurrency groups are
+strings: the blue workflows declare `araripe-legacy-state`, the green ones
+declare distinct names, and GitHub does not queue across different groups.
+`tests/test_workflow_lanes.py` asserts exactly that from the workflow files.
 
 Statically, `tests/test_workflow_lanes.py` asserts the same property from the
 workflow files: the two blue state writers share `araripe-legacy-state`, each
