@@ -1,20 +1,27 @@
 # Package 2B.3 — briefing de execução
 
 Escrito em 2026-09-07, depois de fechar a implementação do Package 2B.2C.
-Base de referência do 2B.2C: `origin/main` em
-`8123adc48bdae346011cc431adeedae967958949`.
+**Atualizado no mesmo dia**, depois de o 2B.2C ser mesclado e de a publicação
+ser provada de ponta a ponta contra o R2 real — ver §2k e §8, e
+[`GREEN_PROOFS_2026-09-07.md`](GREEN_PROOFS_2026-09-07.md).
 
 Segue o método em [`HANDOFF_PROMPT_METHOD.md`](HANDOFF_PROMPT_METHOD.md)
 versão 2: o corpo é para o agente executor, e a **seção final é para o dono**.
 
 ---
 
-## 1. Dependência que precede tudo: a PR do 2B.2C
+## 1. Dependência que precede tudo — já satisfeita, mas confirme
 
 O 2B.3 separa o que é privado do que é público **no armazenamento que o 2B.2C
-passou a escrever**. Sem ele mesclado não existe `runs/<run-id>/`, não existe
-a lane operacional, e a fronteira que o 2B.3 tem de traçar não tem os dois
-lados.
+passou a escrever**. Sem ele não existe `runs/<run-id>/`, não existe a lane
+operacional, e a fronteira que o 2B.3 tem de traçar não tem os dois lados.
+
+**O 2B.2C foi mesclado em 2026-09-07** pelo squash
+`19cdb04121885c7a8ccd71510bc49fea538afb69` ("Package 2B.2C — automatic
+operational publication (backend) (#39)"). Também entraram no mesmo dia: #38 e
+#40 (o probe de identidade e o piso de botocore), #41 (o registro das provas) e
+#42 (o modo `rollback`). Confirme por conteúdo de qualquer forma — a `main` pode
+ter andado desde que isto foi escrito.
 
 Confirme **por conteúdo, nunca por ancestralidade** (os dois repositórios fazem
 squash merge):
@@ -29,14 +36,13 @@ um commit que apenas *cita* a PR também casa. Filtre por `%s`:
 
     git log origin/main --format='%H %s' | grep '(#<número>)'
 
-Gate esperado na `main` depois do 2B.2C: **513 passed** (era 445). Se a PR
-`ci/promotion-identity-probe` também estiver mesclada, some os testes dela.
-**Meça antes de editar:**
+Gate medido na `main` em 2026-09-07, com tudo acima mesclado: **530 passed**
+(era 445 antes do 2B.2C). **Meça antes de editar** — este número é um fato
+datado, não uma promessa:
 
     /opt/anaconda3/envs/araripe/bin/python -m pytest -q
 
-Se o 2B.2C não estiver na `main`: **pare e pergunte.** Não ramifique de
-`claude/phase2b2c-auto-publish` para adiantar.
+Se algum dos artefatos acima não estiver na `main`: **pare e pergunte.**
 
 ## 2. O que já foi verificado, para o executor não refazer
 
@@ -49,8 +55,9 @@ e um compare-and-swap em `pointers/green/current.json`. Documento:
 `docs/implementation/PHASE_2B2C_2026-09-07.md`. **Consuma isso; não
 reimplemente.**
 
-**b. A identidade de promoção EXISTE e está ligada.** O dono criou o
-Environment `v2-promotion` em 2026-09-07. Lido de volta antes de ligar:
+**b. A identidade de promoção EXISTE, está ligada e está PROVADA — na segunda
+tentativa.** O dono criou o Environment `v2-promotion` em 2026-09-07. Lido de
+volta antes de ligar:
 `rules ["branch_policy"]` sem revisor, política `["branch: main"]`, os secrets
 `R2_PROMOTION_ACCESS_KEY_ID` / `R2_PROMOTION_SECRET_ACCESS_KEY` e os três
 variables. Confirme você mesmo, sem pedir valor nenhum:
@@ -58,6 +65,23 @@ variables. Confirme você mesmo, sem pedir valor nenhum:
     gh api repos/santibravocmcc/Araripe/environments --jq '[.environments[].name]'
     gh api repos/santibravocmcc/Araripe/environments/v2-promotion/variables \
       --jq '[.variables[] | "\(.name)=\(.value)"]'
+
+**E aqui está a lição que custou uma rodada:** a PRIMEIRA chave criada tinha
+escopo amplo demais — **lia o bucket de produção**. A configuração do
+Environment estava perfeita nas duas vezes; o que diferia era o escopo do token
+no Cloudflare, **invisível do lado do GitHub**. Ler a API prova só a *forma*:
+nomes de secret, política de branch, variables.
+
+> **Escopo de credencial só se prova com uma chamada real que precisa ser
+> recusada.**
+
+É por isso que `v2_promotion_identity_probe.yml` testa a recusa em
+`araripe-cogs` como uma checagem **invertida**, e por isso a polaridade dela é
+afirmada nas duas direções em `tests/test_promotion_identity_probe.py`
+(`test_a_readable_production_bucket_is_a_failure`). Se o 2B.3 criar qualquer
+credencial nova — e ele vai, "least-privilege credentials" é bullet dele —
+**prove o escopo do mesmo jeito, com uma recusa observada, não com a
+configuração lida.**
 
 **c. NUNCA nomeie um Environment que não existe.** O GitHub não falha — ele
 **cria** um, "with no protection rules or secrets configured"
@@ -110,6 +134,28 @@ uma. Não invente um segundo produtor de ledger.
 **j. Nada foi deletado, em lugar nenhum.** `ConditionalStore` não tem operação
 de delete nem escrita incondicional. Lápides são registradas no ponteiro. A
 política de retenção e exclusão é **deste** package.
+
+**k. A publicação foi provada de ponta a ponta contra o R2 real**, e o bucket
+não está mais vazio. Cinco dispatches em 2026-09-07, detalhados em
+`GREEN_PROOFS_2026-09-07.md` §6 e §7:
+
+- o R2 aplica `If-None-Match` **e** `If-Match` — era só documentação até então;
+- publicar → verificar → mover o ponteiro funciona (`sequence 1`);
+- republicar a mesma rodada é no-op e **não** avança a sequência;
+- cobertura mais antiga é **recusada** (`coverage_regression`), e os objetos
+  dela ficam publicados no prefixo imutável dela **enquanto o ponteiro não se
+  move**;
+- supersede com tombstone real, e **reversão** com `sequence` subindo para 3
+  enquanto a cobertura volta de 04-13 para 04-10.
+
+**Consequência direta para o seu escopo:** `araripe-v2-staging` contém agora 3
+releases imutáveis, 3 prefixos de rodada, e objetos de dois probes — inventário
+em `GREEN_PROOFS_2026-09-07.md` §8. **Eles são o primeiro caso de teste da sua
+política de retenção**, e não são todos iguais: um release **que já esteve
+live** e foi revertido (`rel-g1-5ffad23a…`) não é o mesmo caso que um release
+**que nunca foi promovido** (`rel-g1-9f1ed344…`, o da cobertura recusada). Uma
+política que apague "releases não referenciados pelo ponteiro" apagaria os dois
+— e o primeiro é exatamente o alvo de uma reversão futura.
 
 ## 3. A tarefa
 
@@ -266,118 +312,127 @@ ainda falta nele, e com a seção final obrigatória do método de handoff.
 
 ## 8. Estado que este package herda
 
-- **Package 2B.2C implementado**, PR aberta em 2026-09-07 com **513 passed**
-  (base 445), **sem nenhuma aprovação humana pendente**.
+- **Package 2B.2C MESCLADO** em 2026-09-07 (`19cdb04`, #39). Gate na `main`
+  depois de tudo o que entrou no dia: **530 passed** (base 445).
 - **Packages 2B.2A e 2B.2B na `main`** (#33, #35).
+- **A Phase 2B.2 está inteira na `main`**: A, B e C. O que falta da fase são
+  provas e os packages 2B.3/2B.4, não implementação do 2B.2.
 - **Package 2B.1 fechado e validado em produção.**
 - **Package 2B.0 na `main`**: broker verde isolado, lanes verdes, Environments
   `v2-staging` e `cloudflare-green-control` (este com revisor obrigatório).
 - **Environment `v2-promotion` existe** desde 2026-09-07, sem revisor, política
-  `main`, com os dois secrets e os três variables.
+  `main`, com os dois secrets e os três variables — e a chave dentro dele é a
+  **segunda**, restrita ao bucket. A primeira lia produção; ver §2b, porque a
+  lição vale para as credenciais que este package vai criar.
 - **Package 2A.6 fechado** em `claude/phase2a6d-mapbiomas`
   (`64fd781f1551a45914a7db32960b923c05056955`), **não mesclado** e não precisa
   ser.
 - **Baseline `2.1.0`** existe localmente e não está publicada; colocação no R2
   é deste package. `BASELINE_VERSION` em runtime segue `1.0.0`.
-- **Branch `ci/promotion-identity-probe`** (`37cd408`) foi escrita em paralelo
-  e prova a identidade de promoção e as precondições reais do R2. Ela usa o
-  grupo próprio `araripe-green-promotion-probe` e não conflita.
+- **`v2_promotion_identity_probe.yml` está na `main`** (#38, com o piso de
+  botocore em #40) e reporta **9 de 9**. Usa o grupo próprio
+  `araripe-green-promotion-probe`, porque nunca toca o ponteiro real.
+- **`v2_promotion_lane.yml` ganhou `rollback` e `status`** (#42), num job
+  separado que é o único do arquivo a declarar `environment: v2-promotion`.
+  `promote` continua recusado **ali** de propósito: a promoção operacional é do
+  `v2_operational_publish.yml`, que valida com a identidade de candidato
+  primeiro. Dois workflows capazes de promover seriam dois caminhos para um
+  mesmo objeto mutável.
 - **Nenhum produtor deposita `runs/<run-id>/` ainda.** A lane consome; o
-  produtor 2A.6 não está na `main`. Até lá o prefixo é enviado
-  deliberadamente.
-- **Prova executável das lanes do 2B.0 ainda pendente** (quatro rodadas
-  concorrentes, quatro URLs). É gate do 2B.0, **não** deste package.
-- **Pendência viva fora deste package:** `urs.earthdata.nasa.gov` inalcançável
-  dos runners desde 01/09; a chuva do site não atualiza desde o raster de
-  25/08; a rodada de **sexta 11/09** falha se nada mudar. **Definir o
-  `EARTHDATA_TOKEN` sozinho NÃO resolve** — verificado por leitura na
-  `origin/main` do site: o passo `chuva` do `update-data.yml` entrega só
-  `EARTHDATA_USERNAME` e `EARTHDATA_PASSWORD` (linhas 125-126), enquanto
-  `scripts/fetch_gpm.py:98` e `scripts/earthdata_login.py:178` leem
-  `EARTHDATA_TOKEN`, nome que nunca chegava ao script. A correção é a PR
-  `observatorio-site#18`, **aberta e precisando de aprovação humana explícita**
-  por ser workflow AZUL. São duas ações do dono, não uma.
+  produtor 2A.6 não está na `main`. Nas provas de 2026-09-07 a rodada foi
+  **montada à mão** e enviada com a identidade local de staging, por um script
+  de andaime que ficou **fora** do repositório, no scratchpad da sessão.
+  `stage_green_run.py` só valida. Automatizar a montagem **não é deste
+  package** — o roadmap não pede, e o produtor de ledger é outra frente.
+- **A prova das lanes do 2B.0 está FEITA** (2026-09-07), com três execuções e
+  não quatro. A quarta pedia disparar `update_data.yml`, que lê e escreve no R2
+  de **produção** — o procedimento tinha sido escrito antes do congelamento e
+  envelheceu. Corrigido em `GREEN_CONCURRENCY_LANES.md`; a metade azul da
+  propriedade é estrutural e não precisa de execução. Não redescubra isto.
+- **A chuva do site está RESOLVIDA e verificada** em 2026-09-07, e isto
+  substitui a pendência que este briefing carregava. O diagnóstico estava certo
+  e incompleto: o passo `chuva` entregava só `EARTHDATA_USERNAME` e
+  `EARTHDATA_PASSWORD`, enquanto `fetch_gpm.py:98` e `earthdata_login.py:178`
+  leem `EARTHDATA_TOKEN` — nome que nunca chegava ao script. A PR
+  `observatorio-site#18` foi mesclada, o dono criou o secret, e o dispatch
+  `34165003418` gravou `gpm_7day_rainfall_2026_09_04.tif` com
+  `chuva.json: **updated**` (não `skipped` — é essa a distinção que separa
+  "atualizei" de "pulei"). O buraco desde 25/08 está fechado.
+  **Medido no `earthaccess` 0.16.0**, não recordado: `_get_credentials()` testa
+  `if user_token is not None` PRIMEIRO e esse ramo não faz chamada de rede,
+  então as três variáveis convivem. **Pendência com data: o token expira em
+  2026-11-06**, e como o ramo do token não o valida no login, a expiração
+  aparece no download — run vermelho, não congelamento silencioso.
+- **Mesmo padrão suspeito no fallback do backend**, sem prazo: o passo "Run
+  detection pipeline" do `update_data.yml` passa só usuário e senha. Não
+  verifiquei se `run_detection.py` chega a fazer login no Earthdata — pode ser
+  que a correção certa seja **remover** as duas linhas. Não é deste package.
 
 ## 9. Para o dono — em linguagem simples
 
+Esta seção foi reescrita em 2026-09-07, depois de o 2B.2C ser mesclado e de as
+provas rodarem. A versão anterior descrevia um estado que já não existe.
+
 ### O que ficou pendente da tarefa atual
 
-A sessão do 2B.2C terminou tudo o que se propôs: a publicação automática está
-escrita, testada e numa PR. Não sobrou trabalho de programação.
+**Nada.** A etapa 2B.2 está inteira no ramo principal, e tudo o que faltava
+provar foi provado contra o armazenamento de verdade — não mais com um
+armazenamento de mentira dentro da máquina.
 
-O que sobrou é de outra natureza, e são duas coisas. **Primeira: nada disso
-rodou contra o armazenamento de verdade ainda** — tudo foi provado com um
-armazenamento de mentira, dentro da máquina, porque a chave só funciona a
-partir do ramo principal e o código ainda não está lá. **Segunda: ainda não
-existe nada que produza automaticamente os arquivos de uma rodada.** O sistema
-sabe publicar uma rodada; quem prepara a rodada ainda é uma pessoa. Isso é
-esperado nesta etapa e está anotado.
+O sistema publicou uma rodada, republicou a mesma sem duplicar nada, **recusou**
+uma rodada mais antiga que tentaria substituir uma mais nova, publicou uma mais
+nova registrando o que ficou obsoleto, e **voltou atrás** por comando. Nenhum
+pull request participou de nenhum desses cinco movimentos — que era exatamente
+o objetivo da etapa.
+
+Duas coisas continuam faltando para fechar a fase inteira, e nenhuma é trabalho
+de programação parado: **rodar uma vez com dados de uma execução real** (hoje
+nada em produção produz esse formato ainda) e **preparar a rodada
+automaticamente** (hoje é uma pessoa que monta os arquivos; nas provas fui eu).
 
 ### O que você precisa fazer
 
-1. **Juntar (merge) a PR do 2B.2C.** Pode fazer sem medo: nada nela é ligado ao
-   sistema que roda hoje. Não muda nenhum programa em produção, não muda o que
-   as máquinas instalam, e nada no que roda hoje chama esse código novo. Sem
-   urgência, mas nada avança antes disso.
-2. **Decidir o que fazer com a outra frente de trabalho** que ficou aberta em
-   paralelo, a que testa a chave de promoção contra o armazenamento real. Ela
-   está guardada e não atrapalha. Vale juntar depois desta, porque é
-   exatamente a prova que falta.
-3. **Resolver a chuva do site — é a única coisa com prazo, e são duas ações.**
-   Aprovar e juntar a correção que está esperando no repositório do site, **e**
-   definir a chave de acesso da NASA. Uma sem a outra não resolve: hoje a chave
-   não chega ao programa que precisa dela, então defini-la sozinha não muda
-   nada. Ver a próxima seção.
-4. **Opcional, quando quiser:** rodar a prova das quatro execuções simultâneas
-   que ficou pendente desde o começo da fase.
-
-Obrigado pela chave de promoção — ela foi criada no meio desta sessão e por
-isso a publicação automática já saiu ligada nela, em vez de sair desligada.
+1. **Juntar a PR de documentação** que registra a reversão e atualiza este
+   briefing. Não tem código, não tem nada para aprovar.
+2. **Nada urgente além disso.** Não há aprovação de produção esperando, nem
+   credencial para criar, nem prazo correndo.
+3. **Começar o 2B.3 quando quiser**, com o prompt no fim desta resposta. Ele é a
+   etapa que mais pede cuidado, pela razão da próxima seção.
+4. **Anotar 6 de novembro:** a chave da NASA expira e a chuva para de novo.
+   Dessa vez com aviso vermelho, não em silêncio — isso foi medido.
 
 ### Tem algo preocupante?
 
-**Sim, uma coisa — e continua não sendo desta etapa.**
+**Não.** Pela primeira vez em vários dias, nada nesta lista é preocupante: a
+chuva voltou e está verificada, a chave de promoção foi refeita e está provada
+como restrita à caixa de testes, e nada tocou produção.
 
-A chuva do site não atualiza desde 25 de agosto, porque o servidor da NASA de
-onde vêm os dados parou de responder às nossas máquinas em 1º de setembro. **A
-execução de sexta-feira, 11 de setembro, vai falhar se nada for feito.**
+Vale um aviso sobre o que vem, que é diferente de uma preocupação: **o 2B.3 é a
+primeira etapa em que este projeto poderá apagar coisas.** Até agora nada nunca
+foi apagado, por construção — não existe nem o comando. Isso deixa de ser
+verdade quando a política de retenção existir, e é por isso que essa etapa pede
+mais cuidado que as anteriores, não porque haja algo errado hoje.
 
-Uma correção importante ao que lhe foi dito antes: **definir a chave de acesso
-da NASA sozinha não resolve.** Conferindo o programa da chuva nesta sessão,
-descobriu-se que ele nunca recebia essa chave — o passo automático entregava só
-usuário e senha, e a chave ficava pelo caminho. Ou seja, quem definisse a chave
-veria o problema continuar e não saberia por quê.
-
-São **duas** ações, nesta ordem: aprovar e juntar a correção que já está
-esperando no repositório do site (ela precisa da sua aprovação porque mexe num
-programa que roda em produção), e então definir a chave. Uma sem a outra não
-adianta.
-
-Vale registrar uma coisa que **não** virou problema: durante esta sessão duas
-frentes de trabalho mexeram na mesma pasta ao mesmo tempo, e por um momento
-pareceu que um trabalho tinha se perdido. Não se perdeu — estava guardado num
-ramo separado. Fica a lição de não rodar duas sessões na mesma pasta.
-
-Do resto: **não.** O trabalho é todo aditivo — código novo que nada em produção
-chama. Não mexi em produção, não escrevi em nenhum armazenamento real, não
-criei nem alterei nenhuma chave, e os programas que rodam hoje estão idênticos
-ao que eram.
+Uma lição do dia que vale guardar, porque vai reaparecer: **ler a configuração
+no GitHub prova só a forma da coisa.** A primeira chave de promoção tinha a
+configuração perfeita e o escopo errado, e isso só apareceu numa chamada real
+que precisava ser recusada. O 2B.3 vai criar credenciais mais restritas — cada
+uma delas precisa da mesma prova.
 
 ### O que ainda falta no caminho
 
-- **2B.3 — separar o público do privado** (é o que este briefing pede): decidir
-  o que fica visível para quem, apertar as chaves ao mínimo necessário, criar o
-  endereço `/data/...` do site num ambiente de teste, e definir por quanto
-  tempo cada arquivo fica guardado. É a primeira vez que o projeto vai poder
-  **apagar** alguma coisa, então é a etapa que mais pede cuidado.
-- **2B.4 — o site novo**: parar de guardar arquivos grandes de alerta dentro do
+- **2B.3 — separar o público do privado:** decidir o que fica visível para quem,
+  apertar as chaves, criar o endereço `/data/...` num ambiente de teste, e
+  definir por quanto tempo cada arquivo fica guardado. É a próxima etapa.
+- **2B.4 — o site novo:** parar de guardar arquivos grandes de alerta dentro do
   repositório e preparar a publicação do site.
-- **Phase 3 — congelar e ensaiar** o reprocessamento de 2026: escolher a data
-  de corte e tirar uma fotografia de tudo antes de começar.
-- **Phase 6 — a troca final**: o dia em que o sistema novo substitui o antigo,
-  o site aponta para ele, o robô antigo é desligado e a publicação passa a
-  acontecer sozinha num horário. Só depois de tudo acima.
+- **Phase 3 — congelar e ensaiar** o reprocessamento de 2026: escolher a data de
+  corte e fotografar tudo antes de começar.
+- **Phase 6 — a troca final:** o sistema novo substitui o antigo, o site aponta
+  para ele, o robô antigo é desligado, e a publicação passa a acontecer sozinha
+  num horário. É também quando a decisão de "sem revisor" na chave de promoção
+  deve ser reconsiderada, porque aí o ponteiro deixa de ser um ambiente de
+  teste.
 
-Além dessas etapas, duas provas ainda faltam para fechar esta fase: rodar a
-publicação contra o armazenamento real, e rodar tudo uma vez com dados de uma
-execução de verdade e não de exemplo.
+Além das etapas, as duas provas citadas acima: rodar com dados de uma execução
+real, e automatizar a montagem da rodada.
