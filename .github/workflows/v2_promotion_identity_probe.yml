@@ -1,0 +1,97 @@
+name: v2 promotion identity probe (one-time verification)
+
+# Why this exists, and why it is separate from the promotion lane.
+#
+# Package 2B.2B proved immutable writes and pointer compare-and-swap against an
+# in-memory store, because the `v2-staging` Environment admits only `main` and
+# no feature branch can reach a credential. Two things were therefore still
+# unmeasured:
+#
+#   1. whether the newly created promotion identity is a working R2 S3 key pair
+#      restricted to `araripe-v2-staging` -- a very plausible mistake is
+#      copying an R2 token's Bearer *token value* instead of its Access Key ID
+#      and Secret Access Key, which the creation page shows together;
+#   2. whether R2 actually enforces `If-None-Match` and `If-Match`. Until now
+#      that was Cloudflare documentation, not a measurement. If R2 ignored
+#      them, immutable releases and pointer compare-and-swap would both be
+#      silently unenforced in production.
+#
+# It runs the REAL `src/publication/conditional_store.py`, so what passes here
+# is the code the publication path uses, not a reimplementation.
+#
+# Isolation and inertness:
+#   - trigger: workflow_dispatch ONLY, guarded on the repository name;
+#   - permissions: contents read-only -- no commit or push path exists;
+#   - authority: the `v2-promotion` Environment only. Its identity is
+#     bucket-scoped to `araripe-v2-staging`; no production secret name appears
+#     here, and `conditional_store.assert_staging_target` refuses
+#     `araripe-cogs` by name before a credential is read;
+#   - every write goes under one immutable per-run prefix
+#     (`promotion-identity-probe/run-<id>-<attempt>/`). Nothing is deleted, and
+#     the probe NEVER touches the real pointer `pointers/green/current.json` --
+#     it swaps a pointer-shaped object inside its own prefix;
+#   - concurrency: its own group. It deliberately does NOT join
+#     `araripe-green-promotion`: because it touches no shared object, it has no
+#     business queueing behind, or delaying, a real promotion.
+#
+# This is a verification workflow, not part of the publication design. Package
+# 2B.2C may absorb or delete it once the publication lane is wired and proven.
+
+on:
+  workflow_dispatch:
+    inputs:
+      note:
+        description: "Optional operator note (recorded in the log only)"
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: araripe-green-promotion-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    if: github.event_name == 'workflow_dispatch' && github.repository == 'santibravocmcc/Araripe'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: v2-promotion
+    env:
+      R2_STAGING_BUCKET: ${{ vars.R2_STAGING_BUCKET }}
+      R2_ENDPOINT_URL: ${{ vars.R2_ENDPOINT_URL }}
+
+    steps:
+      - name: Fail closed unless the target is exactly the approved staging bucket
+        # Same discipline as v2_candidate_replay.yml: refuse before any object
+        # operation, on the target rather than on the credential.
+        run: |
+          set -euo pipefail
+          test "$R2_STAGING_BUCKET" = "araripe-v2-staging" || {
+            echo "::error::R2_STAGING_BUCKET is not araripe-v2-staging" >&2; exit 1; }
+          test "$R2_ENDPOINT_URL" = "https://9416750169311ee4afc18a8ff3c771d4.r2.cloudflarestorage.com" || {
+            echo "::error::R2_ENDPOINT_URL is not the approved account endpoint" >&2; exit 1; }
+
+      - name: Check out the publication code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Install the client
+        # The runner's own Python, deliberately: installing the blue
+        # environment.yml here would couple a green verification to the file the
+        # blue workflows solve.
+        run: |
+          set -euo pipefail
+          python3 --version
+          python3 -m pip install --quiet --disable-pip-version-check boto3
+
+      - name: Probe the identity and R2's preconditions
+        env:
+          R2_PROMOTION_ACCESS_KEY_ID: ${{ secrets.R2_PROMOTION_ACCESS_KEY_ID }}
+          R2_PROMOTION_SECRET_ACCESS_KEY: ${{ secrets.R2_PROMOTION_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          NOTE: ${{ github.event.inputs.note }}
+        run: |
+          set -euo pipefail
+          echo "note: ${NOTE:-(none)}"
+          python3 scripts/probe_promotion_identity.py \
+            --run-id "${{ github.run_id }}-${{ github.run_attempt }}"
