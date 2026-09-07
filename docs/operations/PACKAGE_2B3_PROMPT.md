@@ -289,7 +289,14 @@ ainda falta nele, e com a seção final obrigatória do método de handoff.
   concorrentes, quatro URLs). É gate do 2B.0, **não** deste package.
 - **Pendência viva fora deste package:** `urs.earthdata.nasa.gov` inalcançável
   dos runners desde 01/09; a chuva do site não atualiza desde o raster de
-  25/08. Saída verificada: definir `EARTHDATA_TOKEN`. Decisão do dono.
+  25/08; a rodada de **sexta 11/09** falha se nada mudar. **Definir o
+  `EARTHDATA_TOKEN` sozinho NÃO resolve** — verificado por leitura na
+  `origin/main` do site: o passo `chuva` do `update-data.yml` entrega só
+  `EARTHDATA_USERNAME` e `EARTHDATA_PASSWORD` (linhas 125-126), enquanto
+  `scripts/fetch_gpm.py:98` e `scripts/earthdata_login.py:178` leem
+  `EARTHDATA_TOKEN`, nome que nunca chegava ao script. A correção é a PR
+  `observatorio-site#18`, **aberta e precisando de aprovação humana explícita**
+  por ser workflow AZUL. São duas ações do dono, não uma.
 
 ## 9. Para o dono — em linguagem simples
 
@@ -316,8 +323,11 @@ esperado nesta etapa e está anotado.
    paralelo, a que testa a chave de promoção contra o armazenamento real. Ela
    está guardada e não atrapalha. Vale juntar depois desta, porque é
    exatamente a prova que falta.
-3. **Decidir sobre o `EARTHDATA_TOKEN`** — ver a próxima seção, é a única coisa
-   com prazo.
+3. **Resolver a chuva do site — é a única coisa com prazo, e são duas ações.**
+   Aprovar e juntar a correção que está esperando no repositório do site, **e**
+   definir a chave de acesso da NASA. Uma sem a outra não resolve: hoje a chave
+   não chega ao programa que precisa dela, então defini-la sozinha não muda
+   nada. Ver a próxima seção.
 4. **Opcional, quando quiser:** rodar a prova das quatro execuções simultâneas
    que ficou pendente desde o começo da fase.
 
@@ -330,9 +340,18 @@ isso a publicação automática já saiu ligada nela, em vez de sair desligada.
 
 A chuva do site não atualiza desde 25 de agosto, porque o servidor da NASA de
 onde vêm os dados parou de responder às nossas máquinas em 1º de setembro. **A
-execução de sexta-feira, 11 de setembro, vai falhar se nada for feito.** A
-solução já está identificada e é simples: definir uma chave chamada
-`EARTHDATA_TOKEN`. É decisão sua e continua pendente.
+execução de sexta-feira, 11 de setembro, vai falhar se nada for feito.**
+
+Uma correção importante ao que lhe foi dito antes: **definir a chave de acesso
+da NASA sozinha não resolve.** Conferindo o programa da chuva nesta sessão,
+descobriu-se que ele nunca recebia essa chave — o passo automático entregava só
+usuário e senha, e a chave ficava pelo caminho. Ou seja, quem definisse a chave
+veria o problema continuar e não saberia por quê.
+
+São **duas** ações, nesta ordem: aprovar e juntar a correção que já está
+esperando no repositório do site (ela precisa da sua aprovação porque mexe num
+programa que roda em produção), e então definir a chave. Uma sem a outra não
+adianta.
 
 Vale registrar uma coisa que **não** virou problema: durante esta sessão duas
 frentes de trabalho mexeram na mesma pasta ao mesmo tempo, e por um momento
