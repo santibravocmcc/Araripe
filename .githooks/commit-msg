@@ -1,0 +1,36 @@
+#!/bin/sh
+# Rejeita mensagem de commit que cite um SHA de 40 caracteres inexistente.
+#
+# Por que existe: em 2026-09-07, duas mensagens desta série afirmaram uma "base
+# verificada" com SHA completado de memória a partir dos 7 caracteres
+# conhecidos — a segunda no próprio commit que adicionava a regra escrita
+# proibindo isso. Um identificador plausível passa pela revisão; um ausente,
+# não. A regra em prosa não bastou, então a checagem é mecânica.
+#
+# Instalar (uma vez por clone):  git config core.hooksPath .githooks
+#
+# Ignora linhas de comentário. Para uma exceção deliberada (citar o SHA de
+# outro repositório, por exemplo), use os 7-12 caracteres curtos, que o hook
+# não inspeciona.
+set -eu
+
+msg_file="$1"
+status=0
+
+shas=$(grep -v '^#' "$msg_file" | grep -oE '\b[0-9a-f]{40}\b' | sort -u || true)
+
+for sha in $shas; do
+    if ! git cat-file -e "${sha}^{object}" 2>/dev/null; then
+        echo "commit-msg: o SHA $sha não existe neste repositório." >&2
+        status=1
+    fi
+done
+
+if [ "$status" -ne 0 ]; then
+    echo "" >&2
+    echo "Leia o identificador da ferramenta que o produz e cole:" >&2
+    echo "    git rev-parse origin/main" >&2
+    echo "Nunca complete um SHA a partir da forma curta." >&2
+fi
+
+exit "$status"

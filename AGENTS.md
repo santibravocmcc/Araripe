@@ -58,7 +58,10 @@ Do this first, every session — the shared `../AGENTS.md` has the full protocol
   for any claim about another component.
 - Copy every identifier from the tool that produces it (`git rev-parse`,
   `gh run view`, `shasum`); never complete one from memory. A plausible SHA or
-  run ID passes review unnoticed, unlike a missing one.
+  run ID passes review unnoticed, unlike a missing one. This is enforced, not
+  merely asked — run `git config core.hooksPath .githooks` once per clone and
+  `.githooks/commit-msg` rejects any 40-character SHA in the message that does
+  not exist here.
 
 ## Working contract
 
