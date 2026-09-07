@@ -48,9 +48,13 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "contract-check | plan | promote | rollback | lane-proof"
+        description: "contract-check | plan | rollback | status | promote | lane-proof"
         required: false
         default: "contract-check"
+      release_id:
+        description: "rollback: the release to point at, e.g. rel-g1-<64 hex>"
+        required: false
+        default: ""
       ledger:
         description: "plan: path to a processing-ledger-v3 document in this repo"
         required: false
@@ -91,41 +95,34 @@ jobs:
           echo "run: ${{ github.run_id }} attempt ${{ github.run_attempt }} by ${{ github.actor }}"
           echo "mode: ${MODE}"
           case "${MODE}" in
-            contract-check|plan|promote|rollback|lane-proof) ;;
+            contract-check|plan|rollback|status|promote|lane-proof) ;;
             *) echo "::error::unknown mode ${MODE}" >&2; exit 1 ;;
           esac
 
-      - name: Stop where authority begins
-        if: github.event.inputs.mode == 'promote' || github.event.inputs.mode == 'rollback'
+      - name: Refuse to be a second promotion path
+        if: github.event.inputs.mode == 'promote'
         run: |
           set -euo pipefail
-          echo "::error::missing capability: the protected green promotion identity" >&2
-          cat >&2 <<'MISSING'
+          echo "::error::promotion is not this lane's to perform" >&2
+          cat >&2 <<'OWNED'
 
-          Moving or rolling back the green staging pointer writes to
-          pointers/green/current.json in araripe-v2-staging. That needs an R2
-          identity which, by the Package 2B.0 lane definition, must NOT be the
-          green candidate identity in the v2-staging Environment and must not be
-          any locally held credential.
+          This step used to refuse `promote` AND `rollback`, saying the
+          protected promotion identity did not exist. That message is obsolete:
+          the Environment `v2-promotion` was created on 2026-09-07 and proven
+          9-of-9 by `v2_promotion_identity_probe.yml`, including that
+          araripe-cogs is AccessDenied for it.
 
-          What is missing, precisely:
-            * a GitHub Environment holding a bucket-scoped R2 key for
-              araripe-v2-staging, distinct from R2_STAGING_ACCESS_KEY_ID /
-              R2_STAGING_SECRET_ACCESS_KEY, exposed here as
-              R2_PROMOTION_ACCESS_KEY_ID / R2_PROMOTION_SECRET_ACCESS_KEY;
-            * a deployment branch policy for it, decided deliberately — the
-              v2-staging policy admits only `main`.
+          `rollback` now works here (see the job below). `promote` deliberately
+          does NOT, and this is the reason: operational promotion belongs to
+          `v2_operational_publish.yml`, which validates the run with the
+          CANDIDATE identity first and only then hands it to the promotion
+          identity. Two workflows able to promote would be two paths to one
+          mutable object, each unaware of the other's preconditions — and the
+          compare-and-swap would be the only thing left between them.
 
-          Creating an Environment is a repository configuration change and is
-          owner-approved work, not agent work. Until it exists, run the
-          promotion locally against the staging bucket:
-
-            python scripts/publish_green_release.py apply  --ledger … --artifact …
-            python scripts/publish_green_release.py rollback --to rel-g1-…
-
-          The logic this lane would run is the same code, fully covered by
-          tests/test_atomic_publish.py.
-          MISSING
+          To promote:  dispatch "v2 green operational publication" with a run_id.
+          To go back:  dispatch this workflow with mode=rollback and a release_id.
+          OWNED
           exit 1
 
       - name: Hold the serialized lock (Package 2B.0 lane proof)
@@ -185,3 +182,83 @@ jobs:
             --state-sha256 "${STATE_SHA256}" \
             --state-bytes "${STATE_BYTES}"
           echo "plan validated; no object store was contacted and no pointer moved"
+
+  # The only job in this file that holds authority. Split from the one above so
+  # the credential-free modes stay provably credential-free: that job still
+  # declares no environment and names no secret, which
+  # tests/test_promotion_lane.py asserts per job rather than per file.
+  pointer:
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      && github.repository == 'santibravocmcc/Araripe'
+      && (github.event.inputs.mode == 'rollback' || github.event.inputs.mode == 'status')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: v2-promotion
+    env:
+      R2_STAGING_BUCKET: ${{ vars.R2_STAGING_BUCKET }}
+      R2_ENDPOINT_URL: ${{ vars.R2_ENDPOINT_URL }}
+
+    steps:
+      - name: Fail closed unless the target is exactly the approved staging bucket
+        run: |
+          set -euo pipefail
+          test "$R2_STAGING_BUCKET" = "araripe-v2-staging" || {
+            echo "::error::R2_STAGING_BUCKET is not araripe-v2-staging" >&2; exit 1; }
+          test "$R2_ENDPOINT_URL" = "https://9416750169311ee4afc18a8ff3c771d4.r2.cloudflarestorage.com" || {
+            echo "::error::R2_ENDPOINT_URL is not the approved account endpoint" >&2; exit 1; }
+
+      - name: Accept only a well-formed release id
+        # Validated here rather than trusted to the CLI: a release id addresses
+        # a prefix, so a malformed one must never reach an object key.
+        if: github.event.inputs.mode == 'rollback'
+        env:
+          RELEASE_ID: ${{ github.event.inputs.release_id }}
+        run: |
+          set -euo pipefail
+          case "${RELEASE_ID}" in
+            rel-g1-*) ;;
+            *) echo "::error::release_id must look like rel-g1-<64 hex>" >&2; exit 1 ;;
+          esac
+          hex="${RELEASE_ID#rel-g1-}"
+          test "${#hex}" -eq 64 || { echo "::error::release_id digest is not 64 chars" >&2; exit 1; }
+          case "$hex" in *[!0-9a-f]*) echo "::error::release_id digest is not lowercase hex" >&2; exit 1 ;; esac
+
+      - name: Check out the publication code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Install the dependencies publication needs
+        # The measured floor, not a plausible one: botocore below 1.36.0 has
+        # IfNoneMatch but no IfMatch, so the pointer compare-and-swap would be
+        # inexpressible. The runner image ships 1.34.46, and a bare install is
+        # satisfied by it — that is how run 34164434461 failed.
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet --disable-pip-version-check \
+            'jsonschema>=4.23.0' 'boto3>=1.36.0' 'botocore>=1.36.0'
+          python3 -c "import botocore; print('botocore', botocore.__version__)"
+
+      - name: Read the live green pointer
+        if: github.event.inputs.mode == 'status'
+        env:
+          R2_PROMOTION_ACCESS_KEY_ID: ${{ secrets.R2_PROMOTION_ACCESS_KEY_ID }}
+          R2_PROMOTION_SECRET_ACCESS_KEY: ${{ secrets.R2_PROMOTION_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+        run: python3 scripts/publish_green_release.py status
+
+      - name: Move the pointer back, deliberately
+        # `rollback` re-reads the target release FROM THE STORE and revalidates
+        # it in full, including its ledger, and verifies every declared object
+        # is still present. The pointer may only ever name a release that is
+        # still complete. `sequence` still increases — it counts pointer
+        # writes, not data recency (GREEN_RELEASE_CONTRACT_V1.md §6).
+        if: github.event.inputs.mode == 'rollback'
+        env:
+          R2_PROMOTION_ACCESS_KEY_ID: ${{ secrets.R2_PROMOTION_ACCESS_KEY_ID }}
+          R2_PROMOTION_SECRET_ACCESS_KEY: ${{ secrets.R2_PROMOTION_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          RELEASE_ID: ${{ github.event.inputs.release_id }}
+        run: |
+          set -euo pipefail
+          echo "lane: araripe-green-promotion (serialized, cancel-in-progress: false)"
+          python3 scripts/publish_green_release.py rollback --to "${RELEASE_ID}"
