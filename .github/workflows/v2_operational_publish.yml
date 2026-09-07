@@ -1,0 +1,234 @@
+name: v2 green operational publication (candidate then promotion)
+
+# Package 2B.2C. The last Package 2B.2 bullet reads "keep operational data
+# publication automatic without PRs or manual merges", and this file is where
+# that becomes true for green data.
+#
+# What the blue lane does today, and what this deliberately does not do
+# ---------------------------------------------------------------------
+# `detect_gee.yml` publishes its time-series DB by `git add data/timeseries/`,
+# committing, pushing a throwaway branch, opening a pull request and merging
+# it — because `main` is ruleset-protected with an empty bypass list. That lane
+# is production and stays byte-identical through Phase 6.
+#
+# The green data path has no git in it at all. A run deposits its inputs under
+# the immutable prefix runs/<run-id>/ in araripe-v2-staging, and publication
+# reads them from there and writes a release plus one pointer compare-and-swap.
+# The property is STRUCTURAL, not a policy: this workflow holds
+# `permissions: contents: read`, so no bot commit, no branch push and no
+# `gh pr create` is expressible from it. `tests/test_operational_publish_lane.py`
+# asserts that from this file.
+#
+# Two jobs because there are two authorities, not two phases
+# -----------------------------------------------------------
+#   stage   — lane 2 (araripe-green-candidate), Environment `v2-staging`.
+#             Answers "is this run publishable?" with the CANDIDATE identity:
+#             schema, the Package 2B.2A ledger gate, checksums, expected
+#             dates, product completeness, the whole check_green_release
+#             chain. It is handed a ReadOnlyStore, so no write is expressible.
+#   promote — lane 3 (araripe-green-promotion, serialized). Publishes, verifies
+#             and moves the pointer with the PROMOTION identity.
+#
+# docs/operations/PROMOTION_IDENTITY_SETUP.md states the reason the identities
+# differ: "if the two lanes used the same key, any candidate run could move
+# the pointer". Splitting the jobs is what makes that reason operative — a
+# malformed run fails under the smaller authority and the larger one never
+# starts (`needs: stage`).
+#
+# The promotion Environment, measured rather than assumed
+# --------------------------------------------------------
+# The Package 2B.2C briefing said `v2-promotion` might be created in parallel
+# and to measure before deciding the scope. It was measured twice on
+# 2026-09-07: `gh api repos/santibravocmcc/Araripe/environments` first returned
+# ["cloudflare-green-control", "v2-staging"], and later in the same session
+# ["cloudflare-green-control", "v2-promotion", "v2-staging"] — the owner
+# created it while this package was being written. Read back before binding it:
+#
+#   rules                    : ["branch_policy"]  — no required_reviewers,
+#                              the decision recorded in PROMOTION_IDENTITY_SETUP.md
+#   deployment branch policy : ["branch: main"]   — a feature branch cannot
+#                              reach this credential, so this job runs only
+#                              from the default branch
+#   secrets                  : R2_PROMOTION_ACCESS_KEY_ID,
+#                              R2_PROMOTION_SECRET_ACCESS_KEY
+#   variables                : R2_STAGING_BUCKET, R2_ENDPOINT_URL, AWS_REGION
+#
+# Never name an Environment that does not exist: GitHub CREATES one on first
+# run, "with no protection rules or secrets configured"
+# (https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments),
+# which is a repository configuration change and would produce exactly the
+# wrong thing — an environment with no branch policy at all.
+#
+# The logic below is still proven only against a fake object store
+# (tests/fake_object_store.py). Running it against real objects is a separate
+# step after this package merges, because the branch policy admits only `main`.
+#
+# Trigger: workflow_dispatch only. A green lane may not carry a cron before
+# the Phase 6 cutover (Package 2B.0 inertness, pinned by
+# tests/test_workflow_lanes.py::test_green_lanes_cannot_inherit_a_schedule),
+# and there is no producer emitting runs on a schedule yet — a cron would fire
+# twice a week onto an empty prefix. What this package removes from the data
+# path is the pull request and the merge, not the operator's decision to run.
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "run id whose prefix runs/<run-id>/ holds run.json, ledger.json and the bodies"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ── lane 2: the candidate identity decides whether the run is publishable ──
+  stage:
+    if: github.event_name == 'workflow_dispatch' && github.repository == 'santibravocmcc/Araripe'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: v2-staging
+    concurrency:
+      group: araripe-green-candidate
+      cancel-in-progress: false
+    outputs:
+      release_id: ${{ steps.stage.outputs.release_id }}
+    env:
+      R2_STAGING_BUCKET: ${{ vars.R2_STAGING_BUCKET }}
+      R2_ENDPOINT_URL: ${{ vars.R2_ENDPOINT_URL }}
+
+    steps:
+      - name: Fail closed unless the target is exactly the approved staging bucket
+        # Same guard, and the same values, as v2_candidate_replay.yml. The
+        # library refuses araripe-cogs by name as well, before a credential is
+        # read; this is the first of the two lines.
+        run: |
+          set -euo pipefail
+          test "$R2_STAGING_BUCKET" = "araripe-v2-staging" || {
+            echo "::error::refusing: R2_STAGING_BUCKET is not araripe-v2-staging" >&2; exit 1; }
+          test "$R2_ENDPOINT_URL" = "https://9416750169311ee4afc18a8ff3c771d4.r2.cloudflarestorage.com" || {
+            echo "::error::refusing: R2_ENDPOINT_URL is not the approved account endpoint" >&2; exit 1; }
+
+      - name: Accept only a run id that addresses one prefix
+        # An allowlist, not a denylist: the run id becomes part of an object
+        # key, and a value carrying `/` or `..` would read another run's
+        # prefix — or walk out of runs/ entirely. src/publication/run_inputs.py
+        # refuses the same shapes; this stops it before Python starts.
+        env:
+          RUN_ID: ${{ github.event.inputs.run_id }}
+        run: |
+          set -euo pipefail
+          case "${RUN_ID}" in
+            ''|*[!A-Za-z0-9._-]*)
+              echo "::error::run_id must be one path segment of [A-Za-z0-9._-]" >&2
+              exit 1 ;;
+          esac
+          echo "run prefix: runs/${RUN_ID}/"
+
+      - name: Check out the publication code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Install the dependencies the read-only gate needs
+        # The runner's own Python, deliberately, exactly as v2_promotion_lane.yml
+        # does: installing the blue environment.yml would couple this green lane
+        # to the file the blue workflows solve.
+        #
+        # It would also NOT WORK. Measured 2026-09-07 by unpacking the wheels:
+        # environment.yml pins botocore>=1.35.0,<1.36.0, and in that range the
+        # S3 PutObject input shape has NO IfMatch —
+        #   1.35.0  : IfNoneMatch absent, IfMatch absent
+        #   1.35.16 : IfNoneMatch PRESENT, IfMatch absent
+        #   1.35.36 : IfNoneMatch PRESENT, IfMatch absent
+        #   1.36.0  : both present
+        # so the blue pin resolves into a range where immutable write-once
+        # works and the pointer compare-and-swap cannot be expressed at all.
+        # 1.36.0 is the earliest version measured to carry both; versions
+        # between 1.35.36 and 1.36.0 were not tested, so this floor is measured
+        # rather than minimal. require_conditional_write_support checks the
+        # loaded service model before any object is touched regardless.
+        run: |
+          set -euo pipefail
+          python3 --version
+          python3 -m pip install --quiet --disable-pip-version-check \
+            'jsonschema>=4.23.0' 'boto3>=1.36.0' 'botocore>=1.36.0'
+          python3 -c "import botocore, boto3; print('botocore', botocore.__version__, '/ boto3', boto3.__version__)"
+
+      - name: Validate the run prefix with the candidate identity, writing nothing
+        id: stage
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_STAGING_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_STAGING_SECRET_ACCESS_KEY }}
+          R2_STAGING_ACCESS_KEY_ID: ${{ secrets.R2_STAGING_ACCESS_KEY_ID }}
+          R2_STAGING_SECRET_ACCESS_KEY: ${{ secrets.R2_STAGING_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          RUN_ID: ${{ github.event.inputs.run_id }}
+        run: |
+          set -euo pipefail
+          python3 scripts/stage_green_run.py --run "${RUN_ID}"
+
+  # ── lane 3: the promotion identity, serialized ────────────────────────────
+  promote:
+    needs: stage
+    if: github.event_name == 'workflow_dispatch' && github.repository == 'santibravocmcc/Araripe'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: v2-promotion
+    concurrency:
+      group: araripe-green-promotion
+      cancel-in-progress: false
+    env:
+      R2_STAGING_BUCKET: ${{ vars.R2_STAGING_BUCKET }}
+      R2_ENDPOINT_URL: ${{ vars.R2_ENDPOINT_URL }}
+
+    steps:
+      - name: Fail closed unless the target is exactly the approved staging bucket
+        run: |
+          set -euo pipefail
+          test "$R2_STAGING_BUCKET" = "araripe-v2-staging" || {
+            echo "::error::refusing: R2_STAGING_BUCKET is not araripe-v2-staging" >&2; exit 1; }
+          test "$R2_ENDPOINT_URL" = "https://9416750169311ee4afc18a8ff3c771d4.r2.cloudflarestorage.com" || {
+            echo "::error::refusing: R2_ENDPOINT_URL is not the approved account endpoint" >&2; exit 1; }
+
+      - name: Accept only a run id that addresses one prefix
+        env:
+          RUN_ID: ${{ github.event.inputs.run_id }}
+        run: |
+          set -euo pipefail
+          case "${RUN_ID}" in
+            ''|*[!A-Za-z0-9._-]*)
+              echo "::error::run_id must be one path segment of [A-Za-z0-9._-]" >&2
+              exit 1 ;;
+          esac
+
+      - name: Check out the publication code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Install the dependencies publication needs
+        # The measured floor, not a plausible one: see the stage job's note.
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet --disable-pip-version-check \
+            'jsonschema>=4.23.0' 'boto3>=1.36.0' 'botocore>=1.36.0'
+
+      - name: Publish, verify, then move the green pointer
+        # No git, no pull request, no merge — the whole point of Package 2B.2C.
+        # The order inside is the mechanism: objects and the ledger first under
+        # the immutable release prefix, the manifest LAST, every declared
+        # object re-read, and only then one If-Match compare-and-swap on
+        # pointers/green/current.json. A run that dies earlier leaves the
+        # previous release live and complete.
+        #
+        # The compare-and-swap sits BEHIND this serialized lane rather than
+        # instead of it: concurrency groups are per repository, so a local
+        # operator run or a re-dispatch from another ref is outside the lane
+        # entirely (GREEN_RELEASE_CONTRACT_V1.md §9).
+        env:
+          R2_PROMOTION_ACCESS_KEY_ID: ${{ secrets.R2_PROMOTION_ACCESS_KEY_ID }}
+          R2_PROMOTION_SECRET_ACCESS_KEY: ${{ secrets.R2_PROMOTION_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          RUN_ID: ${{ github.event.inputs.run_id }}
+          RELEASE_ID: ${{ needs.stage.outputs.release_id }}
+        run: |
+          set -euo pipefail
+          echo "lane: araripe-green-promotion (serialized, cancel-in-progress: false)"
+          echo "the candidate identity accepted this run as release ${RELEASE_ID}"
+          python3 scripts/publish_green_release.py publish --run "${RUN_ID}"

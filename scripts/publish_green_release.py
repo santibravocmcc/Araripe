@@ -16,6 +16,10 @@ represent zero-alert dates and stale objects explicitly.
     # writes objects, verifies them, then moves the pointer:
     python scripts/publish_green_release.py apply --ledger … --object …
 
+    # the same three steps, from a run prefix in the staging bucket rather
+    # than from local files — the operational path, with no git in it:
+    python scripts/publish_green_release.py publish --run <run-id>
+
     # deliberate backwards move, to a release that is still complete:
     python scripts/publish_green_release.py rollback --to rel-g1-…
 
@@ -37,7 +41,16 @@ Boundaries this script does not cross
   only ``araripe.timeseries.release/1``); the green release is built beside it
   and the two meet at the Phase 6 cutover, not before.
 
-``apply``, ``rollback`` and ``status`` need the **promotion** identity, which
+``publish`` is the Package 2B.2C entry point: it reads one green run from
+``runs/<run-id>/`` in the staging bucket — the immutable per-run prefix lane 2
+writes — and runs the same publish → verify → promote sequence ``apply``
+runs from local files.  Nothing on that path touches git, which is the
+roadmap bullet it exists for (*keep operational data publication automatic
+without PRs or manual merges*).  Whether a run prefix is publishable at all is
+answered first, with the smaller lane-2 identity, by
+``scripts/stage_green_run.py``.
+
+``apply``, ``publish``, ``rollback`` and ``status`` need the **promotion** identity, which
 is deliberately not the green candidate identity and is not provisioned yet.
 Without it they stop and name the missing capability instead of substituting a
 broader credential.
@@ -66,6 +79,7 @@ from src.publication.green_release import (  # noqa: E402
 )
 from src.publication.ledger_binding import ContractBindingError  # noqa: E402
 from src.publication.ledger_gate import check_processing_ledger  # noqa: E402
+from src.publication import run_inputs as ri  # noqa: E402
 
 #: The promotion identity is separate from the candidate identity by design
 #: (``docs/operations/GREEN_CONCURRENCY_LANES.md`` lane 3).
@@ -294,10 +308,24 @@ def cmd_plan(args) -> int:
 def cmd_apply(args) -> int:
     release, ledger_document, objects = load_inputs(args)
     print_plan(release, ledger_document, objects)
-    store = build_store()
-    report = ap.publish_release(
-        store, release, ledger_document, {item.path: item.body for item in objects}
+    return _publish_verify_promote(
+        release,
+        ledger_document,
+        {item.path: item.body for item in objects},
+        build_store(),
     )
+
+
+def _publish_verify_promote(release, ledger_document, bodies, store) -> int:
+    """The three steps, in the one order that makes publication atomic.
+
+    Objects and ledger first under the immutable prefix, the manifest last,
+    every declared object re-read, and only then one compare-and-swap on the
+    pointer.  A run that dies at any earlier step leaves the previous release
+    live and complete.
+    """
+
+    report = ap.publish_release(store, release, ledger_document, bodies)
     print(
         f"\npublished: {len(report.created)} created, "
         f"{len(report.unchanged)} already identical"
@@ -313,6 +341,23 @@ def cmd_apply(args) -> int:
         f"{result.sequence}, {result.tombstone_count} tombstone(s)"
     )
     return 0
+
+
+def cmd_publish(args) -> int:
+    """Publish one green run from its immutable prefix in the staging bucket.
+
+    The run prefix is read with the same store that publishes, so the bytes
+    validated are the bytes written.  ``load_run`` has already run the ledger
+    gate and ``check_green_release`` before this returns, so nothing is
+    written on the strength of an unvalidated input.
+    """
+
+    store = build_store()
+    staged = ri.load_run(store, args.run)
+    print(ri.describe(staged))
+    return _publish_verify_promote(
+        staged.release, staged.ledger_document, staged.bodies, store
+    )
 
 
 def cmd_rollback(args) -> int:
@@ -371,6 +416,14 @@ def main(argv=None) -> int:
     apply_ = sub.add_parser("apply", help="publish, verify, then promote the pointer")
     add_build_arguments(apply_)
     apply_.set_defaults(handler=cmd_apply, json=False)
+
+    published = sub.add_parser(
+        "publish",
+        help="publish, verify and promote one run from runs/<run-id>/ in the "
+             "staging bucket — the operational path, with no git in it",
+    )
+    published.add_argument("--run", required=True, help="the run id to publish")
+    published.set_defaults(handler=cmd_publish)
 
     back = sub.add_parser("rollback", help="point at an already published release")
     back.add_argument("--to", required=True, help="release id to point at")

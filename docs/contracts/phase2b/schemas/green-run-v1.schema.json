@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/santibravocmcc/Araripe/docs/contracts/phase2b/schemas/green-run-v1.schema.json",
+  "title": "Araripe green run input, version 1",
+  "description": "What one green run deposits under runs/<run_id>/ so that publication can proceed without a git pull request. This document is the operator's command line written down: it carries exactly the information scripts/publish_green_release.py takes as --ledger, --artifact, --product, --date, --state-sha256 and --state-bytes, and nothing else. It is NOT a second ledger and defines no scientific fact: every checksum a publication trusts still comes from the processing ledger this document points at. Intent is declared here, never deduced from bytes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "run_id", "ledger", "persistence_state", "objects"],
+  "properties": {
+    "schema": { "const": "araripe.green.run/1" },
+    "run_id": {
+      "description": "The immutable per-run prefix this document lives under: runs/<run_id>/. One path segment, so a run identity can never address another run's prefix.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "ledger": {
+      "description": "Where the processing-ledger-v3 document sits inside the run prefix. Fixed, exactly as the release manifest fixes its own ledger path: a run that needs a second name for it is publishing two things.",
+      "const": "ledger.json"
+    },
+    "persistence_state": {
+      "description": "Provenance of the persistence state this run wrote — a digest and a length, never a claim about its contents. In particular max(last_seen) is not a watermark: update_tracks moves it backwards inside the 16-day window (GREEN_RELEASE_CONTRACT_V1.md §4).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sha256", "bytes"],
+      "properties": {
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "bytes": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "objects": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/run_object" },
+      "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "logical_path": {
+      "description": "Path inside the release prefix. No absolute path, no traversal, no backslash, no trailing slash. Identical to the release manifest's rule, because this becomes that.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?!\\.)(?!.*//)(?!.*/\\.)[A-Za-z0-9][A-Za-z0-9._@+-]*(/[A-Za-z0-9][A-Za-z0-9._@+-]*)*$"
+    },
+    "run_object": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "source", "kind", "observed_on", "content_type"],
+      "properties": {
+        "path": {
+          "description": "The logical path this object will occupy inside the release prefix.",
+          "$ref": "#/$defs/logical_path"
+        },
+        "source": {
+          "description": "Where the bytes sit inside the run prefix. Same path rule, so a source can never escape runs/<run_id>/.",
+          "$ref": "#/$defs/logical_path"
+        },
+        "kind": {
+          "description": "acquisition_artifact: the object IS the artifact whose checksum the ledger row seals. date_product: derived for a whole UTC date, and the ledger makes no claim about it. Declared, never inferred from a checksum — a first draft of the 2B.2B CLI guessed this and let a tampered artifact pass as another kind of object.",
+          "enum": ["acquisition_artifact", "date_product"]
+        },
+        "observed_on": {
+          "description": "The UTC date this object belongs to. Declared rather than parsed out of the path: a filename is not evidence of anything.",
+          "type": "string",
+          "format": "date"
+        },
+        "content_type": { "type": "string", "minLength": 1 },
+        "acquisition_id": { "type": "string", "pattern": "^acq-v3-[0-9a-f]{64}$" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "kind": { "const": "acquisition_artifact" } },
+            "required": ["kind"]
+          },
+          "then": { "required": ["acquisition_id"] }
+        },
+        {
+          "if": {
+            "properties": { "kind": { "const": "date_product" } },
+            "required": ["kind"]
+          },
+          "then": { "not": { "required": ["acquisition_id"] } }
+        }
+      ]
+    }
+  }
+}
