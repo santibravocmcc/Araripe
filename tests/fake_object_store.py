@@ -21,9 +21,13 @@ asserted.
 from __future__ import annotations
 
 import hashlib
+from datetime import datetime, timezone
 from io import BytesIO
 
 from botocore.exceptions import ClientError
+
+#: A fixed instant for objects whose modification time a test does not set.
+EPOCH = datetime(2026, 1, 1, tzinfo=timezone.utc)
 
 
 def client_error(code: str, op: str, status: int) -> ClientError:
@@ -56,6 +60,13 @@ class FakeS3:
         self.reads: list[str] = []
         #: set to a body to have the next matching get() return a corrupt read
         self.tamper: dict[str, bytes] = {}
+        #: key -> LastModified, for the retention planner's horizons
+        self.modified: dict[str, "datetime"] = {}
+        #: how many keys one list_objects_v2 page returns
+        self.page_size = 1000
+        #: omit NextContinuationToken on a truncated page, so a caller that
+        #: would silently plan over half a bucket has a branch to fail in
+        self.drop_continuation_token = False
 
     # ── reads ────────────────────────────────────────────────────────────────
 
@@ -106,6 +117,35 @@ class FakeS3:
         self.objects[Key] = (Body, ContentType)
         self.writes.append((Key, ContentType))
         return {"ETag": etag_of(Body)}
+
+    # ── listing ──────────────────────────────────────────────────────────────
+    #
+    # Added by Package 2B.3 for the retention planner, which needs an
+    # inventory.  Deliberately NOT a delete: this fake enforces the same shape
+    # the real store has, and the real store has no delete operation at all.
+    # ``page_size`` forces the continuation-token path so pagination is
+    # exercised rather than assumed.
+
+    def list_objects_v2(self, Bucket, ContinuationToken=None, MaxKeys=None):
+        keys = sorted(self.objects)
+        start = keys.index(ContinuationToken) if ContinuationToken else 0
+        size = MaxKeys or self.page_size
+        page = keys[start : start + size]
+        truncated = start + size < len(keys)
+        response = {
+            "Contents": [
+                {
+                    "Key": key,
+                    "Size": len(self.objects[key][0]),
+                    "LastModified": self.modified.get(key, EPOCH),
+                }
+                for key in page
+            ],
+            "IsTruncated": truncated,
+        }
+        if truncated and not self.drop_continuation_token:
+            response["NextContinuationToken"] = keys[start + size]
+        return response
 
     # ── inspection helpers ───────────────────────────────────────────────────
 

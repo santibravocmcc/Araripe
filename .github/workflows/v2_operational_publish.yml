@@ -154,9 +154,19 @@ jobs:
 
       - name: Validate the run prefix with the candidate identity, writing nothing
         id: stage
+        # Package 2B.3, "least-privilege credentials and step-level secret
+        # exposure". This step used to export the same key pair a second time
+        # under AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY. Nothing read them:
+        # stage_green_run.py reads R2_STAGING_* and hands the values to
+        # boto3.client explicitly. What they did do is put the credential into
+        # boto3's DEFAULT chain, so any AWS call anywhere in this step — one
+        # that never went through build_client and its bucket guard — was
+        # authenticated. Measured 2026-09-07: a bucket-scoped Object Read &
+        # Write key is refused on araripe-cogs but WRITES and DELETES inside
+        # araripe-v2-staging (scripts/probe_readonly_identity.py, run-id
+        # local-2b3-measure-1). Narrowing the exposure to the names the script
+        # actually reads is free, and tests/test_secret_exposure.py pins it.
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.R2_STAGING_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_STAGING_SECRET_ACCESS_KEY }}
           R2_STAGING_ACCESS_KEY_ID: ${{ secrets.R2_STAGING_ACCESS_KEY_ID }}
           R2_STAGING_SECRET_ACCESS_KEY: ${{ secrets.R2_STAGING_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ vars.AWS_REGION }}
