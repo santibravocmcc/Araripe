@@ -36,6 +36,14 @@ dependencies:
   # Já vinha como dependência transitiva do dask; declarado porque
   # tests/test_workflow_lanes.py lê os workflows do Actions diretamente.
   - pyyaml>=6.0
+  # NÃO vinha transitivamente (verificado com `conda env create --dry-run`):
+  # adiciona 4 pacotes puros-Python (jsonschema, jsonschema-specifications,
+  # referencing, rpds-py) e não muda a versão de nenhum pacote existente.
+  # Necessário porque o portão de publicação valida o ledger do Package 2A.6
+  # contra o schema fixado (src/publication/ledger_binding.py). Mesma
+  # especificação da branch científica, para os dois arquivos convergirem
+  # quando o 2A.6 for mesclado.
+  - jsonschema>=4.23.0
   # ─── Testing ─────────────────────────────────────────────────────────────
   - pytest>=8.0.0
   # ─── Pip-only packages (not on conda-forge or newer versions needed) ────
