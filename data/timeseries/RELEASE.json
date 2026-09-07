@@ -1,13 +1,13 @@
 {
   "latest_observation": "2026-08-30",
-  "published_utc": "2026-09-06T21:19:12Z",
-  "run_id": null,
-  "run_url": null,
+  "published_utc": "2026-09-07T15:52:37Z",
+  "run_id": "34137318406",
+  "run_url": "https://github.com/santibravocmcc/Araripe/actions/runs/34137318406",
   "schema": "araripe.timeseries.release/1",
   "timeseries": {
     "bytes": 57344,
     "path": "data/timeseries/timeseries.db",
-    "sha256": "d3a59201b8d5c7716fc05c2ff69b1dfe45614b4a3adf20940dee9de702866c88"
+    "sha256": "28f7f4f6f4ae45069c989360e462dcea70c632240ac3698eef537fec01ffaeaf"
   },
-  "workflow": null
+  "workflow": "GEE Deforestation Detection (headless)"
 }
