@@ -100,3 +100,30 @@ def test_per_date_increment_once_for_multiple_overlaps():
     out1, st1 = update_tracks(_g([BOX, (X, Y, X + 60, Y + 60)]), st0, "2026-01-05")
     assert set(out1["persistence_count"]) == {2}   # both inherit the single +1
     assert len(st1) == 1
+
+
+def test_last_seen_can_move_backwards():
+    """`last_seen` é a data do casamento processado mais recentemente.
+
+    NÃO é "a data mais recente já vista", e portanto `first_seen <= last_seen`
+    NÃO é invariante deste módulo. `update_tracks` faz `w_last[t] = date`
+    incondicionalmente e preserva `w_first[t]`, e cada rodada reprocessa uma
+    janela de `SEARCH_DAYS_BACK = 16` dias — então uma rodada posterior que
+    case a track numa data mais antiga empurra `last_seen` para trás.
+
+    Este teste existe porque uma validação em `scripts/r2_state.py` afirmou o
+    invariante contrário e derrubou a rodada de produção de 2026-09-07
+    (`feature 101684: first_seen 2026-07-13 is after last_seen 2026-07-11`),
+    com o estado íntegro. Se alguém quiser reintroduzir aquela checagem, é aqui
+    que deve olhar primeiro: ou este comportamento muda, ou a checagem é errada.
+    """
+    # rodada A: só a cena de 13/07 rendeu alerta
+    _, state = update_tracks(_g([BOX]), None, "2026-07-13")
+    assert state.iloc[0]["first_seen"] == state.iloc[0]["last_seen"] == "2026-07-13"
+
+    # rodada B: a mesma janela agora traz uma cena de 11/07 que casa com a track
+    _, state = update_tracks(_g([BOX]), state, "2026-07-11")
+    row = state.iloc[0]
+    assert row["first_seen"] == "2026-07-13"
+    assert row["last_seen"] == "2026-07-11"
+    assert row["first_seen"] > row["last_seen"]

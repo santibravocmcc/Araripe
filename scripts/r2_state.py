@@ -36,6 +36,34 @@ So `get` now distinguishes exactly one benign case from every other outcome:
 warning and exit 0, which turned "detection produced no state" into a silent
 no-op that left the previous state live. It is now an error, and the payload is
 validated before upload so a corrupt state is never published.
+
+Escopo da validação (corrigido em 2026-09-07)
+---------------------------------------------
+A primeira versão desta validação afirmou um invariante que o código NUNCA
+garantiu — `first_seen <= last_seen` — e derrubou a rodada de produção de
+2026-09-07 (`feature 101684: first_seen 2026-07-13 is after last_seen
+2026-07-11`). O estado estava íntegro; a checagem estava errada.
+
+Em `update_tracks`, `w_last[t] = date` sobrescreve `last_seen` com a data em
+processamento, enquanto `w_first[t]` é preservado. Como cada rodada reprocessa
+uma janela de `SEARCH_DAYS_BACK = 16` dias, uma rodada posterior pode casar uma
+track numa data MAIS ANTIGA do que a que já estava registrada — e aí
+`last_seen` anda para trás. `last_seen` significa "data do casamento processado
+mais recentemente", não "data mais recente já vista".
+
+Daí a divisão, agora baseada em evidência e não em suposição:
+
+- **fatal** — o objeto não serve como estado: corpo truncado, vazio, não-JSON,
+  não é FeatureCollection, sem `features`, feature que não é objeto, sem
+  `properties`, sem as três colunas, sem geometria, ou `last_seen` ilegível
+  (`update_tracks` chama `_days_between` nele e estouraria depois);
+- **anomalia contada** — o pipeline lida com ela, então avisa e segue:
+  `first_seen > last_seen` (normal, acima), `first_seen` ilegível (só é
+  carregado como string, nunca parseado) e `n_sightings` não-inteiro ou < 1
+  (`pd.to_numeric(errors="coerce").fillna(1)` resolve).
+
+A lição: uma validação fail-closed só pode exigir o que o produtor realmente
+promete. Exigir mais transforma a proteção na própria falha.
 """
 import json
 import os
@@ -122,6 +150,7 @@ def validate_state(raw, *, expected_bytes=None):
     if not isinstance(features, list):
         raise StateError("FeatureCollection has no 'features' list")
 
+    anomalies = {}
     for i, feature in enumerate(features):
         if not isinstance(feature, dict):
             raise StateError(f"feature {i} is a {type(feature).__name__}, expected an object")
@@ -133,22 +162,54 @@ def validate_state(raw, *, expected_bytes=None):
             raise StateError(f"feature {i} is missing {', '.join(missing)}")
         if feature.get("geometry") is None:
             raise StateError(f"feature {i} has no geometry — it could never match an alert")
-        _validate_track(i, props)
+        _check_track(i, props, anomalies)
 
-    return {"tracks": len(features), "bytes": len(raw)}
+    summary = {"tracks": len(features), "bytes": len(raw), "anomalies": anomalies}
+    _report_anomalies(summary)
+    return summary
 
 
-def _validate_track(i, props):
-    """Sanity-check one track's counters and dates."""
+# Anomalias que NÃO impedem o pipeline de rodar. Contadas e avisadas, nunca
+# fatais — ver a nota "Escopo da validação" no topo do módulo.
+_ODD_BACKWARDS = "first_seen_after_last_seen"
+_ODD_FIRST_DATE = "first_seen_not_iso"
+_ODD_COUNT = "n_sightings_not_a_positive_int"
+
+
+def _check_track(i, props, anomalies):
+    """Fatal só no que quebra o pipeline; o resto é anomalia contada."""
+    # FATAL: update_tracks chama _days_between(date, last_seen), que estoura
+    # com uma data ilegível — o run morreria depois, com traceback pior.
+    _iso_date(i, props, "last_seen")
+
+    # Contadas: nenhuma destas impede a próxima detecção de rodar.
+    first = _iso_date_or_none(props, "first_seen")
+    if first is None:
+        _note(anomalies, _ODD_FIRST_DATE, i, props.get("first_seen"))
+    elif str(first) > str(props["last_seen"]):
+        _note(anomalies, _ODD_BACKWARDS, i,
+              f"{props['first_seen']} > {props['last_seen']}")
     try:
-        n = int(props["n_sightings"])
-    except (TypeError, ValueError) as e:
-        raise StateError(f"feature {i}: n_sightings={props['n_sightings']!r} is not an integer") from e
-    if n < 1:
-        raise StateError(f"feature {i}: n_sightings={n} — a track is seen at least once")
-    first, last = _iso_date(i, props, "first_seen"), _iso_date(i, props, "last_seen")
-    if first > last:
-        raise StateError(f"feature {i}: first_seen {first} is after last_seen {last}")
+        if int(props["n_sightings"]) < 1:
+            _note(anomalies, _ODD_COUNT, i, props["n_sightings"])
+    except (TypeError, ValueError):
+        _note(anomalies, _ODD_COUNT, i, props["n_sightings"])
+
+
+def _note(anomalies, kind, i, detail):
+    """Registra a contagem e o primeiro exemplo de cada tipo de anomalia."""
+    entry = anomalies.setdefault(kind, {"count": 0, "first_example": None})
+    entry["count"] += 1
+    if entry["first_example"] is None:
+        entry["first_example"] = f"feature {i}: {detail}"
+
+
+def _report_anomalies(summary):
+    """Um aviso por tipo, com contagem e exemplo — nunca uma falha."""
+    marker = "::warning::" if os.environ.get("GITHUB_ACTIONS") else "aviso: "
+    for kind, entry in sorted(summary["anomalies"].items()):
+        print(f"{marker}{summary['tracks']} tracks, {entry['count']} com "
+              f"{kind} ({entry['first_example']})", flush=True)
 
 
 def _iso_date(i, props, key):
@@ -157,6 +218,14 @@ def _iso_date(i, props, key):
         return date.fromisoformat(str(props[key]))
     except ValueError as e:
         raise StateError(f"feature {i}: {key}={props[key]!r} is not a YYYY-MM-DD date") from e
+
+
+def _iso_date_or_none(props, key):
+    from datetime import date
+    try:
+        return date.fromisoformat(str(props[key]))
+    except ValueError:
+        return None
 
 
 def get(client, bucket, path, *, require_existing=False):
