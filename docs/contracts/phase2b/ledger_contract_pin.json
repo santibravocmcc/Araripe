@@ -1,0 +1,68 @@
+{
+  "pin_version": "1",
+  "pinned_by": "Package 2B.2A",
+  "pinned_on": "2026-09-07",
+  "consumed_contract": "processing-ledger-v3",
+  "contract_family": "phase2a-identity-persistence-ledger",
+  "contract_major": "v3",
+  "declared_contract_version": "3.0.0",
+  "decision": {
+    "chosen_family": "v3",
+    "authorized_on": "2026-09-01",
+    "authorization_record": "config/phase2a_sentinel2c_contract_amendment_v3.json",
+    "roadmap_bullet_wording": "v2",
+    "roadmap_bullet_predates": "the 2026-09-01 Sentinel-2C amendment",
+    "rationale": "docs/contracts/phase2b/LEDGER_CONTRACT_BINDING_V1.md"
+  },
+  "producer": {
+    "repository": "santibravocmcc/Araripe",
+    "ref": "claude/phase2a6d-mapbiomas",
+    "commit": "64fd781f1551a45914a7db32960b923c05056955",
+    "module": "src/detection/ledger_v3.py",
+    "note": "Package 2A.6 is closed on this ref and deliberately not merged into main. The artifacts below are byte-identical copies taken from this commit at these exact paths, so a later 2A.6 merge either leaves them unchanged or breaks this pin."
+  },
+  "identity_primitives": {
+    "note": "Contract constants the schema does not carry. Defined in V2_IDENTITY_PERSISTENCE_LEDGER.md 'Canonical identity framing' and inherited unchanged by the v3 major.",
+    "join": "U+001F",
+    "list_join": "U+000A",
+    "acquisition_identity_domain": "acquisition-v3",
+    "acquisition_id_prefix": "acq-v3-",
+    "ledger_identity_domain": "processing-ledger-v3",
+    "ledger_id_prefix": "pl-v3-"
+  },
+  "derived_from_pinned_schema": [
+    "schema_version constant",
+    "terminal status vocabulary",
+    "acquisition, observation, run-manifest and ledger ID patterns"
+  ],
+  "artifacts": [
+    {
+      "path": "docs/contracts/phase2a/schemas/processing-ledger-v3.schema.json",
+      "role": "consumed_schema",
+      "purpose": "The JSON Schema the publication gate validates every ledger against.",
+      "sha256": "fde07d7b03b5caf43c01c7a4ee1ab0c0d4f60d2bd71151129ada872cda5f2ad0",
+      "bytes": 12130
+    },
+    {
+      "path": "docs/contracts/phase2a/examples/processing-ledger-v3.example.json",
+      "role": "producer_acceptance_fixture",
+      "purpose": "Producer-generated ledger whose embedded digests anchor the consumer's canonicalization and reconciliation.",
+      "sha256": "fd2db1efd8ac79563f498677bb9c8eccf9f32e8e177958e196a8f1e4353a2e87",
+      "bytes": 6668
+    },
+    {
+      "path": "docs/contracts/phase2a/V3_IDENTITY_PERSISTENCE_LEDGER.md",
+      "role": "contract_document",
+      "purpose": "The v3 family contract: why the major exists and the complete delta from v2.",
+      "sha256": "a6a96c03db02d561eb8f768b143351d102966bff3cfa92cc4c7420fd32b39487",
+      "bytes": 5105
+    },
+    {
+      "path": "docs/contracts/phase2a/V2_IDENTITY_PERSISTENCE_LEDGER.md",
+      "role": "contract_document",
+      "purpose": "The authoritative description of every rule the v3 family enforces; v3 changes none of these semantics.",
+      "sha256": "3ea36cfe50a91dd73aa0fb9f7b7100ec27d6f40dc1a849eb2d07a2054aa8f377",
+      "bytes": 17780
+    }
+  ]
+}
