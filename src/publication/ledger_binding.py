@@ -347,3 +347,103 @@ def pinned_id_pattern(name: str) -> str:
 
 def identity_primitives() -> dict[str, Any]:
     return dict(load_pin()["identity_primitives"])
+
+
+def pinned_status_semantics() -> dict[str, frozenset[str]]:
+    """Which terminal statuses seal an artifact, and which guarantee an alert.
+
+    Package 2B.2B has to distinguish a date that was observed and held no
+    alert from a date nobody could observe, and it must not invent a second
+    status vocabulary to do it (Package 2B.2 bullet 1: publication integration,
+    not a second ledger definition).  Both properties are already stated by
+    the pinned schema's per-status conditionals, so they are read back out of
+    it rather than restated:
+
+    * ``artifact_sealing`` — the statuses whose branch constrains
+      ``output.artifact_sha256`` to a sha256 rather than leaving it
+      unconstrained.  The contract therefore guarantees a checksummed artifact
+      exists for such an acquisition, which is what makes the acquisition
+      *usable* to a publisher.  For the five rejection/failure statuses the
+      field is deliberately unconstrained
+      (``LEDGER_CONTRACT_BINDING_V1.md`` §5, non-requirement 2), so those are
+      excluded and their ``artifact_sha256`` is never read.
+    * ``alert_bearing`` — the statuses whose branch requires
+      ``output.observation_count`` to be at least 1.  A date with one such
+      acquisition holds alerts as a matter of contract, not of inspection.
+
+    A zero-alert status is then exactly ``artifact_sealing - alert_bearing``:
+    observed, checksummed, and carrying no alert.
+
+    The empty-derivation guard below is *not* live protection — the pin makes
+    it unreachable while the pinned bytes stand, because identical bytes yield
+    an identical derivation.  It exists because a silently empty set would
+    make every acquisition look unusable, which is a wrong answer rather than
+    a failure, and because these sets must be re-derived if the contract is
+    ever re-pinned with a different structure.
+    """
+
+    schema = pinned_schema()
+    try:
+        branches = schema["$defs"]["terminal_row"]["allOf"]
+    except (KeyError, TypeError) as exc:
+        raise ContractBindingError(
+            "the pinned schema does not declare per-status conditionals on a "
+            "terminal row, so artifact-sealing statuses cannot be derived"
+        ) from exc
+
+    sealing: set[str] = set()
+    bearing: set[str] = set()
+    for branch in branches:
+        if not isinstance(branch, dict):
+            continue
+        statuses = _branch_statuses(branch.get("if"))
+        output = (
+            ((branch.get("then") or {}).get("properties") or {}).get("output") or {}
+        )
+        fields = output.get("properties") or {}
+        if _is_sha256_ref(fields.get("artifact_sha256")):
+            sealing |= statuses
+        count = fields.get("observation_count") or {}
+        if isinstance(count, dict) and _at_least_one(count):
+            bearing |= statuses
+
+    if not sealing or not bearing or not bearing <= sealing:
+        raise ContractBindingError(
+            "the pinned schema's per-status conditionals do not yield a usable "
+            f"artifact-sealing/alert-bearing split (sealing={sorted(sealing)}, "
+            f"alert-bearing={sorted(bearing)})"
+        )
+    return {
+        "artifact_sealing": frozenset(sealing),
+        "alert_bearing": frozenset(bearing),
+        "zero_alert": frozenset(sealing - bearing),
+    }
+
+
+def _branch_statuses(condition: Any) -> set[str]:
+    """The statuses a conditional branch applies to."""
+
+    status = ((condition or {}).get("properties") or {}).get("status") or {}
+    if not isinstance(status, dict):
+        return set()
+    if "const" in status:
+        return {str(status["const"])}
+    values = status.get("enum")
+    return {str(value) for value in values} if isinstance(values, list) else set()
+
+
+def _is_sha256_ref(field: Any) -> bool:
+    """True when the field is constrained to the schema's own sha256 type.
+
+    A ``oneOf`` admitting null is *not* a seal: that is the shape the schema
+    uses where a checksum is optional.
+    """
+
+    return isinstance(field, dict) and field.get("$ref") == "#/$defs/sha256"
+
+
+def _at_least_one(count: dict[str, Any]) -> bool:
+    if count.get("const") == 0:
+        return False
+    minimum = count.get("minimum")
+    return isinstance(minimum, int) and minimum >= 1
