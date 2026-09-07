@@ -56,8 +56,20 @@ def lane_text():
     return LANE.read_text(encoding="utf-8")
 
 
-def lane_steps(lane):
+#: The job that holds the promotion identity. Every other job in the file must
+#: stay provably credential-free, so the assertions below are per JOB rather
+#: than per file — the distinction the 2026-09-07 rollback wiring introduced.
+AUTHORITY_JOB = "pointer"
+
+
+def lane_steps(lane, job=None):
+    if job is not None:
+        return list(lane["jobs"][job]["steps"])
     return [step for job in lane["jobs"].values() for step in job["steps"]]
+
+
+def credential_free_jobs(lane):
+    return {name: job for name, job in lane["jobs"].items() if name != AUTHORITY_JOB}
 
 
 def executed(run: str) -> str:
@@ -93,19 +105,36 @@ def all_executed(lane) -> str:
 
 # ── the lane holds no authority ──────────────────────────────────────────────
 
-def test_the_lane_declares_no_environment(lane):
-    """An Environment is where a credential would come from; there is none.
+def test_only_the_authority_job_declares_an_environment(lane):
+    """Exactly one job may hold a credential, and it is named.
 
-    `v2-staging` would not do: its identity is the candidate identity, which
-    lane 3 must never use, and its branch policy admits only `main`.
+    Until 2026-09-07 no job here declared an Environment, because the protected
+    promotion identity did not exist. It does now, and it is proven, so the
+    property is no longer "this file holds nothing" — it is "everything except
+    one named job holds nothing". That is the weaker claim, so it is asserted
+    per job rather than per file.
     """
 
-    for job in lane["jobs"].values():
-        assert "environment" not in job
+    assert lane["jobs"][AUTHORITY_JOB]["environment"] == "v2-promotion"
+    for name, job in credential_free_jobs(lane).items():
+        assert "environment" not in job, name
 
 
-def test_the_lane_names_no_secret(lane_text):
-    assert re.findall(r"secrets\.[A-Za-z_0-9]+", lane_text) == []
+def test_only_the_authority_job_names_a_secret(lane):
+    for name, job in credential_free_jobs(lane).items():
+        for step in job["steps"]:
+            rendered = str(step.get("env") or {}) + str(step.get("run") or "")
+            assert "secrets." not in rendered, f"{name}/{step['name']}"
+
+
+def test_the_authority_job_names_only_the_promotion_identity(lane):
+    used = set()
+    for step in lane_steps(lane, AUTHORITY_JOB):
+        used |= set(re.findall(r"secrets\.([A-Za-z_0-9]+)", str(step.get("env") or {})))
+    assert used == {
+        "R2_PROMOTION_ACCESS_KEY_ID",
+        "R2_PROMOTION_SECRET_ACCESS_KEY",
+    }
 
 
 def test_the_lane_never_binds_the_candidate_identity(lane, lane_text):
@@ -143,31 +172,69 @@ def test_the_lane_keeps_its_serialized_group(lane):
     }
 
 
-def test_no_mode_performs_an_object_operation(lane):
-    """Nothing reachable from this file can touch a bucket."""
+def test_no_credential_free_mode_performs_an_object_operation(lane):
+    """The modes that hold nothing must still be unable to touch a bucket."""
 
-    scripts = all_executed(lane)
+    scripts = "\n".join(
+        executed(step.get("run", ""))
+        for job in credential_free_jobs(lane).values()
+        for step in job["steps"]
+    )
     for forbidden in ("aws s3", "boto3", "r2_state.py", "upload_to_r2", "put_object"):
         assert forbidden not in scripts
     for mutating in ("apply", "rollback", "status"):
         assert f"publish_green_release.py {mutating}" not in scripts
 
 
-def test_the_only_publication_command_is_plan(lane):
-    invocations = re.findall(
-        r"publish_green_release\.py\s+(\w+)", all_executed(lane)
+def test_the_lane_never_publishes_and_never_promotes(lane):
+    """Rollback and status, and nothing else that writes a release.
+
+    `promote` is deliberately absent: operational promotion belongs to
+    `v2_operational_publish.yml`, which validates the run with the candidate
+    identity first. Two workflows able to promote would be two paths to one
+    mutable object, each blind to the other's preconditions.
+    """
+
+    invocations = set(
+        re.findall(r"publish_green_release\.py\s+(\w+)", all_executed(lane))
     )
-    assert set(invocations) == {"plan"}
+    assert invocations == {"plan", "rollback", "status"}
+    assert "apply" not in invocations
+    assert "publish" not in invocations
 
 
-def test_the_authority_modes_stop_and_name_what_is_missing(lane):
+def test_promote_is_refused_here_and_says_who_owns_it(lane):
+    """The refusal survived, with a different and still-true reason.
+
+    It used to say the promotion identity was missing. That went stale the day
+    the Environment was created, and a stale refusal is how this programme
+    keeps losing time — so the message now names the owner instead.
+    """
+
     step = next(
-        step for step in lane_steps(lane) if "authority" in step["name"].lower()
+        step for step in lane_steps(lane) if "second promotion path" in step["name"]
     )
-    assert "promote" in step["if"] and "rollback" in step["if"]
-    assert "missing capability" in step["run"]
-    assert "R2_PROMOTION_ACCESS_KEY_ID" in step["run"]
+    assert step["if"] == "github.event.inputs.mode == 'promote'"
+    assert "v2_operational_publish.yml" in step["run"]
+    assert "missing capability" not in step["run"]
     assert step["run"].rstrip().endswith("exit 1")
+
+
+def test_a_malformed_release_id_never_reaches_an_object_key(lane):
+    step = next(
+        step for step in lane_steps(lane, AUTHORITY_JOB)
+        if "release id" in step["name"].lower()
+    )
+    assert step["if"] == "github.event.inputs.mode == 'rollback'"
+    script = executed(step["run"])
+    assert "rel-g1-" in script and "64" in script and "*[!0-9a-f]*" in script
+    rollback = next(
+        step for step in lane_steps(lane, AUTHORITY_JOB)
+        if "deliberately" in step["name"]
+    )
+    assert lane_steps(lane, AUTHORITY_JOB).index(step) < lane_steps(
+        lane, AUTHORITY_JOB
+    ).index(rollback)
 
 
 def test_the_2b0_lane_proof_mode_survives(lane):
@@ -200,11 +267,13 @@ def test_every_declared_mode_is_handled(lane):
     modes = set(declared.group(1).split("|"))
     handled = {
         "contract-check": False, "plan": False, "promote": False,
-        "rollback": False, "lane-proof": False,
+        "rollback": False, "status": False, "lane-proof": False,
     }
-    for step in lane_steps(lane):
+    conditions = [step.get("if") or "" for step in lane_steps(lane)]
+    conditions += [job.get("if") or "" for job in lane["jobs"].values()]
+    for condition in conditions:
         for mode in list(handled):
-            if f"'{mode}'" in (step.get("if") or ""):
+            if f"'{mode}'" in condition:
                 handled[mode] = True
     assert modes == set(handled)
     assert all(handled.values()), sorted(k for k, v in handled.items() if not v)
