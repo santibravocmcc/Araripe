@@ -1,0 +1,214 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/santibravocmcc/Araripe/docs/contracts/phase2b/schemas/green-release-v1.schema.json",
+  "title": "Araripe green release manifest, version 1",
+  "description": "One immutable green (v2) release. Every field is a pure function of the processing ledger it was built from and of the object bodies published with it: no clock, no run identity, no actor. Publication provenance belongs to the pointer, which is the mutable object that records a promotion event.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "release_id",
+    "identity_inputs_sha256",
+    "release_prefix",
+    "ledger",
+    "coverage",
+    "dates",
+    "objects",
+    "state_watermark"
+  ],
+  "properties": {
+    "schema": { "const": "araripe.green.release/1" },
+    "release_id": { "$ref": "#/$defs/release_id" },
+    "identity_inputs_sha256": { "$ref": "#/$defs/sha256" },
+    "release_prefix": {
+      "type": "string",
+      "pattern": "^releases/rel-g1-[0-9a-f]{64}/$"
+    },
+    "ledger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ledger_id",
+        "run_manifest_id",
+        "run_manifest_sha256",
+        "monitoring_extent_id",
+        "algorithm_version",
+        "contract_version",
+        "document_sha256",
+        "expected_acquisition_count",
+        "path",
+        "bytes",
+        "file_sha256"
+      ],
+      "properties": {
+        "ledger_id": { "type": "string", "pattern": "^pl-v3-[0-9a-f]{64}$" },
+        "run_manifest_id": { "type": "string", "minLength": 1 },
+        "run_manifest_sha256": { "$ref": "#/$defs/sha256" },
+        "monitoring_extent_id": { "type": "string", "minLength": 1 },
+        "algorithm_version": { "type": "string", "minLength": 1 },
+        "contract_version": { "type": "string", "minLength": 1 },
+        "document_sha256": { "$ref": "#/$defs/sha256" },
+        "expected_acquisition_count": { "type": "integer", "minimum": 1 },
+        "path": { "const": "ledger.json" },
+        "bytes": { "type": "integer", "minimum": 1 },
+        "file_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["observed_dates", "first_observed_on", "last_observed_on"],
+      "properties": {
+        "observed_dates": {
+          "type": "array",
+          "items": { "type": "string", "format": "date" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "first_observed_on": { "type": "string", "format": "date" },
+        "last_observed_on": { "type": "string", "format": "date" }
+      }
+    },
+    "dates": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/release_date" }
+    },
+    "objects": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/release_object" }
+    },
+    "state_watermark": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "finalized_through",
+        "finalized_dates",
+        "persistence_state_sha256",
+        "persistence_state_bytes"
+      ],
+      "properties": {
+        "finalized_through": {
+          "description": "Latest UTC date whose every manifest-bound acquisition is terminal and whose daily summary reconciles. Derived from the ledger, never supplied.",
+          "type": "string",
+          "format": "date"
+        },
+        "finalized_dates": {
+          "type": "array",
+          "items": { "type": "string", "format": "date" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "persistence_state_sha256": {
+          "description": "Identity of the persistence state this run wrote. Provenance only: this contract makes NO claim about the state's contents, because last_seen is not monotonic (see the contract document).",
+          "$ref": "#/$defs/sha256"
+        },
+        "persistence_state_bytes": { "type": "integer", "minimum": 1 }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "release_id": { "type": "string", "pattern": "^rel-g1-[0-9a-f]{64}$" },
+    "logical_path": {
+      "description": "Path inside the release prefix. No absolute path, no traversal, no backslash, no trailing slash.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?!\\.)(?!.*//)(?!.*/\\.)[A-Za-z0-9][A-Za-z0-9._@+-]*(/[A-Za-z0-9][A-Za-z0-9._@+-]*)*$"
+    },
+    "alert_state": {
+      "description": "alerts: at least one acquisition completed with alerts. zero_alerts: at least one acquisition completed and none produced an alert — a valid observation of absence, never to be collapsed into 'no data'. no_valid_coverage: every acquisition was rejected or failed, so nothing was observed.",
+      "enum": ["alerts", "zero_alerts", "no_valid_coverage"]
+    },
+    "coverage_state": {
+      "description": "complete: every expected acquisition for the date is usable. partial: some were rejected or failed. none: none is usable.",
+      "enum": ["complete", "partial", "none"]
+    },
+    "release_date": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "observed_on",
+        "alert_state",
+        "coverage",
+        "expected_acquisition_count",
+        "usable_acquisition_count",
+        "unusable_acquisition_count",
+        "observation_count",
+        "status_counts",
+        "max_terminal_at",
+        "daily_summary_sha256",
+        "paths"
+      ],
+      "properties": {
+        "observed_on": { "type": "string", "format": "date" },
+        "alert_state": { "$ref": "#/$defs/alert_state" },
+        "coverage": { "$ref": "#/$defs/coverage_state" },
+        "expected_acquisition_count": { "type": "integer", "minimum": 1 },
+        "usable_acquisition_count": { "type": "integer", "minimum": 0 },
+        "unusable_acquisition_count": { "type": "integer", "minimum": 0 },
+        "observation_count": { "type": "integer", "minimum": 0 },
+        "status_counts": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "max_terminal_at": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?Z$"
+        },
+        "daily_summary_sha256": { "$ref": "#/$defs/sha256" },
+        "paths": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/logical_path" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "release_object": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "bytes", "sha256", "content_type", "provenance"],
+      "properties": {
+        "path": { "$ref": "#/$defs/logical_path" },
+        "bytes": { "type": "integer", "minimum": 0 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "content_type": { "type": "string", "minLength": 1 },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "observed_on"],
+          "properties": {
+            "kind": {
+              "description": "acquisition_artifact: the object IS the artifact whose checksum the ledger row seals, so its sha256 must equal that row's artifact_sha256. date_product: derived by the publisher for a whole UTC date; the ledger makes no claim about it and its integrity rests on this document's own digest.",
+              "enum": ["acquisition_artifact", "date_product"]
+            },
+            "observed_on": { "type": "string", "format": "date" },
+            "acquisition_id": {
+              "type": "string",
+              "pattern": "^acq-v3-[0-9a-f]{64}$"
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": { "kind": { "const": "acquisition_artifact" } },
+                "required": ["kind"]
+              },
+              "then": { "required": ["acquisition_id"] }
+            },
+            {
+              "if": {
+                "properties": { "kind": { "const": "date_product" } },
+                "required": ["kind"]
+              },
+              "then": {
+                "not": { "required": ["acquisition_id"] }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}
