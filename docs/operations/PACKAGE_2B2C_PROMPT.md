@@ -68,12 +68,33 @@ terminando em `set -eo pipefail` e o `~/.bash_logout` do runner roda
 reportarem falha **depois** de publicar com sucesso. Se você tocar nesse passo,
 não desfaça isso.
 
-**d. Falta a identidade protegida de promoção, e isso condiciona o package.**
-Mover o ponteiro verde escreve em `pointers/green/current.json` no
-`araripe-v2-staging`. A lane 3 **não pode** usar a identidade do *candidate*
+**d. A identidade protegida de promoção — CONFIRME VOCÊ MESMO, não confie
+nesta linha.** Mover o ponteiro verde escreve em `pointers/green/current.json`
+no `araripe-v2-staging`. A lane 3 **não pode** usar a identidade do *candidate*
 (`docs/operations/GREEN_CONCURRENCY_LANES.md`), e criar um GitHub Environment é
-mudança de configuração de repositório — trabalho do dono, não do agente. O
-`v2_promotion_lane.yml` já para e nomeia exatamente o que falta.
+mudança de configuração de repositório — trabalho do dono, não do agente.
+
+Em 2026-09-07, ao escrever este briefing, o Environment **não existia** e o
+dono recebeu o roteiro em
+[`PROMOTION_IDENTITY_SETUP.md`](PROMOTION_IDENTITY_SETUP.md), que fixa o nome
+`v2-promotion`, os secrets `R2_PROMOTION_ACCESS_KEY_ID` /
+`R2_PROMOTION_SECRET_ACCESS_KEY`, os três variables, a política de branch
+`main` e a decisão de não exigir revisor. **Ele pode ter sido criado desde
+então, em paralelo.** Meça antes de decidir o escopo:
+
+    gh api repos/santibravocmcc/Araripe/environments --jq '[.environments[].name]'
+    gh api repos/santibravocmcc/Araripe/environments/v2-promotion/secrets --jq '[.secrets[].name]'
+
+- **Se não existir:** a lane de publicação fica completa e **inerte**, falhando
+  fechado e nomeando a capacidade que falta, como o `v2_promotion_lane.yml` já
+  faz. Não crie Environment e não use a identidade do candidate.
+- **Se existir:** ligue a lane a `environment: v2-promotion` e aos dois secrets
+  acima, e confirme por leitura que a política de branch é só `main`. Continue
+  provando tudo localmente com cliente falso — a prova contra objeto real é um
+  passo **separado**, depois deste package estar mesclado, e não faz parte do
+  escopo do 2B.2C (uma tarefa por sessão).
+
+Em nenhum dos dois casos peça, imprima, copie ou guarde o valor de um secret.
 
 **e. RESTRIÇÃO DURA MEDIDA: o Environment `v2-staging` só aceita a `main`.**
 Uma protection rule do tipo `branch_policy`, **sem revisor**, e exatamente uma
@@ -165,10 +186,12 @@ automatic without PRs or manual merges."*
    `run_detection*.py`). **Decida e registre** como a lane obtém um: emitir na
    rodada verde, ou aceitar um artefato de uma rodada anterior. Não invente um
    segundo produtor de ledger.
-4. **Inércia enquanto a identidade não existir (§2d).** A lane pode ser
-   completa e ficar inerte, falhando fechado e nomeando a capacidade que falta,
-   como o `v2_promotion_lane.yml` faz. **Não** crie Environment, não referencie
-   secret inexistente como se existisse, não use a identidade do candidate.
+4. **A identidade de promoção, conforme o que você MEDIR (§2d).** Se o
+   Environment `v2-promotion` não existir, a lane fica completa e inerte,
+   falhando fechado e nomeando o que falta. Se existir, ligue-a a ele. Em
+   nenhum caso crie Environment, referencie secret inexistente como se
+   existisse, ou use a identidade do candidate. A prova contra objeto real é
+   passo separado, fora deste package.
 5. **A lane azul intocada.** `detect_gee.yml`, `update_data.yml` e o
    `update-data.yml` do site ficam byte-idênticos. O desligamento do bot azul é
    **Phase 6**.
@@ -277,7 +300,9 @@ ainda falta nele, e com a seção final obrigatória do método de handoff.
   ser — o contrato consumido já está fixado na `main`.
 - **Baseline `2.1.0`** existe localmente e não está publicada; colocação no R2
   é do 2B.3. `BASELINE_VERSION` em runtime segue `1.0.0`.
-- **Falta a identidade protegida de promoção** (§2d) — decisão do dono.
+- **A identidade protegida de promoção** (§2d): não existia em 2026-09-07, o
+  roteiro está em `PROMOTION_IDENTITY_SETUP.md`, e pode ter sido criada em
+  paralelo. **Meça, não assuma.**
 - **Prova executável das lanes do 2B.0 ainda pendente** (quatro rodadas
   concorrentes, quatro URLs registradas). Agora despachável com
   `mode=lane-proof`. É gate do 2B.0, **não** deste package.
@@ -307,9 +332,10 @@ desligado.
 2. **Juntar a PR do método de handoff** (esta, com o documento de método e o
    novo formato de prompt). Só documentação e testes.
 3. **Criar uma chave de acesso separada para a promoção.** É a única coisa que
-   eu não posso fazer: criar credencial é decisão sua. Precisa ser uma chave que
-   só alcance a caixa de testes `araripe-v2-staging`, diferente da que já
-   existe. Sem ela, a publicação automática fica pronta mas desligada.
+   eu não posso fazer: criar credencial é decisão sua. O roteiro passo a passo
+   está em `docs/operations/PROMOTION_IDENTITY_SETUP.md`. Pode ser feito em
+   paralelo com esta etapa — não há conflito. Sem a chave, a publicação
+   automática fica pronta mas desligada.
 4. **Decidir sobre o `EARTHDATA_TOKEN`** — ver a próxima seção, é a única coisa
    com prazo.
 5. **Opcional, quando quiser:** rodar a prova das quatro execuções simultâneas
