@@ -56,6 +56,9 @@ Do this first, every session — the shared `../AGENTS.md` has the full protocol
 - Commit bodies must carry the verified base (`origin/main` at its 40-character
   SHA), what was checked including negative results, and re-runnable evidence
   for any claim about another component.
+- Copy every identifier from the tool that produces it (`git rev-parse`,
+  `gh run view`, `shasum`); never complete one from memory. A plausible SHA or
+  run ID passes review unnoticed, unlike a missing one.
 
 ## Working contract
 
