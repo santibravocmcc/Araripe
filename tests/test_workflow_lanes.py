@@ -29,6 +29,10 @@ LEGACY_STATE_WORKFLOWS = ("detect_gee.yml", "update_data.yml")
 GREEN_GROUPS = {
     "v2_candidate_replay.yml": "araripe-green-candidate",
     "v2_promotion_lane.yml": "araripe-green-promotion",
+    # The identity probe carries the promotion credential but touches no shared
+    # object -- it never writes the real pointer -- so it gets its own group
+    # rather than queueing behind, or delaying, a real promotion.
+    "v2_promotion_identity_probe.yml": "araripe-green-promotion-probe",
     "cloudflare_green_control.yml": "araripe-cloudflare-green-control",
 }
 # The blue detection cadence is load-bearing (ROADMAP.md §6); pin it so a
