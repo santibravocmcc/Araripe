@@ -212,20 +212,70 @@ def test_feature_without_geometry_is_rejected():
         r2_state.validate_state(state_bytes([feature]))
 
 
-@pytest.mark.parametrize(
-    "props, expected",
-    [
-        ({"n_sightings": "muitas"}, "not an integer"),
-        ({"n_sightings": 0}, "seen at least once"),
-        ({"first_seen": "05/01/2026"}, "not a YYYY-MM-DD date"),
-        ({"first_seen": "2026-06-01", "last_seen": "2026-01-01"}, "is after last_seen"),
-    ],
-)
-def test_incoherent_track_values_are_rejected(props, expected):
+def test_unparseable_last_seen_is_fatal():
+    """`update_tracks` chama `_days_between` nele; o run morreria depois."""
+    feature = track()
+    feature["properties"]["last_seen"] = "30/07/2026"
+    with pytest.raises(r2_state.StateError, match="not a YYYY-MM-DD date"):
+        r2_state.validate_state(state_bytes([feature]))
+
+
+# ─── anomalias contadas, nunca fatais ────────────────────────────────────────
+
+def test_first_seen_after_last_seen_is_counted_not_fatal():
+    """A regressão de 2026-09-07: esta checagem derrubou a produção.
+
+    O log foi `feature 101684: first_seen 2026-07-13 is after last_seen
+    2026-07-11`. O estado estava íntegro — em `update_tracks`,
+    `w_last[t] = date` sobrescreve `last_seen` com a data em processamento
+    enquanto `first_seen` é preservado, e cada rodada reprocessa 16 dias, então
+    casar uma track numa data mais antiga empurra `last_seen` para trás.
+    Ver tests/test_update_tracks.py::test_last_seen_can_move_backwards.
+    """
+    summary = r2_state.validate_state(state_bytes([
+        track(first="2026-07-13", last="2026-07-11"),
+        track(first="2026-06-01", last="2026-06-20"),
+        track(first="2026-08-02", last="2026-07-30"),
+    ]))
+    assert summary["tracks"] == 3
+    odd = summary["anomalies"]["first_seen_after_last_seen"]
+    assert odd["count"] == 2
+    assert "2026-07-13 > 2026-07-11" in odd["first_example"]
+
+
+@pytest.mark.parametrize("props, kind", [
+    ({"n_sightings": "muitas"}, "n_sightings_not_a_positive_int"),
+    ({"n_sightings": 0}, "n_sightings_not_a_positive_int"),
+    ({"first_seen": "05/01/2026"}, "first_seen_not_iso"),
+])
+def test_survivable_oddities_are_counted(props, kind):
+    """`pd.to_numeric(...).fillna(1)` e o `first_seen` só-string dão conta."""
     feature = track()
     feature["properties"].update(props)
-    with pytest.raises(r2_state.StateError, match=expected):
-        r2_state.validate_state(state_bytes([feature]))
+    summary = r2_state.validate_state(state_bytes([feature]))
+    assert summary["anomalies"][kind]["count"] == 1
+
+
+def test_a_clean_state_reports_no_anomalies():
+    assert r2_state.validate_state(state_bytes([track(), track()]))["anomalies"] == {}
+
+
+def test_anomalies_are_warned_with_a_count_and_an_example(capsys):
+    """O operador precisa da escala, não só do primeiro caso."""
+    r2_state.validate_state(state_bytes(
+        [track(first="2026-07-13", last="2026-07-11")] * 4 + [track()]))
+    out = capsys.readouterr().out
+    assert "5 tracks, 4 com first_seen_after_last_seen" in out
+
+
+def test_an_odd_state_is_still_written_and_uploaded(tmp_path):
+    """Anomalia não bloqueia: o pipeline tem de continuar rodando."""
+    payload = state_bytes([track(first="2026-07-13", last="2026-07-11")])
+    dest = tmp_path / "persistence_state.geojson"
+    assert r2_state.get(FakeClient(payload), BUCKET, str(dest)) is True
+    client = FakeClient()
+    r2_state.put(client, BUCKET, str(dest))
+    assert client.uploaded[0][0] == payload
 
 
 # ─── put ─────────────────────────────────────────────────────────────────────
