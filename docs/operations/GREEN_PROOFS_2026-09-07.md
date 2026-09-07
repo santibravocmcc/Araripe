@@ -214,3 +214,67 @@ obsoleta**, porque o Environment `v2-promotion` existe e está provado. A
 reversão só é exercitável do CI, porque a credencial de promoção vive apenas no
 Environment e não deve existir localmente. Ligar aquele modo é o passo que
 fecha a cláusula.
+
+---
+
+## 7. A reversão, provada — a cláusula do gate fecha
+
+`v2_promotion_lane.yml` ganhou o modo `rollback` num job separado, o único do
+arquivo a declarar `environment: v2-promotion` (PR #42). Dispatch
+[34167023754](https://github.com/santibravocmcc/Araripe/actions/runs/34167023754),
+revertendo do release C para o release A:
+
+    pointer  : rollback -> rel-g1-ae3f6e1db152ac608f5e63d2fe2d6f4357f0f311ad5582070dfabf9e91828827
+               at sequence 3, 1 tombstone(s)
+
+Lido de volta do bucket:
+
+| campo | valor |
+| --- | --- |
+| `action` | `rollback` |
+| `sequence` | **3** |
+| `release_id` | A, cobrindo até **2026-04-10** |
+| `rolled_back_from` | C (`rel-g1-5ffad23a…`), sequence 2 |
+| `supersedes` | C, `last_observed_on` **2026-04-13** |
+| `tombstones` | 1, `absent_from_successor` |
+
+### Os dois eixos, visíveis numa única sequência de três escritas
+
+    sequence :  1        →  2        →  3
+    cobre até:  04-10    →  04-13    →  04-10
+
+**A sequência só cresce; a cobertura foi e voltou.** É a propriedade central do
+contrato (`GREEN_RELEASE_CONTRACT_V1.md` §6) observada em execução, não
+afirmada num teste: "qual escrita é mais recente" e "qual dado é mais novo" são
+perguntas diferentes, e é por isso que `promote` compara cobertura enquanto
+`rollback` é uma operação nomeada à parte. Um teste de recência por sequência
+teria deixado a reversão passar por "avanço".
+
+E a reversão não é um atalho: ela releu o release A **do próprio bucket**,
+revalidou-o inteiro incluindo o ledger, e verificou que todos os objetos
+declarados seguiam presentes, antes de tocar o ponteiro. O ponteiro só pode
+nomear um release que ainda esteja completo.
+
+**Com isto a cláusula do gate P2B está fechada em execução:** *"a staged test
+release can move and roll back its green pointer without a manual data PR or
+any production effect."* Nenhum pull request participou de nenhum dos cinco
+movimentos, e nenhuma operação tocou produção.
+
+## 8. O que ficou no bucket, e por que isso é do Package 2B.3
+
+Nada foi apagado — `ConditionalStore` não tem operação de delete. O que
+`araripe-v2-staging` contém depois destas provas:
+
+    pointers/green/current.json                  o ponteiro (1 objeto mutável)
+    releases/rel-g1-<A|B|C>/…                    3 releases imutáveis, 11 objetos
+    runs/proof-{a,b,c}…/…                        3 prefixos de rodada, 11 objetos
+    promotion-identity-probe/run-…/…             2 rodadas do probe, 4 objetos
+    green-isolation-proof/run-…/…                2 rodadas do 2B.0, 2 objetos
+
+São artefatos de prova, não produto, e ficam como evidência auditável até que
+exista política de retenção. **Definir essa política é do Package 2B.3** — que é
+a primeira etapa do roadmap em que este projeto poderá apagar qualquer coisa.
+Estes objetos são o primeiro caso de teste dela: um release **que já esteve
+live** (`rel-g1-5ffad23a…`, revertido) não é o mesmo caso que um release que
+nunca foi promovido (`rel-g1-9f1ed344…`, o da cobertura antiga recusada), e a
+política tem de distinguir os dois.
