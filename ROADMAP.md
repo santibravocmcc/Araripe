@@ -3,6 +3,18 @@
 Tracked, explicitly-not-yet-implemented items. These are documented here so the
 codebase does not overstate its current capabilities.
 
+> **This file is not the execution plan.** A different document with the same
+> name — `ROADMAP.md` on the planning branch (~980 lines, currently
+> `claude/phase2a6d-mapbiomas`) — is the canonical cross-repository remediation
+> plan: the decision ledger, the numbered topic table with approval status, and
+> Phases 0-6 with their packages and exit gates. Read it with
+> `git show <planning-branch>:ROADMAP.md`.
+>
+> Planning against *this* file duplicates approved work. On 2026-09-07 a
+> session proposed a new investigation into persistence recounting that Topic 2
+> had already approved, Package 2A.1 had already implemented (2026-07-28), and
+> Package 2A.6 had already tested — none of which is visible from `main`.
+
 ## 1. BFAST (real structural-break detection)
 
 **Status:** roadmap. **Not implemented.**
@@ -238,3 +250,44 @@ merge never ready).
 Bug class to remember: **never end a `bash -l {0}` step with an explicit
 `exit 0`** in a job that uses `setup-miniconda`. Ending at EOF, or overriding to
 `shell: bash`, is safe.
+
+## 7. Persistence recounting in the v1 runtime (check, not a finding)
+
+**Status:** observation to be re-verified. **Not a source of truth.**
+
+Recorded so the Phase 4 replay has a before/after baseline to check against,
+and so nobody re-derives it from scratch. Every number below must be
+re-measured before it is used for any decision.
+
+`update_tracks` increments `w_n[t] += 1` for every date on which a track
+matches, with no guard against a date already counted, and
+`run_detection_gee.py` processes every acquisition date in the
+`SEARCH_DAYS_BACK = 16` window without deduplicating against the state. Since
+the cron runs twice a week, one acquisition date falls inside roughly four to
+five consecutive runs.
+
+To check:
+
+- **Magnitude of the counter inflation.** Not measured. The visible symptom is
+  `first_seen > last_seen`, which appeared in **123 of 119 394 tracks (0.10%)**
+  in the state read by run `34137318406` on 2026-09-07, rising to 128 after
+  that run. The inflation of `n_sightings` itself was not measured, and the
+  state stores no per-date history from which it could be recovered.
+- **Whether the tier semantics are affected.** `COMO_FUNCIONA.md` describes a
+  confirmed alert as one appearing "no mesmo lugar em duas observações
+  seguidas", which is `n_sightings >= 2` — the `candidate` tier. Recounting can
+  in principle reach that threshold from a single observation. Whether it does
+  so at a material rate is unverified.
+- **Whether `CONFIRMED_MIN = 15` was calibrated against inflated counters.** No
+  record of its derivation was found. Phase 5 owns validating accepted defaults
+  with qualified evidence; this note is only a pointer for that phase.
+
+Already addressed elsewhere — do not open new work for it: Topic 2 ("Idempotent
+persistence", approved) reduces the lookback to five days and requires duplicate
+replay to be a no-op; Package 2A.1 implemented stable observation keys,
+duplicate no-op behaviour and rejection of out-of-order live-state mutation on
+2026-07-28; Package 2A.6 implements the v2 persistence-contribution family with
+at most one contribution per event/UTC date, tested in `tests/test_v2_persistence.py`
+(`test_exact_retry_is_no_op_and_keeps_state_bytes_identical`,
+`test_out_of_order_date_requires_rebuild_and_does_not_mutate_state`). All of it
+lives on the science branches, not on `main`, by design.
