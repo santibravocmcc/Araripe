@@ -79,10 +79,31 @@ jobs:
         # The runner's own Python, deliberately: installing the blue
         # environment.yml here would couple a green verification to the file the
         # blue workflows solve.
+        #
+        # The version floor is load-bearing and is MEASURED, not plausible.
+        # Run 34164434461 failed with "this botocore does not accept IfMatch,
+        # IfNoneMatch on PutObject" because a bare `pip install boto3` is
+        # satisfied by whatever the runner image already ships, which is older
+        # than conditional writes. Package 2B.2C measured the floor by
+        # unpacking the wheels:
+        #   1.35.0  : IfNoneMatch absent, IfMatch absent
+        #   1.35.16 : IfNoneMatch PRESENT, IfMatch absent
+        #   1.35.36 : IfNoneMatch PRESENT, IfMatch absent
+        #   1.36.0  : both present
+        # 1.36.0 is the earliest measured to carry both; the range between
+        # 1.35.36 and 1.36.0 was not tested, so the floor is measured rather
+        # than minimal. `require_conditional_write_support` still checks the
+        # loaded service model before any object is touched.
+        #
+        # The before/after print records what the image actually shipped, so
+        # the next reader does not have to take the paragraph above on trust.
         run: |
           set -euo pipefail
           python3 --version
-          python3 -m pip install --quiet --disable-pip-version-check boto3
+          echo "botocore before: $(python3 -c 'import botocore;print(botocore.__version__)' 2>&1 || echo 'not installed')"
+          python3 -m pip install --quiet --disable-pip-version-check \
+            'boto3>=1.36.0' 'botocore>=1.36.0'
+          python3 -c "import boto3, botocore; print('botocore after:', botocore.__version__, '/ boto3', boto3.__version__)"
 
       - name: Probe the identity and R2's preconditions
         env:
