@@ -81,6 +81,14 @@ Do this first, every session — the shared `../AGENTS.md` has the full protocol
   scheduled workflows to publish `data/timeseries/` through the automatic PR
   lane recorded in `ROADMAP.md` §6. Never add a bypass actor, relax the
   ruleset, or flip repository settings to restore a direct push.
+- Every package session ends by writing the next session's briefing at
+  `docs/operations/PACKAGE_<package>_PROMPT.md`, following
+  `docs/operations/HANDOFF_PROMPT_METHOD.md`. That method is **version 2**: the
+  body is for the executing agent, and the briefing must **end** with a
+  plain-language section answering four questions for the owner — what is still
+  pending, what the owner must do, whether anything is genuinely worrying, and
+  which stages remain. The same block closes the chat response.
+  `tests/test_handoff_prompt_method.py` enforces it.
 - Before an external mutation, or whenever a needed credential/connection may
   be unavailable, load `.agents/skills/araripe-safe-handoff/SKILL.md`. A blocked
   operation must stop before promotion, save a recoverable checkpoint under
