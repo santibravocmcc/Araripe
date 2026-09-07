@@ -60,7 +60,8 @@ release signal (`data/timeseries/RELEASE.json`) — see `ROADMAP.md` §6.
 
 ## Lane 2 — green candidate/replay
 
-- Members: `v2_candidate_replay.yml` and future v2 candidate workflows.
+- Members: `v2_candidate_replay.yml`, the `stage` job of
+  `v2_operational_publish.yml`, and future v2 candidate workflows.
 - Concurrency key: `araripe-green-candidate`, `cancel-in-progress: false` so
   long replays queue instead of killing each other.
 - Authority: GitHub Environment `v2-staging` only — a bucket-scoped R2 identity
@@ -71,14 +72,27 @@ release signal (`data/timeseries/RELEASE.json`) — see `ROADMAP.md` §6.
 
 ## Lane 3 — serialized green staging-pointer promotion
 
-- Members: `v2_promotion_lane.yml`.
+- Members: `v2_promotion_lane.yml` and the `promote` job of
+  `v2_operational_publish.yml`.
 - Concurrency key: `araripe-green-promotion`, `cancel-in-progress: false`.
   GitHub serializes this group to at most one running plus one queued run,
   which is the single serialized lock required by the roadmap.
-- Authority: **still none.** Real promotion needs a separate protected
-  identity — never the candidate identity, never Claude's local credential —
-  and that Environment does not exist yet, because creating one is a
-  repository configuration change.
+- Authority: GitHub Environment **`v2-promotion`** — a bucket-scoped R2
+  identity for `araripe-v2-staging`, deliberately distinct from the candidate
+  identity. The owner created it on 2026-09-07 following
+  [`PROMOTION_IDENTITY_SETUP.md`](PROMOTION_IDENTITY_SETUP.md); read back
+  before it was bound: rules `["branch_policy"]` with no required reviewer,
+  deployment branch policy `["branch: main"]`, secrets
+  `R2_PROMOTION_ACCESS_KEY_ID` / `R2_PROMOTION_SECRET_ACCESS_KEY`, and the
+  three variables. `v2_promotion_lane.yml` itself still declares no
+  Environment and stays dispatchable from any ref; the `promote` job of
+  `v2_operational_publish.yml` is what binds it.
+
+  **Never name an Environment that does not exist.** GitHub creates one on
+  first run "with no protection rules or secrets configured"
+  (<https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments>),
+  so a typo would silently manufacture an unprotected environment — a
+  repository configuration change, and the wrong one.
 
 ### What Package 2B.2B put in the placeholder
 
@@ -105,6 +119,45 @@ the candidate identity, which this lane must never use, and its deployment
 branch policy admits only `main`. `tests/test_promotion_lane.py` pins each of
 those properties, including that no mode reachable from the file performs an
 object operation.
+
+### What Package 2B.2C added: a lane member is a job, not a file
+
+`v2_operational_publish.yml` is the operational publication path — the last
+Package 2B.2 bullet, *keep operational data publication automatic without PRs
+or manual merges*. It is the first workflow whose **jobs sit in two different
+lanes**, and that is deliberate rather than convenient:
+
+| Job | Lane | Identity | Does |
+| --- | --- | --- | --- |
+| `stage` | 2, `araripe-green-candidate` | `v2-staging` | reads `runs/<run-id>/`, runs the ledger gate and `check_green_release`, writes nothing |
+| `promote` | 3, `araripe-green-promotion` | `v2-promotion` | publishes the release, verifies it, then one pointer compare-and-swap |
+
+The split is the authority boundary the two identities exist for, and
+`needs: stage` makes it operative: a malformed run fails under the *smaller*
+authority and the larger one never starts. Expressing it as two workflows
+would mean either handing a validated release between two dispatches by hand,
+or giving the staging job the promotion identity.
+
+So a group may have more than one member — exactly as the two blue state
+writers already share `araripe-legacy-state`, and for the same reason:
+`v2_promotion_lane.yml` and this `promote` job both move the same pointer, so
+they must share `araripe-green-promotion` or they would not be serialized
+against each other at all. What must never happen is one group appearing in
+two *lanes*.
+
+`tests/test_workflow_lanes.py` reads `concurrency:` at the workflow level only,
+which was complete while every file declared one group for the whole of
+itself. `tests/test_operational_publish_lane.py` re-establishes the
+distinctness sweep over both levels, so a future job-level group cannot slip
+through.
+
+**Queue semantics worth knowing here.** Lane 3 holds one running plus one
+pending run and drops a third. A publication whose `promote` job is dropped
+while pending leaves its release fully written under its immutable prefix and
+the pointer still on the previous release — which is complete and live. That
+is the designed outcome, not a loss: re-dispatching the same run id
+republishes byte-identically, because the release identity is a function of
+the ledger.
 
 ## Distinctness argument and proof
 
@@ -147,7 +200,17 @@ when reading a dispatch that failed:
 - **Lane 2** holds the staging identity, so its inertness is a guard: the
   bucket and endpoint checks reject a missing or wrong variable before any
   object operation, and a premature dispatch fails closed there.
-- **Lane 3** holds nothing. It names no secret and declares no Environment, so
-  no mode reachable from it performs an object operation at all; the two modes
-  that would need one stop and name the missing capability. Its inertness is
-  structural rather than guarded.
+- **Lane 3** is now two different things, and the distinction survives:
+  `v2_promotion_lane.yml` still holds nothing — no secret, no Environment — so
+  no mode reachable from it performs an object operation at all, and its
+  inertness stays structural. The `promote` job of
+  `v2_operational_publish.yml` does hold the promotion identity, and its
+  guards are the same fail-closed ones lane 2 uses: the bucket and endpoint are
+  checked against the approved values before Python starts, and
+  `assert_staging_target` refuses `araripe-cogs` by name before a credential is
+  read.
+
+Neither v2 workflow carries a schedule. That is Package 2B.0 inertness and it
+holds through Phase 6: the green route removes the pull request from the data
+path, not the operator's decision to run. Wiring a cadence is a Phase 6
+question, together with turning the blue bot off.
