@@ -71,43 +71,28 @@ from src.publication.canonical_json import (
     identity_sha256,
 )
 from src.publication import ledger_binding
+from src.publication.findings import Finding, Rejected
 
 LINE_FEED = "\n"
 
-@dataclass(frozen=True)
-class LedgerRejection:
-    """One reason a ledger may not be published from."""
-
-    code: str
-    detail: str
-    path: str = "<root>"
-
-    def __str__(self) -> str:
-        return f"{self.path}: [{self.code}] {self.detail}"
+#: One reason a ledger may not be published from.  The collection and
+#: reporting behaviour lives in ``src/publication/findings.py`` because
+#: Package 2B.2B needs the identical behaviour for release documents and for
+#: pointer promotion; the name is kept here because it is the gate's public
+#: vocabulary.
+LedgerRejection = Finding
 
 
-class LedgerRejected(ValueError):
+class LedgerRejected(Rejected):
     """The ledger is not an acceptable publication input."""
 
-    def __init__(self, rejections: Iterable[LedgerRejection]) -> None:
-        self.rejections = tuple(rejections)
-        counts = Counter(rejection.code for rejection in self.rejections)
-        headline = ", ".join(
-            f"{code}×{count}" if count > 1 else code
-            for code, count in sorted(counts.items())
-        )
-        shown = "; ".join(str(rejection) for rejection in self.rejections[:8])
-        more = len(self.rejections) - 8
-        if more > 0:
-            shown += f"; (+{more} more)"
-        super().__init__(
-            f"processing ledger rejected — {len(self.rejections)} finding(s) "
-            f"[{headline}]: {shown}"
-        )
+    subject = "processing ledger"
 
     @property
-    def codes(self) -> tuple[str, ...]:
-        return tuple(rejection.code for rejection in self.rejections)
+    def rejections(self) -> tuple[Finding, ...]:
+        """The gate's name for ``findings``, kept for its callers."""
+
+        return self.findings
 
 
 @dataclass(frozen=True)

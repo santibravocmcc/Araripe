@@ -71,15 +71,40 @@ release signal (`data/timeseries/RELEASE.json`) — see `ROADMAP.md` §6.
 
 ## Lane 3 — serialized green staging-pointer promotion
 
-- Members: `v2_promotion_lane.yml` (placeholder until the Package 2B.2
-  publication contract).
+- Members: `v2_promotion_lane.yml`.
 - Concurrency key: `araripe-green-promotion`, `cancel-in-progress: false`.
   GitHub serializes this group to at most one running plus one queued run,
   which is the single serialized lock required by the roadmap.
-- Authority: none in the placeholder. Real promotion will use a separate
-  protected identity — never the candidate identity, never Claude's local
-  credential — and still only moves the isolated green/staging pointer before
-  Phase 6.
+- Authority: **still none.** Real promotion needs a separate protected
+  identity — never the candidate identity, never Claude's local credential —
+  and that Environment does not exist yet, because creating one is a
+  repository configuration change.
+
+### What Package 2B.2B put in the placeholder
+
+The publication contract now exists
+(`docs/contracts/phase2b/GREEN_RELEASE_CONTRACT_V1.md`), so the lane runs
+every part of promotion that needs no credential and stops where authority
+begins:
+
+- `contract-check` (default) verifies the pinned ledger contract and runs the
+  completeness gate against the producer's own fixture;
+- `plan` builds and validates a whole green release from a ledger committed in
+  this repository — identity, schemas, checksums, expected dates, state
+  watermark, product completeness, zero-alert classification — and contacts no
+  object store;
+- `promote` and `rollback` **stop and name the missing capability**, per the
+  Package 2B.0 handoff rule, rather than substituting a broader credential;
+- `lane-proof` is the original Package 2B.0 behaviour, preserved so the
+  outstanding four-concurrent-run proof can still be run.
+
+The lane still declares **no `environment:` and references no secret**, so it
+carries no authority at all and stays dispatchable from any ref.
+`environment: v2-staging` would not help even as a stopgap: its identity is
+the candidate identity, which this lane must never use, and its deployment
+branch policy admits only `main`. `tests/test_promotion_lane.py` pins each of
+those properties, including that no mode reachable from the file performs an
+object operation.
 
 ## Distinctness argument and proof
 
@@ -89,11 +114,20 @@ workflow declares, and GitHub scopes implicit (undeclared) concurrency to each
 individual workflow file. Cross-lane queueing is therefore impossible by
 construction.
 
-Runnable proof after the v2 workflows reach the default branch through a
-reviewed merge: dispatch two promotion runs with `hold_seconds > 0` while one
-candidate run is active and a legacy manual run executes. Expected result: the
-promotion runs serialize against each other only; candidate and legacy runs
-proceed unaffected. Record the four run URLs in the Package 2B.0 gate note.
+**The v2 workflows are already on the default branch**, so the proof below is
+dispatchable now. This sentence used to read "after the v2 workflows reach the
+default branch through a reviewed merge", which stopped being true and stayed
+on the page; both files landed by squash
+`8daa1812f8c2f89d6fa13be44c38283242c103bd` ("Package 2B.0: isolated green
+broker and inert workflows (#10)"), verified by
+`git show --stat 8daa181 -- .github/workflows/`. What the proof still needs is
+the dispatch itself.
+
+Runnable proof: dispatch two promotion runs with `mode=lane-proof` and
+`hold_seconds > 0` while one candidate run is active and a legacy manual run
+executes. Expected result: the promotion runs serialize against each other
+only; candidate and legacy runs proceed unaffected. Record the four run URLs in
+the Package 2B.0 gate note.
 
 Statically, `tests/test_workflow_lanes.py` asserts the same property from the
 workflow files: the two blue state writers share `araripe-legacy-state`, each
@@ -105,6 +139,15 @@ and no lane cancels a run in progress.
 Both v2 workflows trigger on `workflow_dispatch` only, carry
 `permissions: contents: read`, and guard on the repository name. They cannot
 inherit the blue cron, cannot push commits, and reference no production
-credential. Even a premature manual dispatch fails closed while the
-`v2-staging` environment is absent, because the bucket/endpoint guards reject
-missing variables before any object operation.
+credential.
+
+The two lanes are inert for *different* reasons, and the distinction matters
+when reading a dispatch that failed:
+
+- **Lane 2** holds the staging identity, so its inertness is a guard: the
+  bucket and endpoint checks reject a missing or wrong variable before any
+  object operation, and a premature dispatch fails closed there.
+- **Lane 3** holds nothing. It names no secret and declares no Environment, so
+  no mode reachable from it performs an object operation at all; the two modes
+  that would need one stop and name the missing capability. Its inertness is
+  structural rather than guarded.

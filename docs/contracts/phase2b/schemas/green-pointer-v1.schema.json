@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/santibravocmcc/Araripe/docs/contracts/phase2b/schemas/green-pointer-v1.schema.json",
+  "title": "Araripe green staging pointer, version 1",
+  "description": "The single mutable object in the green publication layout: which immutable release is currently live. Every write is a compare-and-swap against the ETag of the version read, so an older or racing job cannot replace a newer promotion. `sequence` counts pointer writes and only ever increases — including on rollback. Which DATA is newer is a different axis entirely and is read from the release's coverage; conflating the two is what lets a replay of an old window silently overwrite a current release.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "sequence",
+    "action",
+    "release_id",
+    "release_path",
+    "release_document_sha256",
+    "ledger_id",
+    "run_manifest_id",
+    "coverage",
+    "state_watermark",
+    "promoted_utc",
+    "promoted_by",
+    "supersedes",
+    "tombstones"
+  ],
+  "properties": {
+    "schema": { "const": "araripe.green.pointer/1" },
+    "sequence": {
+      "description": "Monotonic pointer-write counter. Increases by one on every accepted write, promotion and rollback alike.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "action": { "enum": ["promote", "rollback"] },
+    "release_id": { "type": "string", "pattern": "^rel-g1-[0-9a-f]{64}$" },
+    "release_path": {
+      "type": "string",
+      "pattern": "^releases/rel-g1-[0-9a-f]{64}/release\\.json$"
+    },
+    "release_document_sha256": { "$ref": "#/$defs/sha256" },
+    "ledger_id": { "type": "string", "pattern": "^pl-v3-[0-9a-f]{64}$" },
+    "run_manifest_id": { "type": "string", "minLength": 1 },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["observed_dates", "first_observed_on", "last_observed_on"],
+      "properties": {
+        "observed_dates": {
+          "type": "array",
+          "items": { "type": "string", "format": "date" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "first_observed_on": { "type": "string", "format": "date" },
+        "last_observed_on": { "type": "string", "format": "date" }
+      }
+    },
+    "state_watermark": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["finalized_through"],
+      "properties": {
+        "finalized_through": { "type": "string", "format": "date" }
+      }
+    },
+    "promoted_utc": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    },
+    "promoted_by": {
+      "description": "Who moved the pointer. Free-form provenance: absent values are recorded as null rather than omitted, so a local promotion and a workflow promotion have the same shape.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["workflow", "run_id", "run_url", "actor"],
+      "properties": {
+        "workflow": { "type": ["string", "null"] },
+        "run_id": { "type": ["string", "null"] },
+        "run_url": { "type": ["string", "null"] },
+        "actor": { "type": ["string", "null"] }
+      }
+    },
+    "supersedes": {
+      "description": "The pointer version this write replaced, or null for the first promotion into an empty pointer.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["release_id", "sequence", "last_observed_on"],
+          "properties": {
+            "release_id": { "type": "string", "pattern": "^rel-g1-[0-9a-f]{64}$" },
+            "sequence": { "type": "integer", "minimum": 1 },
+            "last_observed_on": { "type": "string", "format": "date" }
+          }
+        },
+        { "type": "null" }
+      ]
+    },
+    "tombstones": {
+      "description": "Objects of the superseded release that this promotion retires. Staleness is a relation between two releases, so it is recorded on the pointer — the only object that knows both. Nothing is deleted here: retention and lifecycle are Package 2B.3.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "reason", "superseded_release_id"],
+        "properties": {
+          "key": { "type": "string", "minLength": 1 },
+          "reason": {
+            "description": "absent_from_successor: the successor publishes no object at that logical path. superseded_content: same logical path, different bytes. date_reclassified: the successor reports a different alert_state for that UTC date, so serving the old object would contradict the live release.",
+            "enum": [
+              "absent_from_successor",
+              "superseded_content",
+              "date_reclassified"
+            ]
+          },
+          "superseded_release_id": {
+            "type": "string",
+            "pattern": "^rel-g1-[0-9a-f]{64}$"
+          },
+          "observed_on": { "type": "string", "format": "date" },
+          "detail": { "type": "string" }
+        }
+      }
+    },
+    "rolled_back_from": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["release_id", "sequence"],
+          "properties": {
+            "release_id": { "type": "string", "pattern": "^rel-g1-[0-9a-f]{64}$" },
+            "sequence": { "type": "integer", "minimum": 1 }
+          }
+        },
+        { "type": "null" }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "action": { "const": "rollback" } }, "required": ["action"] },
+      "then": { "required": ["rolled_back_from"] }
+    }
+  ],
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  }
+}

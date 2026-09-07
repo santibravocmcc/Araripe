@@ -227,6 +227,13 @@ failure, and explicit representation of zero-alert dates and stale-object
 tombstones. Package **2B.2C**: taking operational publication off the git pull
 request lane.
 
+> **Delivered 2026-09-07 by Package 2B.2B**, in
+> [`GREEN_RELEASE_CONTRACT_V1.md`](GREEN_RELEASE_CONTRACT_V1.md) and
+> `docs/implementation/PHASE_2B2B_2026-09-07.md`. Both consequences below were
+> answered there and neither answer changed this document: `RELEASE.json`
+> stays blue, and the green release is published to R2 rather than to a git
+> path, so no `detect_gee.yml` guard was touched. 2B.2C is still open.
+
 Two consequences of stopping here are worth recording, because they are the
 first questions 2B.2B will face:
 
