@@ -355,22 +355,22 @@ ignoradas", que é honesto e não quebra nada.
 
 ### O que você precisa fazer
 
-1. **Mesclar uma proposta**, quando quiser — a `#52`, no repositório do
-   monitoramento. Ela acrescenta a peça que faltava e o registro do
-   fechamento, e **não muda nada do que está publicado**. Não é urgente.
-2. **Decidir se quer dar um endereço temporário ao servidor de teste.** É a
-   mesma pendência de duas etapas atrás, e precisa de alguém com acesso ao
-   painel da Cloudflare. **Nada do que foi entregue depende disso** — serve
-   para ver a rota num navegador, e o resto já foi provado sem ela.
-3. **Criar um "ambiente" protegido no repositório do site**, se quiser que a
-   publicação automática avance mais tarde. Hoje não existe nenhum. Peça que
-   exija aprovação humana: a permissão necessária é de conta inteira, ou seja,
-   quem publica o site de teste consegue publicar o de produção. Pode esperar.
-4. **Não mesclar ainda a proposta que tira os arquivos grandes** (a `#21` do
+1. **Não mesclar ainda a proposta que tira os arquivos grandes** (a `#21` do
    site). Aplicá-la hoje quebra a aba de alertas. Ela entra na etapa da troca
    final.
-5. **Anotar 6 de novembro:** a chave da NASA expira e o mapa de chuva para de
+2. **Anotar 6 de novembro:** a chave da NASA expira e o mapa de chuva para de
    novo. Essa falha é vermelha, não silenciosa.
+
+**É isso — a lista tem dois itens, e nenhum dos dois é urgente.** A `#52` já
+está mesclada (`53eb411`).
+
+#### Dois itens saíram desta lista, e não devem voltar
+
+O endereço temporário do servidor de teste e o Environment protegido no
+repositório do site apareceram como "ação do dono" em **quatro** briefings
+seguidos (2B.4, 2B.4B, o gate P2B e a primeira versão deste), e em nenhum deles
+eram ação a tomar. **São pré-requisitos da Phase 6**, registrados na §0-bis
+abaixo com a medição que sustenta isso. Não os re-liste aqui.
 
 Sobre a chuva: continua pulando por problema de rede entre o robô do GitHub e o
 servidor da NASA, e o sistema está fazendo o que foi desenhado para fazer. Há
@@ -390,6 +390,48 @@ todo o trabalho de publicação das últimas semanas. Ninguém vai fazer isso po
 acidente agora que está medido e escrito — é justamente por isso que medi. Mas
 é a razão pela qual a próxima etapa pede atenção e não pressa.
 
+#### §0-bis — os dois itens da Phase 6, e por que não são decisão de hoje
+
+Medido em 2026-09-08, para o caso de a pergunta voltar.
+
+**São a mesma autoridade, não dois assuntos.** Os dois exigem
+`Workers Scripts: Edit` **em nível de conta**, e quem tem essa permissão
+implanta o Worker de produção `observatorio-chapada`. O endereço precisa dela
+para ligar o subdomínio; o Environment do site existe justamente para guardar
+um token que a tenha. Decidir um é decidir o outro.
+
+**Nada entre hoje e a Phase 6 depende de nenhum dos dois.** Varredura dos
+bullets das Phases 3, 4 e 5 no roadmap canônico
+(`git show claude/phase2a6d-mapbiomas:ROADMAP.md`): nenhuma menção a Worker,
+rota, hostname, deploy, domínio ou Environment. A única ocorrência de
+"environment" naquele trecho é *"schema, environment, and release versions"*,
+que é versão de ambiente de software. Os dois aparecem na Phase 6, no bullet
+*"Verify the main domain, same-origin data route, CORS, full/strong modes"*.
+
+**O endereço desfaz, à mão, o que o broker existe para impor.** A auditoria
+afirma fail-closed `subdomain == {"enabled": false, "previews_enabled": false}`,
+e a lista de operações do broker é exatamente
+`audit`, `enforce-worker-isolation`, `disable-site-branch-deploy` — **não existe
+operação para ligar subdomínio**, e uma delas existe para desligá-lo. Dar
+endereço ao Worker de staging exigiria uma operação nova revisada ou um token
+direto, e deixaria a auditoria de isolação vermelha enquanto durasse.
+
+**O que o endereço fecharia está nomeado e é pequeno:** `--from-route` nunca
+correu contra HTTP de verdade (`PHASE_2B_GATE_2026-09-08.md` §7). A checagem
+cruzada de 18 campos do §4.1 foi feita por `--from-dir` sobre a release real, e
+o degrau 1 do
+[`GREEN_ROUTE_VERIFICATION_LADDER.md`](GREEN_ROUTE_VERIFICATION_LADDER.md)
+verifica o comportamento do Worker inteiro em 29 checagens HTTP, com `wrangler
+dev` local e **zero credencial**. O que falta é só afirmar que a borda da
+Cloudflare não mexe nos headers — e isso só importa quando o site público
+apontar para a rota, que é o cutover.
+
+**A recomendação registrada, e ela não mudou:** degrau 2 **pular**, degrau 3
+**Phase 6** (tabela no fim daquele documento). Se um token de deploy verde
+existir algum dia — e a Phase 6 precisa de um —, os dois degraus saem de graça
+junto. Até lá, pagar autoridade de conta compra uma afirmação que ninguém
+precisa ainda.
+
 ### O que ainda falta no caminho
 
 - **Trazer o trabalho científico para o tronco principal** — é a próxima etapa,
@@ -397,7 +439,8 @@ acidente agora que está medido e escrito — é justamente por isso que medi. M
   publicar uma execução, mas o documento de auditoria que acompanha cada
   publicação ainda é preparado à mão, porque a parte que o gera está naquela
   pasta parada.
-- **A verificação no navegador**, assim que o servidor de teste tiver endereço.
+- **A verificação no navegador** — na Phase 6, junto com o cutover, não antes.
+  Ver a §0-bis: não é uma decisão pendente do dono.
 - **Uma etapa própria para a memória de publicações**, que é o que permitirá um
   dia apagar versões antigas com segurança — e que a publicação científica
   transformou de prudência em requisito.
