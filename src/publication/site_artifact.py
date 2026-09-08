@@ -293,10 +293,23 @@ def run_statistics(features: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
 def compose_alert_index(
     runs: Sequence[Mapping[str, Any]],
     *,
+    object_base: str,
     source: str,
     strong_points_file: str,
 ) -> dict[str, Any]:
     """Compose the index from per-run rows, without reading a feature.
+
+    ``object_base`` is the mount the per-run objects are served from — ``/data/green/``
+    for the route Package 2B.4A built — and ``file``/``file_strong`` are the paths
+    the release declares, so ``object_base + file`` is exactly a request that
+    route resolves.  It is required rather than defaulted: an index that did not
+    say where its objects live would leave the page guessing, and the wrong
+    guess is a 404 on the default view.
+
+    The per-run objects are **not** copied into the deploy.  They stay in the
+    immutable release and the page reads them through the route, which is what
+    takes the 25 MiB per-asset limit and the 247 MiB of committed alert history
+    out of the site's build entirely.
 
     ``runs`` must already be in chronological order and each row must carry
     ``date``, ``file``, ``file_strong`` and every key in :data:`RUN_STAT_KEYS`.
@@ -330,6 +343,7 @@ def compose_alert_index(
     return {
         "schema": INDEX_SCHEMA,
         "stats_policy_version": STATS_POLICY_VERSION,
+        "object_base": object_base,
         "runs": [
             {
                 "date": run["date"],

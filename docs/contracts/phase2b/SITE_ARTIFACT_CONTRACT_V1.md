@@ -190,6 +190,32 @@ means the release and the index disagree and the composer must stop.
 a description of something running. It is the first written requirement on that
 producer, and §9 records the gap.
 
+## 6c. Where the per-run objects live — and why they never enter the deploy
+
+`object_base` is required, and it is `/data/green/`. `file` and `file_strong`
+are the paths the release **declares**, so `object_base + file` is exactly a
+request `worker/data_route.js` resolves: it maps `/data/green/<declared path>`
+to `release_prefix + <declared path>`. A bare filename would force the page to
+know the release's own prefix, which is the thing the route exists to hide.
+
+**The per-run objects are never copied into the deploy.** They stay in the
+immutable release and the page reads them through the route. That single choice
+is what removes both site-side problems at once: the Cloudflare Workers 25 MiB
+per-asset limit (the full run files exceed it, which is why they were pushed to
+`pub-…r2.dev` in the first place) and the 247 MiB of committed alert history
+that grows ~600 MiB/year.
+
+`strong_points_file` is the exception and is deliberately shaped differently:
+it is computed by the same green step that writes the index, so it is a build
+artifact sitting *beside* the index rather than a release object. The schema
+holds it to one path segment so it cannot accidentally be resolved against
+`object_base`.
+
+**Wiring the page to `object_base` is Phase 6, not this package.** The roadmap
+bullet is explicit — *"Verify the main domain, same-origin data route, CORS,
+full/strong modes, downloads"* — and touching `src/js/alertas.js` would change
+what the production deploy serves. §9 records what that leaves untested.
+
 ## 7. Where each half of the check lives
 
 Following the division Package 2B.2A reached by deleting code:

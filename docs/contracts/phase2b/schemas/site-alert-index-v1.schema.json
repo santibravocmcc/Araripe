@@ -8,6 +8,7 @@
   "required": [
     "schema",
     "stats_policy_version",
+    "object_base",
     "runs",
     "strong_points_file",
     "totals",
@@ -31,7 +32,7 @@
       }
     },
     "strong_points_file": {
-      "description": "Logical name of the point index the map loads for the all-runs view. A name, not a path: the consumer resolves it against whichever mount it is serving from.",
+      "description": "Name of the point index the map loads for the all-runs view. It is a build artifact written beside this index by the same green step, NOT a release object, so it is resolved against the index's own location and never against object_base.",
       "$ref": "#/$defs/object_name"
     },
     "totals": {
@@ -53,11 +54,16 @@
       "description": "Human-readable provenance line shown beside the latest detection date. Free text on purpose: it is a caption, and constraining it here would make a wording fix a contract change.",
       "type": "string",
       "minLength": 1
+    },
+    "object_base": {
+      "description": "Mount the per-run objects are served from, prepended to `file`/`file_strong`. It is `/data/green/` for the route Package 2B.4A built, so `/data/green/` + `alerts/run-2026-04-04.geojson` is exactly the request that route resolves. Required, and NOT defaulted: an index that did not say where its objects live would leave the page guessing, and the wrong guess is a 404 on the default view. The per-run objects are never copied into the deploy — they stay in the immutable release, which is the whole reason the 25 MiB per-asset limit and the 247 MiB of committed history stop being the site's problem.",
+      "type": "string",
+      "pattern": "^/([A-Za-z0-9][A-Za-z0-9._@+-]*/)*$"
     }
   },
   "$defs": {
     "object_name": {
-      "description": "One path segment. No directory, no traversal, no backslash — the consumer concatenates it onto a mount, and a value carrying a separator would address something the release never declared.",
+      "description": "One path segment, for a file that sits BESIDE the index rather than inside the release: the point index is computed by the same green step that writes the index, so it is not a release object and is resolved against the index's own location, never against object_base.",
       "type": "string",
       "minLength": 1,
       "maxLength": 255,
@@ -91,12 +97,12 @@
           "format": "date"
         },
         "file": {
-          "description": "The full run object: every candidate alert for the date.",
-          "$ref": "#/$defs/object_name"
+          "description": "Logical path of the full run object in the release: every candidate alert for the date.",
+          "$ref": "#/$defs/logical_path"
         },
         "file_strong": {
-          "description": "The strong subset object, which is what the page loads by default. A different object from `file`, and check_alert_index refuses an index where the two are equal — collapsing them would serve every candidate under the default view.",
-          "$ref": "#/$defs/object_name"
+          "description": "Logical path of the strong subset object. A different object from `file`, and check_alert_index refuses an index where the two are equal — collapsing them would serve every candidate under the default view.",
+          "$ref": "#/$defs/logical_path"
         },
         "count": {
           "description": "Features with a Polygon or MultiPolygon geometry. NOT the length of the feature array: a feature of any other type carries no area and is skipped, and the difference is a number the page displays.",
@@ -180,6 +186,13 @@
           "minimum": 1
         }
       }
+    },
+    "logical_path": {
+      "description": "A path inside the release prefix, as the release declares it. Same shape as the release contract's logical_path: no absolute path, no traversal, no backslash, no trailing slash. It may contain `/`, unlike the sibling names below, because it is the release's own path and the run assembler chooses its prefix.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?!\\.)(?!.*//)(?!.*/\\.)[A-Za-z0-9][A-Za-z0-9._@+-]*(/[A-Za-z0-9][A-Za-z0-9._@+-]*)*$"
     }
   }
 }

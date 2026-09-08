@@ -58,6 +58,8 @@ VECTORS_PATH = (
 #: produces is indistinguishable from the one already published.
 SOURCE_LINE = "SENTINEL-2 L2A · LANDSAT 8/9"
 STRONG_POINTS_FILE = "all-strong-points.json"
+#: The mount Package 2B.4A built. `worker/data_route.js` exports it as MOUNT.
+OBJECT_BASE = "/data/green/"
 
 
 def _polygon() -> dict:
@@ -233,10 +235,12 @@ def _run_cases() -> list[dict]:
 def _row(date: str, **stats) -> dict:
     """A per-run row as the index consumes it: identity, object names, statistics."""
 
+    # Declared logical paths, as a release lists them: object_base + file is
+    # exactly a request the green route resolves.
     row = {
         "date": date,
-        "file": f"run-{date}.geojson",
-        "file_strong": f"run-{date}.strong.geojson",
+        "file": f"alerts/run-{date}.geojson",
+        "file_strong": f"alerts/run-{date}.strong.geojson",
     }
     row.update({key: stats.get(key, 0) for key in sa.RUN_STAT_KEYS})
     row["area_ha"] = float(stats.get("area_ha", 0.0))
@@ -300,7 +304,8 @@ def _index_cases() -> list[dict]:
     ]
     for case in cases:
         case["expected"] = sa.compose_alert_index(
-            case["runs"], source=SOURCE_LINE, strong_points_file=STRONG_POINTS_FILE
+            case["runs"], object_base=OBJECT_BASE, source=SOURCE_LINE,
+            strong_points_file=STRONG_POINTS_FILE,
         )
     return cases
 
@@ -322,6 +327,7 @@ def _rejection_cases() -> list[dict]:
                 _row("2026-07-08", count=1, area_ha=2.5, high=0, medium=0, low=1,
                      first_obs=1, candidate=0, confirmed=0, strong=0, pcount_max=1),
             ],
+            object_base=OBJECT_BASE,
             source=SOURCE_LINE,
             strong_points_file=STRONG_POINTS_FILE,
         )
@@ -529,7 +535,11 @@ def build_vectors() -> dict:
             "full_object_suffix": sa.FULL_OBJECT_SUFFIX,
             "strong_object_suffix": sa.STRONG_OBJECT_SUFFIX,
         },
-        "fixture": {"source": SOURCE_LINE, "strong_points_file": STRONG_POINTS_FILE},
+        "fixture": {
+            "source": SOURCE_LINE,
+            "strong_points_file": STRONG_POINTS_FILE,
+            "object_base": OBJECT_BASE,
+        },
         "object_cases": _object_cases(),
         "run_cases": _run_cases(),
         "index_cases": _index_cases(),

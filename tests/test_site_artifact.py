@@ -172,6 +172,7 @@ def test_a_null_persistence_count_does_not_raise():
 def test_composed_index_matches_the_vector(case):
     composed = sa.compose_alert_index(
         case["runs"],
+        object_base=VECTORS["fixture"]["object_base"],
         source=VECTORS["fixture"]["source"],
         strong_points_file=VECTORS["fixture"]["strong_points_file"],
     )
@@ -199,8 +200,8 @@ def test_totals_need_no_features():
     rows = [
         {
             "date": "2026-03-01",
-            "file": "a.geojson",
-            "file_strong": "a.strong.geojson",
+            "file": "alerts/a.geojson",
+            "file_strong": "alerts/a.strong.geojson",
             "count": 7,
             "area_ha": 1.5,
             "high": 7,
@@ -213,7 +214,8 @@ def test_totals_need_no_features():
             "pcount_max": 11,
         }
     ]
-    index = sa.compose_alert_index(rows, source="s", strong_points_file="p.json")
+    index = sa.compose_alert_index(rows, object_base="/data/green/", source="s",
+                                 strong_points_file="p.json")
     assert index["totals"] == {
         "count": 7,
         "area_ha": 1.5,
@@ -226,12 +228,66 @@ def test_totals_need_no_features():
     }
 
 
+def test_object_base_plus_file_is_a_request_the_green_route_resolves():
+    """The reason `file` is a declared logical path and not a bare filename.
+
+    ``worker/data_route.js`` resolves ``/data/green/<declared path>`` to
+    ``release_prefix + <declared path>``, so the concatenation below is exactly
+    a URL that route answers.  A bare filename would need the page to know the
+    release's own prefix, which is the thing the route exists to hide.
+    """
+
+    rows = [
+        {
+            "date": "2026-04-04",
+            "file": "alerts/run-2026-04-04.geojson",
+            "file_strong": "alerts/run-2026-04-04.strong.geojson",
+            **{key: 0 for key in sa.RUN_STAT_KEYS},
+        }
+    ]
+    rows[0]["area_ha"] = 0.0
+    rows[0]["pcount_max"] = 1
+    index = sa.compose_alert_index(
+        rows, object_base="/data/green/", source="s", strong_points_file="p.json"
+    )
+    jsonschema.validate(index, SCHEMA)
+    assert index["object_base"] + index["runs"][0]["file"] == (
+        "/data/green/alerts/run-2026-04-04.geojson"
+    )
+
+
+def test_object_base_is_required_by_the_schema():
+    """Not defaulted: an index that did not say where its objects live would
+    leave the page guessing, and the wrong guess is a 404 on the default view."""
+
+    assert "object_base" in SCHEMA["required"]
+    index = sa.compose_alert_index(
+        [], object_base="/data/green/", source="s", strong_points_file="p.json"
+    )
+    del index["object_base"]
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(index, SCHEMA)
+
+
+def test_the_point_index_is_a_sibling_name_not_a_release_path():
+    """``strong_points_file`` is computed by the same green step that writes the
+    index, so it is not a release object and must not be resolvable against
+    ``object_base``.  The schema keeps it to one path segment for that reason."""
+
+    index = sa.compose_alert_index(
+        [], object_base="/data/green/", source="s", strong_points_file="alerts/p.json"
+    )
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(index, SCHEMA)
+
+
 def test_the_total_area_is_a_float_even_with_no_runs():
     """``sum([])`` is the integer 0, and ``0`` and ``0.0`` are different bytes.
     The index must be byte-reproducible from an immutable release, so this is a
     contract detail rather than a style preference."""
 
-    empty = sa.compose_alert_index([], source="s", strong_points_file="p.json")
+    empty = sa.compose_alert_index([], object_base="/data/green/", source="s",
+                                 strong_points_file="p.json")
     assert isinstance(empty["totals"]["area_ha"], float)
     assert empty["last_run"] is None
 
@@ -261,9 +317,10 @@ def test_the_per_run_maximum_aggregates_to_the_old_global_maximum():
         stats = sa.run_statistics(features)
         global_max = max(global_max, *streaks) if streaks else global_max
         rows.append(
-            {"date": date, "file": f"{date}.geojson", "file_strong": f"{date}.s.geojson", **stats}
+            {"date": date, "file": f"alerts/{date}.geojson", "file_strong": f"alerts/{date}.s.geojson", **stats}
         )
-    index = sa.compose_alert_index(rows, source="s", strong_points_file="p.json")
+    index = sa.compose_alert_index(rows, object_base="/data/green/", source="s",
+                                 strong_points_file="p.json")
     assert index["totals"]["pcount_max"] == global_max == 42
 
 
@@ -296,8 +353,8 @@ def test_the_validator_accepts_what_the_composer_builds():
     rows = [
         {
             "date": "2026-02-01",
-            "file": "run-2026-02-01.geojson",
-            "file_strong": "run-2026-02-01.strong.geojson",
+            "file": "alerts/run-2026-02-01.geojson",
+            "file_strong": "alerts/run-2026-02-01.strong.geojson",
             "count": 2,
             "area_ha": 3.0,
             "high": 1,
@@ -310,7 +367,8 @@ def test_the_validator_accepts_what_the_composer_builds():
             "pcount_max": 4,
         }
     ]
-    index = sa.compose_alert_index(rows, source="s", strong_points_file="p.json")
+    index = sa.compose_alert_index(rows, object_base="/data/green/", source="s",
+                                 strong_points_file="p.json")
     sa.check_alert_index(index)
     jsonschema.validate(index, SCHEMA)
 
@@ -355,6 +413,7 @@ def test_a_rejection_reports_every_finding_at_once():
                 "pcount_max": 1,
             }
         ],
+        object_base="/data/green/",
         source="s",
         strong_points_file="p.json",
     )
