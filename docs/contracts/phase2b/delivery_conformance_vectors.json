@@ -1,0 +1,233 @@
+{
+  "boundary_schema": "araripe.green.delivery/1",
+  "cases": [
+    {
+      "download": false,
+      "expect": {
+        "bytes": null,
+        "headers": {
+          "Cache-Control": "no-store",
+          "Content-Type": "application/json",
+          "X-Content-Type-Options": "nosniff"
+        },
+        "key": "pointers/green/current.json",
+        "outcome": "served",
+        "sha256": null,
+        "status": 200
+      },
+      "method": "GET",
+      "name": "the pointer is public and never cached",
+      "path": "/data/green/current.json"
+    },
+    {
+      "download": false,
+      "expect": {
+        "bytes": null,
+        "headers": {
+          "Cache-Control": "public, max-age=60, must-revalidate",
+          "Content-Type": "application/json",
+          "X-Content-Type-Options": "nosniff"
+        },
+        "key": "releases/rel-g1-a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1/release.json",
+        "outcome": "served",
+        "sha256": null,
+        "status": 200
+      },
+      "method": "GET",
+      "name": "the live manifest is public",
+      "path": "/data/green/release.json"
+    },
+    {
+      "download": false,
+      "expect": {
+        "bytes": null,
+        "headers": {
+          "Cache-Control": "public, max-age=60, must-revalidate",
+          "Content-Type": "application/json",
+          "X-Content-Type-Options": "nosniff"
+        },
+        "key": "releases/rel-g1-a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1/ledger.json",
+        "outcome": "served",
+        "sha256": null,
+        "status": 200
+      },
+      "method": "GET",
+      "name": "the live ledger is public, so a consumer can verify the manifest",
+      "path": "/data/green/ledger.json"
+    },
+    {
+      "download": false,
+      "expect": {
+        "bytes": 78,
+        "headers": {
+          "Cache-Control": "public, max-age=60, must-revalidate",
+          "Content-Type": "application/geo+json",
+          "ETag": "\"b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1\"",
+          "X-Araripe-Release-Id": "rel-g1-a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+          "X-Araripe-Sha256": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1",
+          "X-Content-Type-Options": "nosniff"
+        },
+        "key": "releases/rel-g1-a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1/alerts/2026-04-07/19741870aa21.geojson",
+        "outcome": "served",
+        "sha256": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1",
+        "status": 200
+      },
+      "method": "GET",
+      "name": "a declared product is served from the live release prefix",
+      "path": "/data/green/alerts/2026-04-07/19741870aa21.geojson"
+    },
+    {
+      "download": false,
+      "expect": {
+        "bytes": 12,
+        "headers": {
+          "Cache-Control": "public, max-age=60, must-revalidate",
+          "Content-Type": "application/json; charset=utf-8",
+          "ETag": "\"c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2\"",
+          "X-Araripe-Release-Id": "rel-g1-a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+          "X-Araripe-Sha256": "c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2",
+          "X-Content-Type-Options": "nosniff"
+        },
+        "key": "releases/rel-g1-a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1/series.json",
+        "outcome": "served",
+        "sha256": "c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2",
+        "status": 200
+      },
+      "method": "HEAD",
+      "name": "HEAD is allowed and resolves identically",
+      "path": "/data/green/series.json"
+    },
+    {
+      "download": true,
+      "expect": {
+        "bytes": 12,
+        "headers": {
+          "Cache-Control": "public, max-age=60, must-revalidate",
+          "Content-Disposition": "attachment; filename=\"series.json\"",
+          "Content-Type": "application/json; charset=utf-8",
+          "ETag": "\"c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2\"",
+          "X-Araripe-Release-Id": "rel-g1-a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+          "X-Araripe-Sha256": "c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2",
+          "X-Content-Type-Options": "nosniff"
+        },
+        "key": "releases/rel-g1-a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1/series.json",
+        "outcome": "served",
+        "sha256": "c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2",
+        "status": 200
+      },
+      "method": "GET",
+      "name": "a download names the file from the declared path",
+      "path": "/data/green/series.json"
+    },
+    {
+      "download": false,
+      "expect": {
+        "code": "not_declared_by_the_live_release",
+        "outcome": "refused"
+      },
+      "method": "GET",
+      "name": "an undeclared path is refused, however ordinary it looks",
+      "path": "/data/green/alerts/2026-04-08/other.geojson"
+    },
+    {
+      "download": false,
+      "expect": {
+        "code": "not_declared_by_the_live_release",
+        "outcome": "refused"
+      },
+      "method": "GET",
+      "name": "a processing input cannot be addressed",
+      "path": "/data/green/runs/proof-a-2026-09-07/run.json"
+    },
+    {
+      "download": false,
+      "expect": {
+        "code": "not_declared_by_the_live_release",
+        "outcome": "refused"
+      },
+      "method": "GET",
+      "name": "a release prefix cannot be addressed, not even the live one",
+      "path": "/data/green/releases/rel-g1-a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1/release.json"
+    },
+    {
+      "download": false,
+      "expect": {
+        "code": "not_declared_by_the_live_release",
+        "outcome": "refused"
+      },
+      "method": "GET",
+      "name": "traversal is refused as undeclared, not sanitised",
+      "path": "/data/green/../../pointers/green/current.json"
+    },
+    {
+      "download": false,
+      "expect": {
+        "code": "not_declared_by_the_live_release",
+        "outcome": "refused"
+      },
+      "method": "GET",
+      "name": "an absolute-looking path is refused as undeclared",
+      "path": "/data/green//etc/passwd"
+    },
+    {
+      "download": false,
+      "expect": {
+        "code": "outside_mount",
+        "outcome": "refused"
+      },
+      "method": "GET",
+      "name": "the mount is not a prefix match on the site's static assets",
+      "path": "/data/alerts/manifest.json"
+    },
+    {
+      "download": false,
+      "expect": {
+        "code": "method_not_allowed",
+        "outcome": "refused"
+      },
+      "method": "PUT",
+      "name": "a write method is refused before anything is resolved",
+      "path": "/data/green/series.json"
+    },
+    {
+      "download": false,
+      "expect": {
+        "code": "method_not_allowed",
+        "outcome": "refused"
+      },
+      "method": "DELETE",
+      "name": "DELETE is refused; this route reads",
+      "path": "/data/green/series.json"
+    }
+  ],
+  "fixture": {
+    "manifest": {
+      "objects": [
+        {
+          "bytes": 78,
+          "content_type": "application/geo+json",
+          "path": "alerts/2026-04-07/19741870aa21.geojson",
+          "sha256": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1"
+        },
+        {
+          "bytes": 12,
+          "content_type": "application/json; charset=utf-8",
+          "path": "series.json",
+          "sha256": "c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2"
+        }
+      ],
+      "release_id": "rel-g1-a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+      "release_prefix": "releases/rel-g1-a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1/",
+      "schema": "araripe.green.release/1"
+    },
+    "pointer": {
+      "action": "rollback",
+      "release_id": "rel-g1-a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+      "schema": "araripe.green.pointer/1",
+      "sequence": 3
+    }
+  },
+  "mount": "/data/green/",
+  "note": "Generated by scripts/check_delivery_boundary.py. Any implementation of the /data/... route \u2014 the Python authority here, the Worker Package 2B.4 writes \u2014 must reproduce every expectation exactly. Regenerate with `vectors --write` and review the diff; a silent change to this file is a change to what the project publishes.",
+  "schema": "araripe.green.delivery-vectors/1"
+}
