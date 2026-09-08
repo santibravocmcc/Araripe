@@ -1,0 +1,198 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/santibravocmcc/Araripe/docs/contracts/phase2b/schemas/site-alert-index-v1.schema.json",
+  "title": "Araripe site alert index, version 1",
+  "description": "The document the public alerts page reads to learn which runs exist, how big each one was, and which object to fetch for each view. It is DERIVED from a green release, never sealed inside one: `release_prefix` is a function of the ledger alone, so publishing this as a `date_product` would make any later change to a statistic threshold collide with its own immutable prefix (SITE_ARTIFACT_CONTRACT_V1.md). Its integrity argument is reproducibility — immutable inputs plus a pure function plus the conformance vectors — not a stored checksum. Every field in `totals` is an aggregation of `runs[]` and nothing else, which is what lets a consumer verify the whole document without reading a single alert feature.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "stats_policy_version",
+    "object_base",
+    "runs",
+    "strong_points_file",
+    "totals",
+    "last_run",
+    "source"
+  ],
+  "properties": {
+    "schema": {
+      "const": "araripe.site.alert_index/1"
+    },
+    "stats_policy_version": {
+      "description": "Which version of the statistics policy produced these numbers. Present because this document is derived rather than sealed: without it, two indexes built by different threshold generations would be indistinguishable. Bumped by src/publication/site_artifact.py whenever a threshold or a derivation changes.",
+      "type": "string",
+      "minLength": 1
+    },
+    "runs": {
+      "description": "One row per UTC date in the release, in chronological order. The order is not re-established here — the release's own `dates[]` is required to be chronological, so an unordered index means the composer re-sorted or the release is malformed, and check_alert_index refuses it rather than repairing it.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/run"
+      }
+    },
+    "strong_points_file": {
+      "description": "Name of the point index the map loads for the all-runs view. It is a build artifact written beside this index by the same green step, NOT a release object, so it is resolved against the index's own location and never against object_base.",
+      "$ref": "#/$defs/object_name"
+    },
+    "totals": {
+      "$ref": "#/$defs/totals"
+    },
+    "last_run": {
+      "description": "The date of the last row in `runs[]`. Null only for an index with no runs, which is a legitimate state before the first release and never to be collapsed into an error.",
+      "oneOf": [
+        {
+          "type": "string",
+          "format": "date"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "source": {
+      "description": "Human-readable provenance line shown beside the latest detection date. Free text on purpose: it is a caption, and constraining it here would make a wording fix a contract change.",
+      "type": "string",
+      "minLength": 1
+    },
+    "object_base": {
+      "description": "Mount the per-run objects are served from, prepended to `file`/`file_strong`. It is `/data/green/` for the route Package 2B.4A built, so `/data/green/` + `alerts/run-2026-04-04.geojson` is exactly the request that route resolves. Required, and NOT defaulted: an index that did not say where its objects live would leave the page guessing, and the wrong guess is a 404 on the default view. The per-run objects are never copied into the deploy — they stay in the immutable release, which is the whole reason the 25 MiB per-asset limit and the 247 MiB of committed history stop being the site's problem.",
+      "type": "string",
+      "pattern": "^/([A-Za-z0-9][A-Za-z0-9._@+-]*/)*$"
+    }
+  },
+  "$defs": {
+    "object_name": {
+      "description": "One path segment, for a file that sits BESIDE the index rather than inside the release: the point index is computed by the same green step that writes the index, so it is not a release object and is resolved against the index's own location, never against object_base.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._@+-]*$"
+    },
+    "feature_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "date",
+        "file",
+        "file_strong",
+        "count",
+        "area_ha",
+        "high",
+        "medium",
+        "low",
+        "first_obs",
+        "candidate",
+        "confirmed",
+        "strong",
+        "pcount_max"
+      ],
+      "properties": {
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "file": {
+          "description": "Logical path of the full run object in the release: every candidate alert for the date.",
+          "$ref": "#/$defs/logical_path"
+        },
+        "file_strong": {
+          "description": "Logical path of the strong subset object. A different object from `file`, and check_alert_index refuses an index where the two are equal — collapsing them would serve every candidate under the default view.",
+          "$ref": "#/$defs/logical_path"
+        },
+        "count": {
+          "description": "Features with a Polygon or MultiPolygon geometry. NOT the length of the feature array: a feature of any other type carries no area and is skipped, and the difference is a number the page displays.",
+          "$ref": "#/$defs/feature_count"
+        },
+        "area_ha": {
+          "description": "Sum of feature areas in hectares, rounded once to one decimal. The rounding is contractual, not cosmetic: `totals.area_ha` sums these rounded values, so a consumer that rounded later would report a different total for the same release.",
+          "type": "number",
+          "minimum": 0
+        },
+        "high": {
+          "$ref": "#/$defs/feature_count"
+        },
+        "medium": {
+          "$ref": "#/$defs/feature_count"
+        },
+        "low": {
+          "description": "Also absorbs any label the policy does not name, including a missing one — the conservative direction, since an unlabelled feature must not be presented as high confidence.",
+          "$ref": "#/$defs/feature_count"
+        },
+        "first_obs": {
+          "description": "Seen once. Together with `candidate` and `confirmed` this is a partition of `count`, and the validator enforces the partition rather than trusting it.",
+          "$ref": "#/$defs/feature_count"
+        },
+        "candidate": {
+          "$ref": "#/$defs/feature_count"
+        },
+        "confirmed": {
+          "$ref": "#/$defs/feature_count"
+        },
+        "strong": {
+          "description": "High confidence AND a streak of at least two sightings AND majority natural vegetation at 10 m. Cannot exceed `high`, which the validator checks.",
+          "$ref": "#/$defs/feature_count"
+        },
+        "pcount_max": {
+          "description": "Largest sighting streak on the date, floored at 1. It feeds a UI slider whose range must not collapse on an empty run, and it is carried per run so that `totals.pcount_max` is an aggregation rather than a second pass over the features.",
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "totals": {
+      "description": "Aggregations of `runs[]`. Deliberately NOT a superset of the per-run keys: `medium` and `low` are shown per run and not in aggregate, and adding them here would imply a page element that does not exist.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "count",
+        "area_ha",
+        "high",
+        "first_obs",
+        "candidate",
+        "confirmed",
+        "strong",
+        "pcount_max"
+      ],
+      "properties": {
+        "count": {
+          "$ref": "#/$defs/feature_count"
+        },
+        "area_ha": {
+          "type": "number",
+          "minimum": 0
+        },
+        "high": {
+          "$ref": "#/$defs/feature_count"
+        },
+        "first_obs": {
+          "$ref": "#/$defs/feature_count"
+        },
+        "candidate": {
+          "$ref": "#/$defs/feature_count"
+        },
+        "confirmed": {
+          "$ref": "#/$defs/feature_count"
+        },
+        "strong": {
+          "$ref": "#/$defs/feature_count"
+        },
+        "pcount_max": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "logical_path": {
+      "description": "A path inside the release prefix, as the release declares it. Same shape as the release contract's logical_path: no absolute path, no traversal, no backslash, no trailing slash. It may contain `/`, unlike the sibling names below, because it is the release's own path and the run assembler chooses its prefix.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?!\\.)(?!.*//)(?!.*/\\.)[A-Za-z0-9][A-Za-z0-9._@+-]*(/[A-Za-z0-9][A-Za-z0-9._@+-]*)*$"
+    }
+  }
+}
