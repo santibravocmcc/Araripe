@@ -3,6 +3,24 @@
 Escrito em 2026-09-08, a pedido do dono, para uma sessão **paralela** ao caminho
 crítico do roadmap.
 
+> ## ⛔ ESTA FASE NÃO COMEÇA SEM REVISÃO DO DONO
+>
+> Registrado em 2026-09-08, depois de o dono ampliar o objetivo. **Não abra a
+> sessão de execução antes de a revisão da §0-bis acontecer.** O escopo mudou de
+> "medir a acurácia para uso interno" para "produzir um estudo válido para
+> **publicação científica**", e três decisões passaram a ter consequência
+> metodológica que não é corrigível depois com mais rótulos:
+>
+> 1. **o quadro amostral de referência** (§2 e §0-bis a);
+> 2. **o papel do drone** — verdade de campo, e o que ela pode e não pode
+>    sustentar (§0-bis b);
+> 3. **autoria e anonimato dos revisores**, que são incompatíveis como estão
+>    hoje (§0-bis c).
+>
+> Uma amostra enviesada não se corrige rotulando mais casos: a amostra **é** a
+> evidência, e refazê-la gasta o tempo das pessoas, que é o recurso mais escasso
+> do roadmap. Por isso o portão.
+
 Segue o método em [`HANDOFF_PROMPT_METHOD.md`](HANDOFF_PROMPT_METHOD.md)
 versão 2: o corpo é para o agente executor, e a **seção final é para o dono**.
 
@@ -38,6 +56,131 @@ ponteiro verde já provou mover e reverter.
 
 **Registrar as duas em vez de descobri-las depois é metade do valor deste
 package.**
+
+## 0-bis. O escopo ampliado, e as três decisões que o portão espera
+
+Registrado em 2026-09-08. O dono informou três coisas que mudam o desenho:
+
+- **já tem as pessoas** que vão rotular;
+- **quer que a Fase 5 termine válida para publicação científica**;
+- **tem drone**, e ele pode ser usado para verdade de campo.
+
+O que continua valendo: a Fase 5 **não trava** as Fases 6 e 7, e mudanças
+depois são aceitas. O que muda é o padrão de rigor, e ele cobra o seguinte.
+
+### O que "válido para publicação" acrescenta, concretamente
+
+1. **Inferência baseada em desenho, com variância declarada.** Um número sem
+   intervalo não passa em revisão por pares. Isso obriga: estratos com pesos
+   conhecidos, estimadores ponderados por área, matriz de erro em proporções
+   estimadas (não em contagens de amostra), e intervalos de confiança. A
+   literatura de avaliação de acurácia de mudança de cobertura tem um conjunto
+   de boas práticas consolidado para exatamente isso — **a sessão deve
+   localizar e citar a referência canônica, não confiar nesta frase**, e
+   registrar qual seguiu.
+2. **Reprodutibilidade citável.** Amostra, rótulos, código do cálculo,
+   protocolo e relatório versionados — o padrão do 2A.3 já faz isso — mais uma
+   declaração de disponibilidade de dados que aponte para **uma release
+   específica e permanentemente recuperável**. Ver a §0-ter, porque isso toca a
+   Phase 6.
+3. **Poder estatístico declarado antes de amostrar.** O tamanho sai de um alvo
+   ("meia-largura de intervalo ≤ X pontos no estrato Y"), não de um número
+   redondo. O piloto usou 60 casos porque era piloto.
+4. **Tratamento explícito de casos irrevisáveis.** `unreviewable` não é dado
+   faltante ignorável: a taxa dele e o efeito na inferência entram no relatório.
+
+### a. O quadro amostral de referência — a decisão que decide o resto
+
+Continua sendo o problema da §2, e a publicação o torna mais exigente: um
+revisor de periódico vai perguntar de onde vem a referência e se ela é
+independente do produto avaliado. As três opções da §2 seguem válidas, com
+esta leitura adicional:
+
+- a opção 1 (produto independente de alerta) permite publicar **concordância
+  entre produtos**, que é um artigo legítimo mas **não** é acurácia;
+- a opção 3 (amostra estratificada por risco, interpretada às cegas) é a que
+  sustenta precisão **e** recall com inferência baseada em desenho. É a que a
+  literatura de boas práticas assume.
+
+**Recomendação, a validar na revisão: opção 3 como quadro primário**, com a
+opção 1 como estrato auxiliar e o drone entrando como na alínea b.
+
+### b. O drone — o que ele sustenta, e o que ele não sustenta
+
+Verdade de campo por drone é uma vantagem real e rara neste tipo de estudo.
+Mas ela tem duas limitações que precisam estar escritas **antes** de alguém
+voar, porque voar errado gasta o recurso sem produzir evidência utilizável:
+
+**Limitação temporal.** O drone voa *agora*; a mudança ocorreu em 2026. Para
+perda de vegetação — que é persistente — um voo posterior ainda mostra o
+**resultado**, então ele sustenta *"a mudança é real e persistente"*. Ele **não**
+sustenta *"a mudança ocorreu na data X"*, que é o que a confiança temporal do
+protocolo avalia. Um voo não substitui a série de imagens; ele resolve o caso
+em que a série é ambígua.
+
+**Limitação de amostragem, e é a que estraga um artigo.** Se os voos forem
+escolhidos *porque* um caso ficou `uncertain`, o subconjunto voado é uma amostra
+**enviesada por seleção** e não pode alimentar as estimativas de manchete. Ele
+pode alimentar duas coisas legítimas e separadas:
+
+- uma **análise de confiabilidade** do rótulo de mesa: entre os casos voados,
+  com que frequência a interpretação de imagem coincidiu com o campo — reportada
+  como validação do *instrumento*, com o viés de seleção declarado;
+- um **estrato próprio com peso conhecido**, se os voos forem sorteados dentro
+  de um estrato definido antes, e não escolhidos por dificuldade.
+
+**A segunda é a que vale a pena, e ela exige decidir antes de voar.** Sortear
+dentro de um estrato custa voar em lugares onde "não há nada para ver" — e é
+exatamente esse desconforto que torna a amostra utilizável.
+
+Restrições práticas a registrar: alcance e autorização de voo, acesso ao
+terreno, e o fato de que a extensão monitorada inclui a APA e arredores — a
+área alcançável por drone é uma fração dela, e **isso é um limite de
+generalização a declarar no artigo**, não um detalhe operacional.
+
+### c. Autoria e anonimato são incompatíveis como estão
+
+O protocolo do 2A.3 exige **ID pseudônimo** de revisor, e a regra
+"nenhum dado pessoal de revisor no repositório" (§5) vem dele. Numa publicação,
+quem rotula normalmente é **coautor ou nominalmente agradecido** — e as duas
+coisas não convivem sem uma decisão explícita.
+
+Três caminhos, e a sessão não deve escolher sozinha:
+
+1. **pseudônimo no dado, nome no artigo** — o repositório guarda `R1`, `R2`, e o
+   artigo credita as pessoas sem ligar nome a rótulo individual. Preserva o
+   cegamento na análise e credita o trabalho. **Recomendado.**
+2. nome no dado — mais transparente para replicação, e expõe julgamento
+   individual de pessoas identificáveis;
+3. só agradecimento, sem autoria — decisão de mérito, não técnica.
+
+Registrar também: se há vínculo institucional, quem é o autor correspondente, e
+se alguma instituição exige aprovação ética para trabalho com intérpretes
+humanos. Não é pesquisa com sujeitos humanos, mas a pergunta deve ser feita e a
+resposta registrada.
+
+## 0-ter. A consequência que chega até a Phase 6
+
+Um artigo cita **uma release específica**. Isso transforma um achado do Package
+2B.3 de "boa prática" em **requisito**: o armazenamento verde **não guarda
+histórico de promoção**, e por isso nenhuma release pode ser apagada
+(`GREEN_RETENTION_AND_MIGRATION.md` §3). Com uma publicação apontando para uma
+delas, a exigência passa a ser mais forte:
+
+> **A release que o artigo cita tem de permanecer recuperável indefinidamente,
+> e a declaração de disponibilidade de dados tem de nomeá-la de forma estável.**
+
+Consequências a levar para a Phase 6, e que a sessão da Fase 5 deve escrever:
+
+- o identificador citável — o `release_id` derivado do ledger serve, e é
+  reprodutível por construção, mas **um DOI ou depósito arquivado** é o que um
+  periódico costuma pedir. Zenodo ou equivalente, com o pacote de validação e o
+  release referenciado;
+- a política de retenção **não pode** ganhar um caminho que apague aquela
+  release, nem depois de o histórico durável existir;
+- se a Fase 5 mudar um default e obrigar a rerodar a Fase 4, o artigo passa a
+  citar a **nova** release, e a antiga continua tendo de existir — porque
+  qualquer coisa já publicada aponta para ela.
 
 ## 1. O ponto de partida existe — NÃO comece do zero
 
@@ -177,10 +320,19 @@ de planejamento, e `PHASE_3_INPUTS_2026-09-08.md`.
 7. **O pacote de rotulagem**: o que um revisor recebe, e o que ele não recebe.
    Herde o gerador do 2A.3 em vez de escrever outro.
 
+8. **O desenho do estrato de drone**, se a revisão escolher a opção da §0-bis b
+   — sorteado dentro de um estrato definido antes, nunca escolhido por
+   dificuldade — e a redação do limite de generalização que o artigo tem de
+   declarar.
+9. **A estrutura do artigo**: seções, o que cada número reportado exige de
+   evidência, e a declaração de disponibilidade de dados apontando para uma
+   release citável (§0-ter).
+
 **Fora de escopo, explicitamente:** rodar a amostragem sobre o candidato (ele
-não existe até a Phase 4); recrutar ou instruir revisores; qualquer visita de
-campo; e **mudar qualquer default** — a Phase 5 os valida, e mudá-los exige
-evidência qualificada registrada. Não comece as Fases 3, 4, 6 ou 7.
+não existe até a Phase 4); recrutar ou instruir revisores; **qualquer voo de
+drone**; escrever o artigo; e **mudar qualquer default** — a Phase 5 os valida,
+e mudá-los exige evidência qualificada registrada. Não comece as Fases 3, 4, 6
+ou 7.
 
 ## 4. Decisões de escopo já tomadas, com sua base
 
@@ -257,8 +409,18 @@ PR **sem mesclar**. Termine com a seção final obrigatória do método de hando
 
 ### O que ficou pendente da tarefa atual
 
-Nada — este documento **é** o insumo que você pediu. Ele existe para uma sessão
-nova começar a Fase 5 sem depender das outras.
+Uma coisa, e ela é sua: **a revisão do portão no topo deste documento.** O
+resto do insumo está pronto — a sessão da Fase 5 pode começar assim que a
+revisão acontecer, e não depende de nenhuma outra fase.
+
+Por que o portão passou a existir: você disse que quer que a Fase 5 termine
+**válida para uma publicação científica**, que **já tem as pessoas** que vão
+rotular, e que **tem drone** que poderia servir de verdade de campo. Isso muda
+o desenho, não só o rigor da redação. A §0-bis registra as três decisões que
+não são corrigíveis depois — o quadro amostral, o papel do drone, e autoria vs.
+anonimato dos revisores — e a §0-ter registra a consequência que chega até a
+Fase 6: um artigo cita **uma** release, e aquela release passa a ter de existir
+para sempre.
 
 O que ele deixa registrado, e que vale você saber antes de aprovar: **a Fase 5
 não trava nada, mas ela cobra duas coisas em troca.** A primeira é que o site
@@ -271,23 +433,47 @@ e o sistema já sabe voltar atrás numa publicação.
 
 ### O que você precisa fazer
 
-1. **Ler a §2 e opinar sobre uma coisa só:** de onde vem a amostra de "mudança
-   conhecida". É a decisão científica que decide se o relatório pode falar de
-   *omissão* (o que o sistema deixou passar) ou só de *comissão* (o que ele
-   apontou errado). Sem ela, metade do relatório não existe. Não precisa
-   escolher agora — precisa saber que existe.
-2. **Pensar em quem rotula.** Não é trabalho de agente: precisa de gente com
-   competência em interpretação de sensoriamento remoto, e de pelo menos duas
-   pessoas num subconjunto, para medir se elas concordam entre si. É o item de
-   prazo mais longo de todo o roadmap, e é o único que começar agora encurta.
-3. **Abrir a página de cotas do projeto `ee-araripe`** e me mandar duas linhas:
-   o limite mensal e o uso atual. A página que você mandou é de outro projeto —
-   o da baseline, não o da detecção.
-4. **Anotar 6 de novembro:** a chave da NASA expira e a chuva do site para.
+1. **Revisar a §0-bis antes de a Fase 5 começar.** É o portão, e ele existe
+   porque três decisões deixam de ser reversíveis depois:
+   - **de onde vem a amostra de "mudança conhecida"** (§2 e §0-bis a). É a
+     decisão que define se o relatório pode falar de *omissão* — o que o sistema
+     deixou passar — ou só de *comissão*, o que ele apontou errado. Minha
+     recomendação a avaliar: amostra estratificada por risco, com um produto
+     independente como estrato auxiliar;
+   - **como o drone entra** (§0-bis b). Ele é uma vantagem real, e tem uma
+     armadilha: se você voar só onde a interpretação ficou difícil, aqueles
+     voos **não** podem entrar na conta principal — a escolha por dificuldade é
+     o próprio viés. Para entrarem, os pontos têm de ser sorteados antes, o que
+     custa voar onde "não há nada para ver". Vale decidir isso antes do primeiro
+     voo, porque um voo bem-feito no lugar errado não é aproveitável;
+   - **como as pessoas que rotulam aparecem** (§0-bis c). Hoje o protocolo exige
+     pseudônimo, e uma publicação normalmente credita quem trabalhou. Minha
+     recomendação: pseudônimo no dado, nome no artigo — preserva o cegamento e
+     credita as pessoas.
+2. **Anotar 6 de novembro:** a chave da NASA expira e a chuva do site para.
+3. **Depois, não agora:** se houver vínculo institucional, perguntar se a
+   instituição exige alguma aprovação ética para trabalho com intérpretes
+   humanos. Não é pesquisa com sujeitos humanos, mas a resposta tem de ficar
+   registrada em vez de presumida.
+
+Duas coisas saíram desta lista porque você já resolveu: **as pessoas que
+rotulam** (era o item de prazo mais longo do roadmap) e **a cota do GEE** —
+3.600.000 EECU-segundos por mês, 0,17% usados, medida e registrada em
+`PHASE_3_INPUTS_2026-09-08.md`.
 
 ### Tem algo preocupante?
 
-**Não.** Nada aqui é urgente e nada quebrou.
+**Nada urgente, e nada quebrado.** Mas o objetivo de publicação acrescenta um
+risco que não existia, e ele não é técnico: **é de sequência.** A amostra é a
+evidência. Se ela for desenhada torta, nenhuma quantidade de rótulos depois a
+endireita — refazê-la gasta o tempo das pessoas, que continua sendo o recurso
+mais escasso deste roadmap, agora que a cota de máquina deixou de ser. É
+literalmente o único motivo do portão: uma revisão sua de meia hora agora vale
+mais do que qualquer conserto depois.
+
+O mesmo vale para o drone, e é a parte menos intuitiva: **voar cedo e voar
+escolhendo os casos difíceis produz um dado que parece ótimo e não sustenta a
+manchete do artigo.**
 
 Vale registrar uma coisa que é boa notícia e uma que é honesta.
 
@@ -309,8 +495,9 @@ desmatamento precisa saber sobre si mesmo.
   30/08/2026) e fotografar tudo antes de começar.
 - **Fase 4 — reprocessar 2026 inteiro** num candidato guardado, sem publicar.
   É tempo de máquina, e a cota não deve limitar.
-- **Fase 5 — esta:** o protocolo agora, a rotulagem quando houver pessoas, o
-  relatório quando ela terminar. **Em paralelo, sem travar.**
+- **Fase 5 — esta:** a sua revisão, depois o protocolo, depois a rotulagem — as
+  pessoas já existem — e o relatório quando ela terminar. **Em paralelo, sem
+  travar as Fases 6 e 7.** O portão trava só a Fase 5.
 - **Fase 6 — a troca final:** o novo substitui o antigo, a página passa a ler
   pela rota nova, o robô antigo é desligado, e a publicação passa a acontecer
   sozinha num horário. É aqui que entra a proposta guardada dos arquivos grandes.
