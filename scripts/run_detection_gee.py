@@ -51,6 +51,7 @@ from config.settings import (
 )
 from src.acquisition.aoi import get_aoi_bbox_wgs84
 from src.acquisition.gee_download import download_image_tiled, ee_initialize
+from src.detection.baseline_selection import resolve_baseline
 from src.detection.identity import (
     create_acquisition_identity,
     write_acquisition_metadata,
@@ -110,17 +111,33 @@ def _prep(img, ee):
 )
 @click.option("--landcover-collection", default=DEFAULT_LANDCOVER_COLLECTION)
 @click.option("--classify-clearing/--no-classify-clearing", default=True)
+@click.option(
+    "--baseline-version",
+    default=None,
+    help="Baseline generation to compare against (default: the frozen "
+         "production baseline from config/settings.py). The replay names it.",
+)
 @click.option("--log-level", default="INFO", help="Console log level (file always "
               "captures full DEBUG detail under logs/).")
 def main(project, start, end, days_back, max_cloud, out_dir, work_dir, tile_px,
          persistence, persistence_mode, state_path, landcover_collection,
-         classify_clearing, log_level):
+         classify_clearing, baseline_version, log_level):
     configure_run_logging("run_detection_gee", console_level=log_level)
     import ee
 
     # CI passes possibly-empty --start/--end; treat empty as "use default".
     start = start or None
     end = end or None
+
+    # Resolve the baseline BEFORE any Earth Engine work. `run_detection_on_dir`
+    # resolves it again — the resolver is pure, so that costs nothing — but it
+    # only runs after every composite has been downloaded, and a mistyped
+    # generation would then fail having already spent the GEE compute and the
+    # transfer for the whole window.
+    baseline = resolve_baseline(baseline_version)
+    logger.info(
+        "Baseline generation {} from {}", baseline.version, baseline.directory
+    )
 
     ee_initialize(project)
     bbox = list(get_aoi_bbox_wgs84())  # [w, s, e, n]
@@ -186,6 +203,7 @@ def main(project, start, end, days_back, max_cloud, out_dir, work_dir, tile_px,
         state_path=state_path,
         landcover_collection=landcover_collection,
         classify_clearing=classify_clearing,
+        baseline_version=baseline_version,
     )
 
 
