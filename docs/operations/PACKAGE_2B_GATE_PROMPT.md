@@ -1,11 +1,40 @@
 # Exit gate P2B — o montador da rodada, e o fechamento da Phase 2B
 
-Escrito em 2026-09-08, depois de fechar o Package 2B.4B.
+Escrito em 2026-09-08 depois de fechar o Package 2B.4B, e **revisado no mesmo
+dia** — leia a §0 antes de qualquer coisa, porque o item 1 do escopo mudou de
+estado.
 
 O Package 2B.4 era **o último package da Phase 2B**. Não há 2B.5 no roadmap —
-confira antes de propor um. O que resta é o **exit gate P2B**, e ele falha hoje
-por uma razão só, nomeada desde o 2B.2C: nenhum produtor deposita
-`runs/<run-id>/`.
+confira antes de propor um. O que resta é o **exit gate P2B**.
+
+## 0. O que mudou depois de este briefing ser escrito — leia primeiro
+
+O montador da rodada **já existe**. Mesclado como `bf2c2cf` (`#49`),
+`src/publication/run_assembler.py`, 33 testes, com uma prova ponta a ponta de
+duas releases: montar → subir → `load_run` → publicar → verificar → promover A →
+promover B (supersede) → reverter para A (`sequence` 3, cobertura de volta).
+
+**Mas ele é biblioteca, e nada além do próprio teste o importa.** Medido:
+
+    for f in $(git ls-tree -r --name-only origin/main | grep -E '^(scripts|src|tests)/.*\.py$'); do
+      git show "origin/main:$f" | grep -q run_assembler && echo "$f"
+    done
+    # tests/test_run_assembler.py    <- só isto
+
+Então o item 1 do escopo (§3) **não é mais "escrever o montador"**: é
+**escrever o ponto de entrada de operador** que o liga a uma execução de
+detecção real, em vez de a uma fixture. Não reescreva a biblioteca. Leia o
+módulo primeiro — ele documenta no próprio docstring o que deliberadamente
+**não** faz (não produz ledger, não decide o que é forte) e por quê.
+
+O item 2 do escopo (satisfazer o contrato do artefato do site) **também já
+está feito**: o montador importa `site_artifact` e `ledger_gate`, e chama
+`site_artifact.strong_features` e `classify_run_objects` em vez de reimplementar
+a regra.
+
+Restam, portanto, **quatro** itens: o ponto de entrada, a prova de falha e de
+concorrência, a publicação real no `araripe-v2-staging` com ida e volta do
+ponteiro, e o registro do fechamento.
 
 Segue o método em [`HANDOFF_PROMPT_METHOD.md`](HANDOFF_PROMPT_METHOD.md)
 versão 2: o corpo é para o agente executor, e a **seção final é para o dono**.
@@ -27,9 +56,22 @@ Espere `{'object_cases': 8, 'run_cases': 10, 'index_cases': 4,
 mensagem inteira. Filtre por `%s`:
 `git log origin/main --format='%H %s' | grep '(#<número>)'`.
 
-Gates medidos nas branches do 2B.4B: **backend 771 passed**; **site 175 pytest
-+ 44 `node --test`** na branch do artefato. **Meça antes de editar** — são fatos
-datados. Se o 2B.4B ainda não estiver mesclado, espere 697 e 90+44.
+Gates **medidos na `main` em 2026-09-08**, depois de `#46`-`#50` no backend e
+`#20`/`#22`/`#23` no site:
+
+| repositório | comando | resultado medido |
+| --- | --- | --- |
+| backend | `/opt/anaconda3/envs/araripe/bin/python -m pytest -q` | **812 passed** |
+| site | `/opt/anaconda3/envs/araripe/bin/python -m pytest -q` | **201 passed** |
+| site | `npm ci && npm run test:worker` | **44 tests, 44 pass** |
+
+**Use `npm run test:worker`, não `node --test tests/`.** Nesta máquina o Node é
+v25.8.2, e ali `node --test tests/` tenta *carregar* `tests/` como módulo e
+morre com `MODULE_NOT_FOUND` — um fracasso que parece do repositório e é da
+invocação. O script do `package.json` passa o glob
+(`node --test tests/*.test.mjs`), que é o que funciona.
+
+**Meça antes de editar** — são fatos datados.
 
 Se `src/publication/site_artifact.py` não estiver na `main` do backend: **pare e
 pergunte.**
@@ -109,12 +151,16 @@ confirmar §1.
 
 ### Escopo
 
-1. **O montador da rodada**: o produtor que deposita `runs/<run-id>/` — o
-   `run.json`, o `ledger.json` e os corpos — a partir de uma execução de
-   detecção. É a peça que falta desde o 2B.2C, e é o que transforma "o caminho
-   verde é exercitável contra fixture" em "o caminho verde rodou com dado real".
-2. **Fazê-lo satisfazer o contrato do artefato do site** (§2b acima) e o
-   `GREEN_RELEASE_CONTRACT_V1.md`, com os vetores existentes como gate.
+1. ~~O montador da rodada~~ **— FEITO em `bf2c2cf`. Ver §0.** O que resta é o
+   **ponto de entrada de operador**: o script que monta `runs/<run-id>/` a
+   partir de uma execução de detecção real e o deposita, em vez de a partir de
+   fixture. É a peça que transforma "o caminho verde é exercitável contra
+   fixture" em "o caminho verde rodou com dado real". O ledger é **insumo** dele,
+   não produto — não existe segundo produtor de ledger (§4).
+2. ~~Fazê-lo satisfazer o contrato do artefato do site~~ **— FEITO. Ver §0.** O
+   montador importa `site_artifact` e `ledger_gate`. O que resta é rodar os
+   vetores existentes como gate **no caminho novo**, com dado de execução real
+   em vez de fixture.
 3. **A prova de execução falhada e de execução concorrente**: o gate fala de
    "deliberately failed or racing", e as duas metades precisam de uma prova
    executada, não de um argumento.
@@ -177,6 +223,12 @@ Se aparecer evidência contra qualquer uma, **pare e pergunte**.
 - **`grep` desta máquina é `ugrep`**: `grep -qv` retorna 1 mesmo com linhas
   selecionadas. Capture a saída e teste se está vazia.
 - **`cut` não está disponível no shell das ferramentas**; use Python.
+- **`node --test tests/` quebra no Node v25** com `MODULE_NOT_FOUND`, que parece
+  falha do repositório e é da invocação. Use `npm run test:worker`. Ver §1.
+- **Dois orçamentos de 14 dias medem coisas diferentes** na chuva do site, e
+  divergem: `MAX_DIAS_SEM_ATUALIZAR` em `fetch_gpm.py` conta do **raster mais
+  novo em disco**, e `freshness.py check chuva --max-age-days 14` conta de
+  **`updated_utc`**. Não são redundantes e não estouram no mesmo dia. Ver §8.
 - **`cd` composto no shell das ferramentas pode não pegar.** Use caminho
   absoluto em cada comando.
 
@@ -199,6 +251,22 @@ com a seção final obrigatória do método de handoff.
 
 ## 8. Estado que este gate herda
 
+- **Tudo mesclado até `05e2a12`** na `main` do backend, e até `826fc0d` na do
+  site. Nenhuma PR aberta nos dois repositórios em 2026-09-08. Confira, não
+  confie nesta linha.
+- **O montador da rodada está na `main`** (`bf2c2cf`), como biblioteca sem
+  ponto de entrada. **Ver §0** — é o que mais muda o escopo deste gate.
+- **O registro da Fase 5 ganhou portão de revisão** (`05e2a12`, `#50`): a Fase 5
+  não começa sem revisão do dono, porque o objetivo passou a ser uma publicação
+  científica. **Isso não trava este gate, nem as Fases 6 e 7.** Mas cria um
+  requisito que a Phase 6 terá de honrar: um artigo cita **uma** release, e
+  aquela release passa a ter de existir para sempre
+  (`PACKAGE_P5_PROTOCOL_PROMPT.md` §0-ter).
+- **O arnês de verificação da rota verde vazava um `workerd` por execução**,
+  corrigido no site `#23` (`826fc0d`). Se você rodar
+  `scripts/verify_green_route.sh`, confira ao fim que a porta ficou livre e que
+  nenhum `workerd` sobrou: `pgrep -fl workerd`. O defeito real foi medido —
+  cinco runtimes órfãos, um vivo cinco horas.
 - **Package 2B.4B entregue**, 2026-09-08: o contrato do artefato do site, 31
   vetores, o compositor do site, a fixture offline, a lane verde inerte e os
   pins medidos. Três defeitos achados e corrigidos no caminho.
@@ -211,9 +279,31 @@ com a seção final obrigatória do método de handoff.
   `v2-staging` e `v2-promotion` (sem revisor, política `main`).
   **O repositório do site não tem Environment nenhum.**
 - **Package 2A.6 fechado** em `claude/phase2a6d-mapbiomas`, não mesclado.
+- **A chuva do site está pulando por rede, e o relógio está medido.** Não é o
+  token e não é o nosso código. Fatos de 2026-09-08:
+  - run `34216040390` (cron, 10:33Z) saiu **success** com
+    `public/data/freshness/chuva.json` em `status: "skipped"` e
+    `ConnectTimeoutError` em `urs.earthdata.nasa.gov:443`. Só o `checked_utc`
+    andou; o `updated_utc` ficou em `2026-09-07T21:59:06Z`;
+  - o run anterior (`34165003418`, `workflow_dispatch`, 21:58Z) **atualizou** a
+    chuva com o mesmo token e o mesmo código — então a credencial funciona;
+  - o URS respondeu `302` em `0,16 s` desta máquina, por IPv4 **e** IPv6, no
+    mesmo dia. O endpoint está no ar;
+  - `force_ipv4()` **já é chamado** por `fetch_gpm.py`, então não é a
+    regressão de IPv6 antiga.
+  - **Conclusão sustentada pela medição:** é o caminho de rede entre o runner
+    do GitHub e o URS. `n=1` no regime pós-correção do token, então ainda não
+    dá para dizer se é crônico.
+  - **O relógio:** o raster mais novo é `2026-09-04`, e
+    `MAX_DIAS_SEM_ATUALIZAR = 14` conta dele — estoura no cron de
+    **terça 2026-09-22** (`atraso=18`). `freshness.py` conta de `updated_utc` e
+    estoura em `2026-09-21 21:59Z`, observado no mesmo cron. **Sexta 2026-09-11
+    não fica vermelha** — quem afirmar isso está lendo uma nota velha, escrita
+    antes de o run de 09-07 zerar o contador. Uma única rodada bem-sucedida
+    zera tudo de novo.
 - **Pendência com data: o token da NASA expira em 2026-11-06** e a chuva do site
-  para de novo. A falha aparece no download — run vermelho, não congelamento
-  silencioso.
+  para de novo. Essa falha, sim, aparece no download — run vermelho, não
+  congelamento silencioso.
 - **Mesmo padrão suspeito no fallback do backend**, sem prazo: o passo "Run
   detection pipeline" do `update_data.yml` passa só usuário e senha do
   Earthdata, e não foi verificado se `run_detection.py` chega a fazer login.
@@ -242,7 +332,14 @@ própria que não deve ser aplicada antes de a página aprender a ler pelo camin
 novo. O resto da etapa não depende dela.
 
 Continua pendente, do mesmo jeito que antes, **testar a rota num navegador de
-verdade**: o servidor de teste continua sem endereço.
+verdade**: o servidor de teste continua sem endereço. **Este portão não depende
+disso.**
+
+Uma atualização importante desde que este documento foi escrito: **a peça que
+faltava — o montador — já entrou** (`bf2c2cf`). Ela sabe montar uma rodada e
+foi provada de ponta a ponta com duas publicações e uma volta atrás. O que
+falta é ligá-la a uma execução de verdade, em vez de a um exemplo montado à
+mão. A §0 explica isso ao agente para ele não reescrever o que já existe.
 
 ### O que você precisa fazer
 
@@ -253,13 +350,27 @@ verdade**: o servidor de teste continua sem endereço.
    sexta seguinte.
 2. **Decidir como dar um endereço temporário ao servidor de teste.** É a mesma
    pendência da etapa anterior. Precisa de alguém com acesso ao painel da
-   Cloudflare.
+   Cloudflare. **Este portão não depende disso** — mover e reverter o ponteiro é
+   trabalho de objeto no armazenamento, e o endereço só é necessário para ver a
+   rota num navegador.
 3. **Criar um "ambiente" protegido no repositório do site**, se quiser que a
    publicação automática avance. Hoje não existe nenhum, e sem ele a publicação
    sem robô fica pronta mas parada. Peça que exija aprovação humana: a permissão
    necessária é de conta inteira, ou seja, quem publica o site de teste
    consegue publicar o de produção.
-4. **Anotar 6 de novembro:** a chave da NASA expira e a chuva para de novo.
+4. **Chuva do site — decisão de uma linha, e só se você quiser.** O mapa de
+   chuva parou de atualizar por problema de rede entre o robô do GitHub e o
+   servidor da NASA, e o sistema está fazendo exatamente o que foi desenhado
+   para fazer: pula em silêncio e só fica vermelho quando deixa de ser um
+   soluço. **Há 14 dias de folga e três tentativas automáticas** antes disso
+   (11, 15 e 18 de setembro); o primeiro dia vermelho é **22 de setembro**, e
+   qualquer rodada bem-sucedida zera o contador. Não é preciso fazer nada. Se
+   quiser antecipar, a única ação útil é **pedir uma rodada manual num horário
+   diferente** — se ela passar, o mapa volta e o contador zera; se falhar, a
+   gente aprende que o problema não é hora do dia. Isso publica dado no site,
+   então não faço por conta.
+5. **Anotar 6 de novembro:** a chave da NASA expira e a chuva para de novo — e
+   essa falha é vermelha, não silenciosa.
 
 ### Tem algo preocupante?
 
@@ -283,9 +394,10 @@ armadilha da etapa anterior, no sentido contrário.
 
 ### O que ainda falta no caminho
 
-- **O fechamento da fase atual:** falta a peça que monta automaticamente o
-  pacote de cada rodada — hoje isso é feito à mão. É a última coisa que falta
-  para a fase inteira poder ser declarada pronta, e é a próxima etapa.
+- **O fechamento da fase atual:** falta ligar o montador a uma execução real,
+  provar que uma rodada quebrada e duas rodadas ao mesmo tempo não estragam
+  nada, publicar uma release de teste de verdade com ida e volta, e registrar o
+  fechamento. Nada disso depende de você.
 - **A verificação no navegador**, assim que o servidor de teste tiver endereço.
 - **Uma etapa própria para a memória de publicações**, que é o que permitirá um
   dia apagar versões antigas com segurança.
