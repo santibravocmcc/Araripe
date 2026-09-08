@@ -347,6 +347,115 @@
     }
   ],
   "note": "Neither the Python authority nor the site's composer is the reference: this file is. Add a case to the generator and regenerate; never hand-edit.",
+  "object_cases": [
+    {
+      "expected": {
+        "full": "alerts/run-2026-04-04.geojson",
+        "outcome": "classified",
+        "strong": "alerts/run-2026-04-04.strong.geojson"
+      },
+      "name": "the strong suffix is tested before the full suffix",
+      "paths": [
+        "alerts/run-2026-04-04.geojson",
+        "alerts/run-2026-04-04.strong.geojson"
+      ],
+      "why": "run-<date>.strong.geojson also ends in .geojson. Testing in the other order classifies the subset as the full run — silently — and the page's default view becomes every candidate alert."
+    },
+    {
+      "expected": {
+        "full": "alerts/run-2026-04-04.geojson",
+        "outcome": "classified",
+        "strong": "alerts/run-2026-04-04.strong.geojson"
+      },
+      "name": "declaration order does not decide the answer",
+      "paths": [
+        "alerts/run-2026-04-04.strong.geojson",
+        "alerts/run-2026-04-04.geojson"
+      ],
+      "why": "The same two paths listed the other way round must classify identically, or the index depends on how the release happened to serialise its list."
+    },
+    {
+      "expected": {
+        "full": "alerts/run-2026-04-04.geojson",
+        "outcome": "classified",
+        "strong": "alerts/run-2026-04-04.strong.geojson"
+      },
+      "name": "an unrelated object on the date is ignored",
+      "paths": [
+        "acquisitions/S2C_20260404.json",
+        "alerts/run-2026-04-04.geojson",
+        "charts/2026-04-04.png",
+        "alerts/run-2026-04-04.strong.geojson"
+      ],
+      "why": "A date may declare acquisition artifacts and other products. Only the two alert objects are the index's input."
+    },
+    {
+      "expected": {
+        "full": "a/b/c/whatever.geojson",
+        "outcome": "classified",
+        "strong": "a/b/c/whatever.strong.geojson"
+      },
+      "name": "the assembler's prefix is not constrained",
+      "paths": [
+        "a/b/c/whatever.geojson",
+        "a/b/c/whatever.strong.geojson"
+      ],
+      "why": "The requirement is a suffix, deliberately the weakest one that works, so the run assembler stays free to choose its layout."
+    },
+    {
+      "expected": {
+        "codes": [
+          "date_does_not_declare_one_strong_subset"
+        ],
+        "outcome": "refused"
+      },
+      "name": "no strong subset fails closed",
+      "paths": [
+        "alerts/run-2026-04-04.geojson"
+      ],
+      "why": "Falling back to the full object would serve 429k features as the default view while reporting the strong count."
+    },
+    {
+      "expected": {
+        "codes": [
+          "date_does_not_declare_one_full_run"
+        ],
+        "outcome": "refused"
+      },
+      "name": "no full run fails closed",
+      "paths": [
+        "alerts/run-2026-04-04.strong.geojson"
+      ],
+      "why": "The download link and the 'ver todos' view both address it."
+    },
+    {
+      "expected": {
+        "codes": [
+          "date_does_not_declare_one_full_run"
+        ],
+        "outcome": "refused"
+      },
+      "name": "two full runs on one date fail closed",
+      "paths": [
+        "alerts/run-2026-04-04.geojson",
+        "alerts/run-2026-04-04b.geojson",
+        "alerts/run-2026-04-04.strong.geojson"
+      ],
+      "why": "There is no obvious winner, and picking one would make the index depend on list order."
+    },
+    {
+      "expected": {
+        "codes": [
+          "date_does_not_declare_one_full_run",
+          "date_does_not_declare_one_strong_subset"
+        ],
+        "outcome": "refused"
+      },
+      "name": "a date with no objects fails closed",
+      "paths": [],
+      "why": "A date whose alert_state is 'alerts' must publish at least one object (GREEN_RELEASE_CONTRACT_V1 §3, product completeness), so an empty paths list here means the release and the index disagree."
+    }
+  ],
   "policy": {
     "candidate_min_sightings": 2,
     "confidence_labels": [
@@ -359,9 +468,11 @@
       "Polygon",
       "MultiPolygon"
     ],
+    "full_object_suffix": ".geojson",
     "min_pcount_max": 1,
     "strong_confidence_label": "high",
-    "strong_min_natural_fraction": 0.5
+    "strong_min_natural_fraction": 0.5,
+    "strong_object_suffix": ".strong.geojson"
   },
   "rejection_cases": [
     {

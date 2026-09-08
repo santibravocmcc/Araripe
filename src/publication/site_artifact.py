@@ -135,6 +135,66 @@ class SiteArtifactRejected(Rejected):
     subject = "site alert index"
 
 
+# ── which release objects a date's row is built from ─────────────────────────
+#
+# The composer is handed a release's ``dates[]``, each with a ``paths`` list of
+# logical paths, and has to find that date's two alert objects.  Classifying
+# them is a *convention*, and a convention invented independently in the site
+# repository is exactly the drift the vectors exist to stop — so it is stated
+# here, once, and carried across by vector like everything else.
+#
+# No producer deposits ``runs/<run-id>/`` yet, so this is a requirement ON the
+# run assembler when it is built rather than a description of something
+# running.  It is deliberately the weakest requirement that works: a suffix,
+# not a full path, so the assembler stays free to choose its own prefix.
+
+#: Suffix marking the strong subset.  Checked BEFORE the full suffix, because
+#: ``run-<date>.strong.geojson`` also ends in ``.geojson`` — testing in the
+#: other order classifies every strong subset as a full run, silently, and the
+#: page would then load 429k features as its default view.
+STRONG_OBJECT_SUFFIX = ".strong.geojson"
+#: Suffix marking the full run: every candidate alert for the date.
+FULL_OBJECT_SUFFIX = ".geojson"
+
+
+def classify_run_objects(paths: Iterable[str]) -> tuple[str, str]:
+    """``(full, strong)`` logical paths for one date, or raise.
+
+    Fails closed on anything but exactly one of each.  Two full objects for a
+    date is not a situation with an obvious winner, and picking one would make
+    the index depend on the order the release happens to list its paths.
+    """
+
+    strong = [path for path in paths if path.endswith(STRONG_OBJECT_SUFFIX)]
+    full = [
+        path
+        for path in paths
+        if path.endswith(FULL_OBJECT_SUFFIX) and not path.endswith(STRONG_OBJECT_SUFFIX)
+    ]
+    findings: list[Finding] = []
+    if len(full) != 1:
+        findings.append(
+            Finding(
+                "date_does_not_declare_one_full_run",
+                f"expected exactly one object ending {FULL_OBJECT_SUFFIX!r} and not "
+                f"{STRONG_OBJECT_SUFFIX!r}; found {sorted(full)}",
+                "paths",
+            )
+        )
+    if len(strong) != 1:
+        findings.append(
+            Finding(
+                "date_does_not_declare_one_strong_subset",
+                f"expected exactly one object ending {STRONG_OBJECT_SUFFIX!r}; "
+                f"found {sorted(strong)}",
+                "paths",
+            )
+        )
+    if findings:
+        raise SiteArtifactRejected(findings)
+    return full[0], strong[0]
+
+
 # ── the per-run pass: the only step that reads features ──────────────────────
 
 def _natural_fraction(properties: Mapping[str, Any]) -> float:

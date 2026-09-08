@@ -12,8 +12,13 @@ the drift is silent because both look right in isolation — the exact reasoning
 ``scripts/check_delivery_boundary.py`` recorded for the delivery boundary in
 Package 2B.3, reused here rather than reinvented.
 
-So the policy is pinned as **vectors**, in three groups because there are three
+So the policy is pinned as **vectors**, in four groups because there are four
 distinct claims to break:
+
+``object_cases``
+    A date's declared logical paths in, its two alert objects out — or a
+    refusal.  A convention, so it has to cross the repository boundary the
+    same way a threshold does.
 
 ``run_cases``
     Features in, per-run statistics out.  This is the only group whose inputs
@@ -422,6 +427,87 @@ def _rejection_cases() -> list[dict]:
     return cases
 
 
+def _object_cases() -> list[dict]:
+    """Which of a date's declared paths is the full run, and which is the subset.
+
+    A convention, so both repositories must reach the same answer from the same
+    ``paths`` list — including on the malformed inputs, where "fails closed" is
+    the answer and silently picking one would be worse than an error.
+    """
+
+    cases: list[dict] = [
+        {
+            "name": "the strong suffix is tested before the full suffix",
+            "why": (
+                "run-<date>.strong.geojson also ends in .geojson. Testing in the "
+                "other order classifies the subset as the full run — silently — and "
+                "the page's default view becomes every candidate alert."
+            ),
+            "paths": ["alerts/run-2026-04-04.geojson", "alerts/run-2026-04-04.strong.geojson"],
+        },
+        {
+            "name": "declaration order does not decide the answer",
+            "why": "The same two paths listed the other way round must classify "
+                   "identically, or the index depends on how the release happened to "
+                   "serialise its list.",
+            "paths": ["alerts/run-2026-04-04.strong.geojson", "alerts/run-2026-04-04.geojson"],
+        },
+        {
+            "name": "an unrelated object on the date is ignored",
+            "why": "A date may declare acquisition artifacts and other products. Only "
+                   "the two alert objects are the index's input.",
+            "paths": [
+                "acquisitions/S2C_20260404.json",
+                "alerts/run-2026-04-04.geojson",
+                "charts/2026-04-04.png",
+                "alerts/run-2026-04-04.strong.geojson",
+            ],
+        },
+        {
+            "name": "the assembler's prefix is not constrained",
+            "why": "The requirement is a suffix, deliberately the weakest one that "
+                   "works, so the run assembler stays free to choose its layout.",
+            "paths": ["a/b/c/whatever.geojson", "a/b/c/whatever.strong.geojson"],
+        },
+        {
+            "name": "no strong subset fails closed",
+            "why": "Falling back to the full object would serve 429k features as the "
+                   "default view while reporting the strong count.",
+            "paths": ["alerts/run-2026-04-04.geojson"],
+        },
+        {
+            "name": "no full run fails closed",
+            "why": "The download link and the 'ver todos' view both address it.",
+            "paths": ["alerts/run-2026-04-04.strong.geojson"],
+        },
+        {
+            "name": "two full runs on one date fail closed",
+            "why": "There is no obvious winner, and picking one would make the index "
+                   "depend on list order.",
+            "paths": [
+                "alerts/run-2026-04-04.geojson",
+                "alerts/run-2026-04-04b.geojson",
+                "alerts/run-2026-04-04.strong.geojson",
+            ],
+        },
+        {
+            "name": "a date with no objects fails closed",
+            "why": "A date whose alert_state is 'alerts' must publish at least one "
+                   "object (GREEN_RELEASE_CONTRACT_V1 §3, product completeness), so an "
+                   "empty paths list here means the release and the index disagree.",
+            "paths": [],
+        },
+    ]
+    for case in cases:
+        try:
+            full, strong = sa.classify_run_objects(case["paths"])
+        except sa.SiteArtifactRejected as rejected:
+            case["expected"] = {"outcome": "refused", "codes": sorted(set(rejected.codes))}
+        else:
+            case["expected"] = {"outcome": "classified", "full": full, "strong": strong}
+    return cases
+
+
 def build_vectors() -> dict:
     return {
         "contract": sa.INDEX_SCHEMA,
@@ -440,8 +526,11 @@ def build_vectors() -> dict:
             "confidence_labels": list(sa.CONFIDENCE_LABELS),
             "counted_geometry_types": list(sa.COUNTED_GEOMETRY_TYPES),
             "min_pcount_max": sa.MIN_PCOUNT_MAX,
+            "full_object_suffix": sa.FULL_OBJECT_SUFFIX,
+            "strong_object_suffix": sa.STRONG_OBJECT_SUFFIX,
         },
         "fixture": {"source": SOURCE_LINE, "strong_points_file": STRONG_POINTS_FILE},
+        "object_cases": _object_cases(),
         "run_cases": _run_cases(),
         "index_cases": _index_cases(),
         "rejection_cases": _rejection_cases(),
@@ -455,7 +544,7 @@ def _serialise(document: dict) -> str:
 def cmd_vectors(args) -> int:
     built = build_vectors()
     counts = {group: len(built[group]) for group in
-              ("run_cases", "index_cases", "rejection_cases")}
+              ("object_cases", "run_cases", "index_cases", "rejection_cases")}
     if args.write:
         VECTORS_PATH.write_text(_serialise(built), encoding="utf-8")
         print(f"wrote {counts} to {VECTORS_PATH}")

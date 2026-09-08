@@ -53,14 +53,41 @@ def test_the_vectors_declare_the_policy_they_were_built_from():
         "confidence_labels": list(sa.CONFIDENCE_LABELS),
         "counted_geometry_types": list(sa.COUNTED_GEOMETRY_TYPES),
         "min_pcount_max": sa.MIN_PCOUNT_MAX,
+        "full_object_suffix": sa.FULL_OBJECT_SUFFIX,
+        "strong_object_suffix": sa.STRONG_OBJECT_SUFFIX,
     }
 
 
 def test_every_vector_group_is_populated():
     """An empty group passes every conformance loop in both repositories."""
 
-    for group in ("run_cases", "index_cases", "rejection_cases"):
+    for group in ("object_cases", "run_cases", "index_cases", "rejection_cases"):
         assert VECTORS[group], group
+
+
+# ── group 0: a date's declared paths in, its two alert objects out ───────────
+
+@pytest.mark.parametrize("case", VECTORS["object_cases"], ids=_ids(VECTORS["object_cases"]))
+def test_run_objects_are_classified_as_the_vector_says(case):
+    if case["expected"]["outcome"] == "classified":
+        full, strong = sa.classify_run_objects(case["paths"])
+        assert full == case["expected"]["full"]
+        assert strong == case["expected"]["strong"]
+    else:
+        with pytest.raises(sa.SiteArtifactRejected) as raised:
+            sa.classify_run_objects(case["paths"])
+        assert sorted(set(raised.value.codes)) == case["expected"]["codes"]
+
+
+def test_the_strong_suffix_is_not_a_full_run():
+    """The one-line mutation this guards: dropping the `not endswith(strong)`
+    clause makes both objects match the full suffix, and the classifier then
+    refuses every well-formed date — or, with the order reversed, silently
+    returns the subset as the full run."""
+
+    assert sa.STRONG_OBJECT_SUFFIX.endswith(sa.FULL_OBJECT_SUFFIX)
+    full, strong = sa.classify_run_objects(["r.geojson", "r.strong.geojson"])
+    assert (full, strong) == ("r.geojson", "r.strong.geojson")
 
 
 # ── group 1: features in, statistics out ─────────────────────────────────────

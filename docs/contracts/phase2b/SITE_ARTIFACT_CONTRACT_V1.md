@@ -156,6 +156,40 @@ the last row — and `strong` equals the feature count of the committed
 `run-<date>.strong.geojson` in **all 40 runs**. The port is faithful to the
 numbers already public.
 
+## 6b. Which release objects a date's row is built from
+
+The composer is handed the release's `dates[]`, each with a `paths` list of
+logical paths, and has to find that date's two alert objects. That
+classification is a **convention**, and a convention invented independently in
+the site repository is exactly the drift the vectors exist to stop — so it is
+stated here and carried across by vector like a threshold.
+
+| Object | Requirement |
+| --- | --- |
+| the strong subset | exactly one declared path ending `.strong.geojson` |
+| the full run | exactly one declared path ending `.geojson` and **not** `.strong.geojson` |
+
+Deliberately a **suffix and not a full path**: the weakest requirement that
+works, so the run assembler stays free to choose its own prefix. Everything
+else a date declares — acquisition artifacts, charts — is ignored.
+
+**The order of the two tests is load-bearing.** `run-<date>.strong.geojson`
+also ends in `.geojson`, so testing the full suffix first classifies the subset
+as the full run *silently*, and the page's default view becomes all 429k
+candidate alerts while still reporting the strong count. The vectors pin both
+the correct classification and its independence from declaration order.
+
+`classify_run_objects` **fails closed** on anything but exactly one of each,
+including zero. Two full objects for a date has no obvious winner, and picking
+one would make the index depend on how the release happened to serialise its
+list. A date whose `alert_state` is `alerts` must publish at least one object
+(`GREEN_RELEASE_CONTRACT_V1.md` §3, product completeness), so an empty list
+means the release and the index disagree and the composer must stop.
+
+**This is a requirement ON the run assembler, which does not exist yet** — not
+a description of something running. It is the first written requirement on that
+producer, and §9 records the gap.
+
 ## 7. Where each half of the check lives
 
 Following the division Package 2B.2A reached by deleting code:
