@@ -1,0 +1,19 @@
+{
+  "schema_version": "2.0.0",
+  "acquisition_id": "acq-v2-dfb6739a7cfb63bef475f2e9a83323b19c2588d7144199efa18cd0703a27d9f6",
+  "identity_inputs_sha256": "dfb6739a7cfb63bef475f2e9a83323b19c2588d7144199efa18cd0703a27d9f6",
+  "run_manifest_id": "run-v2-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "run_manifest_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "collection_id": "COPERNICUS/S2_SR_HARMONIZED",
+  "platform": "S2A",
+  "datatake_id": "GS2A_20260407T131241_055725_N05.11",
+  "acquisition_timestamp_utc": "2026-04-07T13:12:41Z",
+  "observed_on": "2026-04-07",
+  "scene_ids": [
+    "COPERNICUS/S2_SR_HARMONIZED/20260407T131241_20260407T131238_T24LWK",
+    "COPERNICUS/S2_SR_HARMONIZED/20260407T131241_20260407T131238_T24LWL"
+  ],
+  "monitoring_extent_id": "araripe-implementation-rectangle-v1",
+  "composite_method_id": "coverage-ranked-first-valid-v1",
+  "grid_id": "araripe-sentinel2-20m-grid-v1"
+}

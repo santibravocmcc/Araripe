@@ -17,7 +17,9 @@ import geopandas as gpd
 import pytest
 from shapely.geometry import Polygon
 
+from config.settings import TARGET_CRS
 from src.detection.persistence import (
+    LegacyPersistenceStateError,
     PersistenceStateError,
     empty_persistence_state,
     load_persistence_state,
@@ -25,7 +27,12 @@ from src.detection.persistence import (
 )
 
 
-def sample_state():
+def legacy_shaped_state():
+    """A forma que era válida antes do Package 2A.6 — hoje é estado legado.
+
+    Mantida porque é exatamente o que o portão determinístico tem de recusar, e
+    porque é a forma do estado de produção vivo até a reconstrução da Phase 4.
+    """
     return gpd.GeoDataFrame(
         {
             "n_sightings": [3, 17],
@@ -40,16 +47,74 @@ def sample_state():
     )
 
 
+def sample_state():
+    """Um estado determinístico VÁLIDO, produzido pelo próprio produtor.
+
+    Construído por `update_tracks` em vez de à mão: um estado montado à mão
+    afirma o esquema que o teste acha que existe, e foi assim que a forma
+    legada sobreviveu num teste depois de o contrato ter mudado.
+    """
+    from shapely.geometry import box
+
+    from config.settings import (
+        BASELINE_VERSION,
+        DETECTION_ALGORITHM_VERSION,
+        MONITORING_EXTENT_ID,
+    )
+    from src.detection.identity import create_acquisition_identity
+    from src.detection.persistence import update_tracks
+
+    alerts = gpd.GeoDataFrame(
+        {"area_ha": [1.0, 2.0]},
+        geometry=[box(-39.5, -7.5, -39.4, -7.4), box(-39.3, -7.3, -39.2, -7.2)],
+        crs="EPSG:4326",
+    ).to_crs(TARGET_CRS)
+    acquisition = create_acquisition_identity(
+        collection_id="COPERNICUS/S2_SR_HARMONIZED",
+        observed_on="2026-01-05",
+        scene_ids=["COPERNICUS/S2_SR_HARMONIZED/20260105_a"],
+        monitoring_extent_id=MONITORING_EXTENT_ID,
+        composite_method_id="daily_mosaic-v1",
+    )
+    _, state = update_tracks(
+        alerts,
+        None,
+        "2026-01-05",
+        acquisition=acquisition,
+        algorithm_version=DETECTION_ALGORITHM_VERSION,
+        baseline_version=BASELINE_VERSION,
+        monitoring_extent_id=MONITORING_EXTENT_ID,
+    )
+    return state
+
+
 def test_absent_state_is_the_first_run(tmp_path):
     assert load_persistence_state(tmp_path / "persistence_state.geojson") is None
 
 
 def test_valid_state_round_trips(tmp_path):
+    """O que volta é o que foi gravado — comparado contra o estado, não contra
+    números escolhidos à mão.
+
+    A versão anterior deste teste afirmava `n_sightings == [3, 17]`, valores de
+    um estado montado à mão. Isso o fazia passar sobre uma forma de estado que o
+    contrato determinístico do Package 2A.6 já não aceita, e foi o que escondeu
+    a mudança de esquema. Agora a afirmação é a propriedade: ida e volta é
+    identidade.
+    """
     path = tmp_path / "persistence_state.geojson"
-    save_persistence_state(sample_state(), path)
+    original = sample_state()
+    save_persistence_state(original, path)
     loaded = load_persistence_state(path)
-    assert len(loaded) == 2
-    assert sorted(loaded["n_sightings"].tolist()) == [3, 17]
+    assert len(loaded) == len(original)
+    assert list(loaded["event_id"]) == list(original["event_id"])
+    assert list(loaded["n_sightings"]) == list(original["n_sightings"])
+    assert list(loaded["first_seen"]) == list(original["first_seen"])
+    assert list(loaded["last_seen"]) == list(original["last_seen"])
+    assert (
+        loaded.attrs["persistence_metadata"]
+        == original.attrs["persistence_metadata"]
+    )
 
 
 def test_empty_state_is_valid(tmp_path):
@@ -86,4 +151,19 @@ def test_state_without_track_columns_raises(tmp_path):
         }],
     }))
     with pytest.raises(PersistenceStateError, match="n_sightings"):
+        load_persistence_state(path)
+
+
+def test_o_estado_legado_FALHA_FECHADO_em_vez_de_ser_lido(tmp_path):
+    """A forma pré-2A.6 não é lida como se fosse válida.
+
+    Este teste é o par do `test_valid_state_round_trips`: aquele prova que o
+    estado determinístico volta inteiro, e este prova que o estado da geração
+    anterior **para a execução** em vez de virar contagem errada. A mensagem
+    nomeia as colunas que faltam, porque quem for reconstruir precisa da lista.
+    """
+    path = tmp_path / "persistence_state.geojson"
+    gdf = legacy_shaped_state()
+    gdf.to_file(path, driver="GeoJSON")
+    with pytest.raises(LegacyPersistenceStateError, match="n_sightings|deterministic"):
         load_persistence_state(path)

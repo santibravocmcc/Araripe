@@ -1,0 +1,86 @@
+{
+  "schema_version": "1.0.0",
+  "event_id": "evt-v1-781debb676f41f10db0c4f7b17183e5758d10b7b5b98e5df8ed76770936fe58e",
+  "event_identity_inputs_sha256": "781debb676f41f10db0c4f7b17183e5758d10b7b5b98e5df8ed76770936fe58e",
+  "identity_basis": {
+    "kind": "merge",
+    "first_observation_id": null,
+    "parent_event_ids": [
+      "evt-v1-1111111111111111111111111111111111111111111111111111111111111111",
+      "evt-v1-2222222222222222222222222222222222222222222222222222222222222222"
+    ],
+    "trigger_observation_ids": [
+      "obs-v1-94a715b2f86938ea1bad64964d16355db2b6cd8309e0b4891bb5bebf88576f7f"
+    ]
+  },
+  "monitoring_extent_id": "araripe-implementation-rectangle-v1",
+  "status": "active",
+  "first_observed_on": "2026-07-11",
+  "last_observed_on": "2026-07-11",
+  "observation_ids": [
+    "obs-v1-94a715b2f86938ea1bad64964d16355db2b6cd8309e0b4891bb5bebf88576f7f"
+  ],
+  "contributing_acquisition_ids": [
+    "acq-v1-ce68a55d80fec566cac1b8d978b8edbc9473eb18b1540ae75eb5b82a183ba7e2"
+  ],
+  "contribution_keys": [
+    "pc-v1-cb224fe3e16d8578852a76f61be1997be3ccca9208ad229d4f2339dee737986d"
+  ],
+  "representative_geometry_crs": "EPSG:4326",
+  "representative_geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          -39.9,
+          -7.3
+        ],
+        [
+          -39.89,
+          -7.3
+        ],
+        [
+          -39.89,
+          -7.29
+        ],
+        [
+          -39.9,
+          -7.29
+        ],
+        [
+          -39.9,
+          -7.3
+        ]
+      ]
+    ]
+  },
+  "representative_geometry_sha256": "eb9e6757f7a17d2ce3c8745ed56ecb6edeec0bee535f19f6d5f1d77a8a703bdb",
+  "representative_area_ha": 121.64,
+  "lineage": {
+    "incoming": [
+      {
+        "lineage_id": "lin-v1-1bde5f86f451406007d4f2807bac3419ae9813553e496f660e5d04d41a40c89b",
+        "relation": "merge",
+        "parent_event_ids": [
+          "evt-v1-1111111111111111111111111111111111111111111111111111111111111111",
+          "evt-v1-2222222222222222222222222222222222222222222222222222222222222222"
+        ],
+        "child_event_ids": [
+          "evt-v1-781debb676f41f10db0c4f7b17183e5758d10b7b5b98e5df8ed76770936fe58e"
+        ],
+        "effective_acquisition_id": "acq-v1-ce68a55d80fec566cac1b8d978b8edbc9473eb18b1540ae75eb5b82a183ba7e2",
+        "effective_on": "2026-07-11",
+        "trigger_observation_ids": [
+          "obs-v1-94a715b2f86938ea1bad64964d16355db2b6cd8309e0b4891bb5bebf88576f7f"
+        ],
+        "algorithm_version": "1.0.0",
+        "reason": "merge_detected"
+      }
+    ],
+    "outgoing": []
+  },
+  "superseded_by_event_ids": [],
+  "raw_observations_preserved": true,
+  "created_at": "2026-07-24T12:00:00Z",
+  "updated_at": "2026-07-24T12:00:00Z"
+}

@@ -38,7 +38,16 @@ REQUIRED_QUESTIONS = (
 #: never grow in silence — adding to it is a visible diff, and a new prompt
 #: belongs in the method, not in the exception.
 PREDATES_THE_METHOD = frozenset(
-    {"PACKAGE_2B2A_PROMPT.md", "PACKAGE_2B2B_PROMPT.md"}
+    {
+        "PACKAGE_2B2A_PROMPT.md",
+        "PACKAGE_2B2B_PROMPT.md",
+        # Chegaram com o landing do Package 2A.6 em 2026-09-08. Foram escritos
+        # na branch científica antes de o método existir na `main`, e já foram
+        # consumidos: as suas sessões fecharam. Retrofitá-los descreveria um
+        # presente que não foi o deles.
+        "PACKAGE_2A6D_PROMPT.md",
+        "PACKAGE_2B1_PROMPT.md",
+    }
 )
 
 SHA40 = re.compile(r"\b[0-9a-f]{40}\b")

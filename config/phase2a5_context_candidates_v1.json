@@ -1,0 +1,338 @@
+{
+  "$schema": "https://observatoriodachapadadoararipe.com/data/schemas/phase2a5-context-candidate-registry-v1.schema.json",
+  "schema_version": "1.0.0",
+  "registry_id": "araripe-phase2a5-context-candidates-v1",
+  "registry_version": "1.0.0",
+  "status": "fixed_candidates_no_scientific_selection",
+  "package_scope": {
+    "roadmap_package": "2A.5",
+    "purpose": "Versioned regional MapBiomas context, strong-subset alternatives, and non-causal contextual spectral-signature alternatives.",
+    "provisional_audit_inputs_only": true,
+    "primary_change_assessment_precedes_context_comparison": true,
+    "missing_and_partial_evidence_preserved": true,
+    "raw_valid_detections_preserved": true,
+    "mapbiomas_is_not_omission_or_recall_reference": true,
+    "phase2a4_candidates_unchanged": true
+  },
+  "monitoring_extent": {
+    "extent_id": "araripe-implementation-rectangle-v1",
+    "extent_version": "1.0.0",
+    "geometry_crs": "EPSG:4326",
+    "bounds": [
+      -40.89236812577142,
+      -7.840780758480428,
+      -38.95208146319247,
+      -6.957104781339829
+    ],
+    "geometry_sha256": "b4986ef80d8a0d6e65bbb41b575dbd952c010415bf3aee93a88412b3b657e8c7",
+    "bounds_sha256": "93f254373d6b203bca33aa5c356bd03fec3bff7f43c9c15b368cc2bdb7029f28",
+    "source_aoi_sha256": "2bff31afa6cb74630a437b4fffb96ad88f7f873a3aa1461f337c66f61c209881",
+    "scope": "APA_and_surroundings"
+  },
+  "sources": {
+    "mapbiomas_col3_beta_10m_2024": {
+      "source_id": "mapbiomas-col3-beta-10m-brazil-2024-v1",
+      "dataset_identity": "MapBiomas Brazil Collection 3 beta 10 m integration, 2024 classification",
+      "collection_identity": "Collection 3 beta; Caatinga Collection 3.0 method",
+      "product_year": 2024,
+      "sensor": "Sentinel-2",
+      "nominal_resolution_m": 10,
+      "local_path": "data/landcover/updated/brazil_lulc_10m_2024.tif",
+      "bytes": 6766932375,
+      "sha256": "2ba20d400976020b4e7472a37de04fe1755c6f23631008b39da388001a034f59",
+      "origin_url": "https://storage.googleapis.com/mapbiomas-public/initiatives/brasil/lulc_10m/collection_3/brazil_lulc_10m_2024.tif",
+      "official_gee_asset": "projects/mapbiomas-public/assets/brazil/lulc_10m/collection3/mapbiomas_10m_collection3_integration_v1",
+      "access_evidence": {
+        "browser_origin_xattr": "com.apple.metadata:kMDItemWhereFroms",
+        "browser_origin_xattr_sha256": "4dd6ea94ac490b7e78a915d8d93ae3cbd772d2035f48c587f369345de2178169",
+        "quarantine_xattr": "com.apple.quarantine",
+        "quarantine_xattr_sha256": "65f9242a61c9f9f43efa381ed6f88643fb68b12a5d138e000eeb99cbd5eb6e8c",
+        "browser_agent": "Chrome",
+        "timestamp_hex_seconds": "6a620dff",
+        "accessed_at": "2026-07-23T09:50:07-03:00",
+        "timestamp_precision": "one_second",
+        "timezone_evidence": "America/Sao_Paulo interpretation of the Unix-second quarantine timestamp; the xattr does not itself name a timezone",
+        "filesystem_mtime": "2026-07-23T09:50:07-03:00",
+        "filesystem_birth_time": "2026-07-23T09:46:29-03:00"
+      },
+      "atbd": {
+        "local_path": "data/landcover/updated/ATBD_Col3_10m_Caatinga_v1.pdf",
+        "bytes": 3364548,
+        "sha256": "21f960d54b75303a33fcf74d59a91b9575959e6421e3e1b101b4523efa1472b4",
+        "origin_url": "https://brasil.mapbiomas.org/wp-content/uploads/sites/4/2026/05/ATBD_Col3_10m_Caatinga_v1.pdf",
+        "visible_identity": "Caatinga Appendix, MapBiomas 10-meters, Collection 3.0, Version 1, April 2026",
+        "pdf_metadata_title": "ATBD Sentinel Col 3 Caatinga V2",
+        "accessed_at": "2026-07-23T09:55:38-03:00",
+        "browser_origin_xattr_sha256": "33bf89f29ca49a3d7264d7e57993fffb0e5ab2396a1921a12a22409d72c2d273",
+        "quarantine_xattr_sha256": "3a99e547ae6c7e88c7a5035ccb1372ecfd4bdad7ccdfa33b5ceccef264d19cd9",
+        "identity_conflict": "The visible document says Version 1 while the PDF metadata title ends in V2; both facts remain recorded and no silent reconciliation is asserted."
+      },
+      "header": {
+        "driver": "GTiff",
+        "dtype": "uint8",
+        "band_count": 1,
+        "width": 464738,
+        "height": 476391,
+        "crs": "EPSG:4326",
+        "transform": [8.983152841195215e-05, 0.0, -74.72150600694815, 0.0, -8.983152841195215e-05, 7.607293152037755],
+        "bounds": [-74.72150600694815, -35.187638499660544, -32.97338115583433, 7.607293152037755],
+        "nodata": 0,
+        "area_or_point": "Area",
+        "tiled": true,
+        "block_shape": [512, 512],
+        "compression": "LZW",
+        "predictor": "2",
+        "overviews": [2, 4, 8, 16, 32, 64, 128, 256, 512, 1026]
+      },
+      "nodata_policy": {
+        "source_header_value": 0,
+        "context_value": 0,
+        "interpretation": "nodata",
+        "excluded_from_valid_denominators": true,
+        "may_remove_or_relabel_raw_detection": false
+      },
+      "national_inventory": {
+        "derivation": "full_source_GDAL_histogram_with_header_nodata_excluded_and_class_0_inferred_as_dimension_remainder",
+        "total_pixel_count": 221397000558,
+        "valid_pixel_count": 88231680621,
+        "nodata_pixel_count": 133165319937,
+        "valid_coverage_fraction": 0.3985224750047402,
+        "class_histogram": {"0": 133165319937, "3": 36429240790, "4": 10850651592, "5": 106469299, "6": 3635870344, "9": 1247025711, "11": 2696690328, "12": 2623219789, "15": 16731485830, "19": 6664434336, "21": 3978457686, "23": 52475106, "24": 460526543, "25": 236286796, "29": 163829550, "30": 20644245, "31": 8758928, "32": 3683557, "33": 1993476583, "36": 182780918, "49": 66296408, "50": 75961830, "75": 3414452}
+      },
+      "provenance_limitations": [
+        "The GeoTIFF header does not embed collection, version, year, licence, access time, upstream checksum, ETag, or Last-Modified evidence.",
+        "The Caatinga ATBD class table is not a complete legend fixture for all 22 nonzero codes observed in the national integration.",
+        "The exact national-integration labels for sandbank codes 49 and 50 are not independently pinned; both remain natural vegetation under the fixed category mapping.",
+        "No provider-supplied checksum for the remote source bytes is available; the SHA-256 binds the unchanged acquired local bytes."
+      ]
+    },
+    "mapbiomas_col10_1_30m_2024": {
+      "source_id": "mapbiomas-col10-1-30m-brazil-2024-v1",
+      "dataset_identity": "MapBiomas Brazil Collection 10.1 annual coverage, 2024 classification",
+      "collection_identity": "Collection 10.1",
+      "product_year": 2024,
+      "sensor": "Landsat",
+      "nominal_resolution_m": 30,
+      "local_path": "data/landcover/updated/brazil_coverage_2024.tif",
+      "bytes": 802022037,
+      "sha256": "1be96442929c98cdbe0126d5c83d65a8142b61642ec14fb0ad1dfdfa3bf68d6c",
+      "origin_url": "https://storage.googleapis.com/mapbiomas-public/initiatives/brasil/collection_10/lulc/coverage/brazil_coverage_2024.tif",
+      "official_gee_asset": "projects/mapbiomas-public/assets/brazil/lulc/collection10_1/mapbiomas_brazil_collection10_1_coverage_v1",
+      "access_evidence": {
+        "browser_origin_xattr": "com.apple.metadata:kMDItemWhereFroms",
+        "browser_origin_xattr_sha256": "1c4df21041a1c68adb5504dad4611922fc926fe50ab8c9ff6e6f068cd3b1ac9f",
+        "quarantine_xattr": "com.apple.quarantine",
+        "quarantine_xattr_sha256": "cf80c48d3818c4ba25adfa876c28479a836a0ef44cc917615aea40a6547f6297",
+        "browser_agent": "Chrome",
+        "timestamp_hex_seconds": "6a620de3",
+        "accessed_at": "2026-07-23T09:49:39-03:00",
+        "timestamp_precision": "one_second",
+        "timezone_evidence": "America/Sao_Paulo interpretation of the Unix-second quarantine timestamp; the xattr does not itself name a timezone",
+        "filesystem_mtime": "2026-07-23T09:49:39-03:00",
+        "filesystem_birth_time": "2026-07-23T09:49:12-03:00"
+      },
+      "atbd": {
+        "local_path": "data/landcover/updated/ATBD-Collection-10.1.pdf",
+        "bytes": 4476538,
+        "sha256": "859f388422e25aacaaa2fe8024ed631496fc24a1be237a88d58732439ab2ed19",
+        "origin_url": "https://brasil.mapbiomas.org/wp-content/uploads/sites/4/2026/02/ATBD-Collection-10.1.pdf",
+        "visible_identity": "MapBiomas General Handbook, ATBD Collection 10.1, Version 1, February 2026",
+        "pdf_metadata_title": "ATBD Collection 10.1.docx",
+        "accessed_at": "2026-07-23T09:55:13-03:00",
+        "browser_origin_xattr_sha256": "5c0c45973184a8f850d315991047318d32d5afa0c9d8311c4deb8eba07e649a0",
+        "quarantine_xattr_sha256": "eb2b049e12a6e82b090a20d070d083de5805e40bec0d67693fdfc2e9e0b453dc",
+        "identity_conflict": null
+      },
+      "header": {
+        "driver": "GTiff",
+        "dtype": "uint8",
+        "band_count": 1,
+        "width": 154470,
+        "height": 146483,
+        "crs": "EPSG:4326",
+        "transform": [0.0002694945852358564, 0.0, -74.02099974839176, 0.0, -0.0002694945852358564, 5.435705784207225],
+        "bounds": [-74.02099974839176, -34.04066954489674, -32.39217116700902, 5.435705784207225],
+        "nodata": null,
+        "area_or_point": "Area",
+        "tiled": true,
+        "block_shape": [256, 256],
+        "compression": "LZW",
+        "predictor": "2",
+        "overviews": []
+      },
+      "nodata_policy": {
+        "source_header_value": null,
+        "context_value": 0,
+        "interpretation": "conservative_unknown_or_nodata_pending_official_fixture",
+        "excluded_from_valid_denominators": true,
+        "may_remove_or_relabel_raw_detection": false
+      },
+      "national_inventory": {
+        "derivation": "full_source_GDAL_histogram_including_class_0",
+        "total_pixel_count": 22627229010,
+        "valid_pixel_count": 9796450276,
+        "nodata_pixel_count": 12830778734,
+        "valid_coverage_fraction": 0.432949623291058,
+        "class_histogram": {"0": 12830778734, "3": 4052267435, "4": 1257556353, "5": 11911437, "6": 428893215, "9": 108176223, "11": 199801557, "12": 316648709, "15": 1786837422, "20": 119916187, "21": 551041197, "23": 4843870, "24": 53850268, "25": 12021959, "29": 19376312, "30": 6964786, "31": 918125, "32": 593752, "33": 224477692, "35": 2707388, "39": 484486001, "40": 14360663, "41": 95894830, "46": 14744517, "47": 4776240, "48": 6488032, "49": 7455435, "50": 7232811, "62": 1802661, "75": 405199}
+      },
+      "provenance_limitations": [
+        "The GeoTIFF header does not embed collection, version, year, licence, access time, upstream checksum, ETag, or Last-Modified evidence.",
+        "The download URL path says collection_10; Collection 10.1 identity is bound by the contemporaneous official ATBD, release register, and GEE asset rather than an embedded raster tag.",
+        "Header NoData is unset; class 0 remains conservative unknown/NoData pending fixture-backed official evidence.",
+        "No provider-supplied checksum for the remote source bytes is available; the SHA-256 binds the unchanged acquired local bytes."
+      ]
+    }
+  },
+  "crop_policy": {
+    "policy_id": "accepted-extent-native-grid-outer-window-categorical-v1",
+    "window_rule": "smallest_outer_integer_source_window_covering_the_accepted_extent",
+    "pixel_selection": "unchanged_source_pixels_only",
+    "reprojection": "none",
+    "resampling": "none",
+    "categorical_resampling_if_future_reconciliation_requires_it": "nearest_only",
+    "compression": "LZW",
+    "predictor": 2,
+    "tiled": true,
+    "overwrite_policy": "fail_on_any_existing_incomplete_or_inconsistent_output",
+    "source_mutation": false,
+    "download_or_redownload": false,
+    "crops": {
+      "mapbiomas_col3_beta_10m_2024": {
+        "crop_id": "mapbiomas-col3-beta-10m-2024-araripe-extent-v1",
+        "output_path": "data/landcover/mapbiomas_col3_beta_10m_2024.tif",
+        "fractional_source_window": [376584.24029080354, 162130.13616541988, 21599.1723271269, 9837.035980154003],
+        "integer_source_window": [376584, 162130, 21600, 9838],
+        "width": 21600,
+        "height": 9838,
+        "transform": [8.983152841195215e-05, 0.0, -40.89238971146156, 0.0, -8.983152841195215e-05, -6.957092549392046],
+        "bounds": [-40.89238971146156, -7.840855125908831, -38.952028697763396, -6.957092549392046],
+        "crs": "EPSG:4326",
+        "output_nodata": 0,
+        "block_shape": [512, 512],
+        "expected_total_pixel_count": 212500800,
+        "expected_valid_pixel_count": 212500800,
+        "expected_nodata_pixel_count": 0,
+        "expected_valid_coverage_fraction": 1.0,
+        "expected_class_histogram": {"3": 14633378, "4": 127352541, "9": 13408, "12": 10873, "15": 50430191, "19": 13115511, "21": 3124546, "24": 2457377, "25": 667271, "29": 6547, "30": 204, "31": 262, "33": 444693, "36": 170854, "75": 73144}
+      },
+      "mapbiomas_col10_1_30m_2024": {
+        "crop_id": "mapbiomas-col10-1-30m-2024-araripe-extent-v1",
+        "output_path": "data/landcover/mapbiomas_col10_1_30m_2024.tif",
+        "fractional_source_window": [122928.7467636012, 45985.37872180663, 7199.7241090423195, 3279.0119933846654],
+        "integer_source_window": [122928, 45985, 7201, 3280],
+        "width": 7201,
+        "height": 3280,
+        "transform": [0.0002694945852358564, 0.0, -40.8925693745184, 0.0, -0.0002694945852358564, -6.957002717863632],
+        "bounds": [-40.8925693745184, -7.840944957437242, -38.951938866235, -6.957002717863632],
+        "crs": "EPSG:4326",
+        "output_nodata": 0,
+        "block_shape": [256, 256],
+        "expected_total_pixel_count": 23619280,
+        "expected_valid_pixel_count": 23619267,
+        "expected_nodata_pixel_count": 13,
+        "expected_valid_coverage_fraction": 0.9999994496021894,
+        "expected_class_histogram": {"0": 13, "3": 1639145, "4": 13492477, "9": 7, "12": 2010, "15": 5539409, "21": 1247220, "24": 277501, "25": 10910, "29": 602, "30": 9004, "33": 61648, "39": 44, "41": 1330297, "75": 8993}
+      }
+    }
+  },
+  "grid_reconciliation": {
+    "policy_id": "col10-1-to-col3-exact-lattice-nearest-v1",
+    "primary_collection": "mapbiomas_col3_beta_10m_2024",
+    "secondary_collection": "mapbiomas_col10_1_30m_2024",
+    "resolution_ratio_secondary_to_primary": 3,
+    "resolution_ratio_residual": -4.440892098500626e-16,
+    "secondary_origin_offset_primary_pixels": [7798, 24174],
+    "origin_offset_residual_primary_pixels": [-1.6825651982799172e-10, -1.0913936421275139e-11],
+    "absolute_tolerance_primary_pixels": 1e-09,
+    "alignment_status": "integer_aligned_within_recorded_float_tolerance",
+    "comparison_resampling": "nearest_only",
+    "comparison_scope": "context_not_scientific_truth",
+    "denominator": "joint_valid_and_mapped_primary_pixels_after_nearest_expansion_of_secondary",
+    "nodata_or_unmapped_excluded": true
+  },
+  "class_mappings": {
+    "mapping_version": "mapbiomas-context-groups-v1",
+    "categories": ["natural_vegetation", "other_natural_cover", "anthropic_cover", "uncertain_or_mixed", "nodata", "unmapped"],
+    "unknown_code_policy": "explicit_unmapped_not_forced_into_any_preferred_category",
+    "mapbiomas_col3_beta_10m_2024": {
+      "natural_vegetation": [3, 4, 5, 6, 11, 12, 49, 50],
+      "other_natural_cover": [23, 29, 32],
+      "anthropic_cover": [9, 15, 19, 21, 24, 30, 31, 36, 75],
+      "uncertain_or_mixed": [25, 33],
+      "nodata": [0]
+    },
+    "mapbiomas_col10_1_30m_2024": {
+      "natural_vegetation": [3, 4, 5, 6, 11, 12, 49, 50],
+      "other_natural_cover": [23, 29, 32, 33],
+      "anthropic_cover": [9, 15, 20, 21, 24, 30, 31, 35, 39, 40, 41, 46, 47, 48, 62, 75],
+      "uncertain_or_mixed": [25],
+      "nodata": [0]
+    },
+    "mapping_limitations": [
+      "Collection 3 code 25 is explicitly retained as mixed because its ATBD description includes natural and anthropic exposed surfaces.",
+      "Collection 3 code 33 is retained as uncertain/mixed because its ATBD describes water as Natural/Anthropic.",
+      "Collection 10.1 code 25 is retained as uncertain/mixed; code 33 is other natural cover for this fixed comparison mapping.",
+      "Agreement and disagreement between collections are context and never an accuracy, truth, recall, or omission result."
+    ]
+  },
+  "strong_subset": {
+    "rule_version": "col3-natural-vegetation-fraction-candidates-v1",
+    "fraction_numerator_category": "natural_vegetation",
+    "fraction_denominator": "all_valid_and_mapped_collection3_pixels_within_detection_polygon",
+    "polygon_pixel_rule": "all_touched_true",
+    "missing_or_zero_denominator_state": "not_assessed",
+    "candidate_ids": ["natural-vegetation-share-0.50-v1", "natural-vegetation-share-0.75-v1"],
+    "candidates": [
+      {"candidate_id": "natural-vegetation-share-0.50-v1", "role": "current_rule", "threshold": 0.5, "comparison": "greater_than_or_equal", "selected_or_activated": false},
+      {"candidate_id": "natural-vegetation-share-0.75-v1", "role": "stricter_alternative", "threshold": 0.75, "comparison": "greater_than_or_equal", "selected_or_activated": false}
+    ],
+    "membership_states": ["included", "excluded", "not_assessed"],
+    "threshold_tuning_to_detection_totals": false,
+    "raw_detection_removal_or_relabeling": false
+  },
+  "contextual_signature": {
+    "rule_version": "noncausal-contextual-spectral-signature-v1",
+    "polygon_pixel_rule": "detector_grid_pixel_center_within_polygon-v1",
+    "all_touched": false,
+    "measurements_retained": ["dnbr", "post_nbr", "bsi"],
+    "labels": ["fire_like", "exposed_soil_or_clearing_like", "mixed_or_uncertain", "not_assessed"],
+    "pixel_rule": {
+      "evaluation_order": ["fire_like", "exposed_soil_or_clearing_like", "mixed_or_uncertain", "not_assessed"],
+      "fire_like": "finite measurements and dnbr > 0.27 and post_nbr < 0.10",
+      "exposed_soil_or_clearing_like": "finite measurements and bsi > 0.10 and dnbr > 0.05 and not fire_like",
+      "mixed_or_uncertain": "finite measurements and dnbr > 0.10 and neither prior class",
+      "not_assessed": "measurements are not all finite or none of the prior rules applies"
+    },
+    "stratum_scope": "every available Phase 2A.4 cloud-mask by daily-composition stratum without selecting or changing a Phase 2A.4 method",
+    "stratum_summary": "within_polygon_assessed_class_proportions_with_not_assessed_count_retained",
+    "cross_stratum_summary": "per_class_median_of_within_polygon_assessed_class_proportions_across_every_available_stratum",
+    "candidate_ids": ["dominant-assessed-share-0.60-v1", "plurality-assessed-margin-0.15-v1"],
+    "candidates": [
+      {"candidate_id": "dominant-assessed-share-0.60-v1", "decision_rule": "emit the unique top median assessed class only when its median share is >= 0.60; otherwise emit mixed_or_uncertain", "minimum_top_share": 0.6, "minimum_margin": null, "selected_or_activated": false},
+      {"candidate_id": "plurality-assessed-margin-0.15-v1", "decision_rule": "emit the unique top median assessed class only when its margin over the runner-up is >= 0.15; otherwise emit mixed_or_uncertain", "minimum_top_share": null, "minimum_margin": 0.15, "selected_or_activated": false}
+    ],
+    "causal_inference_permitted": false,
+    "legacy_causal_label_inference_permitted": false,
+    "phase2a4_method_selection_or_mutation": false
+  },
+  "licence_and_attribution": {
+    "terms_url": "https://brasil.mapbiomas.org/termos-de-uso/",
+    "licence_boundary": "MapBiomas states that its data are public, open, and free under CC-BY subject to source attribution; repository code licensing does not replace upstream terms.",
+    "raw_national_source_publication_permitted": false,
+    "collection3_minimum_attribution": "MapBiomas – Coleção 3 (beta) de Mapas Anuais de Cobertura e Uso da Terra do Brasil com 10 metros de resolução espacial, acessado em 2026-07-23 através do link: https://storage.googleapis.com/mapbiomas-public/initiatives/brasil/lulc_10m/collection_3/brazil_lulc_10m_2024.tif",
+    "collection10_1_minimum_attribution": "MapBiomas – Coleção 10.1 da série anual de Mapas de Cobertura e Uso da Terra do Brasil, acessado em 2026-07-23 através do link: https://storage.googleapis.com/mapbiomas-public/initiatives/brasil/collection_10/lulc/coverage/brazil_coverage_2024.tif",
+    "scientific_output_additional_requirement": "Cite the corresponding ATBD/method and preserve the class-legend version and recorded limitations."
+  },
+  "decision_state": {
+    "qualified_labels_present": false,
+    "accepted_observation_or_event_identities_present": false,
+    "scientific_accuracy_result_present": false,
+    "mapbiomas_policy_selected_or_frozen": false,
+    "strong_subset_threshold_selected": false,
+    "contextual_signature_policy_selected": false,
+    "public_wording_approved": false,
+    "raw_detection_modified": false,
+    "phase2a4_candidate_modified_or_activated": false,
+    "phase2a_exit_gate_closed": false
+  }
+}

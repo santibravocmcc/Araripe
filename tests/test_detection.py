@@ -107,21 +107,28 @@ class TestDetectDeforestation:
         result = detect_deforestation(current, means, stds)
         assert result["is_alert"].sum().values == 0
 
-    def test_drought_adjustment(self):
-        """During drought, thresholds should be widened (fewer alerts)."""
+    def test_drought_adjustment_is_locked_out(self):
+        """drought-disabled-v1: activation is unreachable, not merely unused.
+
+        The historical behaviour (SPI below the threshold widening the
+        z-thresholds) must be impossible to reach by argument — any non-None
+        SPI fails closed, including values that would previously have been
+        no-ops, so a caller cannot half-enable the path.
+        """
+        import pytest
+        from src.detection.change_detect import DroughtAdjustmentDisabledError
+
         current = xr.Dataset({
             "ndmi": _make_array([[0.28, 0.5, 0.5]] * 3),
         })
         means = {"ndmi": _make_array([[0.5, 0.5, 0.5]] * 3)}
         stds = {"ndmi": _make_array([[0.1, 0.1, 0.1]] * 3)}
 
-        # Without drought: z = -2.2, should trigger low confidence
-        result_normal = detect_deforestation(current, means, stds, spi_3month=0.0)
-        # With drought (SPI < -1): threshold widened by 0.5σ → z needs < -2.5
-        result_drought = detect_deforestation(current, means, stds, spi_3month=-1.5)
+        for spi in (-1.5, -0.2, 0.0, 2.0):
+            with pytest.raises(DroughtAdjustmentDisabledError, match="drought-disabled-v1"):
+                detect_deforestation(current, means, stds, spi_3month=spi)
 
-        normal_alerts = int(result_normal["is_alert"].sum().values)
-        drought_alerts = int(result_drought["is_alert"].sum().values)
-
-        # Drought should produce fewer or equal alerts
-        assert drought_alerts <= normal_alerts
+        # And the only permitted call form still works, at the unwidened
+        # thresholds.
+        result = detect_deforestation(current, means, stds, spi_3month=None)
+        assert int(result["is_alert"].sum().values) >= 1

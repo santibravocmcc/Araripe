@@ -1,0 +1,69 @@
+{
+  "schema_version": "1.0.0",
+  "extent_id": "araripe-implementation-rectangle-v1",
+  "extent_version": "1.0.0",
+  "name": "Araripe implementation rectangle — APA and surroundings",
+  "status": "draft",
+  "scope": {
+    "description": "Current implementation-derived rectangle covering the APA Chapada do Araripe and surrounding areas.",
+    "includes_apa_and_surroundings": true,
+    "narrowed_to_apa": false
+  },
+  "geometry_crs": "EPSG:4326",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          -40.89236812577142,
+          -7.840780758480428
+        ],
+        [
+          -38.95208146319247,
+          -7.840780758480428
+        ],
+        [
+          -38.95208146319247,
+          -6.957104781339829
+        ],
+        [
+          -40.89236812577142,
+          -6.957104781339829
+        ],
+        [
+          -40.89236812577142,
+          -7.840780758480428
+        ]
+      ]
+    ]
+  },
+  "bounds_wgs84": [
+    -40.89236812577142,
+    -7.840780758480428,
+    -38.95208146319247,
+    -6.957104781339829
+  ],
+  "area": {
+    "value_ha": 2092576.6787705552,
+    "method": "planar",
+    "crs": "EPSG:32724"
+  },
+  "source_geometry": {
+    "path": "data/aoi/APA_chapada_araripe.gpkg",
+    "sha256": "2bff31afa6cb74630a437b4fffb96ad88f7f873a3aa1461f337c66f61c209881",
+    "role": "bounds_source_only"
+  },
+  "canonical_geometry_sha256": "b4986ef80d8a0d6e65bbb41b575dbd952c010415bf3aee93a88412b3b657e8c7",
+  "canonical_bounds_sha256": "93f254373d6b203bca33aa5c356bd03fec3bff7f43c9c15b368cc2bdb7029f28",
+  "canonicalization": {
+    "json": "RFC8785",
+    "axis_order": "longitude_latitude",
+    "ring_orientation": "exterior_ccw_holes_cw",
+    "ring_start": "lexicographically_smallest_coordinate"
+  },
+  "change_control": {
+    "geometry_change_requires_new_extent_id": true,
+    "geometry_change_requires_historical_generation": true,
+    "silent_change_forbidden": true
+  }
+}

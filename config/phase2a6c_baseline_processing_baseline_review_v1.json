@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.0.0",
+  "extension_id": "araripe-baseline-v2-collection1-lineage-review-2026-09-05",
+  "base_registry_id": "araripe-reviewed-processing-baselines-v1",
+  "base_reviewed_values": ["05.11", "05.12"],
+  "reviewed_by": "project_owner",
+  "review_date": "2026-09-05",
+  "review_scope": "Sentinel-2 L2A processing baselines observed across the accepted baseline 2.0.0 source years 2017, 2019, 2021, 2022 and 2025, enumerated by the Package 2A.6C Phase 1 metadata pass",
+  "selection_criterion": "Collection-1 processing lineage only: a value is admitted if and only if its processing baseline is 05.00 or later, whether the product was produced by the ESA archive reprocessing or generated operationally under that lineage. Earlier operational baselines are rejected.",
+  "review_basis_summary": [
+    "Reproducibility is decisive. The archive is in a partial reprocessing state: products still carrying 02.11-04.00 were processed in their own sensing year and have not been reprocessed, so ESA may replace them with 05.xx versions at any time. A baseline built on them would stop being reproducible against the live archive - the exact provenance failure the Package 2A.2 audit recorded against baseline 1.0.0. Products already on the Collection-1 lineage are stable.",
+    "Homogeneity. Admitting only 05.xx keeps one Sen2Cor/Collection-1 processing lineage across all five source years instead of mixing lineages spanning 2017-2025.",
+    "Cloud screening. The accepted mask scl-explicit-allowlist-v2 is SCL-only, so SCL quality is the whole cloud screening. The rejected 02.xx products carry the weakest SCL of the archive, concentrated in the wet-season months where screening matters most; admitting them risks injecting cloud-contaminated pixels rather than adding usable depth.",
+    "Two facts recorded by the procedure inform but do not decide this review: COPERNICUS/S2_SR_HARMONIZED already harmonises the 2022 reflectance-offset change upstream, and SCL class 2 changed meaning at PB04 but is rejected under both regimes.",
+    "Accepted cost, to be measured not assumed: restricting to the Collection-1 lineage reduces the wet-season datatake pool (January-April: 6, 7, 11 and 10 datatakes versus 21, 22, 30 and 32 with every value admitted). All five accepted source years and all twelve calendar months remain represented. The per-pixel contribution depth this produces is measurable only after Phase 2 composition and is reported by the baseline 2.0.0 manifest; if it proves inadequate, this review is revisited with that evidence rather than pre-emptively widened."
+  ],
+  "added_values": [
+    {
+      "value": "05.00",
+      "review_basis": "ESA Collection-1 archive reprocessing. Sensed 2017, 2019 and 2021 but processed in 2022-2023, so these products already carry the modern Sen2Cor lineage and are not subject to further reprocessing. This value alone carries the whole of source year 2017.",
+      "observed_in": "Package 2A.6C Phase 1 metadata pass 2026-09-05: 485 scenes across 142 datatakes, sensing years 2017, 2019, 2021; enumerated in docs/implementation/PHASE_2A6C_PHASE1_BASELINE_GATE_2026-09-05.json"
+    },
+    {
+      "value": "05.09",
+      "review_basis": "Operational baseline generated under the Collection-1 lineage; same processing family as the already-reviewed 05.11 and separated from it only by routine operational increments.",
+      "observed_in": "Package 2A.6C Phase 1 metadata pass 2026-09-05: 27 scenes across 7 datatakes, sensing year 2022, processed 2022; enumerated in docs/implementation/PHASE_2A6C_PHASE1_BASELINE_GATE_2026-09-05.json"
+    },
+    {
+      "value": "05.10",
+      "review_basis": "Collection-1 lineage product for source year 2022, sensed 2022 and processed 2024, so it is reprocessed rather than original-epoch output and is stable against further reprocessing.",
+      "observed_in": "Package 2A.6C Phase 1 metadata pass 2026-09-05: 26 scenes across 11 datatakes, sensing year 2022, processed 2024; enumerated in docs/implementation/PHASE_2A6C_PHASE1_BASELINE_GATE_2026-09-05.json"
+    }
+  ],
+  "rejected_values": [
+    {"value": "02.11", "scenes": 82, "sensing_years": [2019], "reason": "pre-Collection-1 operational product, never reprocessed; weakest SCL generation"},
+    {"value": "02.12", "scenes": 64, "sensing_years": [2019], "reason": "pre-Collection-1 operational product, never reprocessed; weakest SCL generation"},
+    {"value": "02.13", "scenes": 176, "sensing_years": [2019], "reason": "pre-Collection-1 operational product, never reprocessed; weakest SCL generation"},
+    {"value": "02.14", "scenes": 34, "sensing_years": [2021], "reason": "pre-Collection-1 operational product, never reprocessed; weakest SCL generation"},
+    {"value": "03.00", "scenes": 114, "sensing_years": [2021], "reason": "pre-Collection-1 operational product, never reprocessed"},
+    {"value": "03.01", "scenes": 163, "sensing_years": [2021, 2022], "reason": "pre-Collection-1 operational product, never reprocessed"},
+    {"value": "04.00", "scenes": 287, "sensing_years": [2022], "reason": "pre-Collection-1 operational product, never reprocessed"}
+  ],
+  "rejected_value_policy": "Rejected values remain unavailable_fail_closed. They are not deleted from the evidence and may be admitted later only through a further recorded review, for example if ESA reprocesses them onto the Collection-1 lineage or if the measured contribution depth shows the restriction is untenable.",
+  "unchanged_by_this_review": [
+    "the accepted mask scl-explicit-allowlist-v2 and its fail-closed policy",
+    "the accepted composition coverage-ranked-first-valid-v1 and its datatake scope",
+    "the accepted source-year set 2017, 2019, 2021, 2022, 2025",
+    "the platform policy S2A/S2B/S2C, which the Phase 1 pass showed is already satisfied",
+    "the immutability of baseline 1.0.0"
+  ]
+}

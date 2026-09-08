@@ -1,0 +1,363 @@
+{
+  "schema_version": "2.0.0",
+  "state_id": "state-v2-c5ae4284ed24ec3ee94ab094d2a06e44e6bd9ba4d6f13ff042af0d1e66644c7a",
+  "identity_inputs_sha256": "c5ae4284ed24ec3ee94ab094d2a06e44e6bd9ba4d6f13ff042af0d1e66644c7a",
+  "generation_id": "gen-v2-cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "run_manifest_id": "run-v2-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "run_manifest_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "monitoring_extent_id": "araripe-implementation-rectangle-v1",
+  "algorithm_version": "2.0.0",
+  "baseline_version": "2.0.0",
+  "generated_at": "2026-04-07T14:20:00Z",
+  "transition_policy": {
+    "contribution_uniqueness": "event_id+observed_on",
+    "duplicate_contribution": "no_op",
+    "chronological_order": "acquisition_timestamp_utc+acquisition_id",
+    "late_same_day_acquisition": "requires_new_chronological_generation",
+    "v1_serialization": "forbidden_audit_only",
+    "confirmed_min_distinct_dates": 15,
+    "event_reconnect_grace_days": 180,
+    "minimum_overlap_fraction": 0.05
+  },
+  "last_transition": {
+    "outcome": "applied",
+    "observed_on": "2026-04-07",
+    "date_input_digest": "ce4edb7af0615a97e8410ad56b8dc43b0999adb2264b9c85f8cfaf39ad628d34",
+    "new_contribution_count": 3,
+    "duplicate_contribution_count": 0,
+    "state_changed": true
+  },
+  "finalized_dates": [
+    {
+      "observed_on": "2026-04-07",
+      "run_manifest_id": "run-v2-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "run_manifest_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "date_input_digest": "ce4edb7af0615a97e8410ad56b8dc43b0999adb2264b9c85f8cfaf39ad628d34",
+      "daily_summary_sha256": "7df45bb162cecaf69220254455da9c8ba91145e0a0c2b7b9e18141d5bb82d74a",
+      "contribution_keys": [
+        "pc-v2-283ecb186cbd0b257606c80a09a9c38a52c0961fccdf78d3b06be951e8afb789",
+        "pc-v2-3c143cd665af85956ae4ca75ae0d536ebd5ba3094070fc9cc8ac9ee86154ee88",
+        "pc-v2-7e987806fb59176f1bc6bb2f2248692e5573f2965bdcfb48f4218f7615d45a2b"
+      ]
+    }
+  ],
+  "events": [
+    {
+      "schema_version": "2.0.0",
+      "event_id": "evt-v2-39093b035c7927e1fbc8f5e7fff3f5c2cb4a8ef25233b42881afe221def25a41",
+      "identity_inputs_sha256": "39093b035c7927e1fbc8f5e7fff3f5c2cb4a8ef25233b42881afe221def25a41",
+      "run_manifest_id": "run-v2-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "run_manifest_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "identity_basis": {
+        "kind": "split",
+        "first_observation_id": null,
+        "parent_event_ids": [
+          "evt-v2-cc07ae458c1454426c253a8446c309a6b2756c49ed0ae3c3e0001c17798c8254"
+        ],
+        "trigger_observation_ids": [
+          "obs-v2-659d6687fd8fef6f5aa7453b076b5a33917064dc24d9f482f13ebe42f92c8412"
+        ]
+      },
+      "monitoring_extent_id": "araripe-implementation-rectangle-v1",
+      "status": "active",
+      "observation_dates": [
+        "2026-04-07"
+      ],
+      "n_distinct_observation_dates": 1,
+      "observation_ids": [
+        "obs-v2-659d6687fd8fef6f5aa7453b076b5a33917064dc24d9f482f13ebe42f92c8412"
+      ],
+      "acquisition_ids": [
+        "acq-v2-7a790681d99aec03d45e77999c46d23b0207c4cc8ee33aa359d31782e0e7a267"
+      ],
+      "contribution_keys": [
+        "pc-v2-7e987806fb59176f1bc6bb2f2248692e5573f2965bdcfb48f4218f7615d45a2b"
+      ],
+      "incoming_lineage_ids": [
+        "lin-v2-7ca307ce0c43e48ba04ddb96032a212387fe1fb5ac99f0e02af9750e91883150"
+      ],
+      "outgoing_lineage_ids": [],
+      "first_observed_on": "2026-04-07",
+      "last_observed_on": "2026-04-07",
+      "representative_geometry_crs": "EPSG:4326",
+      "representative_geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -39.95,
+              -7.1
+            ],
+            [
+              -39.9,
+              -7.1
+            ],
+            [
+              -39.9,
+              -7.0
+            ],
+            [
+              -39.95,
+              -7.0
+            ],
+            [
+              -39.95,
+              -7.1
+            ]
+          ]
+        ]
+      },
+      "representative_geometry_sha256": "dde5de17fe2cc65b8660dbea84550f505f5a26898cebccca591c610c0d505a15",
+      "raw_observations_preserved": true,
+      "created_at": "2026-04-07T13:40:00Z",
+      "updated_at": "2026-04-07T13:40:00Z",
+      "persistence_tier": "first_observation"
+    },
+    {
+      "schema_version": "2.0.0",
+      "event_id": "evt-v2-4ea085076f73c00c0fd7441f9d3f82e5d7c5703a51ff82621382094933125568",
+      "identity_inputs_sha256": "4ea085076f73c00c0fd7441f9d3f82e5d7c5703a51ff82621382094933125568",
+      "run_manifest_id": "run-v2-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "run_manifest_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "identity_basis": {
+        "kind": "split",
+        "first_observation_id": null,
+        "parent_event_ids": [
+          "evt-v2-cc07ae458c1454426c253a8446c309a6b2756c49ed0ae3c3e0001c17798c8254"
+        ],
+        "trigger_observation_ids": [
+          "obs-v2-32b0d6a7f75ff92c87659e00a16b4327f60cd4390122cc6dd3921383b975cf72"
+        ]
+      },
+      "monitoring_extent_id": "araripe-implementation-rectangle-v1",
+      "status": "active",
+      "observation_dates": [
+        "2026-04-07"
+      ],
+      "n_distinct_observation_dates": 1,
+      "observation_ids": [
+        "obs-v2-32b0d6a7f75ff92c87659e00a16b4327f60cd4390122cc6dd3921383b975cf72"
+      ],
+      "acquisition_ids": [
+        "acq-v2-7a790681d99aec03d45e77999c46d23b0207c4cc8ee33aa359d31782e0e7a267"
+      ],
+      "contribution_keys": [
+        "pc-v2-283ecb186cbd0b257606c80a09a9c38a52c0961fccdf78d3b06be951e8afb789"
+      ],
+      "incoming_lineage_ids": [
+        "lin-v2-7ca307ce0c43e48ba04ddb96032a212387fe1fb5ac99f0e02af9750e91883150"
+      ],
+      "outgoing_lineage_ids": [],
+      "first_observed_on": "2026-04-07",
+      "last_observed_on": "2026-04-07",
+      "representative_geometry_crs": "EPSG:4326",
+      "representative_geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -40.0,
+              -7.1
+            ],
+            [
+              -39.95,
+              -7.1
+            ],
+            [
+              -39.95,
+              -7.0
+            ],
+            [
+              -40.0,
+              -7.0
+            ],
+            [
+              -40.0,
+              -7.1
+            ]
+          ]
+        ]
+      },
+      "representative_geometry_sha256": "e0a811e0f11d6b4ce70b36ccf859da950a6230f325fbd222e2cbff529463ab9b",
+      "raw_observations_preserved": true,
+      "created_at": "2026-04-07T13:40:00Z",
+      "updated_at": "2026-04-07T13:40:00Z",
+      "persistence_tier": "first_observation"
+    },
+    {
+      "schema_version": "2.0.0",
+      "event_id": "evt-v2-cc07ae458c1454426c253a8446c309a6b2756c49ed0ae3c3e0001c17798c8254",
+      "identity_inputs_sha256": "cc07ae458c1454426c253a8446c309a6b2756c49ed0ae3c3e0001c17798c8254",
+      "run_manifest_id": "run-v2-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "run_manifest_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "identity_basis": {
+        "kind": "origin",
+        "first_observation_id": "obs-v2-4341eeacea951ef2ced30c55b49d8daabf6c8a78880033e53d1597f2fdc43c3c",
+        "parent_event_ids": [],
+        "trigger_observation_ids": [
+          "obs-v2-4341eeacea951ef2ced30c55b49d8daabf6c8a78880033e53d1597f2fdc43c3c"
+        ]
+      },
+      "monitoring_extent_id": "araripe-implementation-rectangle-v1",
+      "status": "superseded",
+      "observation_dates": [
+        "2026-04-07"
+      ],
+      "n_distinct_observation_dates": 1,
+      "observation_ids": [
+        "obs-v2-4341eeacea951ef2ced30c55b49d8daabf6c8a78880033e53d1597f2fdc43c3c"
+      ],
+      "acquisition_ids": [
+        "acq-v2-dfb6739a7cfb63bef475f2e9a83323b19c2588d7144199efa18cd0703a27d9f6"
+      ],
+      "contribution_keys": [
+        "pc-v2-3c143cd665af85956ae4ca75ae0d536ebd5ba3094070fc9cc8ac9ee86154ee88"
+      ],
+      "incoming_lineage_ids": [],
+      "outgoing_lineage_ids": [
+        "lin-v2-7ca307ce0c43e48ba04ddb96032a212387fe1fb5ac99f0e02af9750e91883150"
+      ],
+      "first_observed_on": "2026-04-07",
+      "last_observed_on": "2026-04-07",
+      "representative_geometry_crs": "EPSG:4326",
+      "representative_geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -40.0,
+              -7.1
+            ],
+            [
+              -39.9,
+              -7.1
+            ],
+            [
+              -39.9,
+              -7.0
+            ],
+            [
+              -40.0,
+              -7.0
+            ],
+            [
+              -40.0,
+              -7.1
+            ]
+          ]
+        ]
+      },
+      "representative_geometry_sha256": "ce0b0669f9f217872ff550ace3440e4a4cbc9a609738574852fc045e910e6bee",
+      "raw_observations_preserved": true,
+      "created_at": "2026-04-07T13:30:00Z",
+      "updated_at": "2026-04-07T13:40:00Z",
+      "persistence_tier": "first_observation"
+    }
+  ],
+  "lineage": [
+    {
+      "schema_version": "2.0.0",
+      "lineage_id": "lin-v2-7ca307ce0c43e48ba04ddb96032a212387fe1fb5ac99f0e02af9750e91883150",
+      "identity_inputs_sha256": "7ca307ce0c43e48ba04ddb96032a212387fe1fb5ac99f0e02af9750e91883150",
+      "run_manifest_id": "run-v2-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "run_manifest_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "relation": "split",
+      "parent_event_ids": [
+        "evt-v2-cc07ae458c1454426c253a8446c309a6b2756c49ed0ae3c3e0001c17798c8254"
+      ],
+      "child_event_ids": [
+        "evt-v2-39093b035c7927e1fbc8f5e7fff3f5c2cb4a8ef25233b42881afe221def25a41",
+        "evt-v2-4ea085076f73c00c0fd7441f9d3f82e5d7c5703a51ff82621382094933125568"
+      ],
+      "trigger_observation_ids": [
+        "obs-v2-32b0d6a7f75ff92c87659e00a16b4327f60cd4390122cc6dd3921383b975cf72",
+        "obs-v2-659d6687fd8fef6f5aa7453b076b5a33917064dc24d9f482f13ebe42f92c8412"
+      ],
+      "effective_acquisition_id": "acq-v2-7a790681d99aec03d45e77999c46d23b0207c4cc8ee33aa359d31782e0e7a267",
+      "effective_timestamp_utc": "2026-04-07T13:22:51Z",
+      "observed_on": "2026-04-07",
+      "algorithm_version": "2.0.0",
+      "raw_observations_preserved": true,
+      "created_at": "2026-04-07T13:40:00Z"
+    }
+  ],
+  "contributions": [
+    {
+      "schema_version": "2.0.0",
+      "contribution_key": "pc-v2-283ecb186cbd0b257606c80a09a9c38a52c0961fccdf78d3b06be951e8afb789",
+      "identity_inputs_sha256": "283ecb186cbd0b257606c80a09a9c38a52c0961fccdf78d3b06be951e8afb789",
+      "run_manifest_id": "run-v2-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "run_manifest_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "event_id": "evt-v2-4ea085076f73c00c0fd7441f9d3f82e5d7c5703a51ff82621382094933125568",
+      "observed_on": "2026-04-07",
+      "source_acquisition_ids": [
+        "acq-v2-7a790681d99aec03d45e77999c46d23b0207c4cc8ee33aa359d31782e0e7a267"
+      ],
+      "source_observation_ids": [
+        "obs-v2-32b0d6a7f75ff92c87659e00a16b4327f60cd4390122cc6dd3921383b975cf72"
+      ],
+      "daily_summary_sha256": "7df45bb162cecaf69220254455da9c8ba91145e0a0c2b7b9e18141d5bb82d74a",
+      "finalization_status": "finalized",
+      "finalization_condition": "all_manifest_expected_acquisitions_for_utc_date_terminal",
+      "duplicate_policy": "no_op",
+      "finalized_at": "2026-04-07T14:00:00Z"
+    },
+    {
+      "schema_version": "2.0.0",
+      "contribution_key": "pc-v2-3c143cd665af85956ae4ca75ae0d536ebd5ba3094070fc9cc8ac9ee86154ee88",
+      "identity_inputs_sha256": "3c143cd665af85956ae4ca75ae0d536ebd5ba3094070fc9cc8ac9ee86154ee88",
+      "run_manifest_id": "run-v2-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "run_manifest_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "event_id": "evt-v2-cc07ae458c1454426c253a8446c309a6b2756c49ed0ae3c3e0001c17798c8254",
+      "observed_on": "2026-04-07",
+      "source_acquisition_ids": [
+        "acq-v2-dfb6739a7cfb63bef475f2e9a83323b19c2588d7144199efa18cd0703a27d9f6"
+      ],
+      "source_observation_ids": [
+        "obs-v2-4341eeacea951ef2ced30c55b49d8daabf6c8a78880033e53d1597f2fdc43c3c"
+      ],
+      "daily_summary_sha256": "7df45bb162cecaf69220254455da9c8ba91145e0a0c2b7b9e18141d5bb82d74a",
+      "finalization_status": "finalized",
+      "finalization_condition": "all_manifest_expected_acquisitions_for_utc_date_terminal",
+      "duplicate_policy": "no_op",
+      "finalized_at": "2026-04-07T14:00:00Z"
+    },
+    {
+      "schema_version": "2.0.0",
+      "contribution_key": "pc-v2-7e987806fb59176f1bc6bb2f2248692e5573f2965bdcfb48f4218f7615d45a2b",
+      "identity_inputs_sha256": "7e987806fb59176f1bc6bb2f2248692e5573f2965bdcfb48f4218f7615d45a2b",
+      "run_manifest_id": "run-v2-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "run_manifest_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "event_id": "evt-v2-39093b035c7927e1fbc8f5e7fff3f5c2cb4a8ef25233b42881afe221def25a41",
+      "observed_on": "2026-04-07",
+      "source_acquisition_ids": [
+        "acq-v2-7a790681d99aec03d45e77999c46d23b0207c4cc8ee33aa359d31782e0e7a267"
+      ],
+      "source_observation_ids": [
+        "obs-v2-659d6687fd8fef6f5aa7453b076b5a33917064dc24d9f482f13ebe42f92c8412"
+      ],
+      "daily_summary_sha256": "7df45bb162cecaf69220254455da9c8ba91145e0a0c2b7b9e18141d5bb82d74a",
+      "finalization_status": "finalized",
+      "finalization_condition": "all_manifest_expected_acquisitions_for_utc_date_terminal",
+      "duplicate_policy": "no_op",
+      "finalized_at": "2026-04-07T14:00:00Z"
+    }
+  ],
+  "watermark": {
+    "acquisition_timestamp_utc": "2026-04-07T13:22:51Z",
+    "acquisition_id": "acq-v2-7a790681d99aec03d45e77999c46d23b0207c4cc8ee33aa359d31782e0e7a267",
+    "observed_on": "2026-04-07"
+  },
+  "integrity": {
+    "finalized_dates_sha256": "c7863cac4c23d574e25dc0c2a4aefd41b5ed838d2660682afb3be98b4c345f6a",
+    "events_sha256": "f7841f6a62ce6bb743bd869b20cf131da6fa39934970e997be3e431e3e87cf92",
+    "lineage_sha256": "347d5f59be6a4671e0fbd3598c981d88d6c6385e67aac9d703e3bb47d442901c",
+    "contributions_sha256": "6822c3e1ab2bc5ae6cd396f4afb14f6dc4fc3b5c26e031040879f1923b4555a2",
+    "watermark_sha256": "bb628d72979c8a244c357cf57c266d5d1747e5772fd9758b5008c9eab3143bb1",
+    "schema_validated": true,
+    "distinct_dates_reconciled": true,
+    "unique_contribution_per_event_date": true,
+    "raw_observations_preserved": true,
+    "document_sha256": "a82074d788039d316c49f1b0431cd64ba679e53189adb7144db52eb0982b6ed8"
+  }
+}

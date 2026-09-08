@@ -30,7 +30,7 @@ on:
   workflow_dispatch:
     inputs:
       start:
-        description: "Start date YYYY-MM-DD (blank = today - 16 days)"
+        description: "Start date YYYY-MM-DD (blank = today - 5 days)"
         required: false
       end:
         description: "End date YYYY-MM-DD exclusive (blank = tomorrow)"
@@ -83,8 +83,7 @@ jobs:
       - name: Install Earth Engine client
         run: pip install -q earthengine-api requests
 
-      - name: Fetch reflectance baselines from R2
-        if: env.R2_ENDPOINT_URL != ''
+      - name: Fetch and checksum authoritative reflectance baselines
         run: python scripts/fetch_baselines_from_r2.py
 
       - name: Fetch persistence state from R2 (gap-tolerant tracking)

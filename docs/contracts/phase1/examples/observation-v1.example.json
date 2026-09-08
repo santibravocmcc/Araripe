@@ -1,0 +1,100 @@
+{
+  "schema_version": "1.0.0",
+  "observation_id": "obs-v1-94a715b2f86938ea1bad64964d16355db2b6cd8309e0b4891bb5bebf88576f7f",
+  "observation_identity_inputs_sha256": "94a715b2f86938ea1bad64964d16355db2b6cd8309e0b4891bb5bebf88576f7f",
+  "acquisition": {
+    "acquisition_id": "acq-v1-ce68a55d80fec566cac1b8d978b8edbc9473eb18b1540ae75eb5b82a183ba7e2",
+    "identity_inputs_sha256": "ce68a55d80fec566cac1b8d978b8edbc9473eb18b1540ae75eb5b82a183ba7e2",
+    "provider": "ESA Copernicus via Google Earth Engine",
+    "collection_id": "COPERNICUS/S2_SR_HARMONIZED",
+    "sensor": "Sentinel-2 MSI",
+    "observed_on": "2026-07-11",
+    "scene_ids": [
+      "COPERNICUS/S2_SR_HARMONIZED/20260711T131251_20260711T131938_T24LWK",
+      "COPERNICUS/S2_SR_HARMONIZED/20260711T131251_20260711T131938_T24LWL"
+    ],
+    "composite_method_id": "daily_mosaic-v1"
+  },
+  "event_id": "evt-v1-781debb676f41f10db0c4f7b17183e5758d10b7b5b98e5df8ed76770936fe58e",
+  "persistence_contribution_key": "pc-v1-cb224fe3e16d8578852a76f61be1997be3ccca9208ad229d4f2339dee737986d",
+  "monitoring_extent_id": "araripe-implementation-rectangle-v1",
+  "algorithm_version": "1.0.0",
+  "baseline_version": "1.0.0",
+  "geometry_crs": "EPSG:4326",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          -39.9,
+          -7.3
+        ],
+        [
+          -39.89,
+          -7.3
+        ],
+        [
+          -39.89,
+          -7.29
+        ],
+        [
+          -39.9,
+          -7.29
+        ],
+        [
+          -39.9,
+          -7.3
+        ]
+      ]
+    ]
+  },
+  "canonical_geometry_sha256": "eb9e6757f7a17d2ce3c8745ed56ecb6edeec0bee535f19f6d5f1d77a8a703bdb",
+  "area_ha": 121.64,
+  "confidence": {
+    "tier": "high",
+    "numeric_level": 3,
+    "rule_version": "1.0.0",
+    "is_calibrated_probability": false
+  },
+  "quality": {
+    "scene_decision": "accepted",
+    "valid_coverage_fraction": 0.86,
+    "minimum_required_fraction": 0.2,
+    "qa_flags": [],
+    "rejection_reason": null
+  },
+  "context": {
+    "mapbiomas": {
+      "affects_observation_existence": false,
+      "annotations": [
+        {
+          "collection_id": "mapbiomas_col3_beta_10m_2024",
+          "collection_version": "3.0.0-beta.1",
+          "crop_version": "1.0.0",
+          "source_national_sha256": "2ba20d400976020b4e7472a37de04fe1755c6f23631008b39da388001a034f59",
+          "regional_crop_sha256": "1515151515151515151515151515151515151515151515151515151515151515",
+          "crop_extent_id": "araripe-implementation-rectangle-v1",
+          "native_resolution_m": 10,
+          "dominant_group": "natural",
+          "natural_fraction": 0.82,
+          "nodata_fraction": 0
+        }
+      ],
+      "strong_subset_membership": true
+    },
+    "spectral_signature_label": "not_assessed"
+  },
+  "raw_detection_policy": {
+    "retained": true,
+    "immutable": true,
+    "mapbiomas_can_remove": false,
+    "persistence_can_remove": false
+  },
+  "release_id": "araripe-2026-candidate-20260724t120000z-a1b2c3d4e5f6",
+  "source_artifact": {
+    "immutable_path": "releases/araripe-2026-candidate-20260724t120000z-a1b2c3d4e5f6/source/alerts/2026-07-11.geojson",
+    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "media_type": "application/geo+json"
+  },
+  "created_at": "2026-07-24T12:00:00Z"
+}

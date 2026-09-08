@@ -1,0 +1,533 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://observatoriodachapadadoararipe.com/data/schemas/phase2a5-context-evidence-case-v1.schema.json",
+  "title": "Araripe Phase 2A.5 contextual evidence case v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schema_version",
+    "sample_id",
+    "blind_case_id",
+    "source_order_index",
+    "target_date",
+    "status",
+    "case_replaced",
+    "bindings",
+    "raw_detection",
+    "mapbiomas",
+    "spectral_context",
+    "candidate_panels",
+    "blank_review",
+    "claims"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "https://observatoriodachapadadoararipe.com/data/schemas/phase2a5-context-evidence-case-v1.schema.json"
+    },
+    "schema_version": {"const": "1.0.0"},
+    "sample_id": {"type": "string", "pattern": "^p2a3-sample-v1-[0-9a-f]{64}$"},
+    "blind_case_id": {"type": "string", "pattern": "^p2a3-blind-v1-[0-9a-f]{24}$"},
+    "source_order_index": {"type": "integer", "minimum": 0, "maximum": 59},
+    "target_date": {"type": "string", "format": "date"},
+    "status": {"enum": ["available", "partial", "unreviewable"]},
+    "case_replaced": {"const": false},
+    "bindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["phase2a3_case", "phase2a4_case", "candidate_registry", "context_manifest"],
+      "properties": {
+        "phase2a3_case": {"$ref": "#/$defs/external_artifact"},
+        "phase2a4_case": {"$ref": "#/$defs/external_artifact"},
+        "candidate_registry": {"$ref": "#/$defs/external_artifact"},
+        "context_manifest": {"$ref": "#/$defs/external_artifact"}
+      }
+    },
+    "raw_detection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_record_id",
+        "source_feature_index",
+        "source_binding_sha256",
+        "geometry",
+        "geometry_sha256",
+        "canonical_observation_id",
+        "canonical_event_id",
+        "geometry_preserved",
+        "identity_preserved",
+        "order_preserved",
+        "filtered_or_relabelled"
+      ],
+      "properties": {
+        "source_record_id": {"type": "string", "minLength": 1},
+        "source_feature_index": {"type": "integer", "minimum": 0},
+        "source_binding_sha256": {"$ref": "#/$defs/sha256"},
+        "geometry": {"type": "object", "required": ["type", "coordinates"]},
+        "geometry_sha256": {"$ref": "#/$defs/sha256"},
+        "canonical_observation_id": {"type": "null"},
+        "canonical_event_id": {"type": "null"},
+        "geometry_preserved": {"const": true},
+        "identity_preserved": {"const": true},
+        "order_preserved": {"const": true},
+        "filtered_or_relabelled": {"const": false}
+      }
+    },
+    "mapbiomas": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mapping_version", "polygon_pixel_rule", "collections", "agreement", "strong_subset_alternatives"],
+      "properties": {
+        "mapping_version": {"const": "mapbiomas-context-groups-v1"},
+        "polygon_pixel_rule": {"const": "all_touched_true"},
+        "collections": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mapbiomas_col3_beta_10m_2024", "mapbiomas_col10_1_30m_2024"],
+          "properties": {
+            "mapbiomas_col3_beta_10m_2024": {"$ref": "#/$defs/collection_summary"},
+            "mapbiomas_col10_1_30m_2024": {"$ref": "#/$defs/collection_summary"}
+          }
+        },
+        "agreement": {"$ref": "#/$defs/agreement"},
+        "strong_subset_alternatives": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["natural-vegetation-share-0.50-v1", "natural-vegetation-share-0.75-v1"],
+          "properties": {
+            "natural-vegetation-share-0.50-v1": {"$ref": "#/$defs/strong_outcome"},
+            "natural-vegetation-share-0.75-v1": {"$ref": "#/$defs/strong_outcome"}
+          }
+        }
+      }
+    },
+    "spectral_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rule_version",
+        "polygon_pixel_rule",
+        "source_grid",
+        "formulae",
+        "polygon_pixel_count",
+        "polygon_pixel_indices",
+        "strata",
+        "aggregation_candidates"
+      ],
+      "properties": {
+        "rule_version": {"const": "noncausal-contextual-spectral-signature-v1"},
+        "polygon_pixel_rule": {"const": "detector_grid_pixel_center_within_polygon-v1"},
+        "source_grid": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["crs", "pixel_size_m", "width", "height", "transform", "bounds", "context_window_sha256"],
+          "properties": {
+            "crs": {"const": "EPSG:32724"},
+            "pixel_size_m": {"const": 20},
+            "width": {"type": "integer", "minimum": 1},
+            "height": {"type": "integer", "minimum": 1},
+            "transform": {
+              "type": "array",
+              "minItems": 6,
+              "maxItems": 6,
+              "items": {"type": "number"}
+            },
+            "bounds": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "items": {"type": "number"}
+            },
+            "context_window_sha256": {"$ref": "#/$defs/sha256"}
+          }
+        },
+        "formulae": {
+          "const": {
+            "post_nbr": "(nir08-swir22)/(nir08+swir22)",
+            "bsi": "((swir16+red)-(nir+blue))/(swir16+red+nir+blue)",
+            "dnbr": "accepted_baseline_nbr_mean-post_nbr"
+          }
+        },
+        "polygon_pixel_count": {"type": "integer", "minimum": 0},
+        "polygon_pixel_indices": {"$ref": "#/$defs/array_artifact"},
+        "strata": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {"$ref": "#/$defs/stratum"}
+        },
+        "aggregation_candidates": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["dominant-assessed-share-0.60-v1", "plurality-assessed-margin-0.15-v1"],
+          "properties": {
+            "dominant-assessed-share-0.60-v1": {"$ref": "#/$defs/signature_outcome"},
+            "plurality-assessed-margin-0.15-v1": {"$ref": "#/$defs/signature_outcome"}
+          }
+        }
+      }
+    },
+    "candidate_panels": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mapbiomas", "contextual_signature"],
+      "properties": {
+        "mapbiomas": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["natural-vegetation-share-0.50-v1", "natural-vegetation-share-0.75-v1"],
+          "properties": {
+            "natural-vegetation-share-0.50-v1": {"$ref": "#/$defs/panel"},
+            "natural-vegetation-share-0.75-v1": {"$ref": "#/$defs/panel"}
+          }
+        },
+        "contextual_signature": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["dominant-assessed-share-0.60-v1", "plurality-assessed-margin-0.15-v1"],
+          "properties": {
+            "dominant-assessed-share-0.60-v1": {"$ref": "#/$defs/panel"},
+            "plurality-assessed-margin-0.15-v1": {"$ref": "#/$defs/panel"}
+          }
+        }
+      }
+    },
+    "blank_review": {
+      "const": {
+        "review_status": "blank",
+        "qualified_label": null,
+        "accepted_observation_id": null,
+        "accepted_event_id": null,
+        "selected_strong_subset_candidate_id": null,
+        "selected_contextual_signature_candidate_id": null,
+        "public_wording_approval": null,
+        "acceptance_record_id": null
+      }
+    },
+    "claims": {
+      "const": {
+        "raw_detection_modified": false,
+        "raw_detection_filtered": false,
+        "case_replaced": false,
+        "selected_or_activated": false,
+        "qualified_human_label_present": false,
+        "accepted_identity_present": false,
+        "scientific_accuracy_claim": false,
+        "omission_or_recall_claim": false,
+        "causal_cause_inferred": false,
+        "desired_total_tuning_performed": false,
+        "phase2a4_method_selected_or_modified": false,
+        "population_changed_or_reconstructed": false
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "safe_path": {"type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"},
+    "external_artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "bytes", "sha256", "scope"],
+      "properties": {
+        "path": {"$ref": "#/$defs/safe_path"},
+        "bytes": {"type": "integer", "minimum": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "scope": {"const": "repository_relative_external_input"}
+      }
+    },
+    "array_artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "bytes", "sha256", "media_type", "dtype", "shape"],
+      "properties": {
+        "path": {"$ref": "#/$defs/safe_path"},
+        "bytes": {"type": "integer", "minimum": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "media_type": {"const": "application/x-npy"},
+        "dtype": {"type": "string", "minLength": 1},
+        "shape": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "items": {"type": "integer", "minimum": 0}
+        }
+      }
+    },
+    "histogram": {
+      "type": "object",
+      "propertyNames": {"pattern": "^[0-9]+$"},
+      "additionalProperties": {"type": "integer", "minimum": 0}
+    },
+    "category_counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["natural_vegetation", "other_natural_cover", "anthropic_cover", "uncertain_or_mixed", "nodata", "unmapped"],
+      "properties": {
+        "natural_vegetation": {"type": "integer", "minimum": 0},
+        "other_natural_cover": {"type": "integer", "minimum": 0},
+        "anthropic_cover": {"type": "integer", "minimum": 0},
+        "uncertain_or_mixed": {"type": "integer", "minimum": 0},
+        "nodata": {"type": "integer", "minimum": 0},
+        "unmapped": {"type": "integer", "minimum": 0}
+      }
+    },
+    "category_proportions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["natural_vegetation", "other_natural_cover", "anthropic_cover", "uncertain_or_mixed"],
+      "properties": {
+        "natural_vegetation": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "other_natural_cover": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "anthropic_cover": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "uncertain_or_mixed": {"type": ["number", "null"], "minimum": 0, "maximum": 1}
+      }
+    },
+    "collection_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "collection_id",
+        "crop_id",
+        "crop_sha256",
+        "status",
+        "reason",
+        "pixel_count",
+        "valid_pixel_count",
+        "mapped_valid_pixel_count",
+        "nodata_pixel_count",
+        "unmapped_pixel_count",
+        "valid_coverage_fraction",
+        "class_histogram",
+        "category_counts",
+        "category_proportions"
+      ],
+      "properties": {
+        "collection_id": {"type": "string", "minLength": 1},
+        "crop_id": {"type": "string", "minLength": 1},
+        "crop_sha256": {"$ref": "#/$defs/sha256"},
+        "status": {"enum": ["available", "partial", "unreviewable"]},
+        "reason": {"type": ["string", "null"]},
+        "pixel_count": {"type": "integer", "minimum": 0},
+        "valid_pixel_count": {"type": "integer", "minimum": 0},
+        "mapped_valid_pixel_count": {"type": "integer", "minimum": 0},
+        "nodata_pixel_count": {"type": "integer", "minimum": 0},
+        "unmapped_pixel_count": {"type": "integer", "minimum": 0},
+        "valid_coverage_fraction": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "class_histogram": {"$ref": "#/$defs/histogram"},
+        "category_counts": {"$ref": "#/$defs/category_counts"},
+        "category_proportions": {"$ref": "#/$defs/category_proportions"}
+      }
+    },
+    "agreement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "reason",
+        "comparison_grid",
+        "resampling",
+        "interpretation",
+        "comparison_pixel_count",
+        "joint_valid_raw_count",
+        "exact_agreement_count",
+        "exact_disagreement_count",
+        "exact_agreement_fraction",
+        "joint_mapped_count",
+        "category_agreement_count",
+        "category_disagreement_count",
+        "category_agreement_fraction",
+        "exact_pair_histogram",
+        "category_pair_histogram"
+      ],
+      "properties": {
+        "status": {"enum": ["available", "partial", "unreviewable"]},
+        "reason": {"type": ["string", "null"]},
+        "comparison_grid": {"const": "mapbiomas_col3_beta_10m_2024"},
+        "resampling": {"const": "nearest_only"},
+        "interpretation": {"const": "context_not_scientific_truth"},
+        "comparison_pixel_count": {"type": "integer", "minimum": 0},
+        "joint_valid_raw_count": {"type": "integer", "minimum": 0},
+        "exact_agreement_count": {"type": "integer", "minimum": 0},
+        "exact_disagreement_count": {"type": "integer", "minimum": 0},
+        "exact_agreement_fraction": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "joint_mapped_count": {"type": "integer", "minimum": 0},
+        "category_agreement_count": {"type": "integer", "minimum": 0},
+        "category_disagreement_count": {"type": "integer", "minimum": 0},
+        "category_agreement_fraction": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "exact_pair_histogram": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}},
+        "category_pair_histogram": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}}
+      }
+    },
+    "strong_outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidate_id", "threshold", "natural_fraction", "membership", "reason", "selected_or_activated", "raw_detection_retained"],
+      "properties": {
+        "candidate_id": {"type": "string", "minLength": 1},
+        "threshold": {"enum": [0.5, 0.75]},
+        "natural_fraction": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "membership": {"enum": ["included", "excluded", "not_assessed"]},
+        "reason": {"type": ["string", "null"]},
+        "selected_or_activated": {"const": false},
+        "raw_detection_retained": {"const": true}
+      }
+    },
+    "signature_proportions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fire_like", "exposed_soil_or_clearing_like", "mixed_or_uncertain", "not_assessed"],
+      "properties": {
+        "fire_like": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "exposed_soil_or_clearing_like": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "mixed_or_uncertain": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+        "not_assessed": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "stratum": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stratum_id",
+        "cloud_mask_candidate_id",
+        "daily_composition_candidate_id",
+        "phase2a4_cells",
+        "status",
+        "reason",
+        "pixel_count",
+        "valid_pixel_count",
+        "not_assessed_pixel_count",
+        "class_counts",
+        "proportions",
+        "medians",
+        "arrays"
+      ],
+      "properties": {
+        "stratum_id": {"type": "string", "pattern": "^p2a5-stratum-v1-[0-9a-f]{64}$"},
+        "cloud_mask_candidate_id": {"type": "string", "minLength": 1},
+        "daily_composition_candidate_id": {"type": "string", "minLength": 1},
+        "phase2a4_cells": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["cell_id", "drought_adjustment_candidate_id", "availability"],
+            "properties": {
+              "cell_id": {"type": "string", "minLength": 1},
+              "drought_adjustment_candidate_id": {
+                "enum": [
+                  "chirps-v2-spi3-season-matched-1981-2025-v1",
+                  "drought-disabled-v1"
+                ]
+              },
+              "availability": {
+                "enum": ["available", "rejected_low_coverage", "unavailable", "error"]
+              }
+            }
+          }
+        },
+        "status": {"enum": ["available", "partial", "unreviewable"]},
+        "reason": {"type": ["string", "null"]},
+        "pixel_count": {"type": "integer", "minimum": 0},
+        "valid_pixel_count": {"type": "integer", "minimum": 0},
+        "not_assessed_pixel_count": {"type": "integer", "minimum": 0},
+        "class_counts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["fire_like", "exposed_soil_or_clearing_like", "mixed_or_uncertain", "not_assessed"],
+          "properties": {
+            "fire_like": {"type": "integer", "minimum": 0},
+            "exposed_soil_or_clearing_like": {"type": "integer", "minimum": 0},
+            "mixed_or_uncertain": {"type": "integer", "minimum": 0},
+            "not_assessed": {"type": "integer", "minimum": 0}
+          }
+        },
+        "proportions": {"$ref": "#/$defs/signature_proportions"},
+        "medians": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["dnbr", "post_nbr", "bsi"],
+          "properties": {
+            "dnbr": {"type": ["number", "null"]},
+            "post_nbr": {"type": ["number", "null"]},
+            "bsi": {"type": ["number", "null"]}
+          }
+        },
+        "arrays": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["dnbr", "post_nbr", "bsi", "valid", "not_assessed", "signature_codes"],
+          "properties": {
+            "dnbr": {"$ref": "#/$defs/array_artifact"},
+            "post_nbr": {"$ref": "#/$defs/array_artifact"},
+            "bsi": {"$ref": "#/$defs/array_artifact"},
+            "valid": {"$ref": "#/$defs/array_artifact"},
+            "not_assessed": {"$ref": "#/$defs/array_artifact"},
+            "signature_codes": {"$ref": "#/$defs/array_artifact"}
+          }
+        }
+      }
+    },
+    "signature_outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidate_id", "status", "reason", "label", "available_stratum_count", "median_assessed_proportions", "selected_or_activated", "causal_inference"],
+      "properties": {
+        "candidate_id": {"type": "string", "minLength": 1},
+        "status": {"enum": ["available", "partial", "unreviewable"]},
+        "reason": {"type": ["string", "null"]},
+        "label": {"enum": ["fire_like", "exposed_soil_or_clearing_like", "mixed_or_uncertain", "not_assessed"]},
+        "available_stratum_count": {"type": "integer", "minimum": 0, "maximum": 4},
+        "median_assessed_proportions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["fire_like", "exposed_soil_or_clearing_like", "mixed_or_uncertain"],
+          "properties": {
+            "fire_like": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+            "exposed_soil_or_clearing_like": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+            "mixed_or_uncertain": {"type": ["number", "null"], "minimum": 0, "maximum": 1}
+          }
+        },
+        "selected_or_activated": {"const": false},
+        "causal_inference": {"const": false}
+      }
+    },
+    "panel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "reason", "path", "bytes", "sha256", "media_type"],
+      "properties": {
+        "status": {"enum": ["available", "partial", "unreviewable"]},
+        "reason": {"type": ["string", "null"]},
+        "path": {"oneOf": [{"$ref": "#/$defs/safe_path"}, {"type": "null"}]},
+        "bytes": {"type": ["integer", "null"], "minimum": 1},
+        "sha256": {"oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+        "media_type": {"type": ["string", "null"], "enum": ["image/png", null]}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "unreviewable"}}, "required": ["status"]},
+          "then": {
+            "properties": {
+              "path": {"type": "null"},
+              "bytes": {"type": "null"},
+              "sha256": {"type": "null"},
+              "media_type": {"type": "null"},
+              "reason": {"type": "string", "minLength": 1}
+            }
+          },
+          "else": {
+            "properties": {
+              "path": {"$ref": "#/$defs/safe_path"},
+              "bytes": {"type": "integer", "minimum": 1},
+              "sha256": {"$ref": "#/$defs/sha256"},
+              "media_type": {"const": "image/png"}
+            }
+          }
+        }
+      ]
+    }
+  }
+}

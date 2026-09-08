@@ -1,0 +1,138 @@
+{
+  "build_date": "2026-09-06",
+  "decision_binding": {
+    "path": "config/phase2a_candidate_generation_decisions_v2.json",
+    "sha256": "ac61fd1e6da376a147013a610652e38a6d3d119dcb8479b01001e156625cf69e"
+  },
+  "grid_reconciliation": {
+    "centre_on_boundary_possible": false,
+    "permitted_comparison": "nearest_to_primary_grid_only",
+    "primary": "collection3_beta_10m_2024",
+    "primary_centre_fractions_in_secondary_cell": [
+      0.16666666666666674,
+      0.5,
+      0.8333333333333334
+    ],
+    "primary_pixel_phase_of_origin": [
+      2,
+      1
+    ],
+    "ratio": [
+      3,
+      3
+    ],
+    "secondary": "collection10_1_gee_export_30m_2024"
+  },
+  "licence_and_attribution": {
+    "national_source_redistribution_approved": false,
+    "provider_terms": "CC-BY with required attribution",
+    "required_for_derivatives": [
+      "collection-specific attribution",
+      "corresponding ATBD",
+      "source URL",
+      "access date",
+      "legend version",
+      "recorded limitations"
+    ]
+  },
+  "manifest_id": "phase2a5_regional_context_manifest_v2",
+  "manifest_sha256_of_body": "e1cf4d9e9ce173b8d5958a5a6a6a9bb89c46c2593f2e6477e60128754cc1b939",
+  "mislabeled_collection10_invalidation": {
+    "actual_collection": "10",
+    "audit_bytes_deleted": false,
+    "audit_bytes_verified": true,
+    "bytes": 2795066,
+    "content_note": "within the monitoring extent the fresh Collection 10.1 export is pixel-identical to the invalidated crop (0 of 23,619,280 pixels differ); the invalidation is a provenance correction, and the provenance-correct GEE export is the only permitted runtime and qualified-review source",
+    "labeled_collection": "10.1",
+    "national_source_sha256": "1be96442929c98cdbe0126d5c83d65a8142b61642ec14fb0ad1dfdfa3bf68d6c",
+    "origin_url": "https://storage.googleapis.com/mapbiomas-public/initiatives/brasil/collection_10/lulc/coverage/brazil_coverage_2024.tif",
+    "path": "data/landcover/mapbiomas_col10_1_30m_2024.tif",
+    "qualified_review_use_permitted": false,
+    "replacement_source": "collection10_1_gee_export_30m_2024",
+    "runtime_use_permitted": false,
+    "sha256": "fdab3fd186fdfc44da9e798761c7edf6327ea12e5939e3d1198a258df9a88e9e"
+  },
+  "monitoring_extent": {
+    "bounds": [
+      -40.89236812577142,
+      -7.840780758480428,
+      -38.95208146319247,
+      -6.957104781339829
+    ],
+    "bounds_sha256": "93f254373d6b203bca33aa5c356bd03fec3bff7f43c9c15b368cc2bdb7029f28",
+    "extent_id": "araripe-implementation-rectangle-v1",
+    "geometry_sha256": "b4986ef80d8a0d6e65bbb41b575dbd952c010415bf3aee93a88412b3b657e8c7"
+  },
+  "regional_sources": {
+    "collection10_1_gee_export_30m_2024": {
+      "bytes": 3437429,
+      "class_histogram": {
+        "0": 13,
+        "12": 2010,
+        "15": 5539409,
+        "21": 1247220,
+        "24": 277501,
+        "25": 10910,
+        "29": 602,
+        "3": 1639145,
+        "30": 9004,
+        "33": 61648,
+        "39": 44,
+        "4": 13492477,
+        "41": 1330297,
+        "75": 8993,
+        "9": 7
+      },
+      "export_manifest_path": "config/collection10_1_export_manifest_v1.json",
+      "export_manifest_sha256": "de282086f9dedf95c1a0b5a3a8d254d6105fa865ae5abd4e0ed036f4de3af3b8",
+      "gee_task_id": "E5IITCJZRILLNIUO6G6SFDQJ",
+      "header": {
+        "band_count": 1,
+        "crs": "EPSG:4326",
+        "dtype": "uint8",
+        "height": 3280,
+        "nodata": 255,
+        "transform": [
+          0.00026949458523585647,
+          0.0,
+          -40.89256937451839,
+          0.0,
+          -0.00026949458523585647,
+          -6.957002717863635
+        ],
+        "width": 7201
+      },
+      "path": "data/landcover/mapbiomas_col10_1_gee_30m_2024.tif",
+      "provenance": "fresh acquisition from the official GEE asset",
+      "sha256": "e067e856c02a99ebfaebf564b83703cabf09ea4025b02a7bc42d62982876281c"
+    },
+    "collection3_beta_10m_2024": {
+      "bytes": 10628726,
+      "header": {
+        "band_count": 1,
+        "crs": "EPSG:4326",
+        "dtype": "uint8",
+        "height": 9838,
+        "nodata": 0,
+        "transform": [
+          8.983152841195215e-05,
+          0.0,
+          -40.89238971146156,
+          0.0,
+          -8.983152841195215e-05,
+          -6.957092549392046
+        ],
+        "width": 21600
+      },
+      "national_source_sha256": "2ba20d400976020b4e7472a37de04fe1755c6f23631008b39da388001a034f59",
+      "path": "data/landcover/mapbiomas_col3_beta_10m_2024.tif",
+      "provenance": "v1 crop bytes reused after hash verification",
+      "sha256": "11dc3ecd9595f2ba97dd1866ee2253088bd3014b44ffd9c24ca1381c9e5f2b10"
+    }
+  },
+  "registry_binding": {
+    "path": "config/phase2a5_context_registry_v2.json",
+    "sha256": "4ce31811c445994600df35010bf5f268f983a713642ada3034ab7311e1b698ab"
+  },
+  "schema_version": "1.0.0"
+}

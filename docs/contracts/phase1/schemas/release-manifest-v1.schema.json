@@ -1,0 +1,679 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://observatoriodachapadadoararipe.com/data/schemas/release-manifest-v1.schema.json",
+  "title": "Araripe Authoritative Release Manifest v1",
+  "description": "Immutable inventory and promotion eligibility record for one complete Araripe data release.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "release_id",
+    "release_version",
+    "release_status",
+    "created_at",
+    "versions",
+    "source_control",
+    "authoritative_records",
+    "artifacts",
+    "freshness",
+    "completeness",
+    "validation",
+    "promotion",
+    "rollback",
+    "integrity"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "release_id": {
+      "$ref": "#/$defs/release_id"
+    },
+    "release_version": {
+      "$ref": "#/$defs/semver"
+    },
+    "release_status": {
+      "const": "complete_candidate"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "versions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "algorithm",
+        "baseline",
+        "monitoring_extent",
+        "mapbiomas",
+        "schemas"
+      ],
+      "properties": {
+        "algorithm": {
+          "$ref": "#/$defs/named_version"
+        },
+        "baseline": {
+          "$ref": "#/$defs/named_version"
+        },
+        "monitoring_extent": {
+          "$ref": "#/$defs/named_version"
+        },
+        "mapbiomas": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/mapbiomas_version"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "schemas": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "monitoring_extent",
+            "observation",
+            "event",
+            "persistence_state",
+            "processing_ledger",
+            "release_manifest"
+          ],
+          "properties": {
+            "monitoring_extent": {
+              "$ref": "#/$defs/semver"
+            },
+            "observation": {
+              "$ref": "#/$defs/semver"
+            },
+            "event": {
+              "$ref": "#/$defs/semver"
+            },
+            "persistence_state": {
+              "$ref": "#/$defs/semver"
+            },
+            "processing_ledger": {
+              "$ref": "#/$defs/semver"
+            },
+            "release_manifest": {
+              "$ref": "#/$defs/semver"
+            }
+          }
+        }
+      }
+    },
+    "source_control": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "backend",
+        "site",
+        "workflow_runs"
+      ],
+      "properties": {
+        "backend": {
+          "$ref": "#/$defs/repository_revision"
+        },
+        "site": {
+          "$ref": "#/$defs/repository_revision"
+        },
+        "workflow_runs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/workflow_run"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    },
+    "authoritative_records": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "monitoring_extent",
+        "processing_ledger",
+        "persistence_state"
+      ],
+      "properties": {
+        "monitoring_extent": {
+          "$ref": "#/$defs/artifact_reference"
+        },
+        "processing_ledger": {
+          "$ref": "#/$defs/artifact_reference"
+        },
+        "persistence_state": {
+          "$ref": "#/$defs/artifact_reference"
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/release_artifact"
+      },
+      "minItems": 1
+    },
+    "freshness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "alerts",
+        "rainfall",
+        "site"
+      ],
+      "properties": {
+        "alerts": {
+          "$ref": "#/$defs/component_freshness"
+        },
+        "rainfall": {
+          "$ref": "#/$defs/component_freshness"
+        },
+        "site": {
+          "$ref": "#/$defs/component_freshness"
+        }
+      }
+    },
+    "completeness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "expected_date_count",
+        "terminal_date_count",
+        "failed_date_count",
+        "ledger_all_terminal",
+        "required_artifacts_verified",
+        "components"
+      ],
+      "properties": {
+        "expected_date_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "terminal_date_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "failed_date_count": {
+          "const": 0
+        },
+        "ledger_all_terminal": {
+          "const": true
+        },
+        "required_artifacts_verified": {
+          "const": true
+        },
+        "components": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "alerts",
+            "rainfall",
+            "site"
+          ],
+          "properties": {
+            "alerts": {
+              "const": true
+            },
+            "rainfall": {
+              "const": true
+            },
+            "site": {
+              "const": true
+            }
+          }
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "schemas_valid",
+        "checksums_valid",
+        "cross_references_valid",
+        "checks"
+      ],
+      "properties": {
+        "status": {
+          "const": "passed"
+        },
+        "schemas_valid": {
+          "const": true
+        },
+        "checksums_valid": {
+          "const": true
+        },
+        "cross_references_valid": {
+          "const": true
+        },
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "passed"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "passed": {
+                "const": true
+              }
+            }
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    },
+    "promotion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "eligible",
+        "pointer_path",
+        "conditional_write_required",
+        "expected_previous_release_id",
+        "expected_pointer_etag"
+      ],
+      "properties": {
+        "eligible": {
+          "const": true
+        },
+        "pointer_path": {
+          "const": "/data/releases/current.json"
+        },
+        "conditional_write_required": {
+          "const": true
+        },
+        "expected_previous_release_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/release_id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expected_pointer_etag": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "rollback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "previous_release_id",
+        "retained_release_ids",
+        "previous_release_verified",
+        "rollback_is_pointer_only"
+      ],
+      "properties": {
+        "previous_release_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/release_id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "retained_release_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/release_id"
+          },
+          "uniqueItems": true
+        },
+        "previous_release_verified": {
+          "type": "boolean"
+        },
+        "rollback_is_pointer_only": {
+          "const": true
+        }
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_inventory_sha256",
+        "schema_validated",
+        "release_paths_reconciled",
+        "public_urls_reconciled"
+      ],
+      "properties": {
+        "artifact_inventory_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "schema_validated": {
+          "const": true
+        },
+        "release_paths_reconciled": {
+          "const": true
+        },
+        "public_urls_reconciled": {
+          "const": true
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "release_id": {
+      "type": "string",
+      "pattern": "^araripe-[a-z0-9][a-z0-9.-]*$"
+    },
+    "named_version": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]*$"
+        },
+        "version": {
+          "$ref": "#/$defs/semver"
+        }
+      }
+    },
+    "mapbiomas_version": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "role",
+        "source_sha256"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]*$"
+        },
+        "version": {
+          "$ref": "#/$defs/semver"
+        },
+        "role": {
+          "enum": [
+            "primary_context",
+            "secondary_reference"
+          ]
+        },
+        "source_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "repository_revision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "commit_sha"
+      ],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+        },
+        "commit_sha": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        }
+      }
+    },
+    "workflow_run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "workflow_path",
+        "workflow_blob_sha",
+        "run_id",
+        "run_attempt"
+      ],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+        },
+        "workflow_path": {
+          "type": "string",
+          "pattern": "^\\.github/workflows/.+\\.ya?ml$"
+        },
+        "workflow_blob_sha": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "run_attempt": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "artifact_reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "immutable_path",
+        "sha256"
+      ],
+      "properties": {
+        "immutable_path": {
+          "type": "string",
+          "pattern": "^releases/[a-z0-9][a-z0-9.-]*/.+$"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "component_freshness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "release_action",
+        "status",
+        "assessed_through",
+        "latest_attempt_at",
+        "last_successful_at",
+        "source_release_id"
+      ],
+      "properties": {
+        "release_action": {
+          "enum": [
+            "advanced",
+            "carried_forward"
+          ]
+        },
+        "status": {
+          "enum": [
+            "complete",
+            "complete_with_rejections"
+          ]
+        },
+        "assessed_through": {
+          "type": "string",
+          "format": "date"
+        },
+        "latest_attempt_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "last_successful_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "source_release_id": {
+          "$ref": "#/$defs/release_id"
+        }
+      }
+    },
+    "release_artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_id",
+        "kind",
+        "component",
+        "visibility",
+        "immutable_path",
+        "sha256",
+        "size_bytes",
+        "media_type",
+        "content_encoding",
+        "public_url",
+        "cache_policy"
+      ],
+      "properties": {
+        "artifact_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]*$"
+        },
+        "kind": {
+          "enum": [
+            "monitoring_extent",
+            "raw_observations",
+            "events",
+            "persistence_state",
+            "processing_ledger",
+            "strong_alerts",
+            "full_alerts",
+            "point_index",
+            "timeseries",
+            "mapbiomas_overlay",
+            "rainfall",
+            "aoi_reference",
+            "validation_report"
+          ]
+        },
+        "component": {
+          "enum": [
+            "alerts",
+            "rainfall",
+            "site",
+            "shared"
+          ]
+        },
+        "visibility": {
+          "enum": [
+            "private",
+            "public"
+          ]
+        },
+        "immutable_path": {
+          "type": "string",
+          "pattern": "^releases/[a-z0-9][a-z0-9.-]*/.+$"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "media_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "content_encoding": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "public_url": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^https://observatoriodachapadadoararipe\\.com/data/releases/[a-z0-9][a-z0-9.-]*/.+$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cache_policy": {
+          "enum": [
+            "public_immutable",
+            "private_no_store"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "visibility": {
+                "const": "public"
+              }
+            },
+            "required": [
+              "visibility"
+            ]
+          },
+          "then": {
+            "properties": {
+              "public_url": {
+                "type": "string",
+                "pattern": "^https://observatoriodachapadadoararipe\\.com/data/releases/[a-z0-9][a-z0-9.-]*/.+$"
+              },
+              "cache_policy": {
+                "const": "public_immutable"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "visibility": {
+                "const": "private"
+              }
+            },
+            "required": [
+              "visibility"
+            ]
+          },
+          "then": {
+            "properties": {
+              "public_url": {
+                "type": "null"
+              },
+              "cache_policy": {
+                "const": "private_no_store"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

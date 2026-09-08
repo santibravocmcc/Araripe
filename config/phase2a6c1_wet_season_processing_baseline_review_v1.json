@@ -1,0 +1,71 @@
+{
+  "schema_version": "1.0.0",
+  "extension_id": "araripe-baseline-v2-wet-season-mixed-lineage-review-2026-09-05",
+  "base_registry_id": "araripe-reviewed-processing-baselines-v1",
+  "base_reviewed_values": ["05.11", "05.12"],
+  "reviewed_by": "project_owner",
+  "review_date": "2026-09-05",
+  "review_scope": "Sentinel-2 L2A processing baselines admitted ONLY for the wet-season source regime wet-season-mixed-lineage-v1, which owns calendar months 1, 2, 3 and 4 of the accepted baseline 2.0.0 source years. These values remain unavailable_fail_closed in the dry-season regime dry-season-collection1-v1, which keeps the Collection-1 restriction of the 2026-09-05 review unchanged.",
+  "selection_criterion": "Admit, for the wet season only, every processing baseline actually observed there under the accepted source years and the regime scene cloud filter of 60. The admission is scoped to the months that cannot otherwise satisfy the accepted extent-coverage contract, and is recorded as a regime with a declared provenance state rather than as a silent widening.",
+  "review_basis_summary": [
+    "Necessity, measured not assumed. With the Collection-1 restriction the wet season reaches extent coverage 0.4459, 0.8325, 0.9710 and 0.9460 against an accepted floor of 0.99. Relaxing the cloud filter alone tops out at 0.8314 in January even unfiltered, and adding the quiet-ENSO years 2016, 2018 and 2020 moves January by 0.0002 because ESA has barely reprocessed the wet season of 2016-2022. No option preserving the Collection-1 restriction clears the floor.",
+    "Scoped, not global. The dry season keeps the Collection-1 lineage untouched: eight of twelve months are unaffected, and their rasters are unchanged. The reproducibility compromise is confined to the four months that require it.",
+    "The alternative was worse. Admitting the strong El Nino years 2023 and 2024 also clears the floor, but 65% of the January baseline would then come from drought years, biasing the wet-season normal toward dryness and the detector toward under-detecting loss. That is a permanent scientific distortion; this one is temporary and reversible.",
+    "The compromise is bounded and self-retiring. ESA is actively reprocessing these very months - January 2019 stands at 7 of 25 scenes, April 2019 at 1 of 14, while August 2021 is already at 65 of 78. The admitted wet-season products are precisely those not yet reached. The regime therefore carries the provenance state mixed_lineage_pending_esa_reprocessing and a retirement condition, so a future package can rebuild the wet season on the Collection-1 lineage and retire the regime against a precise, machine-readable target rather than a prose reminder.",
+    "Accepted residual risk. The rejected values carry the weakest SCL generation, and the accepted mask is SCL-only, so SCL is the whole cloud screening. A cloud-leakage test found no systematic contamination in NDMI or NBR, with the sign inconsistent and reversed in March, but did find a positive EVI2 offset growing with cloud - +0.027 at 40-60% and +0.043 at 60-80% against a clean January dispersion of 0.087. The regime cloud filter is therefore set at 60 rather than 80 or unfiltered, taking the coverage while holding that measured bias at its smaller value. The test covered 12-25% of the extent in January and 74.5% in March and does not fully separate contamination from the correlation between cloud and rainfall; it is recorded as partial evidence, not a clearance.",
+    "Contribution depth improves but is not resolved by decree. January's below-three-contribution tail falls from 99.2% to 21.7%, still the worst month of the twelve. No minimum-depth threshold is imposed here; that remains an owner and Phase 5 decision, and the manifest continues to measure and report."
+  ],
+  "added_values": [
+    {
+      "value": "02.11",
+      "review_basis": "Pre-Collection-1 operational product, admitted only for the wet season because the Collection-1 lineage does not yet cover these months and the accepted coverage contract cannot otherwise be met. Not yet reprocessed by ESA, which is the reason the regime declares a pending-reprocessing provenance state and a retirement condition.",
+      "observed_in": "Package 2A.6C.1 wet-season measurement 2026-09-05: 134 scenes across 40 datatakes, sensing year 2019, months 1-4, under the regime cloud filter of 60; enumerated from docs/implementation/PHASE_2A6C_PHASE1_BASELINE_GATE_2026-09-05.json"
+    },
+    {
+      "value": "02.14",
+      "review_basis": "Pre-Collection-1 operational product, admitted only for the wet season on the same necessity and with the same declared provenance state and retirement condition as 02.11.",
+      "observed_in": "Package 2A.6C.1 wet-season measurement 2026-09-05: 75 scenes across 21 datatakes, sensing year 2021, months 1-3, under the regime cloud filter of 60"
+    },
+    {
+      "value": "03.00",
+      "review_basis": "Pre-Collection-1 operational product of a later generation than the 02.xx family, admitted only for the wet season on the same necessity; it carries the whole of April 2021 in this regime.",
+      "observed_in": "Package 2A.6C.1 wet-season measurement 2026-09-05: 58 scenes across 11 datatakes, sensing year 2021, month 4, under the regime cloud filter of 60"
+    },
+    {
+      "value": "03.01",
+      "review_basis": "Pre-Collection-1 operational product, admitted only for the wet season on the same necessity and with the same declared provenance state and retirement condition.",
+      "observed_in": "Package 2A.6C.1 wet-season measurement 2026-09-05: 22 scenes across 6 datatakes, sensing year 2022, month 1, under the regime cloud filter of 60"
+    },
+    {
+      "value": "04.00",
+      "review_basis": "Pre-Collection-1 operational product of the generation immediately preceding Collection-1, admitted only for the wet season on the same necessity; it is the most widely represented rejected value in this regime.",
+      "observed_in": "Package 2A.6C.1 wet-season measurement 2026-09-05: 72 scenes across 26 datatakes, sensing year 2022, months 1-4, under the regime cloud filter of 60"
+    }
+  ],
+  "not_added": [
+    {
+      "value": "02.12",
+      "reason": "not observed in months 1-4 of the accepted source years; it appears only from mid-2019 onward and therefore stays unavailable_fail_closed in both regimes"
+    },
+    {
+      "value": "02.13",
+      "reason": "not observed in months 1-4 of the accepted source years; it appears only from mid-2019 onward and therefore stays unavailable_fail_closed in both regimes"
+    }
+  ],
+  "regime_scope_binding": {
+    "regime_id": "wet-season-mixed-lineage-v1",
+    "months": [1, 2, 3, 4],
+    "scene_cloud_filter_percent": 60,
+    "amendment": "config/phase2a6c1_seasonal_source_regime_amendment_v1.json",
+    "values_remain_unavailable_in_regime": "dry-season-collection1-v1"
+  },
+  "unchanged_by_this_review": [
+    "the accepted mask scl-explicit-allowlist-v2 and its fail-closed policy",
+    "the accepted composition coverage-ranked-first-valid-v1 and its datatake scope",
+    "the accepted source-year set 2017, 2019, 2021, 2022, 2025",
+    "the platform policy S2A/S2B/S2C",
+    "the accepted minimum extent coverage fraction of 0.99, which is not lowered",
+    "the dry-season Collection-1 restriction recorded on 2026-09-05",
+    "the immutability of baseline 1.0.0"
+  ]
+}

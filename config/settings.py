@@ -47,7 +47,10 @@ HLS_SENTINEL_COLLECTION = "HLSS30.v2.0"
 
 # ─── Processing parameters ───────────────────────────────────────────────────
 MAX_CLOUD_COVER = 20  # percent
-SEARCH_DAYS_BACK = 16  # days to look back for recent imagery
+# Accepted Phase 2A.1 incremental contract: scheduled Monday/Thursday runs
+# overlap by five days. Historical work uses explicit start/end dates and an
+# isolated chronological rebuild state.
+SEARCH_DAYS_BACK = 5
 MAX_ITEMS_PER_SEARCH = 50
 CHUNK_SIZE = 512  # pixels per side for windowed processing
 TARGET_CRS = "EPSG:32724"  # UTM zone 24S (covers Chapada do Araripe)
@@ -55,9 +58,28 @@ SENTINEL2_RESOLUTION = 10  # meters (native for B2/B3/B4/B8)
 SENTINEL2_20M_RESOLUTION = 20  # meters (B5/B6/B7/B8A/B11/B12)
 LANDSAT_RESOLUTION = 30  # meters
 
+# ─── Phase 1/2A deterministic scientific identity ───────────────────────────
+MONITORING_EXTENT_ID = "araripe-implementation-rectangle-v1"
+DETECTION_ALGORITHM_VERSION = "1.0.0"
+# Accepted Phase 2A.2 generation. Its exact 72-object inventory, checksums,
+# grids, coverage, ranges, source configuration, and known provenance gaps are
+# frozen in the authoritative manifest.
+BASELINE_VERSION = "1.0.0"
+BASELINE_MANIFEST_PATH = ROOT_DIR / "config" / "baseline_manifest_v1.json"
+GEE_COLLECTION_ID = "COPERNICUS/S2_SR_HARMONIZED"
+GEE_COMPOSITE_METHOD_ID = "daily_mosaic-v1"
+STREAMING_COMPOSITE_METHOD_ID = "same-date-vector-union-v1"
+
 # ─── Baseline parameters ─────────────────────────────────────────────────────
-BASELINE_YEARS = 5  # number of years of history for baseline computation
+BASELINE_SOURCE_YEARS = [2017, 2019, 2021, 2022, 2025]
+BASELINE_YEARS = len(BASELINE_SOURCE_YEARS)
 BASELINE_MONTHS = list(range(1, 13))  # all 12 months
+BASELINE_RESOLUTION = 20  # metres
+BASELINE_MAX_CLOUD_COVER = 40  # scene metadata percentage
+BASELINE_SCL_CLEAR_CLASSES = [2, 4, 5, 6, 7, 11]
+# The accepted v1 rasters were generated over this rounded rectangle, which
+# fully covers the exact approved monitoring extent recorded in the manifest.
+BASELINE_GENERATION_BOUNDS = [-40.90, -7.85, -38.95, -6.95]
 
 # ─── Reflectance scaling (COUPLED with the baseline scale — Task 1) ───────────
 # When True, load_band converts DN → surface reflectance in [0,1] (per-scene

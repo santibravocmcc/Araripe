@@ -1,293 +1,1018 @@
-# Roadmap — Observatório da Chapada do Araripe
+# Technical Remediation Roadmap — Observatório da Chapada do Araripe
 
-Tracked, explicitly-not-yet-implemented items. These are documented here so the
-codebase does not overstate its current capabilities.
+**Version:** 1.2
+**Decision baseline:** 2026-08-11
+**Planning branch:** `codex/technical-review-roadmap`
+**Primary evidence:** `TECHNICAL_REVIEW.md` and `TECHNICAL_REVIEW_SUMMARY.md`
 
-> **This file is not the execution plan.** A different document with the same
-> name — `ROADMAP.md` on the planning branch (~980 lines, currently
-> `claude/phase2a6d-mapbiomas`) — is the canonical cross-repository remediation
-> plan: the decision ledger, the numbered topic table with approval status, and
-> Phases 0-6 with their packages and exit gates. Read it with
-> `git show <planning-branch>:ROADMAP.md`.
+> ## Estado em 2026-09-08 — leia antes das linhas de status abaixo
 >
-> Planning against *this* file duplicates approved work. On 2026-09-07 a
-> session proposed a new investigation into persistence recounting that Topic 2
-> had already approved, Package 2A.1 had already implemented (2026-07-28), and
-> Package 2A.6 had already tested — none of which is visible from `main`.
+> **Este arquivo passou a viver na `main` em 2026-09-08**, quando o Package
+> 2A.6 chegou. Antes disso ele existia só na branch de planejamento, e a `main`
+> tinha outro documento com este nome — o que já causou trabalho duplicado. O
+> conteúdo que estava aqui na `main` foi preservado em
+> [`docs/implementation/PENDING_CAPABILITIES.md`](docs/implementation/PENDING_CAPABILITIES.md).
+> **Não existe mais "o outro ROADMAP".**
+>
+> **A linha de base de decisão deste documento é 2026-08-11, e as linhas
+> "Implementation status" abaixo NÃO foram reescritas.** Elas descrevem o
+> estado daquela data. O que fechou desde então, com registro:
+>
+> | fase / package | estado | registro |
+> | --- | --- | --- |
+> | Phase 2B.0 | fechado 2026-08-13 | `docs/implementation/PHASE_2B0_2026-08-11.md` |
+> | Package 2B.1 | fechado 2026-09-07 | validado em produção |
+> | Packages 2B.2A/2B/2C | fechados 2026-09-07 | `docs/operations/GREEN_PROOFS_2026-09-07.md` |
+> | Package 2B.3 | fechado 2026-09-07 | `docs/operations/GREEN_RETENTION_AND_MIGRATION.md` |
+> | Packages 2B.4A/4B | fechados 2026-09-08 | `docs/implementation/PHASE_2B4B_2026-09-08.md` |
+> | **Exit gate P2B** | **FECHADO 2026-09-08** | `docs/implementation/PHASE_2B_GATE_2026-09-08.md` |
+> | **Phase 2B inteira** | **encerrada** — não há 2B.5 | idem |
+> | Package 2A.6 | fechado; **este landing** | `docs/implementation/` desta data |
+>
+> **Próxima frente: Phase 3.** O Package 2A.6 era a pré-condição dela, e é o
+> que este landing entrega.
+>
+> Duas decisões do §8 deixaram de estar abertas, e uma ganhou portão:
+> a **data de corte do replay** tem recomendação medida em
+> `docs/operations/PHASE_3_INPUTS_2026-09-08.md` (30/08/2026, e a cota de GEE
+> não limita); os **revisores qualificados** existem — o dono os identificou; e
+> a **Phase 5 não começa sem revisão do dono**, porque o objetivo passou a ser
+> uma publicação científica — `docs/operations/PACKAGE_P5_PROTOCOL_PROMPT.md`.
+> O **acompanhamento de campo opcional** ganhou um instrumento candidato (drone)
+> e uma armadilha registrada: voo escolhido por dificuldade é viés de seleção.
 
-## 1. BFAST (real structural-break detection)
+---
 
-**Status:** roadmap. **Not implemented.**
+## 1. Purpose and status
 
-The repo contains a *simplified* harmonic-residual check
-(`src/timeseries/seasonal.py::harmonic_fit` + `detect_breakpoints`): it fits a
-2-harmonic Fourier model and flags observations exceeding 3× RMSE on 3
-consecutive dates. This is a BFAST-*Monitor-style* heuristic on 1-D regional
-series only, and it is **not connected to the pixel/alert detection pipeline or
-the dashboard**. It must not be presented as BFAST.
+This roadmap consolidates the interactive decisions for Topics 1–34 and the
+implementation evidence through 2026-08-11. Phases 0 and 1 and the technical
+evidence packages 2A.1–2A.5 are complete. The candidate-generation policy is
+now recorded in `config/phase2a_candidate_generation_decisions_v2.json`; its
+implementation remains Package 2A.6 before replay.
 
-A real implementation would require:
-- Porting or depending on `bfast` / `pybfast` (or `bfast` in R via `rpy2`), or
-  implementing the OLS-MOSUM / recursive-residual structural-break tests with
-  confidence intervals.
-- Proper trend + seasonal decomposition (not just a harmonic residual band).
-- A **longer, denser historical time series** per pixel/region. Task 1 (the
-  multi-year baseline rebuild via COG streaming, `scripts/build_baseline.py
-  --year-set …`) is the first step toward assembling that history; BFAST would
-  additionally need the full per-date stack retained, not just monthly
-  mean/std composites.
-- A decision on spatial scope (per-pixel BFAST over the AOI is expensive;
-  region- or parcel-aggregated series are more tractable).
+One additive private bucket, `araripe-v2-staging`, was created for isolated
+green object testing. The production workflows, `araripe-cogs`, production
+Worker, routes, DNS, site, canonical state, and public products remain
+unchanged. See `docs/implementation/PHASE_2B0_2026-08-11.md`.
 
-## 2. Sentinel-1 SAR (wet-season cloud penetration)
+The original review grouped the work into 22 topics. Additional security,
+scientific, workspace, and agent-configuration decisions expanded the final
+ledger to 34 numbered topics, with Topic 21 split into 21A–21C.
 
-**Status:** roadmap. **Not implemented.** CDSE/Copernicus dead config was
-removed (it was never consumed; see AUDITORIA_TECNICA.md Task 7.3).
+### 1.1 Non-negotiable decisions
 
-SAR is the correct long-term answer to the Nov–Apr cloud gaps that currently
-drive optical false positives, but it is a **separate project**, not a
-credential toggle:
-- Requires its own preprocessing chain: GRD radiometric calibration, speckle
-  filtering, terrain (RTC) correction.
-- Requires SAR-specific change detection (backscatter/coherence change); it
-  cannot reuse the NDMI/NBR/EVI2 optical thresholds.
-- Access: `sentinel-1-grd` / `sentinel-1-rtc` are available on Planetary
-  Computer and CDSE; CDSE asset download needs OAuth2.
+- Routine monitoring, rainfall, time-series, and public-data publication must
+  remain end-to-end automated. They must not require a routine PR, merge, or
+  human approval.
+- `https://observatoriodachapadadoararipe.com` remains the final public domain.
+  Data should preferably be presented through a same-origin route such as
+  `/data/...`; an R2 hostname is infrastructure, not the advertised address.
+- The monitoring product covers the APA **and its surroundings**. This roadmap
+  does not narrow processing to the APA polygon.
+- Every release must identify and checksum its actual wider monitoring extent.
+  A later scientific review may replace the current implementation-derived
+  rectangle, but it cannot be changed silently.
+- Raw, scientifically valid detections are retained. MapBiomas may annotate
+  them and may help form a validated strong subset, but failing a MapBiomas
+  filter must not erase or invalidate a raw detection.
+- The present release and 2026 products must be preserved as immutable audit
+  and rollback material. “Fresh start” means a new canonical generation, not
+  deletion of the old one.
+- Critical regression tests accompany the corrections they protect.
+  Comprehensive cross-repository CI and branch hardening are deliberately
+  scheduled near the end.
+- Accessibility work is limited to behavior-preserving improvements. Any
+  proposed accessibility change with a material trade-off must be deferred for
+  separate approval.
+- The backend and site remain independent Git repositories even when placed
+  under one common local workspace.
+- The current production system is the blue environment and remains unchanged
+  through Phases 2B–5. Green workflows, credentials, buckets, Worker, and state
+  are separate; only Phase 6 may switch the final route/pointer.
+- Credentials never enter Git or agent chat. Claude may receive only an R2 S3
+  object credential scoped to `araripe-v2-staging`; Cloudflare control-plane or
+  production work requires the connected capability and the safe-handoff gate.
 
-## 3. Per-sensor baselines for Landsat / HLS
+### 1.2 Token-estimate interpretation
 
-**Status:** partial. Landsat and NASA HLS are now wired as optional extra
-observation sources (`run_detection.py --extra-sources landsat,hls`) to raise
-observation density and strengthen the temporal-persistence filter. However
-they are currently compared against the **Sentinel-2 (20 m) baselines** via
-nearest-neighbour grid snapping — a cross-sensor approximation. Ideally each
-sensor gets its own monthly baseline built from its own archive.
+Token ranges are planning estimates for analysis, implementation, review,
+testing, and handoff. They:
 
-## 4. Independent omission-error reference
+- exclude GitHub, GEE, R2, network-transfer, and local raster-processing time;
+- exclude qualified human interpretation time for scientific validation;
+- overlap when topics share schemas, tests, workflows, or migration work;
+- must not be summed as if every topic were implemented independently;
+- should be revised at the start of each execution package after inspecting the
+  then-current branches and live configuration.
 
-**Status:** infrastructure only. `scripts/sample_alerts_for_validation.py`
-supports **commission** (false-positive) estimation via stratified sampling +
-human visual interpretation. **Omission** (missed clearings) needs an
-independent reference clearing layer (e.g. PRODES/DETER or manually digitized
-clearings) that is *not* derived from these alerts. Assembling that layer and
-the visual interpretation itself are human steps (see AUDITORIA_TECNICA.md
-Task 4).
+Intensity bands used below:
 
-## 5. Package 2B.0 — isolated green foundation and operating policy
+| Intensity | Approximate implementation tokens |
+|---|---:|
+| Low | under 10,000 |
+| Medium | 8,000–18,000 |
+| High | 15,000–35,000 |
+| Very High | 30,000–75,000+ |
 
-**Status:** closed 2026-08-13 (PR #10, merge `8daa181`; broker audit run
-`31719834876`; green proofs `31720230963`, `31720226492`, `31720228888`;
-approved mutation run `31724415945`). Production (blue) remains frozen: the
-scheduled workflows `detect_gee.yml` and `update_data.yml`, Worker
-`observatorio-chapada`, bucket `araripe-cogs`, the final public domain, DNS,
-and routes stay unchanged until the separately approved cutover. The complete
-remediation plan (34 topics, Phases 0–7) is maintained on the planning branch
-`codex/technical-review-roadmap`; this section records only what is installed
-on `main`.
+---
 
-Green components are additive and isolated: the private bucket
-`araripe-v2-staging`, the unrouted Worker `observatorio-chapada-v2-staging`,
-manual-only v2 workflows in distinct concurrency lanes, and the restricted
-Cloudflare green-control broker. The wildcard non-production site deploy
-command is temporarily inert (`exit 0`); a reviewed green site deploy path is
-future Package 2B.4 work. Package 2A.6 (candidate-generation science) is open
-and not started; it proceeds as Packages 2A.6A–2A.6D on the isolated science
-base branch. See `docs/implementation/PHASE_2B0_2026-08-11.md`,
-`docs/operations/CLOUDFLARE_GREEN_AFTER_STATE_2026-08-13.md`,
-`docs/operations/RESTRICTED_CLOUDFLARE_BROKER.md`, and
-`docs/operations/GREEN_CONCURRENCY_LANES.md`.
+## 2. Decision ledger
 
-Risk-based approval policy:
+| Topic | Decision | Final scope and constraints | Preliminary estimate |
+|---|---|---|---:|
+| 1. Public interpretation warning | **Rejected** | No temporary warning because the system is expected to be corrected soon. Reconsider only if correction is materially delayed. | 5k–10k if revived |
+| 2. Idempotent persistence | **Approved, modified** | Stable observation keys; duplicate replay is a no-op; tests for retries and overlap. Reduce scheduled lookback from 16 to **5 days**. Backfills use explicit start/end dates. | 15k–25k |
+| 3. Restrict processing to the APA polygon | **Rejected** | Surrounding areas are intentionally monitored. The residual task is to formally define, name, version, and document the wider extent. | 8k–15k for residual review |
+| 4. Scene-validity guard | **Approved** | Exclude nodata, cloud-masked, and invalid pixels from numerator and denominator; retain the 30% threshold initially; record coverage and rejection reasons. | 8k–15k |
+| 5. Fail-safe R2 state loading | **Approved** | Empty state only for an explicit missing object; fail closed on authorization, network, parse, schema, or service failures; never upload replacement state after a failed load. | 10k–18k |
+| 6. Serialize workflows and replace timing assumptions | **Approved, modified** | Audit **all workflows in all involved repositories before editing**; use one state-mutating concurrency group; trigger site refresh from release readiness, not a fixed clock delay. | 15k–25k |
+| 7. Isolate rainfall from alert publication | **Approved** | Independent jobs/statuses and retries; different freshness timestamps; one product may publish without falsely claiming that the other succeeded. | 8k–14k |
+| 8. Atomic, versioned publication and rollback | **Approved** | Immutable release prefixes, validation before promotion, conditional pointer updates, zero-alert representation, retained rollback releases. | 30k–50k |
+| 9. Authoritative release manifest | **Approved** | Versioned schema containing commits, workflow runs, algorithms, input checksums, statuses for every date, artifacts, freshness, validation, and rollback metadata. | 18k–30k |
+| 10. Production R2 delivery contract | **Approved, access condition satisfied** | Implement through the connected Cloudflare capability; preserve the final public domain; prefer same-origin public URLs; validate CORS, downloads, types, and browser full mode. | 18k–30k |
+| 11. Separate public and private R2 storage | **Approved** | Private processing/source/state/baseline storage; public bucket contains only approved release artifacts; staged copy-and-verify migration; no initial deletion. | 30k–50k |
+| 12. R2 lifecycle, caching, transfer, and cost controls | **Approved** | Conservative retention; reviewed deletion dry run; changed-object transfers; suitable compression and caching; rollback retention; measured rather than “zero-cost” wording. | 15k–25k |
+| 13. Full Cloudflare control-plane audit | **Approved, prerequisite** | Read-only inventory before Topics 8 and 10–12; sanitized configuration map and rollback checklist; verify again after migration. | 8k–15k |
+| 14. Remove large generated alerts from site Git | **Approved** | Serve generated products through the release route; retain small schemas/fixtures; prevent reintroduction; no Git-history rewrite without separate approval. | 18k–30k |
+| 15. Reproducible Worker/site deployment | **Approved** | Pin Wrangler; codify local/build/deploy/health/rollback commands and non-secret bindings; record source commit/release; reconcile deployment documentation. | 10k–18k |
+| 16. Lock dependencies and GitHub Actions | **Approved** | Reconcile Python environments, retain clean Node lockfile installs, pin Actions to reviewed SHAs, test clean environments, and establish update cadence. | 18k–30k |
+| 17. PR CI and regression testing | **Approved, final-phase sequencing** | Essential tests ship with each fix. Comprehensive CI, browser suite, branch protection, build-size checks, and deployment checks come near the end. | 25k–45k total; less after embedded tests |
+| 18. Stop production bots pushing generated data to `main` | **Approved, modified** | Routine operational publication remains fully automatic through R2. PRs are for code/configuration, not every data refresh. | 8k–16k |
+| 19. Secrets, variables, and configuration contract | **Approved** | Inventory and least-privilege scope across repositories, Workers, and R2; step-level exposure; safe preflights; coordinated rotation; unattended operation retained. | 10k–18k |
+| 20. Observability, health, and freshness | **Approved, sequenced** | Implement after Topics 8–9; structured release/run logs, summaries, safe health status, post-publication checks, separate freshness clocks, and notifications. | 15k–25k |
+| 21A. AI Worker security, privacy, and resilience | **Deferred** | Public-debug removal, provider-safe errors, global timeout, circuit breaker, rate-limit failure handling, provider/privacy notice, and metrics remain future work. | 15k–25k |
+| 21B. Browser security hardening | **Deferred** | CSP/report-only rollout, framing and permissions headers, and local-file trail-name DOM injection correction remain future work. | 10k–18k |
+| 21C. Accessibility and mobile usability | **Approved, constrained** | Schedule after core science/publication; preserve ordinary mouse, touch, desktop, map, filter, and data behavior; defer changes with trade-offs. | 15k–25k |
+| 22. Deterministic historical rebuild | **Approved, expanded** | Reprocess all available 2026 imagery after scientific corrections; explicit date batches; new state from empty chronology; preserve old release; atomic promotion; resume five-day schedule from rebuilt watermark. | 45k–75k plus compute time |
+| 23. Independent scientific accuracy assessment | **Approved, modified** | Required desktop-validation pilot of about 60 locations; full sample chosen after pilot; independent imagery/source comparisons and qualified human labels; field checks optional for selected uncertain cases. | 20k–35k pilot; 35k–60k full |
+| 24. Baseline and time-series QA | **Approved; rebuild complete** | The audit is complete. Packages 2A.6C/2A.6C.1 rebuilt the 72-object baseline as version `2.0.0` with the selected v2 SCL mask under seasonal source regimes; manifest, checksums, grid and coverage revalidate and baseline `1.0.0` is retained unchanged as audit material. Runtime activation belongs to the replay packages. | done |
+| 25. Drought adjustment | **Resolved: disabled** | `drought-disabled-v1` is selected for the 2026 candidate. A future CHIRPS v3 spatial context may be tested in Phase 5 but cannot suppress raw detections or activate without qualified evidence. | 8k–15k guard/context; more if revived |
+| 26. Cloud mask and daily composition | **Resolved for candidate implementation** | Implement provisional `scl-explicit-allowlist-v2` and coverage-ranked first-valid composition per physical datatake. Record SCL 7 and all processing baselines; rebuild baseline identically. Phase 5 validates canonical suitability. | 25k–45k plus baseline compute |
+| 27. Versioned MapBiomas 2024 migration | **Resolved with provenance correction** | Collection 3 beta 10 m remains primary context under exact v2 mappings/pixel rules. The direct 30 m GeoTIFF is Collection 10, not 10.1; Package 2A.6 performs a manifest-bound true 10.1 export and regenerates every affected v2 evidence/review artifact. Never erase raw alerts. | 22k–38k remaining |
+| 28. Fire/mechanical label validation | **Resolved for internal candidate; public deferred to validation** | Retain quantitative metrics and use the 60% dominant-share aggregator internally. Causal inference and public labels stay disabled until Phase 5; never affect alert existence/strong membership. | 18k–30k validation |
+| 29. Stable observation and event identities | **Approved; coherent v2 family required** | Implement v2 acquisition/observation/event/lineage/persistence/ledger contracts. Preserve v1 only for audit and conceptual lineage rules. Count persistence at most once per event/date even when multiple datatakes are retained. | 22k–38k remaining |
+| 30. Public terminology and provenance | **Approved** | Correct confidence/persistence/cause/area language, MapBiomas context, sources, release identity, and freshness; preserve site design and final domain. | 14k–24k |
+| 31. Publication completeness gates | **Approved** | Record one terminal row per manifest-bound expected acquisition plus a reconciled daily summary; distinguish zero alerts, low coverage, rejection, download failure, missing inputs, and processing failure. Incomplete runs never replace the last complete release. | 22k–36k |
+| 32. Documentation, attribution, and repository hygiene | **Approved** | Data-source register, licence boundaries, MapBiomas attribution, current domain/method/source metadata, active/legacy/obsolete classification, secret/large-data/generated-document hygiene. | 14k–24k |
+| 33. Common workspace and repository consolidation | **Approved, priority prerequisite** | Move `Araripe` under the common parent; retain two independent repositories; inventory/classify other folders; secure credential-looking files first; update paths and verify behavior. | 30k–50k |
+| 34. Cross-tool operating contract and staged skills | **Approved, active** | Shared instructions are in place. `araripe-safe-handoff` is versioned for Codex and Claude in 2B.0; later release/science skills still wait for stable workflows. No permanent agent fleet. | 2k–6k remaining handoff verification; 10k–18k per later skill |
 
-- Autonomous (no repeated approval): local development and alternative local
-  branches; object operations in `araripe-v2-staging`; manual green workflows
-  holding only the staging-scoped identity; read-only verifications; commits,
-  branch pushes, and opening pull requests; merging a minimal, additive,
-  inert pull request proven not to change blue runtime files.
-- Explicit human approval: any action with authority or potential effect on
-  production — blue workflows, the production Worker, `araripe-cogs`, the
-  final public domain, DNS, routes, canonical pointers, the public site,
-  cutover steps, and any Cloudflare token with account-level edit permission.
-- GitHub Environment `v2-staging` (bucket-scoped identity) needs no reviewer;
-  `cloudflare-green-control` keeps a required human reviewer because its
-  token can edit at account level. No agent approves its own Environment run
-  or bypasses a pending approval, failure, or broker refusal; a missing
-  broker operation means stop and hand off, never Wrangler, `curl`, direct
-  API, or a different credential.
+---
 
-## 6. Time-series publication lane (2026-08-17 incident)
+## 3. Dependency structure
 
-**Status:** fixed 2026-08-17 on branch `fix/timeseries-pr-lane`; one manual
-repository setting is still required (below).
+```mermaid
+flowchart TD
+    A["Phase 0: Secure and consolidate workspace"]
+    B["Phase 1: Inventory live system and define contracts"]
+    C["Phase 2A.1–2A.5: Evidence and decisions"]
+    C2["Phase 2A.6: Implement selected science and rebuild baseline"]
+    D0["Phase 2B.0: Isolated green foundation"]
+    D["Phase 2B.1–2B.4: Atomic publication and delivery"]
+    E["Phase 3: Freeze replay contract and rehearse rollback"]
+    F["Phase 4: Reprocess all 2026 data into staging"]
+    G["Phase 5: Independent validation and release QA"]
+    H["Phase 6: Correct public products and atomically promote"]
+    I["Phase 7: Final CI, non-breaking accessibility, reusable skills"]
 
-On 2026-08-13 the repository ruleset "Protect main — pull requests only"
-(id 20803594, empty bypass list) was installed. The first scheduled run after
-it — `detect_gee.yml` run `32004421793`, 2026-08-17 — completed detection and
-every R2 write, then failed with `GH013` on the final `git push`:
-`github-actions[bot]` can no longer push to `main`. Nothing was lost (alerts
-for 2026-08-02/05/10/15 reached `araripe-cogs`, and the persistence state was
-saved), but the `data/timeseries/` commit was rejected, so the published series
-stalled at 2026-08-10 and the job reported failure.
-
-Decision: keep `main` strictly pull-request-only and give automation its own PR
-lane. `detect_gee.yml` and `update_data.yml` now commit `data/timeseries/` on a
-throwaway branch `auto/timeseries-<run id>`, open a pull request, and
-squash-merge it — the ruleset requires zero approvals, so the `GITHUB_TOKEN`
-can merge its own PR. The step refuses to open a PR that stages anything
-outside `data/timeseries/`, and no new credential was introduced: the token
-only gains `pull-requests: write`.
-
-Required manual step (human, once): enable Settings > Actions > General >
-"Allow GitHub Actions to create and approve pull requests". Without it the
-`GITHUB_TOKEN` cannot open the PR and the lane fails. Granting it is
-inconsequential for review integrity here because the ruleset requires zero
-approving reviews anyway.
-
-Rejected alternatives: a GitHub App token or deploy key on the ruleset bypass
-list (a new credential whose only purpose is to restore direct writes to
-`main`; the `GITHUB_TOKEN` itself cannot be a bypass actor), and
-`continue-on-error` on the step (green runs with a silently frozen series).
-
-Recovery of the missed date is automatic: time-series writes are
-`INSERT OR REPLACE` keyed by `UNIQUE(date, index_name, region)` and the
-detection window on `main` is `SEARCH_DAYS_BACK = 16`, so the first successful
-run before ~2026-08-31 recomputes 2026-08-15 and closes the gap.
-
-Structural follow-up (not scheduled): move `timeseries.db` out of git into R2
-beside the alerts so no automated write to `main` is needed at all. That moves
-the canonical DB and drops its git history, so it belongs in a reviewed
-package, not in this fix.
-
-Schedule spacing, and why spacing alone was the wrong fix (Package 2B.1):
-
-The site refresh (`../site/.github/workflows/update-data.yml`) was to move from
-Mon/Thu 07:30 UTC to Tue/Fri 06:00 UTC — a full 24 h after the backend run
-instead of 90 min. On 2026-08-17 GitHub started the backend cron 67 min late,
-which is enough to make the site read a `main` whose time-series PR has not
-landed yet.
-
-**Correction (2026-09-06):** the "Pending" note this paragraph used to carry
-was already stale. The change was merged into the site's `main` as PR #13
-(`01564f6`), and the Earthdata transient-skip fix as PR #14 (`b9b8120`), both
-by squash merge — which is why the source branches `fix/site-cron-24h` and
-`fix/earthdata-transient-skip` still read as unmerged by ancestry and why a
-reader checking them, or the older `codex/workspace-consolidation` branch,
-sees the pre-#13 cron. The site has been running Tue/Fri 06:00 UTC since. The
-workspace `AGENTS.md` was correct; this file was not.
-
-The episode is worth keeping because it is the same failure mode one level up:
-a claim about someone else's state that nothing re-checks goes stale silently.
-That is exactly why a clock offset cannot be the correctness mechanism — an
-*assumption* about another system's completion fails quietly when it stops
-holding, in the pipeline and in the documentation alike.
-
-Package 2B.1 therefore keeps the schedule and replaces what it was carrying:
-
-- The 24 h gap stays (`0 6 * * 2,5`), now as defence in depth — a comfortable
-  margin — rather than the thing correctness rests on.
-- The correctness mechanism is a **validated release signal**. Every successful
-  backend run writes `data/timeseries/RELEASE.json`
-  (`scripts/write_release_signal.py`) inside the directory the publish step
-  already guards, so it is squash-merged in the same commit as `timeseries.db`
-  and is atomic with it by construction. It records the run identity, the
-  publication time, the latest observation date, and the DB's SHA-256.
-  Before publishing, the site validates that signal
-  (`../site/scripts/check_backend_release.py`): schema, checksum against the
-  `timeseries.db` it actually holds, and publication age. A stale, missing,
-  mismatched or unparseable signal stops the site refresh instead of quietly
-  republishing an old series.
-- The signal is rewritten on every successful run, including runs where the
-  series did not change, so "the backend is healthy but quiet" stays
-  distinguishable from "the backend has been broken for a week".
-
-Package 2B.2 owns the manifest and ledger and absorbs this signal's role; the
-signal is deliberately minimal so the two do not become competing definitions.
-
-### 6.1 The PR lane worked but still reported failure (fixed 2026-08-24)
-
-The runs of 2026-08-20 (`32341699596`) and 2026-08-24 (`32700387452`) both
-**published successfully** — PRs #13 and #14 are squash-merged on `main` and the
-series is current — and both reported failure. The log ends:
-
-```
-opened  https://github.com/santibravocmcc/Araripe/pull/14
-merged  https://github.com/santibravocmcc/Araripe/pull/14
-##[error]Process completed with exit code 1.
+    A --> B
+    B --> C
+    C --> C2
+    B --> D0
+    D0 --> D
+    C2 --> E
+    D --> E
+    E --> F
+    F --> G
+    G --> H
+    H --> I
 ```
 
-Root cause: three ingredients, none sufficient alone.
+Scientific corrections and publication infrastructure may proceed in separate
+bounded branches after Phase 1, but both must pass their gates before the
+expensive 2026 replay begins.
 
-1. `conda-incubator/setup-miniconda` deletes `~/.bashrc`, `~/.bash_profile` and
-   `~/.profile`, then writes a `~/.profile` ending in `set -eo pipefail`. Every
-   `bash -l {0}` step in the job therefore inherits **errexit**.
-2. A non-interactive login shell sources `~/.bash_logout` **only when the `exit`
-   builtin runs explicitly** (bash manual). Steps that end at EOF never do.
-3. The runner's `~/.bash_logout` runs `/usr/bin/clear_console -q` when
-   `SHLVL = 1` (it is, and the binary exists), which fails with no TTY. Under
-   errexit that failure replaces the requested status, so `exit 0` yields 1.
+---
 
-Only the publish step ends with an explicit `exit 0`, which is exactly why it
-was the only step that failed while the whole pipeline succeeded.
+## 4. Execution roadmap
 
-Verified on real runners (throwaway branch `probe/login-shell-exit`, deleted):
-`bash -l` + `exit 0` fails **only** with conda's profile present; adding
-`set +e` to the same step makes it pass; a non-login `shell: bash` passes; and
-the fixed shape — no explicit `exit 0` — passes in every combination, including
-a full replay of the real `git commit` / `push` / `gh pr create` /
-`gh pr merge --squash --delete-branch` sequence against a throwaway base.
-Note when reading such probes: with `continue-on-error: true` the API's
-`conclusion` field reads `success` even for a failed step; use `outcome`.
+### Phase 0 — Protect current work and create the common workspace
 
-Fix (branch `fix/publish-step-exit-status`): the publish step in both workflows
-declares `shell: bash` (it is pure git/gh and needs no conda env, so the login
-shell buys nothing) **and** no longer calls `exit 0` — the "nothing to publish"
-case became an `else` branch and the merge loop sets a flag and `break`s. Either
-change alone is sufficient; both are kept so the step stays correct if someone
-later changes the shell back. Behaviour is otherwise identical, and all four
-paths were re-tested locally (no change / DB only / DB + stray path refused /
-merge never ready).
+**Priority:** P0
+**Topics:** 33, 34A, early 32
+**Estimated intensity:** Very High, approximately 40k–65k
 
-Bug class to remember: **never end a `bash -l {0}` step with an explicit
-`exit 0`** in a job that uses `setup-miniconda`. Ending at EOF, or overriding to
-`shell: bash`, is safe.
+#### 0.1 Secure the planning baseline
 
-## 7. Persistence recounting in the v1 runtime (check, not a finding)
+- Commit or otherwise back up the technical reviews, PDFs, decision ledger, and
+  roadmap before moving the active checkout.
+- Record both repository branches, commits, remotes, status, and LFS state.
+- Checksum and inventory the untracked national MapBiomas files; do not commit
+  them to Git.
+- Move the credential-looking files out of the future shared workspace without
+  opening or copying their contents into reports.
+- Back up or verify the unusually large backend Git object store before any
+  cleanup. Do not rewrite history.
 
-**Status:** observation to be re-verified. **Not a source of truth.**
+#### 0.2 Consolidate the local workspace
 
-Recorded so the Phase 4 replay has a before/after baseline to check against,
-and so nobody re-derives it from scratch. Every number below must be
-re-measured before it is used for any decision.
+- Move the complete backend repository to
+  `Observatorio_Chapada_do_Araripe/Araripe`.
+- Keep `Araripe/` and `site/` as independent repositories; do not initialize
+  Git in the common parent.
+- Classify the other folders before moving or removing anything:
+  `observatorio_atual` remains an active/legacy data input;
+  `design_handoff_observatorio` is a design/content reference;
+  `folio-2025-main` is a third-party reference requiring provenance;
+  the MP4 is source media.
+- Update the site backend-path fallback, documentation, and local tool settings.
+- Reopen Codex, Claude Code, editors, terminals, and Git clients at the new
+  location.
+- Verify both Git repositories, backend imports/tests, site data preparation,
+  and production build. Compare generated outputs before accepting the move.
 
-`update_tracks` increments `w_n[t] += 1` for every date on which a track
-matches, with no guard against a date already counted, and
-`run_detection_gee.py` processes every acquisition date in the
-`SEARCH_DAYS_BACK = 16` window without deduplicating against the state. Since
-the cron runs twice a week, one acquisition date falls inside roughly four to
-five consecutive runs.
+#### 0.3 Establish the cross-tool operating contract
 
-To check:
+- Add a concise root `AGENTS.md` that maps the workspace and requires the
+  executor to read the relevant repository instructions before changing it.
+- Add repository-specific versioned `AGENTS.md` files.
+- Add `CLAUDE.md` adapters that import the corresponding `AGENTS.md` files
+  using `@AGENTS.md`.
+- Verify Codex instruction discovery in a fresh session.
+- Verify Claude Code discovery with `/context`.
+- Keep the instruction files as maps to canonical documentation rather than
+  large duplicated manuals.
 
-- **Magnitude of the counter inflation.** Not measured. The visible symptom is
-  `first_seen > last_seen`, which appeared in **123 of 119 394 tracks (0.10%)**
-  in the state read by run `34137318406` on 2026-09-07, rising to 128 after
-  that run. The inflation of `n_sightings` itself was not measured, and the
-  state stores no per-date history from which it could be recovered.
-- **Whether the tier semantics are affected.** `COMO_FUNCIONA.md` describes a
-  confirmed alert as one appearing "no mesmo lugar em duas observações
-  seguidas", which is `n_sightings >= 2` — the `candidate` tier. Recounting can
-  in principle reach that threshold from a single observation. Whether it does
-  so at a material rate is unverified.
-- **Whether `CONFIRMED_MIN = 15` was calibrated against inflated counters.** No
-  record of its derivation was found. Phase 5 owns validating accepted defaults
-  with qualified evidence; this note is only a pointer for that phase.
+**Exit gate P0:** The common workspace is safe to open, both repositories retain
+their exact state and remotes, all local path-dependent operations work, and
+Codex/Claude load consistent instructions.
 
-Already addressed elsewhere — do not open new work for it: Topic 2 ("Idempotent
-persistence", approved) reduces the lookback to five days and requires duplicate
-replay to be a no-op; Package 2A.1 implemented stable observation keys,
-duplicate no-op behaviour and rejection of out-of-order live-state mutation on
-2026-07-28; Package 2A.6 implements the v2 persistence-contribution family with
-at most one contribution per event/UTC date, tested in `tests/test_v2_persistence.py`
-(`test_exact_retry_is_no_op_and_keeps_state_bytes_identical`,
-`test_out_of_order_date_requires_rebuild_and_does_not_mutate_state`). All of it
-lives on the science branches, not on `main`, by design.
+---
+
+### Phase 1 — Whole-system discovery and contract design
+
+**Priority:** P0
+**Topics:** 6 discovery prerequisite, 9 design, 13, 19, 29 design, 31 design,
+32 provenance start
+**Estimated intensity:** High–Very High, approximately 35k–60k
+
+**Status:** Closed and accepted 2026-07-28; no production mutation performed.
+
+**Evidence package:** `docs/contracts/phase1/README.md` (captured 2026-07-24;
+local contract and repository gates revalidated 2026-07-28). The package
+includes the refreshed Cloudflare/R2 before-state and the authenticated
+names-only GitHub configuration inventory. GitHub cannot expose which
+historical Cloudflare access-key ID is stored behind a secret; that ambiguity
+is documented and must be replaced by uniquely named, role-specific
+credentials before implementation. Connector-limited Cloudflare zone controls
+and exact token scope remain mandatory pre-implementation rechecks rather than
+evidence that the working plugin is disconnected.
+
+#### 1.1 Cross-repository workflow inventory
+
+Before changing any GitHub Action:
+
+- identify every repository participating in detection, publication, site
+  refresh, and deployment;
+- read every workflow completely at the current default branch;
+- map schedules, manual triggers, permissions, secrets/variables, concurrency,
+  generated commits, R2 reads/writes, site deployment, and recovery paths;
+- identify the owner of every state mutation and public publication step;
+- produce a concise workflow dependency diagram.
+
+#### 1.2 Live Cloudflare and R2 inventory
+
+- Read current buckets, public endpoints, custom domains, CORS, lifecycle,
+  routes, Worker bindings, DNS, cache rules, and credential scopes using the
+  connected Cloudflare capability.
+- Record a sanitized before-state and rollback checklist.
+- Reconfirm plugin access immediately before any live implementation.
+
+#### 1.3 Data, identity, and release contracts
+
+Design and version before implementation:
+
+- current wider monitoring-extent identity, geometry/bounds checksum, CRS, and
+  area—without narrowing it to the APA;
+- `observation_id`, `event_id`, lineage, and persistence observation key;
+- processing-ledger statuses for every expected acquisition date;
+- release-manifest schema and compatibility policy;
+- algorithm, baseline, MapBiomas, schema, and release version identifiers;
+- public/private artifact inventory and canonical ownership;
+- client migration and cache-invalidation rules.
+
+#### 1.4 Configuration and provenance registers
+
+- Inventory secrets, variables, bindings, credentials, and expected scopes
+  without reading values into reports.
+- Begin the data-source and attribution register.
+- Record exact MapBiomas URLs, access dates, checksums, collection identities,
+  native resolution, CRS, NoData behavior, transformations, and redistribution
+  terms.
+
+**Exit gate P1:** There is one reviewed map of the workflows/cloud boundary and
+versioned draft schemas sufficient for scientific and release implementation.
+No production mutation is required to pass this phase.
+
+---
+
+### Phase 2A — Scientific corrections and method-selection pilot
+
+**Priority:** P0 scientific
+**Topics:** 2, 4, 23 pilot, 24–29
+**Estimated intensity:** Very High, delivered as several resumable packages
+
+#### Package 2A.1 — Persistence, identity, and scene correctness
+
+**Estimate:** High–Very High, 35k–55k
+
+**Implementation status:** Local backend implementation completed 2026-07-28;
+focused regressions, accepted Phase 1 contract validation, and the full backend
+gate pass. No cloud write, deployment, publication, or historical replay was
+performed. See `docs/implementation/PHASE_2A1_2026-07-28.md`.
+
+- Implement stable observation keys and duplicate no-op behavior.
+- Reject out-of-order live-state mutation; backfills build a new release.
+- Reduce the normal Monday/Thursday lookback to five days.
+- Implement deterministic observation/event IDs and lineage rules.
+- Correct the finite-valid-pixel scene denominator and record QA reasons.
+- Add targeted regression tests for duplicate replay, retry, overlap,
+  out-of-order data, splits/merges, invalid pixels, clouds, and nodata.
+
+#### Package 2A.2 — Baseline and time-series audit
+
+**Estimate:** High, 15k–25k audit; Very High, 30k–50k if rebuilding
+
+**Implementation status:** Local/read-only audit completed 2026-07-28. All 72
+objects passed checksum, grid, scale, range, and wider-extent coverage gates;
+baseline `1.0.0` was accepted without rebuilding. The mixed-generation SQLite
+series was preserved and quarantined as a whole, and the future clean-generation
+schema was defined. No cloud write, replay, deployment, or publication was
+performed. See `docs/implementation/PHASE_2A2_2026-07-28.md`.
+
+- Validate all 72 baseline objects, months, statistics, grids, scale, range,
+  wider extent, valid coverage, and checksums.
+- Establish an authoritative baseline manifest and reproducible configuration.
+- Decide from evidence whether rebuilding is necessary.
+- Define the clean 2026 time-series schema and quarantine strategy for
+  mixed-generation rows.
+
+#### Package 2A.3 — Validation tooling and method-selection pilot
+
+**Estimate:** High, 20k–35k plus qualified reviewer time
+
+**Implementation status:** Local/read-only tooling and a frozen 60-case reviewer
+package completed 2026-07-31. The sampler froze 369,177 provisional legacy
+alert features from 31 checksummed objects (365,405 eligible; 3,772 wholly
+outside the accepted extent) and selected exact balanced margins with seed
+`20260731`; the package provides provenance-recorded evidence, isolated blinded
+reviewer workspaces, and a deterministic 12-case double-review subset. No
+qualified human review or usability finding exists yet, no scientific accuracy
+claim is made, and no cloud-mask, daily-composition, drought, MapBiomas, or
+contextual-signature alternative was selected or activated. Raw detections,
+baseline objects, the quarantined legacy database, cloud state, deployments,
+publications, and releases were not mutated. See
+`docs/implementation/PHASE_2A3_2026-07-31.md`.
+
+- Build the reproducible sampler and desktop review package.
+- Start with approximately 60 balanced locations across confidence, size,
+  season, land cover, persistence, and location.
+- Include before/after imagery, wider context, time series, independent-source
+  comparisons, and structured labels.
+- Use the pilot to test review usability and compare alternative scientific
+  methods. Do not treat this pilot as the final accuracy estimate.
+
+#### Package 2A.4 — Drought, cloud mask, and daily mosaic
+
+**Estimate:** Very High, 35k–60k with shared validation work
+
+**Implementation status:** The fixed local/private candidate contract,
+provenance-bound 60-case evidence artifact, and isolated blinded reviewer
+derivative were completed 2026-08-03. All 60 uncapped Earth Search queries
+reached observed exhaustion and retained 70 same-day scenes; the eight
+factorial cells per case reconcile to 202 available, 26 rejected-low-coverage,
+and 252 explicitly unavailable cells. The fresh CHIRPS artifact retained 85 of
+546 requested months and 461 upstream HTTP 403 failures, leaving only seven
+complete season-matched reference windows per case; the drought candidate is
+therefore unavailable and inactive rather than replaced or inferred. No
+qualified review or scientific accuracy result exists in that artifact. A
+separate 2026-08-11 decision record selects drought disabled, rejects both v1
+mask candidates in favor of `scl-explicit-allowlist-v2`, and selects deterministic
+coverage-ranked composition scoped by datatake. Implementation is assigned to
+Package 2A.6. See `docs/implementation/PHASE_2A4_2026-08-03.md` and
+`docs/decisions/PHASE_2A_SCIENTIFIC_DECISIONS_2026-08-11.md`.
+
+- Preserve the checksum-bound v1 comparison and missing CHIRPS evidence as
+  audit material; do not rewrite it after selection.
+- Keep drought disabled and inaccessible in candidate entrypoints.
+- Implement the datatake-scoped composition and v2 SCL mask in Package 2A.6,
+  with contributing-scene, coverage, contributor-map, and parity evidence.
+- Rebuild the baseline with the identical accepted mask.
+- Treat qualified accuracy and any later method change as Phase 5 decisions.
+
+#### Package 2A.5 — MapBiomas and contextual spectral signatures
+
+**Estimate:** Very High, 35k–60k with shared validation work
+
+**Implementation status:** Local/private technical evidence completed
+2026-08-11. Both unchanged national 2024 inputs are checksum-bound outside
+Git; deterministic native-grid regional crops, a fixed pre-outcome class and
+candidate registry, provenance-bound evidence for the unchanged 60-case pilot,
+and an isolated blinded reviewer derivative now pass the Phase 1 contract gate,
+87 focused Package 2A.5 tests, and the 335-test backend gate. All raw cases and
+missing/partial evidence remain present, both Phase 2A.4 drought-cell bindings
+remain inactive in every spectral stratum, and the original Phase 2A.4
+coordinator mapping remains isolated and byte-identical.
+No qualified labels or scientific accuracy result exists in that artifact.
+The 2026-08-11 decision record selects the 50% majority natural-vegetation
+context subset and the 60% internal contextual aggregator, keeps public/causal
+labels disabled, and closes the old-population requirement. It also corrects a
+provenance error: the direct 30 m GeoTIFF is Collection 10, not 10.1, so true
+Collection 10.1 must be exported separately before replay. See
+`docs/implementation/PHASE_2A5_2026-08-09.md` and
+`docs/decisions/PHASE_2A_SCIENTIFIC_DECISIONS_2026-08-11.md`.
+
+- Preserve both national inputs and all v1 crops/evidence unchanged outside
+  Git as audit material.
+- Keep Collection 3 beta 10 m as primary detailed context using the accepted
+  project grouping and inclusive 50% majority subset.
+- Quarantine the current 30 m crop from any Collection 10.1 role; Package 2A.6
+  exports/checksums the true official Collection 10.1 `classification_2024`
+  band and builds a new regional crop.
+- Preserve every raw detection regardless of MapBiomas subset or
+  cross-collection outcome.
+- Retain quantitative spectral context and the 60% internal aggregator; keep
+  causal/public labels disabled pending Phase 5.
+
+#### Package 2A.6 — Implement the accepted candidate-generation methods
+
+**Estimate:** Very High, 30k–55k plus GEE/baseline processing time
+
+- Implement a coherent v2 acquisition, observation, event, lineage,
+  persistence-contribution/state, and processing-ledger family. New v2 data
+  must never be serialized into v1 schemas; v1 remains audit-only.
+- Retain every same-day datatake as an independent observation, but finalize at
+  most one persistence contribution per event/UTC date after every
+  run-manifest acquisition for that date is terminal. Test timestamp/ID order,
+  retry idempotency, late-arrival rebuild, and split/merge lineage.
+- Implement `scl-explicit-allowlist-v2`: accept SCL 4/5/6/7, reject
+  0/1/2/3/8/9/10/11, fail closed on missing, unexpected, or unreviewed
+  SCL/processing-baseline metadata, and record SCL 7 fractions plus every
+  observed baseline as separate QA.
+- Make coverage-ranked first-valid ordering explicit locally and in GEE; prove
+  repeatability, input-order invariance, contributor accounting, and parity.
+- Rebuild and fully validate the 72-object baseline with the identical v2 mask.
+- Verify the checksum-bound national legend and implement the exact
+  collection-specific v2 mappings, class-0/27/255 treatment, pixel-centre
+  inclusive 50% majority subset, and internal 60% contextual aggregator.
+- Export/checksum `classification_2024` from the official Collection 10.1 GEE
+  asset under the locked native-grid/nearest-neighbour/NoData-255 manifest,
+  rebuild the regional crop, and prevent runtime or qualified-review use of
+  the mislabeled Collection 10 crop as 10.1.
+- Regenerate the v2 context registry, regional manifest, per-case evidence,
+  cross-collection statistics, blinded panels/crosswalk, and method-comparison
+  package, all bound to the v2 decision-record checksum; preserve v1 as
+  audit-only evidence.
+- Lock drought disabled at every candidate entrypoint and add deterministic,
+  provenance, raw-detection-preservation, and fail-closed regression tests.
+
+Package 2A.6 may run in parallel with Phase 2B, but must close before Phase 3.
+
+**Exit gate P2A:** The candidate-generation policy gate is closed. The
+implementation gate closes only when Package 2A.6 passes and the algorithm,
+compatible baseline, five-day incremental behavior, the complete v2 identity,
+persistence and ledger family, cloud/composition method, drought-disabled state,
+true MapBiomas source/mapping/threshold, and internal-only contextual policy are versioned and
+executable for candidate generation. Accuracy/public claims remain Phase 5.
+
+---
+
+### Phase 2B — Deterministic, recoverable publication foundation
+
+**Priority:** P0 operational
+**Topics:** 5–20, 31; targeted portions of 16–17
+**Estimated intensity:** Very High, delivered as several resumable packages
+
+**Isolation rule:** Build green in parallel. Do not merge candidate science into
+the old scheduled jobs, push the site candidate branch until Worker Builds
+branch behavior is proven safe, or attach a green Worker/bucket to the final
+domain before Phase 6.
+
+All references to promotion or rollback in Packages 2B.1–2B.4 mean only the
+isolated green/staging pointer. Canonical promotion and any blue shutdown remain
+Phase 6 actions.
+
+#### Package 2B.0 — Isolated green foundation and recoverable handoff
+
+**Estimate:** Medium–High, 12k–25k
+
+**Status:** Closed 2026-08-13 on `main`. The green foundation was installed
+through the minimal additive PR #10 (squash merge `8daa1812`) and closed by
+the documentation PR #11 (merge `3398c687`): restricted Cloudflare
+green-control broker behind the protected reviewer-gated Environment, inert
+manual v2 candidate/promotion lanes with proven serialization and lane
+distinctness (runs `31720230963`, `31720226492`, `31720228888`), broker
+read-only audit (run `31719834876`), and the separately approved
+`disable-site-branch-deploy` mutation (run `31724415945`) that made the
+wildcard non-production site deploy command inert (`exit 0`, known rollback).
+Both GitHub Environments are installed (`v2-staging` without reviewer,
+`cloudflare-green-control` with a required human reviewer). Production was
+never mutated (`production_mutated=false`; byte-identical public content).
+The canonical closure record lives on `main` in
+`docs/implementation/PHASE_2B0_2026-08-11.md` and
+`docs/operations/CLOUDFLARE_GREEN_AFTER_STATE_2026-08-13.md`; this planning
+branch keeps the full scientific roadmap isolated from `main`. A reviewed
+green site deploy remains Package 2B.4 work. **Package 2A.6 is open** and
+proceeds as bounded Packages 2A.6A–2A.6D. Packages 2A.6A, 2A.6B, 2A.6B.1,
+2A.6C and 2A.6C.1 are closed on `claude/phase2a6c-baseline`; the rebuilt
+baseline `2.0.0` manifest exists and validates. **Package 2A.6D is the only
+remaining slice.**
+
+- Keep all blue workflows, schedules, `araripe-cogs`, Worker, routes, domain,
+  and current data paths unchanged through Phases 2B–5.
+- Give Claude only a bucket-scoped R2 S3 object credential stored as the local
+  AWS profile `araripe-r2-staging`; never a production-account Wrangler token.
+- Use a different bucket-only identity in GitHub Environment `v2-staging` and
+  a separate protected promotion identity later.
+- Re-audit Cloudflare Worker Builds before any site branch push. Create a
+  distinct staging Worker/environment with no apex/custom route.
+- Introduce inert/manual v2 workflows that cannot inherit the old schedule,
+  state keys, bucket fallback, bot pushes, or production credentials.
+- Separate concurrency into legacy-live, green-candidate/replay, and serialized
+  pointer-promotion lanes.
+- If a tool lacks a required connection, stop before promotion, save an atomic
+  checkpoint, name the missing capability, and provide a Codex handoff prompt.
+
+**Exit gate 2B.0:** Claude object access succeeds only on staging and is denied
+on `araripe-cogs`; site branch builds and staging Worker isolation are proven;
+v2 workflows cannot run on a schedule or mutate blue; the handoff skill passes
+both discovery paths and execution tests.
+
+#### Package 2B.1 — State safety and workflow coordination
+
+**Estimate:** High, 25k–40k
+
+- Fail closed when R2 state cannot be authenticated, downloaded, parsed, or
+  validated.
+- Use `cancel-in-progress: false` with separate green processing and legacy
+  lanes plus a single serialized lock for conditional green staging-pointer
+  promotion. Long green replays must not block unchanged blue schedules.
+- Replace the fixed backend/site clock offset with a validated release signal.
+- Give alerts and rainfall independent execution, retry, and freshness states.
+
+#### Package 2B.2 — Manifest, ledger, atomic publication, and automation
+
+**Estimate:** Very High, 50k–80k
+
+- Consume the exact version and checksum of the v2 ledger contract/schema and
+  backend producer owned by Package 2A.6. Package 2B.2 owns publication
+  integration, not a second ledger definition.
+- Require one terminal ledger row per manifest-bound expected acquisition and a
+  derived daily summary that reconciles all same-day rows. Development may run
+  in parallel, but the P2B gate cannot close before integration with the 2A.6
+  producer passes.
+- Publish all artifacts under an immutable release/staging identity.
+- Validate schemas, checksums, expected dates, state watermark, and product
+  completeness before green staging-pointer promotion.
+- Use conditional writes so older/racing jobs cannot replace a newer release.
+- Keep the last complete release live when a run is partial or fails.
+- Represent valid zero-alert dates and stale-object tombstones explicitly.
+- Keep operational data publication automatic without PRs or manual merges.
+
+#### Package 2B.3 — R2 separation and staged delivery
+
+**Estimate:** Very High, 55k–90k, overlapping Topics 8–12 and 19
+
+- Create a private processing boundary and a public release-only boundary.
+- Introduce least-privilege credentials and step-level secret exposure.
+- Copy and verify before switching consumers; retain the old paths for
+  rollback; do not delete during initial migration.
+- Prepare and validate a same-origin `/data/...` route against the isolated
+  staging Worker first. Do not attach or switch the final-domain route until
+  Phase 6.
+- Validate CORS, content types, caching, checksums, downloads, and full-alert
+  browser mode.
+- Define conservative lifecycle and rollback retention. Run deletion policies
+  in reviewed dry-run form first.
+- Prepare and rehearse disabling the blue public internal-bucket path, but do
+  not execute that step before the Phase 6 cutover.
+
+#### Package 2B.4 — Site artifact, deployment, and dependency migration
+
+**Estimate:** Very High, 35k–60k
+
+- Prepare the green site/build so it does not commit large, continuously
+  generated alert archives to Git; leave the blue job unchanged.
+- Retain small fixtures and schemas for local development and CI.
+- Configure green workflows to publish routine data automatically to R2
+  without bot pushes or data PRs; blue bot shutdown remains Phase 6.
+- Pin and script the isolated green Wrangler deployment/validation/rollback.
+- Reconcile and lock the Python/Node environments sufficiently to reproduce
+  both the scientific replay and the site deployment.
+- Pin GitHub Actions in the green workflow files after the full workflow
+  inventory; do not edit blue workflow activation before Phase 6.
+
+**Exit gate P2B:** A deliberately failed or racing green run cannot corrupt blue
+or expose a partial release; a staged test release can move and roll back its
+green pointer without a manual data PR or any production effect.
+
+---
+
+### Phase 3 — Freeze and rehearse the 2026 replay
+
+**Priority:** P0 gate before expensive processing
+**Topics:** 8–9, 22, 24–31
+**Estimated intensity:** High, 12k–22k
+
+- Choose and record the replay cutoff date. Queue acquisitions after that
+  cutoff for later incremental processing.
+- Keep blue production schedules running while the green rehearsal/replay is
+  isolated. Queue only green post-cutoff acquisitions. A short blue write freeze
+  is permitted only in the final Phase 6 cutover window, after rollback is
+  rehearsed; do not pause current automation for the long rebuild.
+- Snapshot and checksum the current R2 alerts, baseline objects, persistence
+  state, SQLite database, site manifest, public products, and both repository
+  commits.
+- Freeze the wider monitoring extent, algorithm, baseline, cloud/mosaic,
+  drought, MapBiomas, label, schema, environment, and release versions.
+- Estimate GEE quotas, batch sizes, storage, transfer, and runtime.
+- Rehearse staging, failure recovery, pointer rollback, and queued-date
+  recovery with a small bounded date range.
+- Obtain an explicit pre-cutover review of the runbook and resolved targets.
+
+**Exit gate P3:** The small rehearsal is reproducible, completeness checks pass,
+rollback works, and the full replay can run without mutating the live release.
+
+---
+
+### Phase 4 — Reprocess all 2026 data into a candidate release
+
+**Priority:** P0 scientific publication
+**Topic:** 22 with inputs from 2, 4, 24–29 and publication controls from 8–9,
+31
+**Estimated intensity:** Very High, 45k–75k plus GEE/GitHub/local processing
+time
+
+1. Preserve the old generation as an immutable historical release.
+2. Query every available 2026 physical acquisition/datatake from January 1
+   through the recorded cutoff using explicit date ranges, grouping only the
+   ledger summaries by UTC date.
+3. Process stateless spectral detection in bounded chronological batches.
+4. Record every manifest-bound expected acquisition as complete-with-alerts,
+   complete-zero-alert, low-coverage, rejected-quality, download-failed,
+   missing-input, or processing-failed; derive a daily summary only after all
+   expected acquisitions for that date are terminal.
+5. Verify acquisition/scene IDs, coverage, checksums, daily reconciliation, and
+   artifacts before accepting each batch.
+6. Apply versioned MapBiomas annotations and contextual signature fields
+   without removing raw detections.
+7. Starting from empty state, replay accepted observations once in timestamp
+   and acquisition-ID order using stable v2 IDs, with at most one persistence
+   contribution per event/UTC date.
+8. Regenerate persistence tiers, strong subsets, statistics, and clean 2026
+   time-series rows.
+9. Reconcile the candidate release completely and leave it in staging. Do not
+   promote it yet.
+
+**Exit gate P4:** One complete, internally consistent, reproducible 2026
+candidate exists in staging; every manifest-bound expected acquisition has one
+terminal ledger row, every daily summary reconciles those rows, and no artifact
+status is unresolved.
+
+---
+
+### Phase 5 — Validate the candidate and finalize scientific choices
+
+**Priority:** P0 before validated claims
+**Topics:** 23, conditional decisions from 25–28
+**Estimated intensity:** Very High, 35k–60k plus human interpretation time
+
+- Draw the full stratified sample from the final candidate population.
+- Include an independent known-change sample so recall/omission are measurable;
+  reviewing only detected polygons can estimate commission but not omissions.
+- Have qualified people label the desktop package. Use multiple reviewers on a
+  subset to measure reviewer agreement.
+- Treat field visits as optional, targeted follow-up for unresolved cases.
+- Estimate precision, recall, commission, omission, important stratum results,
+  and uncertainty.
+- Validate the accepted defaults: drought remains disabled, the v2 SCL mask
+  and datatake-scoped composition generate the candidate, the 50% majority
+  MapBiomas subset remains contextual, and public spectral labels remain off.
+  Change a default only with recorded qualified evidence.
+- If a conditional method changes, rerun the affected 2026 stages and repeat
+  release QA before promotion.
+- Version the sample, labels, calculations, report, and reviewer protocol.
+
+**Exit gate P5:** The final candidate has an approved scientific contract and a
+versioned validation report. Any remaining uncertainty is stated explicitly.
+
+---
+
+### Phase 6 — Build the corrected public release and promote it
+
+**Priority:** P0/P1
+**Topics:** 10, 20, 30–32; final portions of 8–9, 14–15, 18
+**Estimated intensity:** Very High, 35k–60k
+
+- Generate site full, strong, point-index, chart, and download products from
+  the staged release manifest—not by independently crawling live prefixes.
+- Correct confidence, persistence, event/observation, area, MapBiomas,
+  spectral-signature, source, baseline, completeness, and freshness language.
+- Display the latest successfully assessed observation separately from the
+  latest automation attempt and latest non-empty alert.
+- Complete the data-source/attribution register, MapBiomas CC-BY attribution,
+  licence boundaries, citation files, README/deployment/method documentation,
+  and final public-domain references.
+- Add structured run summaries, safe status/health output, product-specific
+  freshness monitoring, and post-deployment checks.
+- Verify the main domain, same-origin data route, CORS, full/strong modes,
+  downloads, rainfall, time series, build, deployment, and rollback target.
+- Atomically promote the small release pointer.
+- Only after green production health checks pass, disable the superseded blue
+  schedules, bot writers, and public internal-bucket path while retaining their
+  data and configuration for rollback.
+- Health-check production, retain the prior pointer for rollback, seed the
+  scheduled process from the rebuilt watermark, then process queued post-cutoff
+  dates through the five-day incremental contract.
+
+**Exit gate P6:** The corrected release is live on the final domain, all
+contracts reconcile, the prior release remains recoverable, and routine
+automation continues without a PR or manual merge.
+
+---
+
+### Phase 7 — Final hardening and reusable operations
+
+**Priority:** P1 after core correction
+**Topics:** 17, 21C, later 34B–34C
+**Estimated intensity:** Very High, approximately 50k–85k
+
+#### 7.1 Comprehensive CI and branch protection
+
+- Add the remaining cross-repository PR checks, browser suite, schema/link/data
+  contract checks, build-size guard, accessibility checks, deployment smoke
+  tests, and reviewed required-status rules.
+- Keep live cloud tests separate from fast deterministic PR checks.
+- Protect code branches without introducing manual gates into routine R2 data
+  publication.
+
+#### 7.2 Non-breaking accessibility and mobile improvements
+
+- Add semantic controls, keyboard operation, ARIA state, visible focus, reduced
+  motion, and responsive improvements.
+- Verify visual and interaction equivalence for established desktop,
+  mouse/touch, map, filter, and data workflows.
+- Defer any item that would materially alter normal behavior.
+
+#### 7.3 Cross-tool reusable skills
+
+- Maintain and forward-test the `araripe-safe-handoff` skill created in 2B.0;
+  it remains the mandatory missing-capability checkpoint protocol.
+- After one successful stable release workflow, create
+  `araripe-release-guard`, read-only/dry-run by default.
+- After the scientific protocol is accepted and exercised, create
+  `araripe-science-qa`.
+- Keep one canonical portable `SKILL.md` implementation using the shared Agent
+  Skills subset. Expose it through Codex `.agents/skills/` and Claude Code
+  `.claude/skills/`; test discovery in both tools.
+- Use thin tool-specific adapters only when necessary and add a drift check if
+  copies rather than relative links are required.
+- Do not create permanent specialist agents. Use temporary, bounded
+  scientific, operations, and site-review subagents when parallel read-heavy
+  work is useful.
+
+**Exit gate P7:** Critical branches and contracts are guarded, accessibility
+improvements preserve ordinary behavior, and stable recurring procedures are
+available consistently in both Codex and Claude Code.
+
+---
+
+## 5. Release gates at a glance
+
+| Gate | Required proof |
+|---|---|
+| P0 — Workspace | Both repositories and data inputs survive the move; paths/tests/build work; secrets are outside the workspace; Codex/Claude instructions agree. |
+| P1 — Discovery | All repository workflows, Cloudflare controls, credentials, state owners, schemas, and provenance sources are mapped. |
+| P2A — Candidate science | Candidate-generation policy is closed and Package 2A.6 implements the coherent v2 acquisition/observation/event/lineage/persistence/ledger family, compatible baseline, chosen mask/composition, drought-disabled state, true Collection 10.1, and contextual policies; targeted tests pass. Qualified validation still belongs to P5. |
+| P2B.0 — Isolation | Claude/GitHub staging credentials cannot reach blue; branch builds and staging Worker are isolated; v2 workflows are inert/manual; safe handoff works. |
+| P2B — Publication | Staging, manifest, completeness, conditional green-pointer promotion, rollback, public/private storage, and automatic operation work without affecting blue. |
+| P3 — Replay readiness | Cutoff, queue, snapshots, environment, batch sizes, failure recovery, and rollback rehearsal are complete. |
+| P4 — Candidate | Every manifest-bound 2026 acquisition has one terminal row, each daily summary reconciles all same-day rows, and all candidate artifacts reconcile in staging. |
+| P5 — Validation | Independent desktop review and uncertainty report are versioned; conditional methods are resolved. |
+| P6 — Canonical release | Main-domain/browser/download/health checks pass; pointer is promoted atomically; previous release remains recoverable. |
+| P7 — Hardening | Comprehensive CI, behavior-preserving accessibility, and cross-tool reusable skills are verified. |
+
+---
+
+## 6. Usage-limit strategy
+
+No future prompt should attempt an entire phase at once. Each package should be
+implemented in resumable checkpoints:
+
+1. inspect current state and confirm the package boundary;
+2. record contracts and acceptance tests;
+3. make one coherent change;
+4. run proportional local/integration verification;
+5. update the implementation log and remaining dependency list;
+6. stop at a clean checkpoint before starting another package.
+
+Recommended prompt-sized planning envelopes:
+
+| Work type | Suggested envelope |
+|---|---:|
+| Read-only audit or contract design | 8k–15k tokens |
+| Focused backend/site correction with tests | 12k–25k tokens |
+| Cross-repository workflow change | 15k–30k tokens |
+| Cloud migration stage with verification | 15k–30k tokens |
+| 2026 replay orchestration | Multiple 15k–30k sessions plus external run time |
+| Validation tooling/reporting | Multiple 15k–30k sessions plus reviewer time |
+
+### 6.1 Capability routing and recoverable stops
+
+| Task | Claude Code | Codex | If unavailable |
+|---|---|---|---|
+| Local code/tests/docs | Yes | Yes | Save normal Git checkpoint |
+| GitHub repositories/Actions | Yes when its GitHub connection is active | Yes when connected | Name missing GitHub connection and hand off |
+| Earth Engine metadata/export/baseline/parity | Yes only with the approved Earth Engine project and local authentication | Yes with the approved project and an active Earth Engine capability or local authentication | Name the missing Earth Engine project/authentication; save a safe handoff and never switch projects silently |
+| R2 objects in `araripe-v2-staging` | Yes, bucket-scoped S3 profile only | Yes | Name the R2 staging profile; never broaden scope |
+| Cloudflare bucket/Worker/route/DNS/Builds configuration | No production-account token | Yes through the connected Cloudflare capability | Save safe handoff and provide Codex prompt |
+| Production pointer/route/cutover | No | Codex only at the approved Phase 6 gate | Stop before mutation and hand off |
+
+Every external package starts by loading `araripe-safe-handoff`. A missing
+connection is not a partial success: finish only the current atomic unit, verify
+that no partial release was promoted, write `docs/handoffs/<timestamp>_<slug>.md`,
+tell the user exactly what to activate, and provide a self-contained Codex
+handoff prompt. Resume only after rechecking repository and live state.
+
+Package 2B.0 closed 2026-08-13 on `main`. The scientific branch has since
+closed Packages 2A.6A (v2 contracts), 2A.6B (SCL mask and datatake
+composition), 2A.6B.1 (Sentinel-2C v3 amendment), 2A.6C (baseline 2.0.0
+rebuild) and 2A.6C.1 (seasonal source regimes, which produced
+`config/baseline_manifest_v2.json`). Package 2A.6D closed 2026-09-06 on
+`claude/phase2a6d-mapbiomas`, closing the Package 2A.6 implementation gate
+against exit gate P2A. The next scientific work is Phase 2B (continuing with
+one bounded Package 2B.1 change); both Phase 2A.6 and Phase 2B must close
+before Phase 3, and Phase 2A.6 now has.
+
+Two constraints carry into 2A.6D. The Earth Engine project
+`ee-araripe-baseline-v2` entered noncommercial **restricted mode** during the
+2A.6C.1 execution, and 2A.6D's Collection 10.1 export needs that same
+capability, so the quota should be resolved first. The baseline `2.0.0`
+wet-season regime carries the provenance state
+`mixed_lineage_pending_esa_reprocessing` and a retirement condition: when ESA
+finishes reprocessing months 1–4 of the accepted source years onto the
+Collection-1 lineage, the wet season should be rebuilt and the regime retired.
+
+---
+
+## 7. Deferred and future considerations
+
+These items are recorded so that rejection or deferral does not erase useful
+future work. They are not part of the initial approved execution sequence
+unless their stated trigger occurs.
+
+### 7.1 Topic 1 — Temporary interpretation warning
+
+**Decision:** Rejected because correction is expected soon.
+**Reconsider when:** The corrected canonical release is materially delayed or
+the current provisional release will be actively promoted in the meantime.
+**Estimate:** 5k–10k.
+
+### 7.2 Topic 3 — Scientifically define the wider monitoring extent
+
+**Decision:** Polygon-only processing was rejected because monitoring the APA
+surroundings is important.
+
+The approved roadmap still versions and checksums the current wider footprint.
+The future scientific task is to decide whether the implementation-derived
+rectangle is the right representation of “APA and surroundings,” then give the
+area a formal name, rationale, geometry, version, and public description.
+
+**Reconsider when:** A scientific or policy definition of the surrounding
+region becomes available, or before comparing results with another formally
+defined monitoring program.
+**Estimate:** 8k–15k for design/provenance; much higher if geometry changes
+require another historical rerun.
+
+### 7.3 Topic 21A — AI Worker security, privacy, and resilience
+
+**Decision:** Deferred.
+**Remaining work:** Remove public provider/debug detail, add a global timeout
+and provider budgets/circuit breaker, make rate-limit failures safe, publish a
+provider/privacy notice, define prompt-metadata retention, and monitor AI
+health without exposing prompts unnecessarily.
+**Reconsider when:** The AI assistant becomes a promoted public feature, its
+providers change, or abuse/reliability issues appear.
+**Estimate:** 15k–25k.
+
+### 7.4 Topic 21B — Browser security hardening
+
+**Decision:** Deferred.
+**Remaining work:** Correct the local-file trail-name DOM injection path,
+introduce CSP in report-only mode before enforcement, add framing and
+permissions protections, and test all legitimate origins.
+**Reconsider when:** Frontend security work is scheduled or the affected file
+import is promoted. The DOM injection correction is the most concrete item.
+**Estimate:** 10k–18k.
+
+### 7.5 Optional field validation
+
+**Decision:** Desktop validation is approved; field visits are optional.
+**Reconsider when:** The desktop pilot leaves scientifically important,
+accessible, and safe cases unresolved and a qualified local partner is
+available.
+**Estimate:** External field effort; tooling additions approximately 8k–15k.
+
+### 7.6 Repository names, monorepo conversion, and Git-history rewriting
+
+**Decision:** Excluded from Topic 33.
+
+- Keep GitHub repository names unchanged during stabilization.
+- Do not convert the common parent into a monorepo.
+- Do not rewrite site history merely to remove old generated artifacts.
+- Safe cache/object cleanup may follow a verified backup, but history changes
+  need a separate approval and rollback plan.
+
+**Reconsider when:** The corrected system has stable repository ownership,
+release automation, and documentation, and a rename/monorepo provides a
+demonstrable benefit.
+**Estimate:** High to Very High depending on scope.
+
+### 7.7 BFAST structural-break detection
+
+**Status:** Not implemented and not on the remediation critical path.
+
+The existing harmonic residual heuristic must not be presented as BFAST. A real
+implementation needs retained per-date history, a trend/seasonal structural
+break method, confidence intervals, and a decision between pixel, region, or
+parcel scale.
+
+**Reconsider when:** The corrected pipeline retains a sufficiently long and
+dense per-date stack and the project has a clear BFAST scientific question.
+**Estimate:** Very High.
+
+### 7.8 Sentinel-1 SAR
+
+**Status:** Separate future project.
+
+Wet-season SAR monitoring requires calibration, speckle handling, terrain
+correction, and SAR-specific backscatter/coherence detection. It cannot reuse
+the optical thresholds as a credential toggle.
+
+**Reconsider when:** Persistent optical gaps remain after cloud/mosaic
+correction and there is capacity for a separately validated SAR workflow.
+**Estimate:** Very High.
+
+### 7.9 Landsat/HLS per-sensor baselines
+
+**Status:** Partial future capability.
+
+Landsat and HLS may remain optional research inputs, but they should not be
+represented as routine production sources or compared canonically against a
+Sentinel-2 baseline. Each sensor requires its own baseline and validation.
+
+**Reconsider when:** The project chooses multi-sensor production after the
+Sentinel-2 2026 generation is stable.
+**Estimate:** Very High.
+
+### 7.10 Independent omission reference
+
+**Status:** Now partly absorbed by approved Topic 23.
+
+Final recall/omission estimates still require an independent known-change
+reference population, such as suitable external validated alerts or manually
+interpreted/digitized changes not selected from this system’s detections.
+MapBiomas land cover is contextual and is not such a reference.
+
+**Required when:** The project wants defensible recall or omission claims, not
+only precision/commission estimates.
+**Estimate:** Included partly in Topic 23 plus human-reference preparation.
+
+### 7.11 Permanent specialized agents or a project plugin
+
+**Decision:** Do not create them now.
+
+Use concise shared instructions, two eventual reusable skills, and temporary
+subagents. Reconsider a read-only release steward only after at least three
+stable manual release-guard runs demonstrate a recurring need. Package the
+skills as a plugin only if they later need distribution to other people or
+workspaces.
+
+---
+
+## 8. Small owner decisions to resolve inside later packages
+
+These choices do not block approval of the roadmap, but the relevant executor
+must surface them before implementation:
+
+- exact same-origin public data path under the final domain;
+- number and duration of rollback releases;
+- notification destination and freshness thresholds;
+- 2026 replay cutoff date and maintenance-window timing;
+- qualified desktop-validation reviewers and review-agreement subset;
+- final sample size after the approximately 60-location pilot;
+- whether any validation result justifies optional field follow-up.
+
+No executor should silently choose one of these where it changes public
+behavior, retention, scientific interpretation, or production cutover.

@@ -19,6 +19,10 @@ python3 build_detection_gee.py --project ee-araripe --start 2026-01-01 --end 202
 It queues one export task per acquisition date (each date's Sentinel-2 tiles are
 mosaicked into one AOI-wide image; NDMI/NBR/EVI2/BSI on reflectance). Watch with
 `earthengine task list`. Results land in Google Drive folder `araripe_detection`.
+The script also writes `araripe_detection_acquisitions.json` in Cloud Shell;
+download that provenance manifest into the same local directory as the
+GeoTIFFs. Detection now fails closed when provider-native scene provenance is
+missing instead of inventing an observation identity.
 
 ## Step 2 — download and run detection locally
 
@@ -27,8 +31,12 @@ then in the Araripe repo:
 
 ```bash
 python scripts/run_detection_from_gee.py --in-dir ~/Downloads/araripe_detection
-# offline/quicker (skip the CHIRPS drought fetch): add --no-spi
 ```
+
+Routine detection does not fetch or apply drought adjustment because no method
+has qualified reviewer acceptance. Operational entry points expose no SPI
+switch and always pass `spi_3month=None`; candidate comparison is isolated in
+the local/private Phase 2A.4 evidence workflow.
 
 This runs the existing pipeline (z-score vs the reflectance baselines → scene-wide
 guard → vectorize → fire/mechanical → land cover → temporal persistence) and writes
@@ -56,7 +64,7 @@ python scripts/upload_to_r2.py --directory data/alerts --prefix alerts/ --patter
 git add data/timeseries/ && git commit -m "detect: 2026 time-series" && git push
 
 # 2. rebuild the site's data (site fetches alerts from R2) and push -> Cloudflare
-cd ../Observatorio_Chapada_do_Araripe/site
+cd ../site
 python scripts/prepare_data.py alerts timeseries
 git add public/data && git commit -m "chore: update alerts (2026)" && git push
 ```
@@ -68,24 +76,19 @@ chain (`fetch_alerts_from_r2.py --latest 3`). To pull the whole archive locally:
 
 ---
 
-## Publishing the baselines to R2 (for future automation)
+## Baseline storage and verification
 
-The baselines are git-ignored local data. To make them available off your Mac
-(e.g. for a scheduled CI run), publish them to Cloudflare R2 (10 GB free):
-
-```bash
-# From your Mac (where data/baselines/ exists), with your R2 creds in the env:
-export R2_ENDPOINT_URL=... R2_ACCESS_KEY=... R2_SECRET_KEY=...
-python scripts/upload_to_r2.py            # uploads data/baselines/*.tif -> araripe-cogs/baselines/
-```
-To pull them back on another machine / CI runner:
+The accepted baseline is version `1.0.0`; its authoritative 72-object identity
+is `config/baseline_manifest_v1.json`. To pull it on another machine or CI
+runner:
 ```bash
 export R2_ENDPOINT_URL=... R2_ACCESS_KEY=... R2_SECRET_KEY=...
-python scripts/fetch_baselines_from_r2.py   # -> data/baselines/
+python scripts/fetch_baselines_from_r2.py
 ```
-Set the three `R2_*` values as **GitHub Secrets** on the repo to let a workflow
-fetch them before detection. (Creating the R2 API token is done in the Cloudflare
-dashboard → R2 → Manage API Tokens — that's an account action only you can do.)
+The fetch fails unless all names, sizes, ETags, and downloaded SHA-256 values
+match the manifest. A new build is a new baseline version; uploading or
+replacing baseline objects requires separate authorization and is not part of
+ordinary detection.
 
 ---
 
@@ -117,7 +120,9 @@ default so you can validate it before scheduling).
 ### Running it
 
 - **Manually:** GitHub → Actions → "GEE Deforestation Detection (headless)" →
-  *Run workflow*, optionally filling `start` / `end` (blank = last 16 days).
+  *Run workflow*, optionally filling `start` / `end` (blank = last 5 days).
+  An older range is a backfill: run it with `--persistence-mode rebuild`, an
+  explicit isolated `--state-path`, and a separate candidate output directory.
 - **On a schedule:** once a manual run succeeds end-to-end, uncomment the
   `schedule:` block in `detect_gee.yml` **and** disable the `schedule:` in
   `update_data.yml` (running both would double-detect and fight on `git push`).

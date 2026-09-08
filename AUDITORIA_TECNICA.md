@@ -141,7 +141,7 @@ year ENSO       ONIpk  severity  precip_mm precip_z  elegível
 
 ### 5.1 O que `prepare_territorio.py` faz hoje
 
-[site/scripts/prepare_territorio.py](../Observatorio_Chapada_do_Araripe/site/scripts/prepare_territorio.py): lê `observatorio_atual/MapBiomas/MapBiomas_LULC_YYYY_Araripe.tif` (30 m, EPSG:4326, **Coleção 10**), **reclassifica em 5 grupos** (natural {3,4,12}, agro {15,21,39,41}, urbano {24,30,75}, outros, água {33}), recorta à janela `(-41, -8, -38,8, -6,8)`, e gera `lulc-YYYY.png` + `meta.json` + `areas.json` (série de área agro na APA sem FLONA, 2010–2024). É puramente **visualização do site**.
+[site/scripts/prepare_territorio.py](../site/scripts/prepare_territorio.py): lê `observatorio_atual/MapBiomas/MapBiomas_LULC_YYYY_Araripe.tif` (30 m, EPSG:4326, **Coleção 10**), **reclassifica em 5 grupos** (natural {3,4,12}, agro {15,21,39,41}, urbano {24,30,75}, outros, água {33}), recorta à janela `(-41, -8, -38,8, -6,8)`, e gera `lulc-YYYY.png` + `meta.json` + `areas.json` (série de área agro na APA sem FLONA, 2010–2024). É puramente **visualização do site**.
 
 ### 5.2 Deveria entrar na análise científica principal? Como?
 

@@ -1,0 +1,129 @@
+{
+  "schema_version": "1.0.0",
+  "amendment_id": "araripe-phase2a6c1-seasonal-source-regime-amendment",
+  "amendment_date": "2026-09-05",
+  "status": "accepted_for_implementation",
+  "authorization": {
+    "authorized_by": "project_owner",
+    "authorized_on": "2026-09-05",
+    "scope": "baseline_2_0_0_wet_season_source_policy",
+    "rationale": "The Collection-1 restriction accepted on 2026-09-05 cannot satisfy the accepted extent-coverage contract in the wet season, and no configuration reachable under the previous single-policy contract can. A distinct, explicitly declared wet-season source regime is accepted instead of lowering the coverage floor or widening the registry for the whole year.",
+    "coverage_floor_lowering_permitted": false,
+    "global_registry_widening_permitted": false,
+    "el_nino_source_year_admission_permitted": false,
+    "mask_or_composition_change_permitted": false,
+    "production_mutation_permitted": false,
+    "baseline_v1_mutation_permitted": false
+  },
+  "problem_record": {
+    "measured_on": "2026-09-05",
+    "failing_months": [1, 2, 3, 4],
+    "measured_extent_coverage": {
+      "1": 0.4459, "2": 0.8325, "3": 0.9710, "4": 0.9460
+    },
+    "accepted_floor": 0.99,
+    "only_failure_was_coverage": true,
+    "evidence": "docs/implementation/PHASE_2A6C_2026-09-01.md"
+  },
+  "rejected_alternatives": [
+    {
+      "option": "relax the scene cloud filter alone",
+      "measured": "January reaches 0.8314 even with the filter removed entirely",
+      "rejected_because": "does not clear the floor in any wet-season month"
+    },
+    {
+      "option": "add quiet-ENSO source years 2016/2018/2020",
+      "measured": "January moves from 0.4467 to 0.4469",
+      "rejected_because": "ESA has barely reprocessed the wet season of 2016-2022 onto the Collection-1 lineage, so the years carry almost no admissible data"
+    },
+    {
+      "option": "add source years 2023 and 2024",
+      "measured": "clears the floor, but 65% of the January baseline would come from the two strong El Nino years",
+      "rejected_because": "drought years would define the wet-season normal, biasing the detector toward under-detection of loss"
+    },
+    {
+      "option": "widen the reviewed registry for the whole year",
+      "measured": "clears the floor but leaves 59.3% of January below three contributions",
+      "rejected_because": "imports the reproducibility risk into the eight months that do not need it, and does not solve contribution depth"
+    },
+    {
+      "option": "lower the accepted extent-coverage floor",
+      "rejected_because": "Package 2A.2 discipline exists to prevent a baseline that validates while being unusable; the accepted policy clears the floor, so it is not relaxed"
+    }
+  ],
+  "source_regime_contract": {
+    "contract_id": "araripe-baseline-source-regime-v1",
+    "regimes_must_partition_calendar_months": true,
+    "gap_or_overlap_policy": "unavailable_fail_closed",
+    "per_regime_fields": [
+      "regime_id",
+      "months",
+      "reviewed_processing_baseline_registry",
+      "scene_cloud_filter_percent",
+      "provenance_state"
+    ],
+    "regimes": [
+      {
+        "regime_id": "dry-season-collection1-v1",
+        "months": [5, 6, 7, 8, 9, 10, 11, 12],
+        "scene_cloud_filter_percent": 40,
+        "recorded_reviews": [
+          "config/phase2a6c_baseline_processing_baseline_review_v1.json"
+        ],
+        "provenance_state": "collection1_lineage_stable",
+        "reproducibility_note": "every admitted product is on the Collection-1 lineage and is not subject to further ESA reprocessing"
+      },
+      {
+        "regime_id": "wet-season-mixed-lineage-v1",
+        "months": [1, 2, 3, 4],
+        "scene_cloud_filter_percent": 60,
+        "recorded_reviews": [
+          "config/phase2a6c_baseline_processing_baseline_review_v1.json",
+          "config/phase2a6c1_wet_season_processing_baseline_review_v1.json"
+        ],
+        "provenance_state": "mixed_lineage_pending_esa_reprocessing",
+        "reproducibility_note": "admits pre-Collection-1 products that ESA has not yet reprocessed and is actively reprocessing; this regime is expected to be retired and the wet season rebuilt on the Collection-1 lineage once that reprocessing reaches these months",
+        "retirement_condition": "the wet-season months of the accepted source years are fully available on the Collection-1 lineage",
+        "observed_reprocessing_progress_2026_09_05": {
+          "2019-01": "7/25 scenes already reprocessed",
+          "2019-04": "1/14 scenes already reprocessed",
+          "2021-08": "65/78 scenes already reprocessed"
+        }
+      }
+    ]
+  },
+  "cloud_filter_basis": {
+    "selected_wet_season_value": 60,
+    "measured_alternatives": {
+      "60": {"january_coverage": 0.9991, "january_below_three_share": 0.217},
+      "80": {"january_coverage": 0.9998, "january_below_three_share": 0.085},
+      "unfiltered": {"january_coverage": 0.9998, "january_below_three_share": 0.046}
+    },
+    "why_not_looser": "A cloud-leakage test found no systematic contamination in NDMI or NBR - the sign was inconsistent and reversed in March - but EVI2, the only index using the red band that thin cloud brightens most, carries a positive offset that grows monotonically with cloud: +0.027 at 40-60% and +0.043 at 60-80%, against a clean January dispersion of 0.087. The 60 bound takes the coverage while holding that one measured bias at its smaller value.",
+    "test_limits": "the comparison covered 12-25% of the extent in January and 74.5% in March, spanned two months, and did not fully separate contamination from the correlation between cloud and rainfall; it is not a general clearance"
+  },
+  "parent_bindings": {
+    "phase2a_candidate_generation_decisions_v2": {
+      "path": "config/phase2a_candidate_generation_decisions_v2.json",
+      "sha256": "ac61fd1e6da376a147013a610652e38a6d3d119dcb8479b01001e156625cf69e"
+    },
+    "phase2a_sentinel2c_contract_amendment_v3": {
+      "path": "config/phase2a_sentinel2c_contract_amendment_v3.json",
+      "sha256": "0bb853259f5902ea93b34ed689662b46b66f5f696a9282482820f36f101414da"
+    }
+  },
+  "science_bindings_unchanged": {
+    "cloud_mask": "scl-explicit-allowlist-v2",
+    "composition": "coverage-ranked-first-valid-v1",
+    "composition_scope": "datatake-scoped-v2",
+    "identity_contract_family": "v3",
+    "statistics": "monthly median and population standard deviation over datatake composites",
+    "grid": "araripe-baseline-epsg32724-20m-grid-v1",
+    "monitoring_extent": "araripe-implementation-rectangle-v1",
+    "source_years": [2017, 2019, 2021, 2022, 2025],
+    "minimum_extent_coverage_fraction": 0.99,
+    "drought": "drought-disabled-v1",
+    "minimum_contribution_depth_threshold_imposed": false,
+    "baseline_v1_immutable": true
+  }
+}

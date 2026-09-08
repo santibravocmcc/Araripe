@@ -1,0 +1,183 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://observatoriodachapadadoararipe.com/data/schemas/phase2a5-context-manifest-v1.schema.json",
+  "title": "Phase 2A.5 provenance-bound MapBiomas regional context manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "schema_version", "artifact_type", "context_id", "pipeline_version", "generated_at", "generation_command", "runtime_versions", "generator_source_inventory", "schema_bindings", "candidate_registry", "monitoring_extent", "crop_policy", "grid_reconciliation", "licence_and_attribution", "crops", "decision_state", "claims", "artifact_inventory_rule", "artifact_inventory", "checksum_file"],
+  "properties": {
+    "$schema": {"const": "https://observatoriodachapadadoararipe.com/data/schemas/phase2a5-context-manifest-v1.schema.json"},
+    "schema_version": {"const": "1.0.0"},
+    "artifact_type": {"const": "phase2a5_mapbiomas_context"},
+    "context_id": {"type": "string", "pattern": "^p2a5-mapbiomas-context-v1-[0-9a-f]{64}$"},
+    "pipeline_version": {"const": "phase2a5-mapbiomas-context-v1"},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "generation_command": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+    "runtime_versions": {"$ref": "#/$defs/runtime"},
+    "generator_source_inventory": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/repository_artifact"}},
+    "schema_bindings": {
+      "type": "object", "additionalProperties": false, "required": ["registry", "manifest"],
+      "properties": {"registry": {"$ref": "#/$defs/artifact"}, "manifest": {"$ref": "#/$defs/artifact"}}
+    },
+    "candidate_registry": {
+      "type": "object", "additionalProperties": false,
+      "required": ["registry_id", "path", "bytes", "sha256", "embedded"],
+      "properties": {
+        "registry_id": {"const": "araripe-phase2a5-context-candidates-v1"},
+        "path": {"const": "config/phase2a5_context_candidates_v1.json"},
+        "bytes": {"type": "integer", "minimum": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "embedded": {"$ref": "#/$defs/artifact"}
+      }
+    },
+    "monitoring_extent": {"$ref": "#/$defs/extent"},
+    "crop_policy": {"$ref": "#/$defs/crop_policy"},
+    "grid_reconciliation": {"$ref": "#/$defs/grid_reconciliation"},
+    "licence_and_attribution": {"$ref": "#/$defs/licence"},
+    "crops": {
+      "type": "object", "additionalProperties": false,
+      "required": ["mapbiomas_col3_beta_10m_2024", "mapbiomas_col10_1_30m_2024"],
+      "properties": {
+        "mapbiomas_col3_beta_10m_2024": {"allOf": [{"$ref": "#/$defs/crop_record"}, {"properties": {"collection_key": {"const": "mapbiomas_col3_beta_10m_2024"}, "crop_id": {"const": "mapbiomas-col3-beta-10m-2024-araripe-extent-v1"}, "role": {"const": "primary_detailed_context"}}}]},
+        "mapbiomas_col10_1_30m_2024": {"allOf": [{"$ref": "#/$defs/crop_record"}, {"properties": {"collection_key": {"const": "mapbiomas_col10_1_30m_2024"}, "crop_id": {"const": "mapbiomas-col10-1-30m-2024-araripe-extent-v1"}, "role": {"const": "secondary_reference_and_disagreement_signal"}}}]}
+      }
+    },
+    "decision_state": {"$ref": "#/$defs/decision_state"},
+    "claims": {
+      "const": {"local_private_only": true, "national_sources_unchanged": true, "raw_detection_modified": false, "method_selected_or_activated": false, "scientific_accuracy_claim": false, "mapbiomas_is_truth_or_omission_reference": false, "phase2a_exit_gate_closed": false}
+    },
+    "artifact_inventory_rule": {"const": "all_internal_files_except_manifest_and_CHECKSUMS"},
+    "artifact_inventory": {"type": "array", "minItems": 3, "uniqueItems": true, "items": {"$ref": "#/$defs/artifact"}},
+    "checksum_file": {"const": "CHECKSUMS.sha256"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "relative_path": {"type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"},
+    "artifact": {
+      "type": "object", "additionalProperties": false, "required": ["path", "bytes", "sha256"],
+      "properties": {"path": {"$ref": "#/$defs/relative_path"}, "bytes": {"type": "integer", "minimum": 1}, "sha256": {"$ref": "#/$defs/sha256"}}
+    },
+    "repository_artifact": {
+      "type": "object", "additionalProperties": false, "required": ["path", "bytes", "sha256"],
+      "properties": {"path": {"$ref": "#/$defs/relative_path"}, "bytes": {"type": "integer", "minimum": 1}, "sha256": {"$ref": "#/$defs/sha256"}}
+    },
+    "runtime": {
+      "type": "object", "additionalProperties": false, "required": ["python", "platform", "numpy", "rasterio", "gdal", "proj", "jsonschema"],
+      "properties": {"python": {"type": "string", "minLength": 1}, "platform": {"type": "string", "minLength": 1}, "numpy": {"type": "string", "minLength": 1}, "rasterio": {"type": "string", "minLength": 1}, "gdal": {"type": "string", "minLength": 1}, "proj": {"type": "string", "minLength": 1}, "jsonschema": {"type": "string", "minLength": 1}}
+    },
+    "four_numbers": {"type": "array", "minItems": 4, "maxItems": 4, "items": {"type": "number"}},
+    "six_numbers": {"type": "array", "minItems": 6, "maxItems": 6, "items": {"type": "number"}},
+    "histogram": {"type": "object", "minProperties": 1, "propertyNames": {"pattern": "^(0|[1-9][0-9]*)$"}, "additionalProperties": {"type": "integer", "minimum": 0}},
+    "extent": {
+      "type": "object", "additionalProperties": false,
+      "required": ["extent_id", "extent_version", "geometry_crs", "bounds", "geometry_sha256", "bounds_sha256", "source_aoi_sha256", "scope"],
+      "properties": {
+        "extent_id": {"const": "araripe-implementation-rectangle-v1"}, "extent_version": {"const": "1.0.0"}, "geometry_crs": {"const": "EPSG:4326"},
+        "bounds": {"const": [-40.89236812577142, -7.840780758480428, -38.95208146319247, -6.957104781339829]},
+        "geometry_sha256": {"const": "b4986ef80d8a0d6e65bbb41b575dbd952c010415bf3aee93a88412b3b657e8c7"},
+        "bounds_sha256": {"const": "93f254373d6b203bca33aa5c356bd03fec3bff7f43c9c15b368cc2bdb7029f28"},
+        "source_aoi_sha256": {"const": "2bff31afa6cb74630a437b4fffb96ad88f7f873a3aa1461f337c66f61c209881"}, "scope": {"const": "APA_and_surroundings"}
+      }
+    },
+    "crop_config": {
+      "type": "object", "additionalProperties": false,
+      "required": ["crop_id", "output_path", "fractional_source_window", "integer_source_window", "width", "height", "transform", "bounds", "crs", "output_nodata", "block_shape", "expected_total_pixel_count", "expected_valid_pixel_count", "expected_nodata_pixel_count", "expected_valid_coverage_fraction", "expected_class_histogram"],
+      "properties": {
+        "crop_id": {"type": "string", "minLength": 1}, "output_path": {"$ref": "#/$defs/relative_path"}, "fractional_source_window": {"$ref": "#/$defs/four_numbers"},
+        "integer_source_window": {"type": "array", "minItems": 4, "maxItems": 4, "items": {"type": "integer", "minimum": 0}}, "width": {"type": "integer", "minimum": 1}, "height": {"type": "integer", "minimum": 1},
+        "transform": {"$ref": "#/$defs/six_numbers"}, "bounds": {"$ref": "#/$defs/four_numbers"}, "crs": {"const": "EPSG:4326"}, "output_nodata": {"const": 0},
+        "block_shape": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "integer", "minimum": 16}}, "expected_total_pixel_count": {"type": "integer", "minimum": 1},
+        "expected_valid_pixel_count": {"type": "integer", "minimum": 0}, "expected_nodata_pixel_count": {"type": "integer", "minimum": 0}, "expected_valid_coverage_fraction": {"type": "number", "minimum": 0, "maximum": 1}, "expected_class_histogram": {"$ref": "#/$defs/histogram"}
+      }
+    },
+    "crop_policy": {
+      "type": "object", "additionalProperties": false,
+      "required": ["policy_id", "window_rule", "pixel_selection", "reprojection", "resampling", "categorical_resampling_if_future_reconciliation_requires_it", "compression", "predictor", "tiled", "overwrite_policy", "source_mutation", "download_or_redownload", "crops"],
+      "properties": {
+        "policy_id": {"const": "accepted-extent-native-grid-outer-window-categorical-v1"}, "window_rule": {"const": "smallest_outer_integer_source_window_covering_the_accepted_extent"}, "pixel_selection": {"const": "unchanged_source_pixels_only"},
+        "reprojection": {"const": "none"}, "resampling": {"const": "none"}, "categorical_resampling_if_future_reconciliation_requires_it": {"const": "nearest_only"}, "compression": {"const": "LZW"}, "predictor": {"const": 2}, "tiled": {"const": true},
+        "overwrite_policy": {"const": "fail_on_any_existing_incomplete_or_inconsistent_output"}, "source_mutation": {"const": false}, "download_or_redownload": {"const": false},
+        "crops": {"type": "object", "additionalProperties": false, "required": ["mapbiomas_col3_beta_10m_2024", "mapbiomas_col10_1_30m_2024"], "properties": {"mapbiomas_col3_beta_10m_2024": {"$ref": "#/$defs/crop_config"}, "mapbiomas_col10_1_30m_2024": {"$ref": "#/$defs/crop_config"}}}
+      }
+    },
+    "grid_reconciliation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["policy_id", "primary_collection", "secondary_collection", "resolution_ratio_secondary_to_primary", "resolution_ratio_residual", "secondary_origin_offset_primary_pixels", "origin_offset_residual_primary_pixels", "absolute_tolerance_primary_pixels", "alignment_status", "comparison_resampling", "comparison_scope", "denominator", "nodata_or_unmapped_excluded"],
+      "properties": {
+        "policy_id": {"const": "col10-1-to-col3-exact-lattice-nearest-v1"}, "primary_collection": {"const": "mapbiomas_col3_beta_10m_2024"}, "secondary_collection": {"const": "mapbiomas_col10_1_30m_2024"},
+        "resolution_ratio_secondary_to_primary": {"const": 3}, "resolution_ratio_residual": {"type": "number"}, "secondary_origin_offset_primary_pixels": {"const": [7798, 24174]},
+        "origin_offset_residual_primary_pixels": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "number"}}, "absolute_tolerance_primary_pixels": {"const": 1e-9},
+        "alignment_status": {"const": "integer_aligned_within_recorded_float_tolerance"}, "comparison_resampling": {"const": "nearest_only"}, "comparison_scope": {"const": "context_not_scientific_truth"},
+        "denominator": {"const": "joint_valid_and_mapped_primary_pixels_after_nearest_expansion_of_secondary"}, "nodata_or_unmapped_excluded": {"const": true}
+      }
+    },
+    "licence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["terms_url", "licence_boundary", "raw_national_source_publication_permitted", "collection3_minimum_attribution", "collection10_1_minimum_attribution", "scientific_output_additional_requirement"],
+      "properties": {"terms_url": {"const": "https://brasil.mapbiomas.org/termos-de-uso/"}, "licence_boundary": {"type": "string", "minLength": 1}, "raw_national_source_publication_permitted": {"const": false}, "collection3_minimum_attribution": {"type": "string", "minLength": 1}, "collection10_1_minimum_attribution": {"type": "string", "minLength": 1}, "scientific_output_additional_requirement": {"type": "string", "minLength": 1}}
+    },
+    "access_verification": {
+      "type": "object", "additionalProperties": false,
+      "required": ["browser_origin_url", "browser_origin_xattr_sha256", "quarantine_xattr_sha256", "quarantine_timestamp_hex_seconds", "browser_agent", "registry_accessed_at", "verified"],
+      "properties": {"browser_origin_url": {"type": "string", "format": "uri", "pattern": "^https://"}, "browser_origin_xattr_sha256": {"$ref": "#/$defs/sha256"}, "quarantine_xattr_sha256": {"$ref": "#/$defs/sha256"}, "quarantine_timestamp_hex_seconds": {"type": "string", "pattern": "^[0-9a-f]{8}$"}, "browser_agent": {"const": "Chrome"}, "registry_accessed_at": {"type": "string", "format": "date-time"}, "verified": {"const": true}}
+    },
+    "source_header": {
+      "type": "object", "additionalProperties": false,
+      "required": ["driver", "dtype", "band_count", "width", "height", "crs", "transform", "bounds", "nodata", "area_or_point", "tiled", "block_shape", "compression", "predictor", "overviews"],
+      "properties": {"driver": {"const": "GTiff"}, "dtype": {"const": "uint8"}, "band_count": {"const": 1}, "width": {"type": "integer", "minimum": 1}, "height": {"type": "integer", "minimum": 1}, "crs": {"const": "EPSG:4326"}, "transform": {"$ref": "#/$defs/six_numbers"}, "bounds": {"$ref": "#/$defs/four_numbers"}, "nodata": {"type": ["integer", "null"]}, "area_or_point": {"const": "Area"}, "tiled": {"const": true}, "block_shape": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "integer"}}, "compression": {"const": "LZW"}, "predictor": {"const": "2"}, "overviews": {"type": "array", "items": {"type": "integer"}}}
+    },
+    "nodata_policy": {
+      "type": "object", "additionalProperties": false,
+      "required": ["source_header_value", "context_value", "interpretation", "excluded_from_valid_denominators", "may_remove_or_relabel_raw_detection"],
+      "properties": {"source_header_value": {"type": ["integer", "null"]}, "context_value": {"const": 0}, "interpretation": {"type": "string", "minLength": 1}, "excluded_from_valid_denominators": {"const": true}, "may_remove_or_relabel_raw_detection": {"const": false}}
+    },
+    "inventory": {
+      "type": "object", "additionalProperties": false,
+      "required": ["derivation", "total_pixel_count", "valid_pixel_count", "nodata_pixel_count", "valid_coverage_fraction", "class_histogram"],
+      "properties": {"derivation": {"type": "string", "minLength": 1}, "total_pixel_count": {"type": "integer", "minimum": 1}, "valid_pixel_count": {"type": "integer", "minimum": 0}, "nodata_pixel_count": {"type": "integer", "minimum": 0}, "valid_coverage_fraction": {"type": "number", "minimum": 0, "maximum": 1}, "class_histogram": {"$ref": "#/$defs/histogram"}}
+    },
+    "crop_source": {
+      "type": "object", "additionalProperties": false,
+      "required": ["source_id", "path", "bytes", "sha256", "atbd_path", "atbd_bytes", "atbd_sha256", "origin_url", "official_gee_asset", "collection_identity", "product_year", "access_evidence", "atbd_origin_url", "atbd_visible_identity", "atbd_pdf_metadata_title", "atbd_identity_conflict", "atbd_access_evidence", "source_header", "nodata_policy", "national_inventory", "provenance_limitations"],
+      "properties": {
+        "source_id": {"type": "string", "minLength": 1}, "path": {"$ref": "#/$defs/relative_path"}, "bytes": {"type": "integer", "minimum": 1}, "sha256": {"$ref": "#/$defs/sha256"},
+        "atbd_path": {"$ref": "#/$defs/relative_path"}, "atbd_bytes": {"type": "integer", "minimum": 1}, "atbd_sha256": {"$ref": "#/$defs/sha256"},
+        "origin_url": {"type": "string", "format": "uri", "pattern": "^https://"}, "official_gee_asset": {"type": "string", "minLength": 1}, "collection_identity": {"type": "string", "minLength": 1}, "product_year": {"const": 2024},
+        "access_evidence": {"$ref": "#/$defs/access_verification"}, "atbd_origin_url": {"type": "string", "format": "uri", "pattern": "^https://"}, "atbd_visible_identity": {"type": "string", "minLength": 1},
+        "atbd_pdf_metadata_title": {"type": "string", "minLength": 1}, "atbd_identity_conflict": {"type": ["string", "null"]}, "atbd_access_evidence": {"$ref": "#/$defs/access_verification"},
+        "source_header": {"$ref": "#/$defs/source_header"}, "nodata_policy": {"$ref": "#/$defs/nodata_policy"}, "national_inventory": {"$ref": "#/$defs/inventory"},
+        "provenance_limitations": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "crop_output": {
+      "type": "object", "additionalProperties": false,
+      "required": ["path", "bytes", "sha256", "width", "height", "crs", "transform", "bounds", "dtype", "nodata", "area_or_point", "tiled", "block_shape", "compression", "predictor", "overviews", "class_histogram", "total_pixel_count", "valid_pixel_count", "nodata_pixel_count", "valid_coverage_fraction"],
+      "properties": {
+        "path": {"$ref": "#/$defs/relative_path"}, "bytes": {"type": "integer", "minimum": 1}, "sha256": {"$ref": "#/$defs/sha256"}, "width": {"type": "integer", "minimum": 1}, "height": {"type": "integer", "minimum": 1},
+        "crs": {"const": "EPSG:4326"}, "transform": {"$ref": "#/$defs/six_numbers"}, "bounds": {"$ref": "#/$defs/four_numbers"}, "dtype": {"const": "uint8"}, "nodata": {"const": 0}, "area_or_point": {"const": "Area"}, "tiled": {"const": true},
+        "block_shape": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "integer", "minimum": 16}}, "compression": {"const": "LZW"}, "predictor": {"const": "2"}, "overviews": {"const": []},
+        "class_histogram": {"$ref": "#/$defs/histogram"}, "total_pixel_count": {"type": "integer", "minimum": 1}, "valid_pixel_count": {"type": "integer", "minimum": 0}, "nodata_pixel_count": {"type": "integer", "minimum": 0}, "valid_coverage_fraction": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "transformation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["policy_id", "accepted_extent_id", "accepted_extent_geometry_sha256", "fractional_source_window", "integer_source_window", "source_grid_preserved", "reprojection", "resampling", "categorical_reconciliation", "software"],
+      "properties": {"policy_id": {"const": "accepted-extent-native-grid-outer-window-categorical-v1"}, "accepted_extent_id": {"const": "araripe-implementation-rectangle-v1"}, "accepted_extent_geometry_sha256": {"const": "b4986ef80d8a0d6e65bbb41b575dbd952c010415bf3aee93a88412b3b657e8c7"}, "fractional_source_window": {"$ref": "#/$defs/four_numbers"}, "integer_source_window": {"type": "array", "minItems": 4, "maxItems": 4, "items": {"type": "integer", "minimum": 0}}, "source_grid_preserved": {"const": true}, "reprojection": {"const": "none"}, "resampling": {"const": "none"}, "categorical_reconciliation": {"const": "nearest_only"}, "software": {"$ref": "#/$defs/runtime"}}
+    },
+    "class_mapping": {
+      "type": "object", "additionalProperties": false, "required": ["mapping_version", "mapping", "unknown_code_policy"],
+      "properties": {"mapping_version": {"const": "mapbiomas-context-groups-v1"}, "mapping": {"type": "object", "additionalProperties": false, "required": ["natural_vegetation", "other_natural_cover", "anthropic_cover", "uncertain_or_mixed", "nodata"], "properties": {"natural_vegetation": {"$ref": "#/$defs/class_codes"}, "other_natural_cover": {"$ref": "#/$defs/class_codes"}, "anthropic_cover": {"$ref": "#/$defs/class_codes"}, "uncertain_or_mixed": {"$ref": "#/$defs/class_codes"}, "nodata": {"const": [0]}}}, "unknown_code_policy": {"const": "explicit_unmapped_not_forced_into_any_preferred_category"}}
+    },
+    "class_codes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "integer", "minimum": 0, "maximum": 255}},
+    "crop_record": {
+      "type": "object", "additionalProperties": false,
+      "required": ["collection_key", "crop_id", "role", "source", "output", "transformation", "class_mapping", "integrity"],
+      "properties": {"collection_key": {"type": "string", "minLength": 1}, "crop_id": {"type": "string", "minLength": 1}, "role": {"enum": ["primary_detailed_context", "secondary_reference_and_disagreement_signal"]}, "source": {"$ref": "#/$defs/crop_source"}, "output": {"$ref": "#/$defs/crop_output"}, "transformation": {"$ref": "#/$defs/transformation"}, "class_mapping": {"$ref": "#/$defs/class_mapping"}, "integrity": {"const": {"source_checksum_verified_before_read": true, "source_modified": false, "source_redownloaded": false, "categorical_values_resampled": false}}}
+    },
+    "decision_state": {
+      "type": "object", "additionalProperties": false,
+      "required": ["qualified_labels_present", "accepted_observation_or_event_identities_present", "scientific_accuracy_result_present", "mapbiomas_policy_selected_or_frozen", "strong_subset_threshold_selected", "contextual_signature_policy_selected", "public_wording_approved", "raw_detection_modified", "phase2a4_candidate_modified_or_activated", "phase2a_exit_gate_closed"],
+      "properties": {"qualified_labels_present": {"const": false}, "accepted_observation_or_event_identities_present": {"const": false}, "scientific_accuracy_result_present": {"const": false}, "mapbiomas_policy_selected_or_frozen": {"const": false}, "strong_subset_threshold_selected": {"const": false}, "contextual_signature_policy_selected": {"const": false}, "public_wording_approved": {"const": false}, "raw_detection_modified": {"const": false}, "phase2a4_candidate_modified_or_activated": {"const": false}, "phase2a_exit_gate_closed": {"const": false}}
+    }
+  }
+}

@@ -233,6 +233,13 @@ data/scene_cache/
 # Local pre-cutoff backup of baselines (only used to roll back the 2025 cutoff)
 data/baselines/_pre_2026cutoff_backup/
 
+# Package 2A.6C baseline 2.0.0 rebuild: the 72 rebuilt rasters, the transient
+# monthly exports, and the contribution-depth rasters are large local data.
+# Their identity lives in config/baseline_manifest_v2.json, not in Git.
+# The split-evidence JSON in there is an intermediate too: its content is
+# absorbed, checksummed, into the manifest, which is the authoritative record.
+data/baselines_v2/
+
 # macOS metadata
 .DS_Store
 **/.DS_Store
@@ -251,6 +258,9 @@ data/baselines/_pre_2026cutoff_backup/
 # Phase 2: derived land-cover crops and per-month CHIRPS AOI recortes are
 # regenerable local data (like baselines/chirps) — keep only the small metadata.
 data/landcover/*.tif
+# National MapBiomas source rasters and upstream technical documents are local
+# inputs. Keep them out of Git; their inventory is under docs/migration/.
+data/landcover/updated/
 # ...except the two small, static MapBiomas crops the detector needs in CI to
 # annotate alerts with land cover (both collections). Committed (16 MB + 64 KB).
 !data/landcover/mapbiomas10m_araripe_2023.tif
@@ -259,6 +269,12 @@ data/chirps_aoi/*.tif
 
 # Alerts live in Cloudflare R2, not git (see .gitattributes). Never commit them.
 data/alerts/*.geojson
+# Private/generated Phase 2A working state and per-scene QA records.
+data/persistence_state.geojson
+data/scene_quality/
+# Private/generated Phase 2A validation populations, evidence caches, reviewer
+# exports, and desktop bundles. Commit only contracts, tooling, and fixtures.
+data/validation/
 
 # temporary reflectance rebuild staging (swapped into data/baselines when complete)
 data/baselines_reflectance/

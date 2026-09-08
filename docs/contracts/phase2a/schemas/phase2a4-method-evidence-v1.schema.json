@@ -1,0 +1,1583 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://observatoriodachapadadoararipe.com/data/schemas/phase2a4-method-evidence-v1.schema.json",
+  "title": "Phase 2A.4 blinded per-case method evidence sidecar",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schema_version",
+    "evidence_id",
+    "derivative_package_id",
+    "scientific_status",
+    "registry_binding",
+    "parent_case",
+    "source_binding",
+    "factorial_results",
+    "comparisons",
+    "review_method_metadata",
+    "missing_evidence_policy",
+    "claims",
+    "integrity"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "https://observatoriodachapadadoararipe.com/data/schemas/phase2a4-method-evidence-v1.schema.json"
+    },
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "evidence_id": {
+      "type": "string",
+      "pattern": "^p2a4-method-evidence-v1-[0-9a-f]{64}$"
+    },
+    "derivative_package_id": {
+      "type": "string",
+      "pattern": "^p2a4-derivative-package-v1-[0-9a-f]{64}$"
+    },
+    "scientific_status": {
+      "const": "provisional_blinded_method_comparison_evidence"
+    },
+    "registry_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "registry_id",
+        "registry_version",
+        "path",
+        "bytes",
+        "sha256"
+      ],
+      "properties": {
+        "registry_id": {
+          "const": "araripe-phase2a4-candidates-v1"
+        },
+        "registry_version": {
+          "const": "1.0.0"
+        },
+        "path": {
+          "const": "config/phase2a4_candidates_v1.json"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "parent_case": {
+      "$ref": "#/$defs/parent_case"
+    },
+    "source_binding": {
+      "$ref": "#/$defs/source_binding"
+    },
+    "factorial_results": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/factorial_result"
+      }
+    },
+    "comparisons": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cloud_mask",
+        "daily_composition",
+        "drought_adjustment"
+      ],
+      "properties": {
+        "cloud_mask": {
+          "$ref": "#/$defs/comparison"
+        },
+        "daily_composition": {
+          "$ref": "#/$defs/comparison"
+        },
+        "drought_adjustment": {
+          "$ref": "#/$defs/comparison"
+        }
+      }
+    },
+    "review_method_metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cloud_mask",
+        "daily_composition",
+        "drought_adjustment"
+      ],
+      "properties": {
+        "cloud_mask": {
+          "$ref": "#/$defs/blank_review_method"
+        },
+        "daily_composition": {
+          "$ref": "#/$defs/blank_review_method"
+        },
+        "drought_adjustment": {
+          "$ref": "#/$defs/blank_review_method"
+        }
+      }
+    },
+    "missing_evidence_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "case_replaced",
+        "unavailable_cells_retained",
+        "unavailable_comparison_label",
+        "missing_interpreted_as_zero"
+      ],
+      "properties": {
+        "case_replaced": {
+          "const": false
+        },
+        "unavailable_cells_retained": {
+          "const": true
+        },
+        "unavailable_comparison_label": {
+          "const": "unreviewable"
+        },
+        "missing_interpreted_as_zero": {
+          "const": false
+        }
+      }
+    },
+    "claims": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "qualified_human_label_present",
+        "scientific_accuracy_claim",
+        "method_selected_or_activated",
+        "raw_detection_modified",
+        "canonical_identity_inferred",
+        "phase2a5_policy_modified"
+      ],
+      "properties": {
+        "qualified_human_label_present": {
+          "const": false
+        },
+        "scientific_accuracy_claim": {
+          "const": false
+        },
+        "method_selected_or_activated": {
+          "const": false
+        },
+        "raw_detection_modified": {
+          "const": false
+        },
+        "canonical_identity_inferred": {
+          "const": false
+        },
+        "phase2a5_policy_modified": {
+          "const": false
+        }
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "canonical_payload_sha256",
+        "canonical_payload_hash_rule",
+        "artifact_inventory_sha256",
+        "schema_validated",
+        "parent_case_reconciled",
+        "factorial_cells_reconciled",
+        "coverage_reconciled",
+        "blinding_metadata_reconciled"
+      ],
+      "properties": {
+        "canonical_payload_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "canonical_payload_hash_rule": {
+          "const": "RFC8785_SHA256_with_integrity.canonical_payload_sha256_omitted"
+        },
+        "artifact_inventory_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "schema_validated": {
+          "const": true
+        },
+        "parent_case_reconciled": {
+          "const": true
+        },
+        "factorial_cells_reconciled": {
+          "const": true
+        },
+        "coverage_reconciled": {
+          "const": true
+        },
+        "blinding_metadata_reconciled": {
+          "const": true
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "safe_path": {
+      "type": "string",
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9_.@/-]+$"
+    },
+    "blind_case_id": {
+      "type": "string",
+      "pattern": "^p2a3-blind-v1-[0-9a-f]{24}$"
+    },
+    "blind_option_id": {
+      "type": "string",
+      "pattern": "^p2a4-blind-option-v1-[0-9a-f]{24}$"
+    },
+    "blind_cell_id": {
+      "type": "string",
+      "pattern": "^p2a4-blind-cell-v1-[0-9a-f]{24}$"
+    },
+    "parent_case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "phase2a3_package_id",
+        "phase2a3_population_snapshot_id",
+        "phase2a3_manifest_sha256",
+        "blind_case_id",
+        "target_date",
+        "target_geometry_sha256",
+        "canonical_observation_id",
+        "canonical_event_id"
+      ],
+      "properties": {
+        "phase2a3_package_id": {
+          "const": "p2a3-pilot-package-v1-050d2b944679385e1a3e3bf209fbe2f3a6a3892a4016ef2a24c1f96e281bf5c8"
+        },
+        "phase2a3_population_snapshot_id": {
+          "const": "p2a3-population-v1-100c4e3e2f293235211d519392323c6ee0e6f2b88928d9fc8a74a71b52d80c6c"
+        },
+        "phase2a3_manifest_sha256": {
+          "const": "4b78167930fcb7a928b40d50ae1d54675e4cca47a10857bcbf28db803c18946b"
+        },
+        "blind_case_id": {
+          "$ref": "#/$defs/blind_case_id"
+        },
+        "target_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "target_geometry_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "canonical_observation_id": {
+          "type": "null"
+        },
+        "canonical_event_id": {
+          "type": "null"
+        }
+      }
+    },
+    "source_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "monitoring_extent_id",
+        "monitoring_extent_geometry_sha256",
+        "baseline_version",
+        "baseline_manifest_sha256",
+        "catalog",
+        "stac_endpoint",
+        "collection_id",
+        "catalog_accessed_at",
+        "query",
+        "source_scene_ids_sha256",
+        "source_scenes",
+        "reference_grid",
+        "case_window",
+        "coverage_contract",
+        "rainfall_reference"
+      ],
+      "properties": {
+        "monitoring_extent_id": {
+          "const": "araripe-implementation-rectangle-v1"
+        },
+        "monitoring_extent_geometry_sha256": {
+          "const": "b4986ef80d8a0d6e65bbb41b575dbd952c010415bf3aee93a88412b3b657e8c7"
+        },
+        "baseline_version": {
+          "const": "1.0.0"
+        },
+        "baseline_manifest_sha256": {
+          "const": "15a1ed3cea7c804d18d2c82c86a7b9a030687fedb01b315d543965b1f26f0a82"
+        },
+        "catalog": {
+          "const": "Element84 Earth Search"
+        },
+        "stac_endpoint": {
+          "const": "https://earth-search.aws.element84.com/v1"
+        },
+        "collection_id": {
+          "const": "sentinel-2-l2a"
+        },
+        "catalog_accessed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "query": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "target_date",
+            "spatial_filter",
+            "temporal_filter",
+            "eo_cloud_cover_lt",
+            "intersects",
+            "datetime",
+            "result_limit",
+            "pagination_policy",
+            "intersects_geometry_sha256",
+            "canonical_payload_sha256"
+          ],
+          "properties": {
+            "target_date": {
+              "type": "string",
+              "format": "date"
+            },
+            "spatial_filter": {
+              "const": "intersects_fixed_grid_aligned_case_window"
+            },
+            "temporal_filter": {
+              "const": "target_date_inclusive_to_next_date_exclusive"
+            },
+            "eo_cloud_cover_lt": {
+              "const": 60
+            },
+            "intersects": {
+              "type": "object"
+            },
+            "datetime": {
+              "type": "string",
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T00:00:00Z/[0-9]{4}-[0-9]{2}-[0-9]{2}T00:00:00Z$"
+            },
+            "result_limit": {
+              "type": "null"
+            },
+            "pagination_policy": {
+              "const": "all_pages_until_exhausted"
+            },
+            "intersects_geometry_sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "canonical_payload_sha256": {
+              "$ref": "#/$defs/sha256"
+            }
+          }
+        },
+        "source_scene_ids_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "source_scenes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/source_scene"
+          }
+        },
+        "reference_grid": {
+          "$ref": "#/$defs/reference_grid"
+        },
+        "case_window": {
+          "$ref": "#/$defs/case_window"
+        },
+        "coverage_contract": {
+          "const": {
+            "denominator_pixel_rule": "all_pixels_in_fixed_grid_aligned_case_window",
+            "valid_pixel_rule": "finite_required_reflectance_after_candidate_mask_and_composition_and_at_least_one_configured_index_with_finite_current_baseline_mean_and_std",
+            "valid_coverage_formula": "valid_pixel_count/case_window_pixel_count",
+            "minimum_valid_coverage_fraction": 0.2
+          }
+        },
+        "rainfall_reference": {
+          "$ref": "#/$defs/rainfall_reference"
+        }
+      }
+    },
+    "source_scene": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "catalog",
+        "stac_endpoint",
+        "collection_id",
+        "item_id",
+        "observed_at",
+        "self_href",
+        "stac_item_json_sha256",
+        "assets"
+      ],
+      "properties": {
+        "catalog": {
+          "const": "Element84 Earth Search"
+        },
+        "stac_endpoint": {
+          "const": "https://earth-search.aws.element84.com/v1"
+        },
+        "collection_id": {
+          "const": "sentinel-2-l2a"
+        },
+        "item_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "self_href": {
+          "type": "string",
+          "pattern": "^https://[^?#]+$"
+        },
+        "stac_item_json_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "assets": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/source_asset"
+          }
+        }
+      }
+    },
+    "source_asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "asset_key",
+        "status",
+        "reason",
+        "provider_href",
+        "unsigned_href",
+        "href_resolution_policy",
+        "stac_asset_metadata_sha256",
+        "media_type",
+        "read_mode",
+        "http_metadata",
+        "upstream_full_asset_sha256",
+        "reflectance_normalization",
+        "local_window_data",
+        "checksum_scope_limitation"
+      ],
+      "properties": {
+        "asset_key": {
+          "enum": [
+            "blue",
+            "red",
+            "nir",
+            "nir08",
+            "swir16",
+            "swir22",
+            "scl",
+            "cloud"
+          ]
+        },
+        "status": {
+          "enum": [
+            "available",
+            "missing",
+            "error"
+          ]
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "provider_href": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^(?:https|s3)://[^?#]+$"
+        },
+        "unsigned_href": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^https://[^?#]+$"
+        },
+        "href_resolution_policy": {
+          "const": "earth-search-provider-https-or-fixed-public-s3-bucket-to-https-v1"
+        },
+        "stac_asset_metadata_sha256": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "media_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "read_mode": {
+          "const": "remote_raster_range_read_to_aligned_context_window"
+        },
+        "http_metadata": {
+          "$ref": "#/$defs/http_metadata"
+        },
+        "upstream_full_asset_sha256": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reflectance_normalization": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/reflectance_normalization"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "local_window_data": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/local_window_data"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "checksum_scope_limitation": {
+          "const": "local_window_data_sha256_does_not_verify_full_remote_asset"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "available"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "reason": {
+                "type": "null"
+              },
+              "unsigned_href": {
+                "type": "string"
+              },
+              "stac_asset_metadata_sha256": {
+                "$ref": "#/$defs/sha256"
+              },
+              "local_window_data": {
+                "$ref": "#/$defs/local_window_data"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "asset_key": {
+                "enum": [
+                  "blue",
+                  "red",
+                  "nir",
+                  "nir08",
+                  "swir16",
+                  "swir22"
+                ]
+              },
+              "status": {
+                "enum": [
+                  "available",
+                  "error"
+                ]
+              }
+            },
+            "required": [
+              "asset_key",
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "reflectance_normalization": {
+                "$ref": "#/$defs/reflectance_normalization"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "reflectance_normalization": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "reflectance_normalization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy_version",
+        "scale_offset_source",
+        "raw_zero_fill",
+        "negative_scaled_reflectance",
+        "output_dtype",
+        "status",
+        "reason",
+        "scale",
+        "offset"
+      ],
+      "properties": {
+        "policy_version": {
+          "const": "sentinel2-l2a-stac-scale-offset-zero-fill-nonnegative-v1"
+        },
+        "scale_offset_source": {
+          "const": "raster:bands[0].scale_and_offset_required"
+        },
+        "raw_zero_fill": {
+          "const": "invalid_before_resampling_and_scaling"
+        },
+        "negative_scaled_reflectance": {
+          "const": "clip_to_zero"
+        },
+        "output_dtype": {
+          "const": "float32"
+        },
+        "status": {
+          "enum": [
+            "available",
+            "error"
+          ]
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "scale": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "offset": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "available"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "reason": {
+                "type": "null"
+              },
+              "scale": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "offset": {
+                "type": "number"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              },
+              "scale": {
+                "type": "null"
+              },
+              "offset": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "http_metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status_code",
+        "content_length",
+        "etag",
+        "last_modified",
+        "content_type",
+        "accept_ranges"
+      ],
+      "properties": {
+        "status_code": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 100,
+          "maximum": 599
+        },
+        "content_length": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "etag": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "last_modified": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "content_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "accept_ranges": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "local_window_data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sha256",
+        "dtype",
+        "shape",
+        "canonicalization"
+      ],
+      "properties": {
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "dtype": {
+          "type": "string",
+          "minLength": 1
+        },
+        "shape": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "integer",
+              "minimum": 1
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "canonicalization": {
+          "const": "normalized_decoded_values_plus_validity_and_normalization_RFC8785_SHA256_on_fixed_grid_aligned_context_window_v1"
+        }
+      }
+    },
+    "reference_grid": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "crs",
+        "width",
+        "height",
+        "transform",
+        "bounds",
+        "pixel_size_m"
+      ],
+      "properties": {
+        "crs": {
+          "const": "EPSG:32724"
+        },
+        "width": {
+          "const": 10773
+        },
+        "height": {
+          "const": 4999
+        },
+        "transform": {
+          "const": [
+            20.0,
+            0.0,
+            290080.0,
+            0.0,
+            -20.0,
+            9231780.0
+          ]
+        },
+        "bounds": {
+          "const": [
+            290080.0,
+            9131800.0,
+            505540.0,
+            9231780.0
+          ]
+        },
+        "pixel_size_m": {
+          "const": 20
+        }
+      }
+    },
+    "case_window": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "column_offset",
+        "row_offset",
+        "width",
+        "height",
+        "transform",
+        "bounds",
+        "pixel_size_m",
+        "aligned_to_reference_grid",
+        "same_window_for_all_factorial_cells",
+        "fixed_before_candidate_evaluation",
+        "window_definition_sha256"
+      ],
+      "properties": {
+        "column_offset": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10772
+        },
+        "row_offset": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4998
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10773
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4999
+        },
+        "transform": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": 20.0
+            },
+            {
+              "const": 0.0
+            },
+            {
+              "type": "number"
+            },
+            {
+              "const": 0.0
+            },
+            {
+              "const": -20.0
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "items": false,
+          "minItems": 6,
+          "maxItems": 6
+        },
+        "bounds": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "items": false,
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "pixel_size_m": {
+          "const": 20
+        },
+        "aligned_to_reference_grid": {
+          "const": true
+        },
+        "same_window_for_all_factorial_cells": {
+          "const": true
+        },
+        "fixed_before_candidate_evaluation": {
+          "const": true
+        },
+        "window_definition_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "rainfall_reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "reason",
+        "dataset_id",
+        "source_kind",
+        "official_cog_base_url",
+        "official_cog_pattern",
+        "aggregation_version",
+        "coverage_denominator",
+        "reference_start_month",
+        "reference_end_month",
+        "target_ending_month",
+        "complete_reference_window_count",
+        "artifact_id",
+        "manifest_sha256",
+        "plan_sha256",
+        "full_upstream_cog_checksum_available",
+        "checksum_scope_limitation",
+        "artifact"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "available",
+            "missing",
+            "invalid",
+            "error"
+          ]
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "dataset_id": {
+          "const": "CHIRPS-2.0-monthly"
+        },
+        "source_kind": {
+          "const": "official_direct_monthly_cog_not_stac"
+        },
+        "official_cog_base_url": {
+          "const": "https://data.chc.ucsb.edu/products/CHIRPS-2.0/global_monthly/cogs/"
+        },
+        "official_cog_pattern": {
+          "const": "chirps-v2.0.YYYY.MM.cog"
+        },
+        "aggregation_version": {
+          "const": "cell-center-cos-lat-v1"
+        },
+        "coverage_denominator": {
+          "const": "sum_cosine_latitude_weight_over_all_selected_cell_centers"
+        },
+        "reference_start_month": {
+          "const": "1981-01"
+        },
+        "reference_end_month": {
+          "const": "2025-12"
+        },
+        "target_ending_month": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$"
+        },
+        "complete_reference_window_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "artifact_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^p2a4-rainfall-reference-v1-[0-9a-f]{64}$"
+        },
+        "manifest_sha256": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "plan_sha256": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "full_upstream_cog_checksum_available": {
+          "const": false
+        },
+        "checksum_scope_limitation": {
+          "const": "local_window_sha256_does_not_verify_full_upstream_cog"
+        },
+        "artifact": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/artifact"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "available"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "reason": {
+                "type": "null"
+              },
+              "target_ending_month": {
+                "type": "string"
+              },
+              "complete_reference_window_count": {
+                "minimum": 40
+              },
+              "artifact_id": {
+                "type": "string"
+              },
+              "manifest_sha256": {
+                "$ref": "#/$defs/sha256"
+              },
+              "plan_sha256": {
+                "$ref": "#/$defs/sha256"
+              },
+              "artifact": {
+                "$ref": "#/$defs/artifact"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "factorial_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "blind_cell_id",
+        "availability",
+        "unavailable_reason",
+        "ordered_source_scene_ids",
+        "contributing_scenes",
+        "coverage",
+        "artifacts"
+      ],
+      "properties": {
+        "blind_cell_id": {
+          "$ref": "#/$defs/blind_cell_id"
+        },
+        "availability": {
+          "enum": [
+            "available",
+            "rejected_low_coverage",
+            "unavailable",
+            "error"
+          ]
+        },
+        "unavailable_reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ordered_source_scene_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "contributing_scenes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/contributing_scene"
+          }
+        },
+        "coverage": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/coverage"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/artifact"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "availability": {
+                "const": "available"
+              }
+            },
+            "required": [
+              "availability"
+            ]
+          },
+          "then": {
+            "properties": {
+              "unavailable_reason": {
+                "type": "null"
+              },
+              "ordered_source_scene_ids": {
+                "minItems": 1
+              },
+              "coverage": {
+                "$ref": "#/$defs/coverage"
+              },
+              "artifacts": {
+                "minItems": 1
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "unavailable_reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "availability": {
+                "const": "rejected_low_coverage"
+              }
+            },
+            "required": [
+              "availability"
+            ]
+          },
+          "then": {
+            "properties": {
+              "unavailable_reason": {
+                "const": "valid_coverage_below_threshold"
+              },
+              "ordered_source_scene_ids": {
+                "minItems": 1
+              },
+              "coverage": {
+                "$ref": "#/$defs/coverage"
+              },
+              "artifacts": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "contributing_scene": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scene_id",
+        "selected_pixel_count",
+        "detector_valid_pixel_count",
+        "scene_valid_pixel_count",
+        "scene_valid_coverage_fraction"
+      ],
+      "properties": {
+        "scene_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "selected_pixel_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "detector_valid_pixel_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "scene_valid_pixel_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "scene_valid_coverage_fraction": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "case_window_pixel_count",
+        "valid_pixel_count",
+        "valid_coverage_fraction",
+        "minimum_required_fraction",
+        "accepted",
+        "rejection_reason"
+      ],
+      "properties": {
+        "case_window_pixel_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "valid_pixel_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "valid_coverage_fraction": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "minimum_required_fraction": {
+          "const": 0.2
+        },
+        "accepted": {
+          "type": "boolean"
+        },
+        "rejection_reason": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "valid_coverage_below_threshold",
+            null
+          ]
+        }
+      }
+    },
+    "comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "availability",
+        "reason",
+        "display_order",
+        "option_a",
+        "option_b",
+        "paired_other_factors",
+        "primary_assessment_required_first",
+        "selected_or_activated"
+      ],
+      "properties": {
+        "availability": {
+          "enum": [
+            "available",
+            "partial",
+            "unreviewable"
+          ]
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "display_order": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": "A"
+            },
+            {
+              "const": "B"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "option_a": {
+          "$ref": "#/$defs/blind_option"
+        },
+        "option_b": {
+          "$ref": "#/$defs/blind_option"
+        },
+        "paired_other_factors": {
+          "const": true
+        },
+        "primary_assessment_required_first": {
+          "const": true
+        },
+        "selected_or_activated": {
+          "const": false
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "availability": {
+                "const": "available"
+              }
+            },
+            "required": [
+              "availability"
+            ]
+          },
+          "then": {
+            "properties": {
+              "reason": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "blind_option": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "blind_option_id",
+        "blind_cell_ids",
+        "artifacts",
+        "coverage_summary"
+      ],
+      "properties": {
+        "blind_option_id": {
+          "$ref": "#/$defs/blind_option_id"
+        },
+        "blind_cell_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/blind_cell_id"
+          },
+          "uniqueItems": true
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/artifact"
+          }
+        },
+        "coverage_summary": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "available_cell_count",
+            "rejected_low_coverage_cell_count",
+            "unavailable_cell_count"
+          ],
+          "properties": {
+            "available_cell_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "rejected_low_coverage_cell_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "unavailable_cell_count": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    },
+    "blank_review_method": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "availability",
+        "option_a",
+        "option_b",
+        "display_order",
+        "preference",
+        "reviewer_confidence",
+        "evidence_reason",
+        "selected_or_activated"
+      ],
+      "properties": {
+        "availability": {
+          "enum": [
+            "available",
+            "partial",
+            "unreviewable"
+          ]
+        },
+        "option_a": {
+          "$ref": "#/$defs/blind_option_id"
+        },
+        "option_b": {
+          "$ref": "#/$defs/blind_option_id"
+        },
+        "display_order": {
+          "const": [
+            "A",
+            "B"
+          ]
+        },
+        "preference": {
+          "type": "null"
+        },
+        "reviewer_confidence": {
+          "type": "null"
+        },
+        "evidence_reason": {
+          "type": "null"
+        },
+        "selected_or_activated": {
+          "const": false
+        }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "bytes",
+        "sha256",
+        "media_type",
+        "role"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/safe_path"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "media_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "role": {
+          "enum": [
+            "cloud_mask_panel",
+            "daily_composition_panel",
+            "drought_adjustment_panel",
+            "detection_overlay",
+            "coverage_record",
+            "rainfall_reference",
+            "source_provenance",
+            "other_method_evidence"
+          ]
+        }
+      }
+    }
+  }
+}
