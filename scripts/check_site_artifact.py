@@ -229,6 +229,16 @@ def _run_cases() -> list[dict]:
     ]
     for case in cases:
         case["expected"] = sa.run_statistics(case["features"])
+        # Which features the release's strong subset object must contain. Pinned
+        # beside the statistics because the two have to agree: the page shows
+        # `strong` and loads that object, and a subset built from the property
+        # predicate alone is larger than the count reported next to it.
+        # By identity, not equality: two features can be equal dicts, and `in`
+        # would then report the same index twice and miss the other.
+        chosen = {id(feature) for feature in sa.strong_features(case["features"])}
+        case["expected_strong_indices"] = [
+            index for index, feature in enumerate(case["features"]) if id(feature) in chosen
+        ]
     return cases
 
 

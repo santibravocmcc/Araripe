@@ -1027,6 +1027,7 @@
         "pcount_max": 1,
         "strong": 0
       },
+      "expected_strong_indices": [],
       "features": [],
       "name": "empty run reports zeros and the pcount floor",
       "why": "A date with no alerts is a valid observation of absence (GREEN_RELEASE_CONTRACT_V1 alert_state 'zero_alerts'), never to be collapsed into no-data. pcount_max must still be 1 or the UI slider range collapses."
@@ -1044,6 +1045,7 @@
         "pcount_max": 16,
         "strong": 0
       },
+      "expected_strong_indices": [],
       "features": [
         {
           "geometry": {
@@ -1237,6 +1239,7 @@
         "pcount_max": 1,
         "strong": 0
       },
+      "expected_strong_indices": [],
       "features": [
         {
           "geometry": {
@@ -1324,6 +1327,9 @@
         "pcount_max": 3,
         "strong": 1
       },
+      "expected_strong_indices": [
+        0
+      ],
       "features": [
         {
           "geometry": {
@@ -1486,6 +1492,10 @@
         "pcount_max": 2,
         "strong": 2
       },
+      "expected_strong_indices": [
+        0,
+        1
+      ],
       "features": [
         {
           "geometry": {
@@ -1576,6 +1586,9 @@
         "pcount_max": 2,
         "strong": 1
       },
+      "expected_strong_indices": [
+        0
+      ],
       "features": [
         {
           "geometry": {
@@ -1630,6 +1643,7 @@
         "pcount_max": 1,
         "strong": 0
       },
+      "expected_strong_indices": [],
       "features": [
         {
           "geometry": {
@@ -1717,6 +1731,9 @@
         "pcount_max": 2,
         "strong": 1
       },
+      "expected_strong_indices": [
+        0
+      ],
       "features": [
         {
           "geometry": {
@@ -1793,6 +1810,7 @@
         "pcount_max": 4,
         "strong": 0
       },
+      "expected_strong_indices": [],
       "features": [
         {
           "geometry": {
@@ -1883,6 +1901,7 @@
         "pcount_max": 1,
         "strong": 0
       },
+      "expected_strong_indices": [],
       "features": [
         {
           "geometry": {

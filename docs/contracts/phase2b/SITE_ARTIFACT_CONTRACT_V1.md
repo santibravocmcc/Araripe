@@ -186,6 +186,29 @@ list. A date whose `alert_state` is `alerts` must publish at least one object
 (`GREEN_RELEASE_CONTRACT_V1.md` §3, product completeness), so an empty list
 means the release and the index disagree and the composer must stop.
 
+### And what the strong object must contain
+
+**The strong subset is exactly the counted features that are strong** —
+`strong_features`, not `is_strong`. The two are different, and the difference
+is geometry: `is_strong` reads *properties* and says nothing about geometry,
+while `count` and therefore `strong` include only areal features. A producer
+that filters on the property predicate alone publishes an object with *more*
+features than the `strong` number printed beside it, and the page loads that
+object and prints that number.
+
+This was found rather than reasoned: the site's fixture carries a `Point`
+with `confidence_label: high` and a streak of 30, which satisfies `is_strong`
+and is not a counted alert. The composer's cross-check refused the release, and
+the refusal was correct — the fixture was wrong. The vectors now pin the subset
+membership per case (`expected_strong_indices`) beside the statistics, because
+the two must agree.
+
+`site/scripts/site_artifact.py` verifies this against every release it composes
+from, by downloading the strong object and comparing its feature count. That
+check can be disabled with `--skip-strong-check` to save bytes, and disabling
+it is the only way to publish an index whose `strong` disagrees with the object
+the page loads — so the flag says so.
+
 **This is a requirement ON the run assembler, which does not exist yet** — not
 a description of something running. It is the first written requirement on that
 producer, and §9 records the gap.

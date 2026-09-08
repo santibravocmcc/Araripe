@@ -242,6 +242,34 @@ def is_strong(properties: Mapping[str, Any]) -> bool:
     )
 
 
+def is_counted(feature: Mapping[str, Any]) -> bool:
+    """Whether a feature is an alert the site counts and draws.
+
+    Geometry, not properties: a feature with no areal geometry carries no area
+    and is not displayed.
+    """
+
+    return ((feature.get("geometry") or {}).get("type")) in COUNTED_GEOMETRY_TYPES
+
+
+def strong_features(features: Iterable[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
+    """The features the strong subset object must contain, in input order.
+
+    Both conditions, and the conjunction is the point: ``is_strong`` reads
+    *properties* and says nothing about geometry, while ``run_statistics``
+    counts only *areal* features.  Applying only the property predicate builds
+    a subset larger than the ``strong`` count reported beside it — found by the
+    fixture, where a Point carrying ``confidence_label: high`` and a streak of
+    30 landed in the subset and not in the count.
+
+    So: **the strong subset is exactly the counted features that are strong.**
+    A run assembler that filters on properties alone publishes an object whose
+    feature count does not match the number the page displays.
+    """
+
+    return [f for f in features if is_counted(f) and is_strong(f.get("properties") or {})]
+
+
 def run_statistics(features: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
     """The statistics for one UTC date, from that date's alert features.
 
@@ -262,8 +290,7 @@ def run_statistics(features: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
     stats["pcount_max"] = MIN_PCOUNT_MAX
 
     for feature in features:
-        geometry = feature.get("geometry") or {}
-        if geometry.get("type") not in COUNTED_GEOMETRY_TYPES:
+        if not is_counted(feature):
             continue
         properties = feature.get("properties") or {}
 

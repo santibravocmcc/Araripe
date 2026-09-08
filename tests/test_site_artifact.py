@@ -97,6 +97,45 @@ def test_run_statistics_match_the_vector(case):
     assert sa.run_statistics(case["features"]) == case["expected"]
 
 
+@pytest.mark.parametrize("case", VECTORS["run_cases"], ids=_ids(VECTORS["run_cases"]))
+def test_the_strong_subset_is_the_counted_features_that_are_strong(case):
+    """The release's strong object must hold exactly these features.
+
+    Vector-pinned beside the statistics because the two have to agree: the page
+    displays `strong` and loads that object.
+    """
+
+    chosen = {id(feature) for feature in sa.strong_features(case["features"])}
+    indices = [i for i, feature in enumerate(case["features"]) if id(feature) in chosen]
+    assert indices == case["expected_strong_indices"]
+    assert len(indices) == case["expected"]["strong"]
+
+
+def test_a_strong_property_set_on_a_non_areal_geometry_is_not_in_the_subset():
+    """The bug the fixture found.
+
+    ``is_strong`` reads properties and says nothing about geometry, so a Point
+    carrying `confidence_label: high` and a streak of 30 satisfies it — and is
+    not a counted alert. Filtering on the property predicate alone builds a
+    subset larger than the count published beside it.
+    """
+
+    point = {
+        "type": "Feature",
+        "geometry": {"type": "Point", "coordinates": [-39.4, -7.2]},
+        "properties": {
+            "confidence_label": "high",
+            "persistence_count": 30,
+            "lc_natural_frac_10m": 1.0,
+            "area_ha": 99.0,
+        },
+    }
+    assert sa.is_strong(point["properties"]) is True
+    assert sa.is_counted(point) is False
+    assert sa.strong_features([point]) == []
+    assert sa.run_statistics([point])["strong"] == 0
+
+
 def test_count_is_not_the_length_of_the_feature_array():
     """The claim the 'non-areal geometry' vector exists to protect, stated once
     here so a reader does not have to infer it from a case name."""
