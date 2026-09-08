@@ -43,6 +43,34 @@ PREDATES_THE_METHOD = frozenset(
 
 SHA40 = re.compile(r"\b[0-9a-f]{40}\b")
 
+#: Pré-requisitos da **Phase 6** que foram listados como "ação do dono" em
+#: quatro briefings seguidos — 2B.4, 2B.4B, o gate P2B e a primeira versão do
+#: 2A6_LANDING — sem nunca serem ação a tomar. Os dois exigem
+#: `Workers Scripts: Edit` em nível de conta, que alcança o Worker de produção,
+#: e a varredura das Phases 3, 4 e 5 do roadmap canônico não menciona Worker,
+#: rota, hostname, deploy, domínio nem Environment. Registrado em
+#: `PACKAGE_2A6_LANDING_PROMPT.md` §0-bis e na tabela de recomendação de
+#: `GREEN_ROUTE_VERIFICATION_LADDER.md`.
+#:
+#: Um briefing pode e deve EXPLICAR os dois; o que ele não pode é pedi-los na
+#: seção "O que você precisa fazer", porque ali o dono lê como decisão aberta e
+#: pergunta de novo — o que aconteceu.
+PHASE_6_NOT_OWNER_ACTIONS = (
+    "endereço temporário ao servidor de teste",
+    'ambiente" protegido no repositório do site',
+)
+
+#: Briefings escritos ANTES de isto ser medido (2026-09-08). Não retrofitados
+#: pelo mesmo motivo de `PREDATES_THE_METHOD`: eles descrevem o presente deles.
+#: Esta lista não deve crescer.
+PREDATES_THE_PHASE_6_FINDING = frozenset(
+    {
+        "PACKAGE_2B4_PROMPT.md",
+        "PACKAGE_2B4B_PROMPT.md",
+        "PACKAGE_2B_GATE_PROMPT.md",
+    }
+)
+
 
 def prompts() -> list[Path]:
     return sorted(OPERATIONS.glob("PACKAGE_*_PROMPT.md"))
@@ -147,4 +175,36 @@ def test_each_question_is_actually_answered(path):
         body = section[start:end].strip()
         assert len(body) >= 10, (
             f"{path.name} leaves {question!r} empty or near-empty"
+        )
+
+
+@pytest.mark.parametrize(
+    "path",
+    [p for p in governed() if p.name not in PREDATES_THE_PHASE_6_FINDING],
+    ids=lambda p: p.name,
+)
+def test_phase_6_prerequisites_are_not_asked_of_the_owner(path):
+    """Uma lista de ações do dono só vale se todo item for ação.
+
+    Estes dois viajaram por quatro briefings como pedido, e o dono voltou a
+    perguntar se eram pendências reais — o custo de um item que parece decisão
+    e não é. Explicar, sim; pedir, não.
+    """
+
+    section = owner_section(path.read_text(encoding="utf-8"))
+    assert section is not None
+    marker = "### O que você precisa fazer"
+    assert marker in section
+    start = section.index(marker)
+    rest = section[start + len(marker):]
+    following = [
+        rest.index(q) for q in REQUIRED_QUESTIONS if q in rest
+    ]
+    asks = rest[: min(following)] if following else rest
+    for item in PHASE_6_NOT_OWNER_ACTIONS:
+        assert item not in asks, (
+            f"{path.name} pede '{item}' na lista de ações do dono. É "
+            "pré-requisito da Phase 6, não decisão de hoje: exige "
+            "Workers-Edit de conta, e nenhum bullet das Phases 3, 4 e 5 "
+            "depende dele. Explique-o fora da lista."
         )
