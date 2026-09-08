@@ -85,9 +85,50 @@ Worker** — vale registrar porque cada uma ensinou algo:
   site (Package 2B.4B) e de dado real, e portanto não está bloqueado só por
   hostname.
 
-## Degrau 2 — bindings remotos: R2 real, Worker local, nenhum endereço público
+## Degrau 2 — bindings remotos. NÃO RECOMENDADO: o custo é maior do que o ganho.
 
-**Custo: um token de API da Cloudflare, e ele é mais amplo do que parece.**
+> **Corrigido em 2026-09-08, depois de uma tentativa real.** A primeira versão
+> desta seção dizia que o degrau 2 custava um token **somente de leitura** de
+> R2. Isso estava **errado**, e o erro só apareceu quando o dono tentou.
+>
+> Bindings remotos funcionam por uma **sessão de proxy remoto**: o wrangler cria
+> um Worker **na conta** e roteia as chamadas do binding por ele
+> (`startRemoteProxySession`, `remoteProxyConnectionString` —
+> <https://developers.cloudflare.com/workers/local-development/>). Logo o token
+> precisa de **`Workers Scripts: Edit`**, que é de nível de conta.
+>
+> Um token `Admin Read` de R2 falha, e falha exatamente assim:
+>
+>     ✘ [ERROR] This Worker uses bindings that need to run remotely, even when
+>       developing locally, but the remote session could not be authenticated.
+>
+> A mensagem sugere token inválido; o token estava válido. O que faltava era
+> Workers, e o resumo do token confirmava: *"list buckets and view bucket
+> configuration, read and list objects, and read access to data catalog"* — só
+> R2, nenhuma permissão de Workers.
+>
+> **Consequência: o degrau 2 custa a mesma autoridade que o token de deploy** —
+> aquele que, como `SITE_GREEN_ENVIRONMENT_SETUP.md` §1 registra, é capaz de
+> implantar `observatorio-chapada`. Não existe escopo "só este script".
+
+**O que ele fecharia, e por que isso vale pouco.** A pergunta é "o binding R2
+real se comporta como a simulação local?". Mas os objetos que o degrau 1 serve
+**são os objetos reais**: eles foram lidos de `araripe-v2-staging` com a chave
+S3 bucket-scoped e são os fixtures, e o sha256 do corpo servido foi conferido
+contra o manifesto. Então "o que está no bucket é o que a rota serve" já está
+estabelecido.
+
+O que resta sem verificação é apenas se a API de binding do R2 (`.get()`,
+`object.size`, streaming) se comporta como o miniflare — uma pergunta sobre a
+plataforma da Cloudflare, não sobre este projeto. A falha dela apareceria no
+cutover, que é justamente quando a janela da Phase 6 existe para observar.
+
+**Recomendação: pular o degrau 2.** Pagar Workers-Edit em nível de conta para
+fechar essa margem é o pior lado do trade. Se a conta ganhar um token de deploy
+verde algum dia (Phase 6, ou o Environment de `SITE_GREEN_ENVIRONMENT_SETUP.md`),
+o degrau 2 sai de graça junto — rode-o então.
+
+### Se ainda assim quiser rodar, o custo real é este
 
 Acrescentar **`"remote": true`** ao binding R2 faz o `wrangler dev` rodar o
 Worker **localmente** e mandar as chamadas de R2 para o **bucket real**
@@ -124,9 +165,19 @@ Consequências, e não são negociáveis:
 **Um comando, depois do token.** A primeira versão desta seção pedia para editar
 o JSON à mão e tinha três defeitos — §"O procedimento que isto substitui" abaixo.
 
-1. Cloudflare → **R2** → **API Tokens** → **Manage** → **Create Account API
-   token**. Nome `araripe-remote-binding-ro`, permissão **`Admin Read`**, e uma
-   data de expiração curta (dias, não meses).
+1. Cloudflare → ícone do perfil → **API Tokens** → **Create Custom Token** —
+   **não** o menu de tokens do R2, que só emite permissões de R2 e falha na
+   sessão de proxy. Permissões:
+
+   | Tipo | Recurso | Nível |
+   | --- | --- | --- |
+   | Account | **Workers Scripts** | **Edit** |
+   | Account | **Workers R2 Storage** | **Read** |
+
+   Deixe **Zone Resources vazio**, restrinja a conta a
+   `9416750169311ee4afc18a8ff3c771d4`, e ponha expiração curta (dias). Note que
+   `Workers Scripts: Edit` **alcança o Worker de produção** — é o motivo da
+   recomendação acima.
 2. No shell, e **só** no shell:
 
        export CLOUDFLARE_API_TOKEN=…      # cole o valor aqui, e em nenhum arquivo
@@ -287,10 +338,16 @@ wrangler pede subdomínio — e se pedir, o degrau 3 volta a ser o caminho.
 | | fecha | custo | quando |
 | --- | --- | --- | --- |
 | **1** | comportamento do Worker, inteiro | zero | **feito** |
-| **2** | o binding R2 real | token `Admin Read` de conta, guardado pelo dono, TTL curto | quando der |
+| **2** | a API de binding do R2 | **`Workers Scripts: Edit` de conta** — alcança o Worker de produção | **pular**; sai de graça se um token de deploy existir |
 | **3** | a borda da Cloudflare | auditoria vermelha + exposição pública | **Phase 6** |
 
 **O degrau 1 é suficiente para o Package 2B.4B seguir.** O que falta dos degraus
 2 e 3 não bloqueia escrever o artefato do site nem a publicação sem bot push —
-bloqueia apenas afirmar que a borda não interfere, e essa afirmação só é
-necessária no cutover.
+bloqueia apenas afirmar que a plataforma da Cloudflare não interfere, e essa
+afirmação só é necessária no cutover.
+
+**Nenhum dos dois vale um token de conta hoje.** A tentativa de 2026-09-08
+mostrou que o degrau 2 custa `Workers Scripts: Edit`, e o degrau 3 custa a
+auditoria de isolação. Os dois se pagam sozinhos quando a Phase 6 revisitar o
+desenho de credenciais inteiro; até lá, o degrau 1 é a verificação, e ela é
+sólida.
