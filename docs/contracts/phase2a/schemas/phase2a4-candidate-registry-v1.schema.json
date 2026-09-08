@@ -1,0 +1,1173 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://observatoriodachapadadoararipe.com/data/schemas/phase2a4-candidate-registry-v1.schema.json",
+  "title": "Phase 2A.4 fixed method-candidate registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schema_version",
+    "registry_id",
+    "registry_version",
+    "status",
+    "package_scope",
+    "fixed_bindings",
+    "families",
+    "factorial_design",
+    "review_and_blinding",
+    "decision_state"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "https://observatoriodachapadadoararipe.com/data/schemas/phase2a4-candidate-registry-v1.schema.json"
+    },
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "registry_id": {
+      "const": "araripe-phase2a4-candidates-v1"
+    },
+    "registry_version": {
+      "const": "1.0.0"
+    },
+    "status": {
+      "const": "fixed_candidates_no_scientific_selection"
+    },
+    "package_scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "roadmap_package",
+        "purpose",
+        "provisional_audit_inputs_only",
+        "primary_change_assessment_precedes_method_comparison",
+        "missing_evidence_preserved",
+        "raw_valid_detections_preserved",
+        "phase2a5_policy_unchanged"
+      ],
+      "properties": {
+        "roadmap_package": {
+          "const": "2A.4"
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1
+        },
+        "provisional_audit_inputs_only": {
+          "const": true
+        },
+        "primary_change_assessment_precedes_method_comparison": {
+          "const": true
+        },
+        "missing_evidence_preserved": {
+          "const": true
+        },
+        "raw_valid_detections_preserved": {
+          "const": true
+        },
+        "phase2a5_policy_unchanged": {
+          "const": true
+        }
+      }
+    },
+    "fixed_bindings": {
+      "$ref": "#/$defs/fixed_bindings"
+    },
+    "families": {
+      "$ref": "#/$defs/families"
+    },
+    "factorial_design": {
+      "$ref": "#/$defs/factorial_design"
+    },
+    "review_and_blinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "review_schema_version",
+        "compatible_method_families",
+        "reviewer_option_labels",
+        "true_mapping_coordinator_only",
+        "mapping_bijection_required",
+        "deterministic_display_order_required",
+        "primary_change_assessment_first",
+        "double_review_evidence_identical",
+        "selected_or_activated"
+      ],
+      "properties": {
+        "review_schema_version": {
+          "const": "1.0.0"
+        },
+        "compatible_method_families": {
+          "const": [
+            "cloud_mask",
+            "daily_composition",
+            "drought_adjustment"
+          ]
+        },
+        "reviewer_option_labels": {
+          "const": [
+            "A",
+            "B"
+          ]
+        },
+        "true_mapping_coordinator_only": {
+          "const": true
+        },
+        "mapping_bijection_required": {
+          "const": true
+        },
+        "deterministic_display_order_required": {
+          "const": true
+        },
+        "primary_change_assessment_first": {
+          "const": true
+        },
+        "double_review_evidence_identical": {
+          "const": true
+        },
+        "selected_or_activated": {
+          "const": false
+        }
+      }
+    },
+    "decision_state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "qualified_reviewer_evidence_present",
+        "selected_candidates",
+        "drought_adjustment_activated",
+        "cloud_mask_locked",
+        "daily_composition_locked",
+        "release_or_replay_authorized"
+      ],
+      "properties": {
+        "qualified_reviewer_evidence_present": {
+          "const": false
+        },
+        "selected_candidates": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "drought_adjustment",
+            "cloud_mask",
+            "daily_composition"
+          ],
+          "properties": {
+            "drought_adjustment": {
+              "type": "null"
+            },
+            "cloud_mask": {
+              "type": "null"
+            },
+            "daily_composition": {
+              "type": "null"
+            }
+          }
+        },
+        "drought_adjustment_activated": {
+          "const": false
+        },
+        "cloud_mask_locked": {
+          "const": false
+        },
+        "daily_composition_locked": {
+          "const": false
+        },
+        "release_or_replay_authorized": {
+          "const": false
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+    },
+    "fixed_bindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "monitoring_extent",
+        "baseline",
+        "phase2a3_parent",
+        "imagery_source",
+        "processing_grid",
+        "coverage"
+      ],
+      "properties": {
+        "monitoring_extent": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "extent_id",
+            "extent_version",
+            "geometry_crs",
+            "bounds",
+            "geometry_sha256",
+            "bounds_sha256"
+          ],
+          "properties": {
+            "extent_id": {
+              "const": "araripe-implementation-rectangle-v1"
+            },
+            "extent_version": {
+              "const": "1.0.0"
+            },
+            "geometry_crs": {
+              "const": "EPSG:4326"
+            },
+            "bounds": {
+              "const": [
+                -40.89236812577142,
+                -7.840780758480428,
+                -38.95208146319247,
+                -6.957104781339829
+              ]
+            },
+            "geometry_sha256": {
+              "const": "b4986ef80d8a0d6e65bbb41b575dbd952c010415bf3aee93a88412b3b657e8c7"
+            },
+            "bounds_sha256": {
+              "const": "93f254373d6b203bca33aa5c356bd03fec3bff7f43c9c15b368cc2bdb7029f28"
+            }
+          }
+        },
+        "baseline": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "baseline_id",
+            "baseline_version",
+            "manifest_path",
+            "manifest_sha256",
+            "object_count",
+            "inventory_sha256",
+            "rebuild_permitted"
+          ],
+          "properties": {
+            "baseline_id": {
+              "const": "araripe-s2-sr-harmonized-monthly"
+            },
+            "baseline_version": {
+              "const": "1.0.0"
+            },
+            "manifest_path": {
+              "const": "config/baseline_manifest_v1.json"
+            },
+            "manifest_sha256": {
+              "const": "15a1ed3cea7c804d18d2c82c86a7b9a030687fedb01b315d543965b1f26f0a82"
+            },
+            "object_count": {
+              "const": 72
+            },
+            "inventory_sha256": {
+              "const": "c0ede11bb02cdcfbf67653dfee521f0e922955179c8da5b69c07ea5069cc1054"
+            },
+            "rebuild_permitted": {
+              "const": false
+            }
+          }
+        },
+        "phase2a3_parent": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "package_id",
+            "population_snapshot_id",
+            "manifest_sha256",
+            "scientific_status",
+            "canonical_observation_or_event_ids_available"
+          ],
+          "properties": {
+            "package_id": {
+              "const": "p2a3-pilot-package-v1-050d2b944679385e1a3e3bf209fbe2f3a6a3892a4016ef2a24c1f96e281bf5c8"
+            },
+            "population_snapshot_id": {
+              "const": "p2a3-population-v1-100c4e3e2f293235211d519392323c6ee0e6f2b88928d9fc8a74a71b52d80c6c"
+            },
+            "manifest_sha256": {
+              "const": "4b78167930fcb7a928b40d50ae1d54675e4cca47a10857bcbf28db803c18946b"
+            },
+            "scientific_status": {
+              "const": "provisional_audit_inputs_only"
+            },
+            "canonical_observation_or_event_ids_available": {
+              "const": false
+            }
+          }
+        },
+        "imagery_source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "catalog",
+            "stac_endpoint",
+            "collection_id",
+            "required_asset_keys",
+            "cloud_probability_asset_key",
+            "scene_metadata_filter",
+            "spatial_filter",
+            "temporal_filter",
+            "scene_identity",
+            "scene_list_order",
+            "result_limit",
+            "pagination_policy",
+            "same_scene_set_for_all_factorial_cells",
+            "query_fingerprint_required",
+            "stac_item_json_sha256_required",
+            "reflectance_normalization",
+            "asset_provenance",
+            "missing_auxiliary_input_policy"
+          ],
+          "properties": {
+            "catalog": {
+              "const": "Element84 Earth Search"
+            },
+            "stac_endpoint": {
+              "const": "https://earth-search.aws.element84.com/v1"
+            },
+            "collection_id": {
+              "const": "sentinel-2-l2a"
+            },
+            "required_asset_keys": {
+              "const": [
+                "blue",
+                "red",
+                "nir",
+                "nir08",
+                "swir16",
+                "swir22",
+                "scl",
+                "cloud"
+              ]
+            },
+            "cloud_probability_asset_key": {
+              "const": "cloud"
+            },
+            "scene_metadata_filter": {
+              "const": {
+                "field": "eo:cloud_cover",
+                "operator": "lt",
+                "value": 60
+              }
+            },
+            "spatial_filter": {
+              "const": "intersects_fixed_grid_aligned_case_window"
+            },
+            "temporal_filter": {
+              "const": "target_date_inclusive_to_next_date_exclusive"
+            },
+            "scene_identity": {
+              "const": "provider_native_item_id_with_fixed_collection_binding"
+            },
+            "scene_list_order": {
+              "const": "utf8_ascending"
+            },
+            "result_limit": {
+              "type": "null"
+            },
+            "pagination_policy": {
+              "const": "all_pages_until_exhausted"
+            },
+            "same_scene_set_for_all_factorial_cells": {
+              "const": true
+            },
+            "query_fingerprint_required": {
+              "const": true
+            },
+            "stac_item_json_sha256_required": {
+              "const": true
+            },
+            "reflectance_normalization": {
+              "const": {
+                "policy_version": "sentinel2-l2a-stac-scale-offset-zero-fill-nonnegative-v1",
+                "scale_offset_source": "raster:bands[0].scale_and_offset_required",
+                "raw_zero_fill": "invalid_before_resampling_and_scaling",
+                "negative_scaled_reflectance": "clip_to_zero",
+                "output_dtype": "float32"
+              }
+            },
+            "asset_provenance": {
+              "const": {
+                "provider_asset_href_required": true,
+                "unsigned_asset_href_required": true,
+                "transport_href_resolution_policy": "earth-search-provider-https-or-fixed-public-s3-bucket-to-https-v1",
+                "url_query_and_fragment_forbidden": true,
+                "stac_asset_metadata_sha256_required": true,
+                "upstream_full_asset_checksum": "record_if_provider_supplies_else_null",
+                "http_metadata_fields": [
+                  "status_code",
+                  "content_length",
+                  "etag",
+                  "last_modified",
+                  "content_type",
+                  "accept_ranges"
+                ],
+                "read_mode": "remote_raster_range_read_to_aligned_context_window",
+                "local_window_data_sha256_required": true,
+                "local_window_checksum_scope": "decoded_grid_aligned_context_window_not_full_remote_asset",
+                "full_remote_asset_checksum_inference_forbidden": true
+              }
+            },
+            "missing_auxiliary_input_policy": {
+              "const": "mark_affected_candidate_unavailable_no_fallback"
+            }
+          }
+        },
+        "processing_grid": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "crs",
+            "width",
+            "height",
+            "transform",
+            "bounds",
+            "pixel_size_m",
+            "evaluation_scope",
+            "case_window_binding",
+            "resampling"
+          ],
+          "properties": {
+            "crs": {
+              "const": "EPSG:32724"
+            },
+            "width": {
+              "const": 10773
+            },
+            "height": {
+              "const": 4999
+            },
+            "transform": {
+              "const": [
+                20.0,
+                0.0,
+                290080.0,
+                0.0,
+                -20.0,
+                9231780.0
+              ]
+            },
+            "bounds": {
+              "const": [
+                290080.0,
+                9131800.0,
+                505540.0,
+                9231780.0
+              ]
+            },
+            "pixel_size_m": {
+              "const": 20
+            },
+            "evaluation_scope": {
+              "const": "fixed_per_case_window_aligned_to_reference_grid"
+            },
+            "case_window_binding": {
+              "const": {
+                "comparison_window_rule": "project target geometry bounds to EPSG:32724, expand by 500 m, round outward to the accepted 20 m grid, and clip to the accepted reference grid",
+                "comparison_padding_m": 500,
+                "shadow_auxiliary_halo_m": 1060,
+                "auxiliary_halo_denominator_included": false,
+                "stac_intersection_geometry": "fixed comparison window without auxiliary halo",
+                "integer_row_column_offsets_required": true,
+                "integer_width_height_required": true,
+                "bounds_and_transform_required": true,
+                "same_window_for_all_factorial_cells": true,
+                "window_fixed_before_candidate_evaluation": true
+              }
+            },
+            "resampling": {
+              "const": {
+                "reflectance": "bilinear",
+                "scl": "nearest",
+                "cloud_probability": "nearest",
+                "binary_masks": "nearest"
+              }
+            }
+          }
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "denominator_pixel_rule",
+            "valid_pixel_rule",
+            "valid_coverage_formula",
+            "minimum_valid_coverage_fraction",
+            "record_per_scene_coverage",
+            "record_composite_coverage",
+            "rejection_status",
+            "missing_is_zero"
+          ],
+          "properties": {
+            "denominator_pixel_rule": {
+              "const": "all_pixels_in_fixed_grid_aligned_case_window"
+            },
+            "valid_pixel_rule": {
+              "const": "finite_required_reflectance_after_candidate_mask_and_composition_and_at_least_one_configured_index_with_finite_current_baseline_mean_and_std"
+            },
+            "valid_coverage_formula": {
+              "const": "valid_pixel_count/case_window_pixel_count"
+            },
+            "minimum_valid_coverage_fraction": {
+              "const": 0.2
+            },
+            "record_per_scene_coverage": {
+              "const": true
+            },
+            "record_composite_coverage": {
+              "const": true
+            },
+            "rejection_status": {
+              "const": "rejected_low_coverage"
+            },
+            "missing_is_zero": {
+              "const": false
+            }
+          }
+        }
+      }
+    },
+    "families": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "drought_adjustment",
+        "cloud_mask",
+        "daily_composition"
+      ],
+      "properties": {
+        "drought_adjustment": {
+          "$ref": "#/$defs/drought_family"
+        },
+        "cloud_mask": {
+          "$ref": "#/$defs/cloud_family"
+        },
+        "daily_composition": {
+          "$ref": "#/$defs/composition_family"
+        }
+      }
+    },
+    "drought_family": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_ids",
+        "candidates"
+      ],
+      "properties": {
+        "candidate_ids": {
+          "const": [
+            "drought-disabled-v1",
+            "chirps-v2-spi3-season-matched-1981-2025-v1"
+          ]
+        },
+        "candidates": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "prefixItems": [
+            {
+              "$ref": "#/$defs/drought_disabled"
+            },
+            {
+              "$ref": "#/$defs/drought_spi3"
+            }
+          ],
+          "items": false
+        }
+      }
+    },
+    "drought_disabled": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_id",
+        "candidate_version",
+        "label",
+        "mode",
+        "threshold_adjustment",
+        "rainfall_input_required",
+        "fallback",
+        "activation"
+      ],
+      "properties": {
+        "candidate_id": {
+          "const": "drought-disabled-v1"
+        },
+        "candidate_version": {
+          "const": "1.0.0"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mode": {
+          "const": "disabled"
+        },
+        "threshold_adjustment": {
+          "const": 0.0
+        },
+        "rainfall_input_required": {
+          "const": false
+        },
+        "fallback": {
+          "const": "not_applicable"
+        },
+        "activation": {
+          "const": false
+        }
+      }
+    },
+    "drought_spi3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_id",
+        "candidate_version",
+        "label",
+        "mode",
+        "rainfall_source",
+        "target_period",
+        "reference_distribution",
+        "decision_rule",
+        "failure_policy",
+        "activation"
+      ],
+      "properties": {
+        "candidate_id": {
+          "const": "chirps-v2-spi3-season-matched-1981-2025-v1"
+        },
+        "candidate_version": {
+          "const": "1.0.0"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mode": {
+          "const": "candidate_only"
+        },
+        "rainfall_source": {
+          "const": {
+            "provider": "Climate Hazards Center, UC Santa Barbara",
+            "dataset_id": "CHIRPS-2.0-monthly",
+            "base_url": "https://data.chc.ucsb.edu/products/CHIRPS-2.0/global_monthly/cogs/",
+            "filename_pattern": "chirps-v2.0.YYYY.MM.cog",
+            "access_mode": "public_read_only_remote_cog_range_read",
+            "reference_start_month": "1981-01",
+            "reference_end_month": "2025-12",
+            "source_inventory_and_checksums_required": true,
+            "source_url_and_http_metadata_required": true,
+            "upstream_full_asset_checksum": "record_if_provider_supplies_else_null",
+            "local_window_checksum_scope": "selected_chirps_window_not_full_remote_cog",
+            "full_remote_asset_checksum_inference_forbidden": true,
+            "regional_aggregation_extent_id": "araripe-implementation-rectangle-v1",
+            "regional_aggregation": {
+              "version": "cell-center-cos-lat-v1",
+              "cell_selection": "closed accepted rectangle; source cell center within exact EPSG:4326 bounds",
+              "validity": "dataset_valid_finite_monthly_precipitation_gte_zero",
+              "weight": "cos(latitude_cell_center_radians)",
+              "mean": "sum(value_times_weight_over_valid_cells)/sum(weight_over_valid_cells)",
+              "coverage": "sum(weight_over_valid_cells)/sum(weight_over_all_selected_cells)",
+              "coverage_denominator": "sum_cosine_latitude_weight_over_all_selected_cell_centers",
+              "resampling": "none"
+            }
+          }
+        },
+        "target_period": {
+          "const": {
+            "accumulation_months": 3,
+            "ending_month_rule": "calendar_month_immediately_preceding_acquisition_month",
+            "complete_month_required": true,
+            "three_complete_months_required": true
+          }
+        },
+        "reference_distribution": {
+          "const": {
+            "season_match": "same_ending_calendar_month_as_target_period",
+            "fixed_reference_only": true,
+            "minimum_complete_windows": 40,
+            "minimum_positive_windows": 2,
+            "distribution": "mixed_zero_gamma",
+            "gamma_location_fixed_at_zero": true,
+            "target_excluded_from_fit": true,
+            "normal_probability_clip": [
+              0.001,
+              0.999
+            ]
+          }
+        },
+        "decision_rule": {
+          "const": {
+            "drought_when_spi3_lt": -1.0,
+            "z_threshold_adjustment": 0.5,
+            "adjustment_direction": "add_to_negative_detection_z_threshold_magnitude"
+          }
+        },
+        "failure_policy": {
+          "const": {
+            "fallback": "forbidden",
+            "neutral_value_substitution": false,
+            "target_month_missing_or_invalid": "candidate_unavailable",
+            "reference_window_missing_or_invalid": "retained_incomplete_window_excluded_without_substitution",
+            "candidate_status_when_complete_reference_windows_below_minimum": "unavailable",
+            "disabled_candidate_substitution": false
+          }
+        },
+        "activation": {
+          "const": false
+        }
+      }
+    },
+    "cloud_family": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_ids",
+        "candidates"
+      ],
+      "properties": {
+        "candidate_ids": {
+          "const": [
+            "scl-explicit-clear-shadow-v1",
+            "scl-cloudprob-darkshadow-dilate-v1"
+          ]
+        },
+        "candidates": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "prefixItems": [
+            {
+              "$ref": "#/$defs/cloud_scl"
+            },
+            {
+              "$ref": "#/$defs/cloud_probability"
+            }
+          ],
+          "items": false
+        }
+      }
+    },
+    "cloud_scl": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_id",
+        "candidate_version",
+        "label",
+        "scl_clear_classes",
+        "scl_shadow_classes",
+        "scl_invalid_classes",
+        "scl_cloud_classes",
+        "cloud_probability",
+        "shadow_policy",
+        "dilation_m",
+        "missing_input_policy",
+        "locked"
+      ],
+      "properties": {
+        "candidate_id": {
+          "const": "scl-explicit-clear-shadow-v1"
+        },
+        "candidate_version": {
+          "const": "1.0.0"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scl_clear_classes": {
+          "const": [
+            2,
+            4,
+            5,
+            6,
+            7,
+            11
+          ]
+        },
+        "scl_shadow_classes": {
+          "const": [
+            3
+          ]
+        },
+        "scl_invalid_classes": {
+          "const": [
+            0,
+            1
+          ]
+        },
+        "scl_cloud_classes": {
+          "const": [
+            8,
+            9,
+            10
+          ]
+        },
+        "cloud_probability": {
+          "type": "null"
+        },
+        "shadow_policy": {
+          "const": {
+            "mode": "scl_class_only",
+            "scl_classes": [
+              3
+            ]
+          }
+        },
+        "dilation_m": {
+          "const": 0
+        },
+        "missing_input_policy": {
+          "const": "unavailable_no_fallback"
+        },
+        "locked": {
+          "const": false
+        }
+      }
+    },
+    "cloud_probability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_id",
+        "candidate_version",
+        "label",
+        "scl_clear_classes",
+        "scl_shadow_classes",
+        "scl_invalid_classes",
+        "scl_cloud_classes",
+        "cloud_probability",
+        "shadow_policy",
+        "dilation_m",
+        "dilation_target",
+        "missing_input_policy",
+        "locked"
+      ],
+      "properties": {
+        "candidate_id": {
+          "const": "scl-cloudprob-darkshadow-dilate-v1"
+        },
+        "candidate_version": {
+          "const": "1.0.0"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scl_clear_classes": {
+          "const": [
+            4,
+            5,
+            6,
+            7
+          ]
+        },
+        "scl_shadow_classes": {
+          "const": [
+            3
+          ]
+        },
+        "scl_invalid_classes": {
+          "const": [
+            0,
+            1
+          ]
+        },
+        "scl_cloud_classes": {
+          "const": [
+            8,
+            9,
+            10,
+            11
+          ]
+        },
+        "cloud_probability": {
+          "const": {
+            "asset_key": "cloud",
+            "source_item": "same_sentinel_2_l2a_stac_item",
+            "units": "uint8_percent_0_to_100",
+            "clear_when_lte": 40,
+            "separate_collection_join": false
+          }
+        },
+        "shadow_policy": {
+          "const": {
+            "mode": "scl_or_projected_dark_nir",
+            "scl_classes": [
+              3
+            ],
+            "dark_nir_asset_key": "nir",
+            "dark_nir_reflectance_lte": 0.15,
+            "within_cloud_distance_m": 1000,
+            "distance_metric": "euclidean_on_projected_processing_grid"
+          }
+        },
+        "dilation_m": {
+          "const": 60
+        },
+        "dilation_target": {
+          "const": "union_of_cloud_and_shadow_mask"
+        },
+        "missing_input_policy": {
+          "const": "unavailable_no_fallback"
+        },
+        "locked": {
+          "const": false
+        }
+      }
+    },
+    "composition_family": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_ids",
+        "candidates"
+      ],
+      "properties": {
+        "candidate_ids": {
+          "const": [
+            "coverage-ranked-first-valid-v1",
+            "min-cloudprob-sclrank-sceneid-v1"
+          ]
+        },
+        "candidates": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "prefixItems": [
+            {
+              "$ref": "#/$defs/composition_coverage"
+            },
+            {
+              "$ref": "#/$defs/composition_cloud_probability"
+            }
+          ],
+          "items": false
+        }
+      }
+    },
+    "composition_coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_id",
+        "candidate_version",
+        "label",
+        "scene_rank",
+        "pixel_selection",
+        "floating_point_rank_forbidden",
+        "contributing_scene_rule",
+        "record_selected_pixel_count_per_scene",
+        "missing_input_policy",
+        "locked"
+      ],
+      "properties": {
+        "candidate_id": {
+          "const": "coverage-ranked-first-valid-v1"
+        },
+        "candidate_version": {
+          "const": "1.0.0"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scene_rank": {
+          "const": [
+            "valid_pixel_count_desc",
+            "stac_item_id_utf8_asc"
+          ]
+        },
+        "pixel_selection": {
+          "const": "first_valid_pixel_in_ranked_scene_order"
+        },
+        "floating_point_rank_forbidden": {
+          "const": true
+        },
+        "contributing_scene_rule": {
+          "const": "scene_selected_for_at_least_one_output_pixel"
+        },
+        "record_selected_pixel_count_per_scene": {
+          "const": true
+        },
+        "missing_input_policy": {
+          "const": "unavailable_no_fallback"
+        },
+        "locked": {
+          "const": false
+        }
+      }
+    },
+    "composition_cloud_probability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_id",
+        "candidate_version",
+        "label",
+        "pixel_rank",
+        "scl_rank_order",
+        "scl_rank_is_quality_claim",
+        "cloud_probability_required_for_every_source_scene",
+        "contributing_scene_rule",
+        "record_selected_pixel_count_per_scene",
+        "missing_input_policy",
+        "locked"
+      ],
+      "properties": {
+        "candidate_id": {
+          "const": "min-cloudprob-sclrank-sceneid-v1"
+        },
+        "candidate_version": {
+          "const": "1.0.0"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pixel_rank": {
+          "const": [
+            "cloud_probability_uint8_asc",
+            "scl_rank_asc",
+            "stac_item_id_utf8_asc"
+          ]
+        },
+        "scl_rank_order": {
+          "const": [
+            2,
+            4,
+            5,
+            6,
+            7,
+            11
+          ]
+        },
+        "scl_rank_is_quality_claim": {
+          "const": false
+        },
+        "cloud_probability_required_for_every_source_scene": {
+          "const": true
+        },
+        "contributing_scene_rule": {
+          "const": "scene_selected_for_at_least_one_output_pixel"
+        },
+        "record_selected_pixel_count_per_scene": {
+          "const": true
+        },
+        "missing_input_policy": {
+          "const": "unavailable_no_fallback"
+        },
+        "locked": {
+          "const": false
+        }
+      }
+    },
+    "factorial_design": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "design_id",
+        "design_version",
+        "type",
+        "factor_order",
+        "expected_cell_count",
+        "same_frozen_cases",
+        "same_source_scene_set_within_case",
+        "no_case_replacement",
+        "treatment_cells",
+        "comparison_controls"
+      ],
+      "properties": {
+        "design_id": {
+          "const": "phase2a4-full-factorial-2x2x2-v1"
+        },
+        "design_version": {
+          "const": "1.0.0"
+        },
+        "type": {
+          "const": "full_factorial"
+        },
+        "factor_order": {
+          "const": [
+            "drought_adjustment",
+            "cloud_mask",
+            "daily_composition"
+          ]
+        },
+        "expected_cell_count": {
+          "const": 8
+        },
+        "same_frozen_cases": {
+          "const": true
+        },
+        "same_source_scene_set_within_case": {
+          "const": true
+        },
+        "no_case_replacement": {
+          "const": true
+        },
+        "treatment_cells": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/treatment_cell"
+          }
+        },
+        "comparison_controls": {
+          "const": {
+            "family_effects_use_all_counterfactual_cells": true,
+            "other_factors_held_as_paired_strata": true,
+            "case_and_input_provenance_identical_within_pair": true,
+            "desired_total_tuning_forbidden": true,
+            "technical_integrity_is_scientific_accuracy_evidence": false
+          }
+        }
+      }
+    },
+    "treatment_cell": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cell_id",
+        "drought_adjustment",
+        "cloud_mask",
+        "daily_composition"
+      ],
+      "properties": {
+        "cell_id": {
+          "type": "string",
+          "pattern": "^p2a4-cell-v1-d[01]-c[01]-m[01]$"
+        },
+        "drought_adjustment": {
+          "enum": [
+            "drought-disabled-v1",
+            "chirps-v2-spi3-season-matched-1981-2025-v1"
+          ]
+        },
+        "cloud_mask": {
+          "enum": [
+            "scl-explicit-clear-shadow-v1",
+            "scl-cloudprob-darkshadow-dilate-v1"
+          ]
+        },
+        "daily_composition": {
+          "enum": [
+            "coverage-ranked-first-valid-v1",
+            "min-cloudprob-sclrank-sceneid-v1"
+          ]
+        }
+      }
+    }
+  }
+}

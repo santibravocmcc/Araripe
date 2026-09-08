@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://observatoriodachapadadoararipe.com/data/schemas/persistence-contribution-v2.schema.json",
+  "title": "Araripe daily persistence contribution v2",
+  "description": "The single finalized persistence contribution for one event and one UTC observation date.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "contribution_key",
+    "identity_inputs_sha256",
+    "run_manifest_id",
+    "run_manifest_sha256",
+    "event_id",
+    "observed_on",
+    "source_acquisition_ids",
+    "source_observation_ids",
+    "daily_summary_sha256",
+    "finalization_status",
+    "finalization_condition",
+    "duplicate_policy",
+    "finalized_at"
+  ],
+  "properties": {
+    "schema_version": { "const": "2.0.0" },
+    "contribution_key": { "$ref": "#/$defs/contribution_key" },
+    "identity_inputs_sha256": { "$ref": "#/$defs/sha256" },
+    "run_manifest_id": { "$ref": "#/$defs/run_manifest_id" },
+    "run_manifest_sha256": { "$ref": "#/$defs/sha256" },
+    "event_id": { "$ref": "#/$defs/event_id" },
+    "observed_on": { "type": "string", "format": "date" },
+    "source_acquisition_ids": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/acquisition_id" },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "source_observation_ids": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/observation_id" },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "daily_summary_sha256": { "$ref": "#/$defs/sha256" },
+    "finalization_status": { "const": "finalized" },
+    "finalization_condition": { "const": "all_manifest_expected_acquisitions_for_utc_date_terminal" },
+    "duplicate_policy": { "const": "no_op" },
+    "finalized_at": {
+      "description": "Must not precede the maximum terminal_at among all manifest-expected acquisitions for observed_on; enforced semantically with the ledger.",
+      "$ref": "#/$defs/utc_timestamp"
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "acquisition_id": { "type": "string", "pattern": "^acq-v2-[a-f0-9]{64}$" },
+    "observation_id": { "type": "string", "pattern": "^obs-v2-[a-f0-9]{64}$" },
+    "event_id": { "type": "string", "pattern": "^evt-v2-[a-f0-9]{64}$" },
+    "contribution_key": { "type": "string", "pattern": "^pc-v2-[a-f0-9]{64}$" },
+    "run_manifest_id": { "type": "string", "pattern": "^run-v2-[a-f0-9]{64}$" },
+    "utc_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$"
+    }
+  }
+}

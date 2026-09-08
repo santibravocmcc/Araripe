@@ -25,6 +25,8 @@ Run:
     python3 build_detection_gee.py --project ee-araripe --start 2026-04-28 --end 2026-07-12
 """
 
+import hashlib
+import json
 import sys
 
 try:
@@ -45,7 +47,15 @@ DRIVE_FOLDER = _arg("--drive-folder", "araripe_detection")
 SCL_CLEAR = [2, 4, 5, 6, 7, 11]
 TARGET_CRS = "EPSG:32724"
 SCALE = 20
-AOI_BOUNDS = [-40.90, -7.85, -38.95, -6.95]
+AOI_BOUNDS = [
+    -40.89236812577142,
+    -7.840780758480428,
+    -38.95208146319247,
+    -6.957104781339829,
+]
+MONITORING_EXTENT_ID = "araripe-implementation-rectangle-v1"
+COLLECTION_ID = "COPERNICUS/S2_SR_HARMONIZED"
+COMPOSITE_METHOD_ID = "daily_mosaic-v1"
 
 ee.Initialize(project=PROJECT)
 aoi = ee.Geometry.Rectangle(AOI_BOUNDS)
@@ -85,10 +95,36 @@ print("Project %s | %s..%s | %d distinct dates | crs %s @ %dm | Drive '%s'"
       % (PROJECT, START, END, len(dates), TARGET_CRS, SCALE, DRIVE_FOLDER))
 
 n = 0
+acquisition_manifest = {}
 for d in dates:
     day = ee.Date(d)
+    daily = base.filterDate(day, day.advance(1, "day"))
+    scene_ids = [
+        value if str(value).startswith(COLLECTION_ID + "/")
+        else COLLECTION_ID + "/" + str(value)
+        for value in daily.aggregate_array("system:index").getInfo()
+    ]
+    scene_ids = sorted(set(scene_ids))
+    identity_input = "\x1f".join([
+        "acquisition-v1",
+        COLLECTION_ID,
+        d,
+        "\n".join(scene_ids),
+        MONITORING_EXTENT_ID,
+        COMPOSITE_METHOD_ID,
+    ])
+    acquisition_hash = hashlib.sha256(identity_input.encode("utf-8")).hexdigest()
+    acquisition_manifest[d] = {
+        "acquisition_id": "acq-v1-" + acquisition_hash,
+        "identity_inputs_sha256": acquisition_hash,
+        "collection_id": COLLECTION_ID,
+        "observed_on": d,
+        "scene_ids": scene_ids,
+        "monitoring_extent_id": MONITORING_EXTENT_ID,
+        "composite_method_id": COMPOSITE_METHOD_ID,
+    }
     # All tiles of this date -> masked+indexed -> mosaic into one AOI image.
-    comp = base.filterDate(day, day.advance(1, "day")).map(prep).mosaic()
+    comp = daily.map(prep).mosaic()
     comp = comp.select(["ndmi", "nbr", "evi2", "bsi"]).clip(aoi).unmask(-9999).toFloat()
     desc = "araripe_detect_%s" % d
     task = ee.batch.Export.image.toDrive(
@@ -97,6 +133,12 @@ for d in dates:
     task.start(); n += 1
     print("  queued %s (%s)" % (desc, task.id))
 
+manifest_name = "araripe_detection_acquisitions.json"
+with open(manifest_name, "w", encoding="utf-8") as stream:
+    json.dump(acquisition_manifest, stream, ensure_ascii=False, indent=2, sort_keys=True)
+    stream.write("\n")
+
 print("\n%d per-date export tasks started. Monitor: earthengine task list" % n)
 print("When done, download the GeoTIFFs from Drive folder '%s', then on your Mac:" % DRIVE_FOLDER)
+print("Also download Cloud Shell file '%s' into the same local directory." % manifest_name)
 print("  python scripts/run_detection_from_gee.py --in-dir <downloaded_dir>")

@@ -34,21 +34,26 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from config.settings import (
     ALERTS_DIR,
+    BASELINE_VERSION,
+    DETECTION_ALGORITHM_VERSION,
     DEFAULT_LANDCOVER_COLLECTION,
+    MONITORING_EXTENT_ID,
     SCENE_ANOMALY_REJECT_FRAC,
     TARGET_CRS,
 )
-from src.acquisition.aoi import get_aoi_bbox_wgs84
 from src.detection.alerts import save_alerts, summarize_alerts, vectorize_alerts
 from src.detection.baseline import load_baseline_pair
 from src.detection.change_detect import classify_fire_vs_mechanical, detect_deforestation
 from src.detection.landcover import annotate_alerts_all_collections
+from src.detection.identity import load_composite_acquisition
 from src.detection.persistence import (
     DEFAULT_MIN_OVERLAP_FRAC,
+    PersistenceTransitionError,
     load_persistence_state,
     save_persistence_state,
     update_tracks,
 )
+from src.detection.scene_quality import assess_scene_quality, save_scene_quality
 from src.timeseries.builder import store_alert_stats, store_regional_stats
 from src.utils.logging_setup import configure_run_logging
 
@@ -109,7 +114,8 @@ def _load_composite(path: Path) -> tuple[xr.Dataset, xr.DataArray]:
 def run_detection_on_dir(in_dir, out_dir=ALERTS_DIR, *, min_clear=20.0,
                          persistence=True, min_overlap_frac=DEFAULT_MIN_OVERLAP_FRAC,
                          landcover_collection=DEFAULT_LANDCOVER_COLLECTION,
-                         classify_clearing=True, spi=True, state_path=None):
+                         classify_clearing=True, state_path=None,
+                         persistence_mode="live"):
     """Run the existing detection logic over a directory of per-date GEE
     composites (``araripe_detect_YYYY-MM-DD.tif``). Reused by both the manual
     path (this script's CLI) and the headless CI path
@@ -122,40 +128,52 @@ def run_detection_on_dir(in_dir, out_dir=ALERTS_DIR, *, min_clear=20.0,
         logger.error("No araripe_detect_*.tif (with a date) in {}", in_dir); raise SystemExit(1)
     logger.info("Found {} per-date composites in {}", len(files), in_dir)
 
-    # SPI once (drought widening), like run_detection.py.
-    spi_value = None
-    if spi:
-        try:
-            from src.processing.spi import get_current_spi
-            spi_value = get_current_spi(get_aoi_bbox_wgs84())
-            logger.info("Current 3-month SPI: {:.2f}", spi_value)
-        except Exception as e:
-            logger.warning("SPI unavailable ({}); no drought adjustment.", e)
-    else:
-        logger.info("SPI skipped (--no-spi)")
+    logger.info(
+        "Drought adjustment disabled: no qualified method is accepted; "
+        "operational detection always passes spi_3month=None"
+    )
 
-    # Persistência (gap-tolerant): o estado é carregado uma vez, atualizado por
-    # data e salvo ao final. No CI ele é buscado de / enviado ao R2, garantindo a
-    # tolerância a buracos (até 180d) e a permanência dos tracks "confirmados".
+    # Persistência determinística (Package 2A.6): o estado é carregado uma vez,
+    # avançado cronologicamente por aquisição canônica, e salvo só depois de o
+    # lote limitado terminar. No CI ele é buscado de / enviado ao R2, o que
+    # preserva a tolerância a buracos e a permanência dos tracks confirmados.
+    if persistence_mode not in {"live", "rebuild"}:
+        raise ValueError("persistence_mode must be live or rebuild")
+    if persistence_mode == "rebuild" and state_path is None:
+        raise ValueError(
+            "rebuild mode requires an explicit isolated --state-path"
+        )
     state_path = Path(state_path) if state_path else Path(out_dir).parent / "persistence_state.geojson"
-    # Fail-closed (Package 2B.1): um estado ilegível PARA a execução em vez de
-    # recomeçar do zero — um reset silencioso apagaria n_sightings/first_seen/
-    # last_seen de todas as tracks e não há como distingui-lo, depois, de uma
-    # leva real de primeiras observações.
+    # Fail-closed (Packages 2B.1 e 2A.6): um estado ilegível PARA a execução em
+    # vez de recomeçar do zero — um reset silencioso apagaria
+    # n_sightings/first_seen/last_seen de todas as tracks, e depois não há como
+    # distingui-lo de uma leva real de primeiras observações. Um estado de
+    # geração anterior também para, e exige reconstrução cronológica.
+    #
+    # Sem `state_path.exists()` aqui: o loader é a única autoridade sobre
+    # "ausente". Duas checagens de existência são duas respostas possíveis para
+    # a mesma pergunta.
     state = load_persistence_state(state_path) if persistence else None
+    if state is not None:
+        logger.info(
+            "Persistência: estado determinístico carregado ({} eventos) de {}",
+            len(state),
+            state_path.name,
+        )
 
     n_written = 0
     for f in files:
         date = _DATE_RE.search(f.stem).group(1)
+        acquisition = load_composite_acquisition(f)
+        if acquisition.observed_on != date:
+            raise ValueError(
+                f"acquisition metadata date differs from composite {f.name}"
+            )
         month = int(date[5:7])
         logger.info("=== {} (month {}) ===", date, month)
         try:
             idx_ds, bsi = _load_composite(f)
             ref = idx_ds[list(idx_ds.data_vars)[0]]
-            cov = 100.0 * float(np.isfinite(ref.values).mean())
-            if cov < min_clear:
-                logger.info("{}: only {:.1f}% valid AOI coverage (< {}%), skipping", date, cov, min_clear)
-                continue
 
             for idx_name in INDICES:
                 if idx_name in idx_ds:
@@ -173,19 +191,42 @@ def run_detection_on_dir(in_dir, out_dir=ALERTS_DIR, *, min_clear=20.0,
             if not baseline_means:
                 logger.warning("No baselines; skipping {}", date); continue
 
-            detection = detect_deforestation(idx_ds, baseline_means, baseline_stds, spi_3month=spi_value)
+            detection = detect_deforestation(
+                idx_ds, baseline_means, baseline_stds, spi_3month=None
+            )
 
-            # Scene-wide anomaly guard (same as run_detection.py).
-            conf = detection["confidence"]
-            valid = ~np.isnan(conf.values)
-            nv = int(valid.sum())
-            if nv > 0 and int(((conf.values >= 1) & valid).sum()) / nv > SCENE_ANOMALY_REJECT_FRAC:
-                logger.warning("{}: >{:.0%} flagged — scene-wide anomaly, rejecting", date, SCENE_ANOMALY_REJECT_FRAC)
+            quality = assess_scene_quality(
+                detection,
+                minimum_required_fraction=min_clear / 100.0,
+                anomaly_reject_fraction=SCENE_ANOMALY_REJECT_FRAC,
+            )
+            save_scene_quality(
+                quality,
+                output_dir=Path(out_dir).parent / "scene_quality",
+                record_id=date,
+                acquisition_id=acquisition.acquisition_id,
+                observed_on=date,
+                scene_ids=list(acquisition.scene_ids),
+            )
+            if quality.scene_decision != "accepted":
+                logger.warning(
+                    "{} rejected: {} (coverage {:.1%}, alerts/valid {:.1%})",
+                    date,
+                    quality.rejection_reason,
+                    quality.valid_coverage_fraction,
+                    quality.alert_fraction_of_valid,
+                )
                 continue
 
             alerts = vectorize_alerts(detection["confidence"])
             if alerts.empty:
                 logger.info("{}: no alerts", date); continue
+            alerts["scene_decision"] = quality.scene_decision
+            alerts["valid_coverage_fraction"] = quality.valid_coverage_fraction
+            alerts["minimum_required_fraction"] = quality.minimum_required_fraction
+            alerts["scene_alert_fraction"] = quality.alert_fraction_of_valid
+            alerts["scene_qa_flags"] = "|".join(quality.qa_flags)
+            alerts["scene_rejection_reason"] = quality.rejection_reason
 
             # Fire vs mechanical (bsi from the composite; nbr_pre from baseline).
             if classify_clearing and bsi is not None and "nbr" in baseline_means:
@@ -211,15 +252,34 @@ def run_detection_on_dir(in_dir, out_dir=ALERTS_DIR, *, min_clear=20.0,
             # removido — cada alerta é rotulado (persistence_count/status,
             # first_seen, last_seen) para o front-end filtrar.
             if persistence:
-                alerts, state = update_tracks(alerts, state, date, min_overlap_frac=min_overlap_frac)
+                alerts, state = update_tracks(
+                    alerts,
+                    state,
+                    date,
+                    acquisition=acquisition,
+                    algorithm_version=DETECTION_ALGORITHM_VERSION,
+                    baseline_version=BASELINE_VERSION,
+                    monitoring_extent_id=MONITORING_EXTENT_ID,
+                    mode=persistence_mode,
+                    min_overlap_frac=min_overlap_frac,
+                )
                 vc = alerts["persistence_status"].value_counts().to_dict()
-                logger.info("persistência [{}]: {} | estado={} tracks", date, vc, len(state))
+                logger.info("persistência [{}]: {} | estado={} eventos", date, vc, len(state))
+                transition = alerts.attrs.get("persistence_transition", {})
+                if transition.get("outcome") == "no_op_replay":
+                    logger.info(
+                        "{} is an exact replay; alerts, statistics, and state are unchanged",
+                        date,
+                    )
+                    continue
 
             save_alerts(alerts, date, alerts_dir=out_dir)
             store_alert_stats(date, summarize_alerts(alerts))
             n_written += 1
             s = summarize_alerts(alerts)
             logger.info("{}: {} alerts, {:.1f} ha", date, s["total_alerts"], s["total_area_ha"])
+        except PersistenceTransitionError:
+            raise
         except Exception as e:
             logger.error("Failed {}: {}", date, e); continue
 
@@ -238,23 +298,35 @@ def run_detection_on_dir(in_dir, out_dir=ALERTS_DIR, *, min_clear=20.0,
 @click.option("--in-dir", required=True, type=click.Path(exists=True), help="Dir with araripe_detect_*.tif from Drive.")
 @click.option("--out-dir", default=str(ALERTS_DIR), help="Output alerts dir.")
 @click.option("--min-clear", default=20.0, help="Skip a date if valid AOI coverage %% is below this.")
-@click.option("--persistence/--no-persistence", default=True, help="Require >=2 consecutive observations.")
+@click.option(
+    "--persistence/--no-persistence",
+    default=True,
+    help="Assign deterministic event IDs and distinct-acquisition persistence tiers.",
+)
+@click.option(
+    "--persistence-mode",
+    type=click.Choice(["live", "rebuild"]),
+    default="live",
+    help="Live rejects older dates; rebuild requires an explicit isolated state path.",
+)
 @click.option("--min-overlap-frac", default=DEFAULT_MIN_OVERLAP_FRAC)
 @click.option("--landcover-collection", default=DEFAULT_LANDCOVER_COLLECTION)
 @click.option("--classify-clearing/--no-classify-clearing", default=True)
-@click.option("--spi/--no-spi", default=True, help="Fetch CHIRPS SPI for drought "
-              "widening. Use --no-spi to skip (offline, or when CHIRPS is slow).")
 @click.option("--state-path", default=None, help="Persistence-state GeoJSON "
-              "(gap-tolerant tracks). Default: <out-dir>/../persistence_state.geojson. "
+              "(deterministic event state). Default: <out-dir>/../persistence_state.geojson. "
               "In CI, fetch from / push to R2.")
 @click.option("--log-level", default="INFO", help="Console log level (file always "
               "captures full DEBUG detail under logs/). Use DEBUG to mirror everything.")
-def main(in_dir, out_dir, min_clear, persistence, min_overlap_frac, landcover_collection, classify_clearing, spi, state_path, log_level):
+def main(in_dir, out_dir, min_clear, persistence, persistence_mode,
+         min_overlap_frac, landcover_collection, classify_clearing,
+         state_path, log_level):
     configure_run_logging("run_detection_from_gee", console_level=log_level)
     run_detection_on_dir(
         in_dir, out_dir, min_clear=min_clear, persistence=persistence,
         min_overlap_frac=min_overlap_frac, landcover_collection=landcover_collection,
-        classify_clearing=classify_clearing, spi=spi, state_path=state_path,
+        classify_clearing=classify_clearing,
+        state_path=state_path,
+        persistence_mode=persistence_mode,
     )
 
 

@@ -1,0 +1,138 @@
+{
+  "schema_version": "1.0.0",
+  "amendment_id": "araripe-phase2a6c1-seasonal-source-regime-amendment-v2",
+  "amendment_date": "2026-09-06",
+  "status": "accepted_for_implementation",
+  "supersedes": {
+    "amendment_id": "araripe-phase2a6c1-seasonal-source-regime-amendment",
+    "path": "config/phase2a6c1_seasonal_source_regime_amendment_v1.json",
+    "sha256": "2bde0d223f7e5192d35961f0a616eb54eb97b39d901189cb0ce0e59c392d8deb",
+    "produced_baseline_version": "2.0.0",
+    "retained_as_audit_material": true
+  },
+  "authorization": {
+    "authorized_by": "project_owner",
+    "authorized_on": "2026-09-06",
+    "scope": "baseline_shoulder_season_source_policy",
+    "rationale": "Baseline 2.0.0 left May and December as the shallowest months of the year (16.5% and 11.7% of the grid below three contributions). Measurement showed the shoulder months need only a looser scene cloud filter, not a widened registry, so the fix costs no reproducibility at all.",
+    "coverage_floor_lowering_permitted": false,
+    "shoulder_registry_widening_permitted": false,
+    "mask_or_composition_change_permitted": false,
+    "production_mutation_permitted": false,
+    "baseline_v1_mutation_permitted": false
+  },
+  "problem_record": {
+    "measured_on": "2026-09-06",
+    "source": "config/baseline_manifest_v2.json (baseline 2.0.0)",
+    "shallowest_months": {
+      "5": {"passes": 23, "coverage": 0.9991, "below_three_share": 0.165},
+      "12": {"passes": 20, "coverage": 0.9999, "below_three_share": 0.117}
+    },
+    "note": "January remains the shallowest month at 0.215 and is unchanged by this amendment; deepening it further would require a looser wet-season filter and is a separate owner decision."
+  },
+  "measured_alternatives_for_the_shoulder_months": [
+    {
+      "option": "keep Collection-1, scene cloud filter 40 (baseline 2.0.0)",
+      "may": {"passes": 24, "coverage": 0.9991, "below_three_share": 0.165},
+      "december": {"passes": 20, "coverage": 0.9999, "below_three_share": 0.118}
+    },
+    {
+      "option": "keep Collection-1, scene cloud filter 60",
+      "may": {"passes": 28, "coverage": 0.9997, "below_three_share": 0.035},
+      "december": {"passes": 28, "coverage": 1.0, "below_three_share": 0.016},
+      "selected": true,
+      "why": "recovers most of the depth with no reproducibility cost, because every admitted product stays on the Collection-1 lineage"
+    },
+    {
+      "option": "widen the registry, scene cloud filter 40",
+      "may": {"below_three_share": 0.0},
+      "december": {"below_three_share": 0.003},
+      "rejected_because": "buys a few points of depth at the price of the Collection-1 lineage and its reproducibility, which the shoulder months do not need"
+    },
+    {
+      "option": "widen the registry, scene cloud filter 60",
+      "may": {"below_three_share": 0.0},
+      "december": {"below_three_share": 0.0},
+      "rejected_because": "same reproducibility cost as above for a further fraction of a point"
+    }
+  ],
+  "why_not_the_remaining_dry_months": "Months 6 to 11 already sit at 0.0% below three contributions, so a looser filter would buy them nothing while taking on the measured EVI2 cloud bias. They keep the accepted filter of 40.",
+  "source_regime_contract": {
+    "contract_id": "araripe-baseline-source-regime-v1",
+    "regimes_must_partition_calendar_months": true,
+    "gap_or_overlap_policy": "unavailable_fail_closed",
+    "per_regime_fields": [
+      "regime_id",
+      "months",
+      "reviewed_processing_baseline_registry",
+      "scene_cloud_filter_percent",
+      "provenance_state"
+    ],
+    "regimes": [
+      {
+        "regime_id": "wet-season-mixed-lineage-v1",
+        "months": [1, 2, 3, 4],
+        "scene_cloud_filter_percent": 60,
+        "recorded_reviews": [
+          "config/phase2a6c_baseline_processing_baseline_review_v1.json",
+          "config/phase2a6c1_wet_season_processing_baseline_review_v1.json"
+        ],
+        "provenance_state": "mixed_lineage_pending_esa_reprocessing",
+        "reproducibility_note": "admits pre-Collection-1 products that ESA has not yet reprocessed and is actively reprocessing; unchanged by this amendment",
+        "retirement_condition": "the wet-season months of the accepted source years are fully available on the Collection-1 lineage",
+        "watch": "scripts/check_esa_reprocessing.py"
+      },
+      {
+        "regime_id": "shoulder-season-collection1-v1",
+        "months": [5, 12],
+        "scene_cloud_filter_percent": 60,
+        "recorded_reviews": [
+          "config/phase2a6c_baseline_processing_baseline_review_v1.json"
+        ],
+        "provenance_state": "collection1_lineage_stable",
+        "reproducibility_note": "every admitted product is on the Collection-1 lineage; this regime differs from the dry season only by its scene cloud filter, and carries no reproducibility compromise",
+        "introduced_by": "amendment v2"
+      },
+      {
+        "regime_id": "dry-season-collection1-v1",
+        "months": [6, 7, 8, 9, 10, 11],
+        "scene_cloud_filter_percent": 40,
+        "recorded_reviews": [
+          "config/phase2a6c_baseline_processing_baseline_review_v1.json"
+        ],
+        "provenance_state": "collection1_lineage_stable",
+        "reproducibility_note": "unchanged from amendment v1 except that May and December moved to the shoulder regime"
+      }
+    ]
+  },
+  "cloud_filter_basis": {
+    "selected_shoulder_value": 60,
+    "shared_with": "the wet-season regime, which uses the same value",
+    "why_not_looser": "The same measured EVI2 cloud bias applies: no systematic contamination was found in NDMI or NBR, but EVI2 carries a positive offset growing with cloud, +0.027 at 40-60% and +0.043 at 60-80% against a clean dispersion of 0.087. Sixty takes the depth while holding that bias at its smaller value.",
+    "test_limits": "the leakage test covered 12-25% of the extent in January and 74.5% in March, spanned two months, and did not fully separate contamination from the correlation between cloud and rainfall"
+  },
+  "parent_bindings": {
+    "phase2a_candidate_generation_decisions_v2": {
+      "path": "config/phase2a_candidate_generation_decisions_v2.json",
+      "sha256": "ac61fd1e6da376a147013a610652e38a6d3d119dcb8479b01001e156625cf69e"
+    },
+    "phase2a_sentinel2c_contract_amendment_v3": {
+      "path": "config/phase2a_sentinel2c_contract_amendment_v3.json",
+      "sha256": "0bb853259f5902ea93b34ed689662b46b66f5f696a9282482820f36f101414da"
+    }
+  },
+  "science_bindings_unchanged": {
+    "cloud_mask": "scl-explicit-allowlist-v2",
+    "composition": "coverage-ranked-first-valid-v1",
+    "composition_scope": "datatake-scoped-v2",
+    "identity_contract_family": "v3",
+    "statistics": "monthly median and population standard deviation over datatake composites",
+    "grid": "araripe-baseline-epsg32724-20m-grid-v1",
+    "monitoring_extent": "araripe-implementation-rectangle-v1",
+    "source_years": [2017, 2019, 2021, 2022, 2025],
+    "minimum_extent_coverage_fraction": 0.99,
+    "drought": "drought-disabled-v1",
+    "minimum_contribution_depth_threshold_imposed": false,
+    "baseline_v1_immutable": true
+  }
+}

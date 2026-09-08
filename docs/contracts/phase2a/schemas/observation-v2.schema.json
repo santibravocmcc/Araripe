@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://observatoriodachapadadoararipe.com/data/schemas/observation-v2.schema.json",
+  "title": "Araripe raw observation v2",
+  "description": "One immutable raw detection for exactly one physical v2 acquisition.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "observation_id",
+    "identity_inputs_sha256",
+    "run_manifest_id",
+    "run_manifest_sha256",
+    "acquisition_id",
+    "acquisition_timestamp_utc",
+    "observed_on",
+    "monitoring_extent_id",
+    "algorithm_version",
+    "baseline_version",
+    "geometry_crs",
+    "geometry",
+    "canonical_geometry_sha256",
+    "area_ha",
+    "raw_detection_policy",
+    "created_at"
+  ],
+  "properties": {
+    "schema_version": { "const": "2.0.0" },
+    "observation_id": { "$ref": "#/$defs/observation_id" },
+    "identity_inputs_sha256": { "$ref": "#/$defs/sha256" },
+    "run_manifest_id": { "$ref": "#/$defs/run_manifest_id" },
+    "run_manifest_sha256": { "$ref": "#/$defs/sha256" },
+    "acquisition_id": { "$ref": "#/$defs/acquisition_id" },
+    "acquisition_timestamp_utc": { "$ref": "#/$defs/utc_timestamp" },
+    "observed_on": { "type": "string", "format": "date" },
+    "monitoring_extent_id": { "type": "string", "minLength": 1 },
+    "algorithm_version": { "$ref": "#/$defs/semver" },
+    "baseline_version": { "$ref": "#/$defs/semver" },
+    "geometry_crs": { "const": "EPSG:4326" },
+    "geometry": {
+      "oneOf": [
+        { "$ref": "#/$defs/polygon" },
+        { "$ref": "#/$defs/multipolygon" }
+      ]
+    },
+    "canonical_geometry_sha256": { "$ref": "#/$defs/sha256" },
+    "area_ha": { "type": "number", "exclusiveMinimum": 0 },
+    "raw_detection_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["retained", "immutable", "context_can_remove", "persistence_can_remove"],
+      "properties": {
+        "retained": { "const": true },
+        "immutable": { "const": true },
+        "context_can_remove": { "const": false },
+        "persistence_can_remove": { "const": false }
+      }
+    },
+    "created_at": { "$ref": "#/$defs/utc_timestamp" }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "acquisition_id": { "type": "string", "pattern": "^acq-v2-[a-f0-9]{64}$" },
+    "observation_id": { "type": "string", "pattern": "^obs-v2-[a-f0-9]{64}$" },
+    "run_manifest_id": { "type": "string", "pattern": "^run-v2-[a-f0-9]{64}$" },
+    "utc_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$"
+    },
+    "position": {
+      "type": "array",
+      "prefixItems": [{ "type": "number" }, { "type": "number" }],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "linear_ring": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/position" },
+      "minItems": 4
+    },
+    "polygon_coordinates": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/linear_ring" },
+      "minItems": 1
+    },
+    "polygon": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "coordinates"],
+      "properties": {
+        "type": { "const": "Polygon" },
+        "coordinates": { "$ref": "#/$defs/polygon_coordinates" }
+      }
+    },
+    "multipolygon": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "coordinates"],
+      "properties": {
+        "type": { "const": "MultiPolygon" },
+        "coordinates": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/polygon_coordinates" },
+          "minItems": 1
+        }
+      }
+    }
+  }
+}

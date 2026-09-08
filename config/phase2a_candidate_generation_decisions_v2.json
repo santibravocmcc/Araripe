@@ -1,0 +1,400 @@
+{
+  "$schema": "https://observatoriodachapadadoararipe.com/data/schemas/phase2a-candidate-generation-decisions-v2.schema.json",
+  "schema_version": "2.0.0",
+  "decision_id": "araripe-phase2a-candidate-generation-decisions-v2",
+  "decision_date": "2026-08-11",
+  "status": "accepted_for_implementation_not_yet_executable",
+  "parent_bindings": {
+    "phase2a4_registry": {
+      "path": "config/phase2a4_candidates_v1.json",
+      "sha256": "3c79ebcd1dd5921d2b9e7a983c25ddd6604ff915d1cd63ab6926aeeeb3cafcc7",
+      "required_in_clean_clone": true
+    },
+    "phase2a5_registry": {
+      "path": "config/phase2a5_context_candidates_v1.json",
+      "sha256": "848216d90cd95c4886aaade2f5125237517f2dfb3f151dcbc36f349b6d9e3d88",
+      "required_in_clean_clone": true
+    },
+    "mapbiomas_collection3_atbd": {
+      "path": "data/landcover/updated/ATBD_Col3_10m_Caatinga_v1.pdf",
+      "sha256": "21f960d54b75303a33fcf74d59a91b9575959e6421e3e1b101b4523efa1472b4",
+      "required_in_clean_clone": false
+    },
+    "mapbiomas_collection10_1_atbd": {
+      "path": "data/landcover/updated/ATBD-Collection-10.1.pdf",
+      "sha256": "859f388422e25aacaaa2fe8024ed631496fc24a1be237a88d58732439ab2ed19",
+      "required_in_clean_clone": false
+    },
+    "mapbiomas_collection10_legend": {
+      "path": "data/landcover/updated/Legenda-Colecao-10-Legend-Code.pdf",
+      "sha256": "77fb06ebeb938a5155af86227ad13709e10d65312222ff36c8ba1cf4cbc1eb44",
+      "required_in_clean_clone": false
+    }
+  },
+  "evidence_boundary": {
+    "qualified_primary_change_labels_present": false,
+    "reviewer_usability_result_present": false,
+    "scientific_accuracy_result_present": false,
+    "technical_method_selection_permitted": true,
+    "scientific_accuracy_claim_permitted": false,
+    "canonical_public_release_permitted": false
+  },
+  "identity": {
+    "contract_family": {
+      "selected_major": 2,
+      "implementation_status": "required_in_phase2a6",
+      "required_contracts": [
+        "acquisition-v2",
+        "observation-v2",
+        "event-v2",
+        "lineage-v2",
+        "persistence-contribution-v2",
+        "persistence-state-v2",
+        "processing-ledger-v2"
+      ],
+      "v1_runtime_serialization_permitted": false,
+      "v1_artifacts_preserved_for_audit": true,
+      "all_v2_contracts_schemas_examples_and_validators_required": true
+    },
+    "acquisition": {
+      "selected_contract": "acquisition-v2-datatake-scene-set",
+      "id_prefix": "acq-v2-",
+      "implementation_status": "required",
+      "physical_grouping_key": "sentinel2_platform_plus_datatake_identifier_plus_acquisition_timestamp_utc",
+      "same_day_different_datatakes_are_distinct": true,
+      "native_scene_ids_utf8_sorted": true,
+      "method_and_grid_bindings_required": true
+    },
+    "observation": {
+      "selected_contract": "observation-v2",
+      "id_prefix": "obs-v2-",
+      "scope": "newly_generated_v2_acquisitions_only",
+      "binds_acquisition_v2": true
+    },
+    "event": {
+      "selected_contract": "event-v2",
+      "id_prefix": "evt-v2-",
+      "scope": "fresh_2026_chronological_replay_only",
+      "split_merge_lineage_required": true
+    },
+    "lineage": {
+      "selected_contract": "lineage-v2",
+      "id_prefix": "lin-v2-",
+      "conceptual_semantics": "preserve_v1_origin_split_merge_lineage_under_v2_ids"
+    },
+    "persistence": {
+      "contribution_contract": "persistence-contribution-v2",
+      "contribution_key_prefix": "pc-v2-",
+      "contribution_unit": "event_id_plus_utc_observation_date",
+      "maximum_contributions_per_event_per_utc_date": 1,
+      "same_day_observation_policy": "retain_all_observations_and_create_one_date_contribution",
+      "contribution_finalization_condition": "all_expected_acquisitions_for_utc_date_are_terminal",
+      "source_acquisition_and_observation_ids_utf8_sorted": true,
+      "state_contract": "persistence-state-v2",
+      "duplicate_contribution_policy": "no_op",
+      "late_same_day_acquisition_policy": "new_chronological_candidate_generation"
+    },
+    "processing_ledger": {
+      "selected_contract": "processing-ledger-v2",
+      "accounting_unit": "expected_acquisition",
+      "expected_acquisition_set_bound_to_run_manifest": true,
+      "same_day_multiple_acquisitions_permitted": true,
+      "date_summary_required": true,
+      "date_terminal_condition": "every_expected_acquisition_for_date_is_terminal",
+      "chronological_order_key": [
+        "acquisition_timestamp_utc",
+        "acquisition_id"
+      ]
+    },
+    "legacy_pilot_identity_promotion_permitted": false
+  },
+  "phase2a4": {
+    "drought": {
+      "selected_method": "drought-disabled-v1",
+      "activated": false,
+      "runtime_entrypoint_must_reject_activation": true,
+      "future_context_candidate": "chirps-v3-final-spi3-spatial-context-v1",
+      "future_candidate_changes_detection": false,
+      "future_activation_gate": "phase5_qualified_validation"
+    },
+    "cloud_mask": {
+      "selected_method": "scl-explicit-allowlist-v2",
+      "implementation_status": "required",
+      "accepted_scl_classes": [4, 5, 6, 7],
+      "rejected_scl_classes": [0, 1, 2, 3, 8, 9, 10, 11],
+      "unexpected_scl_value_policy": "unavailable_fail_closed",
+      "missing_scl_policy": "unavailable_fail_closed",
+      "dark_nir_proximity_mask": false,
+      "cloud_shadow_dilation_m": 0,
+      "processing_baseline_compatibility": {
+        "metadata_fields_in_priority_order": ["s2:processing_baseline", "PROCESSING_BASELINE"],
+        "normalized_value_rule": "parse_provider_decimal_string_without_rounding",
+        "metadata_required": true,
+        "class2_rejected_under_pre_and_post_pb04_semantics": true,
+        "phase2a6_manifest_must_enumerate_every_observed_baseline": true,
+        "unreviewed_processing_baseline_policy": "unavailable_fail_closed"
+      },
+      "scl7_policy": {
+        "candidate_generation_treatment": "provisionally_clear",
+        "scientifically_validated": false,
+        "fraction_recorded_for_every_scene_and_composite": true,
+        "phase5_validation_required": true,
+        "public_quality_claim_permitted": false
+      },
+      "baseline_rebuild_with_identical_mask_required": true,
+      "canonical_activation_gate": "phase5_qualified_validation"
+    },
+    "composition": {
+      "selected_method": "coverage-ranked-first-valid-v1",
+      "scope_version": "datatake-scoped-v2",
+      "scene_order": [
+        "valid_pixel_count_desc",
+        "provider_native_scene_id_utf8_asc"
+      ],
+      "pixel_selection": "first_valid_scene_in_explicit_order",
+      "all_bands_for_pixel_from_same_scene": true,
+      "different_datatakes_never_composed": true,
+      "contributor_map_and_counts_required": true,
+      "order_invariance_test_required": true,
+      "local_gee_parity_test_required": true
+    }
+  },
+  "phase2a5": {
+    "legend_fixture": {
+      "url": "https://brasil.mapbiomas.org/wp-content/uploads/sites/4/2025/08/Legenda-Colecao-10-Legend-Code.pdf",
+      "accessed_on": "2026-08-11",
+      "path": "data/landcover/updated/Legenda-Colecao-10-Legend-Code.pdf",
+      "bytes": 84039,
+      "sha256": "77fb06ebeb938a5155af86227ad13709e10d65312222ff36c8ba1cf4cbc1eb44",
+      "role": "national_code_and_label_fixture",
+      "caatinga_atbd_role": "biome_method_and_class_interpretation_context_only"
+    },
+    "class_mappings": {
+      "mapping_version": "mapbiomas-context-groups-v2",
+      "categories": [
+        "natural_vegetation",
+        "other_natural_cover",
+        "anthropic_cover",
+        "uncertain_or_mixed"
+      ],
+      "unknown_code_policy": "unmapped_and_not_assessed",
+      "not_observed_code_policy": {
+        "code": 27,
+        "interpretation": "not_assessed",
+        "excluded_from_valid_mapped_denominator": true
+      },
+      "collection3_beta_10m_2024": {
+        "natural_vegetation": [3, 4, 5, 6, 11, 12, 49, 50],
+        "other_natural_cover": [23, 29, 32],
+        "anthropic_cover": [9, 15, 19, 21, 24, 30, 31, 36, 75],
+        "uncertain_or_mixed": [25, 33]
+      },
+      "collection10_family_30m_2024": {
+        "natural_vegetation": [3, 4, 5, 6, 11, 12, 49, 50],
+        "other_natural_cover": [23, 29, 32],
+        "anthropic_cover": [9, 15, 18, 19, 20, 21, 24, 30, 31, 35, 36, 39, 40, 41, 46, 47, 48, 62, 75],
+        "uncertain_or_mixed": [25, 33]
+      },
+      "class33_cross_collection_policy": "uncertain_or_mixed_in_both_collections",
+      "mapping_is_context_not_truth": true
+    },
+    "collection3": {
+      "role": "primary_detailed_context",
+      "source_id": "mapbiomas-col3-beta-10m-brazil-2024-v1",
+      "mapping": "mapbiomas-context-groups-v2",
+      "mapping_status": "accepted_as_project_context_grouping_not_accuracy_truth",
+      "unknown_code_policy": "unmapped_and_not_assessed",
+      "atbd_version_metadata_conflict_preserved": true
+    },
+    "collection10_direct_download": {
+      "role": "audit_context_not_collection10_1",
+      "corrected_source_id": "mapbiomas-col10-30m-brazil-2024-v1",
+      "mapping": "mapbiomas-context-groups-v2",
+      "origin_url": "https://storage.googleapis.com/mapbiomas-public/initiatives/brasil/collection_10/lulc/coverage/brazil_coverage_2024.tif",
+      "bytes": 802022037,
+      "local_sha256": "1be96442929c98cdbe0126d5c83d65a8142b61642ec14fb0ad1dfdfa3bf68d6c",
+      "remote_etag_md5": "dc8434523522eac0c69be51d9473efeb",
+      "remote_generation": "1755108727910139",
+      "remote_last_modified": "2025-08-13T18:12:07Z",
+      "collection10_1_identity_permitted": false
+    },
+    "collection10_1_required_source": {
+      "source_id": "mapbiomas-col10-1-30m-brazil-2024-gee-export-v1",
+      "role": "secondary_context_after_fresh_acquisition",
+      "source_kind": "google_earth_engine_image",
+      "gee_asset": "projects/mapbiomas-public/assets/brazil/lulc/collection10_1/mapbiomas_brazil_collection10_1_coverage_v1",
+      "band": "classification_2024",
+      "mapping": "mapbiomas-context-groups-v2",
+      "export_contract": {
+        "band_presence_must_be_asserted": true,
+        "output_scope": "araripe-implementation-rectangle-v1",
+        "projection_rule": "exact_selected_band_native_crs_and_transform",
+        "scale_argument_permitted": false,
+        "categorical_resampling": "nearest_only",
+        "source_mask_preserved": true,
+        "masked_pixel_export_value": 255,
+        "geotiff_nodata_value": 255,
+        "file_format": "GeoTIFF",
+        "cloud_optimized": true
+      },
+      "required_export_manifest_fields": [
+        "asset_id",
+        "asset_metadata_json_sha256",
+        "asset_update_time",
+        "band_names",
+        "selected_band",
+        "source_projection",
+        "monitoring_extent_id",
+        "monitoring_extent_sha256",
+        "export_request_json_sha256",
+        "earth_engine_project_id",
+        "task_id",
+        "task_state",
+        "started_at",
+        "completed_at",
+        "output_bytes",
+        "output_sha256",
+        "output_header",
+        "class_histogram",
+        "nodata_pixel_count",
+        "unknown_class0_pixel_count"
+      ],
+      "required_task_state": "COMPLETED",
+      "existing_mislabeled_crop_reuse_permitted": false
+    },
+    "class0_and_nodata_policy": {
+      "collection3_beta_10m_2024": {
+        "header_nodata": 0,
+        "value_0_interpretation": "nodata",
+        "excluded_from_valid_mapped_denominator": true
+      },
+      "collection10_direct_30m_2024": {
+        "header_nodata": null,
+        "value_0_interpretation": "unknown_unclassified",
+        "excluded_from_valid_mapped_denominator": true
+      },
+      "collection10_1_gee_export_30m_2024": {
+        "source_value_0_interpretation": "unknown_unclassified",
+        "exported_mask_nodata_value": 255,
+        "value_0_excluded_from_valid_mapped_denominator": true,
+        "value_255_excluded_from_valid_mapped_denominator": true
+      },
+      "count_and_coverage_reporting_required": true,
+      "may_modify_raw_detection": false
+    },
+    "strong_subset": {
+      "selected_method": "natural-vegetation-share-0.50-v2",
+      "source_collection": "collection3_beta_10m_2024",
+      "mapping_version": "mapbiomas-context-groups-v2",
+      "polygon_pixel_rule": "detector_grid_pixel_center_within_polygon-v1",
+      "numerator": "count_of_natural_vegetation_pixels",
+      "denominator": "count_of_all_valid_mapped_pixels",
+      "excluded_from_denominator": ["nodata", "unknown_unclassified", "not_observed", "unmapped"],
+      "comparison": "greater_than_or_equal",
+      "threshold": 0.5,
+      "zero_denominator_state": "not_assessed",
+      "required_recorded_fields": [
+        "natural_pixel_count",
+        "valid_mapped_pixel_count",
+        "natural_fraction",
+        "membership",
+        "reason"
+      ],
+      "public_name": "majority natural-vegetation context subset",
+      "confidence_or_accuracy_claim_permitted": false,
+      "raw_detection_removal_permitted": false,
+      "sensitivity_alternative": {
+        "method": "natural-vegetation-share-0.75-v1",
+        "activated": false,
+        "role": "sensitivity_only"
+      }
+    },
+    "contextual_signature": {
+      "pixel_rule_version": "noncausal-contextual-spectral-signature-v1",
+      "polygon_pixel_rule": "detector_grid_pixel_center_within_polygon-v1",
+      "measurements": ["dnbr", "post_nbr", "bsi"],
+      "pixel_evaluation_order": ["fire_like", "exposed_soil_or_clearing_like", "mixed_or_uncertain", "not_assessed"],
+      "pixel_rules": {
+        "fire_like": "finite_measurements_and_dnbr_gt_0.27_and_post_nbr_lt_0.10",
+        "exposed_soil_or_clearing_like": "finite_measurements_and_bsi_gt_0.10_and_dnbr_gt_0.05_and_not_fire_like",
+        "mixed_or_uncertain": "finite_measurements_and_dnbr_gt_0.10_and_neither_prior_class",
+        "not_assessed": "measurements_not_all_finite_or_no_prior_rule_applies"
+      },
+      "selected_internal_aggregator": "dominant-assessed-share-0.60-v1",
+      "aggregation_scope": "selected_v2_mask_and_composition_only",
+      "aggregation_rule": "emit_unique_top_assessed_class_only_when_share_gte_0.60_else_mixed_or_uncertain",
+      "zero_assessed_pixel_state": "not_assessed",
+      "within_polygon_proportions_and_counts_required": true,
+      "internal_candidate_only": true,
+      "causal_inference_permitted": false,
+      "public_label_enabled": false,
+      "public_activation_gate": "phase5_qualified_validation",
+      "approved_future_explanation": "assinatura espectral contextual; indica semelhança com um padrão e não determina a causa da mudança"
+    },
+    "cross_collection_comparison": {
+      "states": ["agreement", "disagreement", "not_assessed"],
+      "interpretation": "context_only_non_truth",
+      "secondary_to_primary_resampling": "nearest_only",
+      "comparison_denominator": "joint_valid_and_mapped_primary_pixels",
+      "tie_breaking_permitted": false,
+      "subset_change_permitted": false,
+      "raw_detection_change_permitted": false
+    },
+    "phase2a5_supersession": {
+      "v1_registry_or_package_mutation_permitted": false,
+      "v1_mapbiomas_evidence_runtime_use_permitted": false,
+      "unchanged_collection3_bytes_may_be_reused_after_hash_verification": true,
+      "required_v2_artifacts": [
+        "phase2a5_context_registry_v2",
+        "collection10_1_export_manifest_v1",
+        "phase2a5_regional_context_manifest_v2",
+        "phase2a5_context_evidence_v2",
+        "phase2a5_method_comparison_package_v2"
+      ],
+      "regenerate_cross_collection_statistics": true,
+      "regenerate_reviewer_panels_crosswalk_and_blinding": true,
+      "all_v2_artifacts_must_bind_decision_record_sha256": true,
+      "qualified_reviews_may_use_v1_mapbiomas_panels": false
+    },
+    "population_annotation": {
+      "legacy_31_object_archive_required": false,
+      "legacy_package_role": "audit_only",
+      "authorized_population": "fresh_checksum_bound_complete_2026_replay_only"
+    }
+  },
+  "gates": {
+    "candidate_generation_policy_gate_closed": true,
+    "candidate_generation_implementation_gate_closed": false,
+    "scientific_validation_gate_closed": false,
+    "phase2a6_authorized": true,
+    "phase2b_green_sequence_authorized": ["2B.0", "2B.1", "2B.2", "2B.3", "2B.4"],
+    "phase2b_packages_must_pass_in_order": true,
+    "phase2b_may_run_in_parallel_with": ["2A.6"],
+    "phase2b_green_only": true,
+    "ledger_v2_owner": "phase2a6_contract_schema_and_backend_producer",
+    "ledger_v2_consumer": "phase2b2_publication_integration",
+    "phase2b_exit_requires_phase2a6_ledger_integration": true,
+    "production_workflow_mutation_authorized": false,
+    "production_route_or_pointer_mutation_authorized": false,
+    "phase3_authorized": false,
+    "phase3_authorization_condition": "candidate_generation_implementation_gate_closed_and_phase2b_gate_closed",
+    "phase4_full_replay_authorized": false,
+    "phase5_qualified_validation_required": true,
+    "phase6_canonical_promotion_authorized": false,
+    "phase2a6_blockers": [
+      "define and implement the complete acquisition-observation-event-lineage-persistence-ledger v2 contract family without serializing v2 acquisitions into v1 schemas",
+      "implement one persistence contribution per event per UTC date after all manifest-bound same-day acquisitions are terminal",
+      "test same-day multi-datatake ordering, retry idempotency, late-arrival rebuild, and split-merge lineage",
+      "implement scl-explicit-allowlist-v2 and enumerate processing baselines",
+      "make coverage-ranked composition order explicit and test local/GEE parity",
+      "rebuild and revalidate the baseline with the selected cloud mask",
+      "verify the checksum-bound national legend fixture and implement mapbiomas-context-groups-v2",
+      "export the real Collection 10.1 classification_2024 band under the complete export contract",
+      "validate the Collection 10.1 export manifest and regenerate every required Phase 2A.5 v2 artifact",
+      "invalidate the mislabeled Collection 10 crop for runtime and qualified-review use",
+      "implement the exact majority-subset and internal contextual-signature polygon rules",
+      "lock drought-disabled at runtime",
+      "pass deterministic and fail-closed regression tests"
+    ]
+  }
+}

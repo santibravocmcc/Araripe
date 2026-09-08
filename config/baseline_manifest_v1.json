@@ -1,0 +1,4337 @@
+{
+  "schema_version": "1.0.0",
+  "baseline_id": "araripe-s2-sr-harmonized-monthly",
+  "baseline_version": "1.0.0",
+  "status": "accepted_audit_generation",
+  "audit_date": "2026-07-28",
+  "decision": {
+    "rebuild_required": false,
+    "reason": "All 72 existing objects passed checksum, inventory, grid, scale, range, and monitoring-extent coverage checks. Rebuilding would not resolve the documented missing historical scene/task provenance and is not scientifically required before the method-selection pilot.",
+    "limitations": [
+      "The source scene IDs, GEE task IDs, and original 12 export checksums were not retained.",
+      "The historical *_mean.tif label stores a multi-year median.",
+      "The split GeoTIFFs are tiled and range-readable but have no internal overview levels.",
+      "The baseline build used the rounded generation rectangle; the audited grid fully covers the approved exact monitoring extent."
+    ]
+  },
+  "source": {
+    "provider": "Google Earth Engine / Copernicus Sentinel-2",
+    "collection_id": "COPERNICUS/S2_SR_HARMONIZED",
+    "years": [
+      2017,
+      2019,
+      2021,
+      2022,
+      2025
+    ],
+    "year_selection": {
+      "method": "expert-reviewed historical selection",
+      "status": "partially_reconstructed",
+      "diagnostic_script": "scripts/select_baseline_years.py",
+      "note": "The diagnostic ranking did not automatically select the adopted set. The manifest, not a retrofitted ranking rule, is authoritative."
+    },
+    "scene_cloud_filter_percent": 40,
+    "scl_clear_classes": [
+      2,
+      4,
+      5,
+      6,
+      7,
+      11
+    ],
+    "reflectance_scale_divisor": 10000,
+    "indices": {
+      "ndmi": "(B8A-B11)/(B8A+B11)",
+      "nbr": "(B8A-B12)/(B8A+B12)",
+      "evi2": "2.5*(B8-B4)/(B8+2.4*B4+1)"
+    },
+    "monthly_central_statistic": "median",
+    "monthly_dispersion_statistic": "standard_deviation",
+    "generator": {
+      "script": "scripts/build_baseline_gee.py",
+      "splitter": "scripts/split_gee_baselines.py",
+      "repository_commit": "fecbde3e87671c214b0efbcde14615b803c2e51f",
+      "target_crs": "EPSG:32724",
+      "scale_m": 20,
+      "generation_bounds_epsg4326": [
+        -40.9,
+        -7.85,
+        -38.95,
+        -6.95
+      ],
+      "output_sentinel": -9999,
+      "splitter_range_guard": [
+        -1.5,
+        1.5
+      ]
+    },
+    "provenance_completeness": {
+      "status": "partial",
+      "retained": [
+        "collection",
+        "years",
+        "query and transform configuration",
+        "generator commit",
+        "72 final object checksums",
+        "R2 object metadata"
+      ],
+      "missing": [
+        "provider-native scene IDs per month",
+        "source processing-baseline versions per scene",
+        "GEE task IDs",
+        "GEE query fingerprint",
+        "12 original multi-band export checksums"
+      ]
+    }
+  },
+  "monitoring_extent": {
+    "extent_id": "araripe-implementation-rectangle-v1",
+    "scope": "APA and surroundings",
+    "crs": "EPSG:4326",
+    "bounds": [
+      -40.89236812577142,
+      -7.840780758480428,
+      -38.95208146319247,
+      -6.957104781339829
+    ],
+    "geometry_sha256": "b4986ef80d8a0d6e65bbb41b575dbd952c010415bf3aee93a88412b3b657e8c7",
+    "bounds_sha256": "93f254373d6b203bca33aa5c356bd03fec3bff7f43c9c15b368cc2bdb7029f28"
+  },
+  "raster_contract": {
+    "expected_object_count": 72,
+    "indices": [
+      "evi2",
+      "nbr",
+      "ndmi"
+    ],
+    "months": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ],
+    "filename_statistics": {
+      "mean": "multi-year monthly median",
+      "std": "multi-year monthly standard deviation"
+    },
+    "crs": "EPSG:32724",
+    "width": 10773,
+    "height": 4999,
+    "transform": [
+      20.0,
+      0.0,
+      290080.0,
+      0.0,
+      -20.0,
+      9231780.0
+    ],
+    "bounds": [
+      290080.0,
+      9131800.0,
+      505540.0,
+      9231780.0
+    ],
+    "pixel_size": [
+      20.0,
+      20.0
+    ],
+    "dtype": "float32",
+    "band_count": 1,
+    "nodata": "NaN",
+    "minimum_extent_coverage_fraction": 0.99
+  },
+  "aggregate": {
+    "object_count": 72,
+    "total_bytes": 13408183319,
+    "inventory_sha256": "c0ede11bb02cdcfbf67653dfee521f0e922955179c8da5b69c07ea5069cc1054",
+    "minimum_extent_coverage_fraction": 0.9970018295709684,
+    "maximum_extent_coverage_fraction": 1.0,
+    "range_violation_pixels": 0
+  },
+  "objects": [
+    {
+      "key": "baselines/evi2_month01_mean.tif",
+      "filename": "evi2_month01_mean.tif",
+      "index": "evi2",
+      "month": 1,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 185740234,
+      "sha256": "fa2ef0b4481916c1b3fc0dc6ddd27f6942f3ee79b8d18895acd1c23706e8bdbc",
+      "r2_etag": "6ca2b5bd34650fcaa8c8949eb20973f9",
+      "r2_last_modified": "2026-07-12T18:49:27.637000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53404110,
+      "valid_fraction": 0.9916419374100384,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52157058,
+      "extent_coverage_fraction": 0.9970018295709684,
+      "minimum": -0.263936847448349,
+      "maximum": 0.9622722864151001,
+      "accepted_range": [
+        -1.5,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/evi2_month01_std.tif",
+      "filename": "evi2_month01_std.tif",
+      "index": "evi2",
+      "month": 1,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 152352122,
+      "sha256": "40c7b18caf2ddaac8ebfe0cee41eb83dcabe5066ecfdbedb0b92946574c7d8f7",
+      "r2_etag": "669bc98f3434fdeac775843c8cc3cb99",
+      "r2_last_modified": "2026-07-12T18:48:39.745000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53404110,
+      "valid_fraction": 0.9916419374100384,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52157058,
+      "extent_coverage_fraction": 0.9970018295709684,
+      "minimum": 0.0,
+      "maximum": 0.4424905776977539,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/evi2_month02_mean.tif",
+      "filename": "evi2_month02_mean.tif",
+      "index": "evi2",
+      "month": 2,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 186272381,
+      "sha256": "1cec9bf9522e92134316373ced9354b744de451a07d8b76943509b3ab1aaaa14",
+      "r2_etag": "8640a1ff4916ff027f6e202284e44dbe",
+      "r2_last_modified": "2026-07-12T18:48:27.145000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53409594,
+      "valid_fraction": 0.9917437678568852,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52166939,
+      "extent_coverage_fraction": 0.997190708611615,
+      "minimum": -0.22658656537532806,
+      "maximum": 0.9597585201263428,
+      "accepted_range": [
+        -1.5,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/evi2_month02_std.tif",
+      "filename": "evi2_month02_std.tif",
+      "index": "evi2",
+      "month": 2,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 182813875,
+      "sha256": "ef9d03e5f6d6fee1549a7c6a64751c1bfdd76bb1060624aa50b62c99b5dd7435",
+      "r2_etag": "461f9e1f76093a846ac4dca02c289a1c",
+      "r2_last_modified": "2026-07-12T18:47:27.002000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53409594,
+      "valid_fraction": 0.9917437678568852,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52166939,
+      "extent_coverage_fraction": 0.997190708611615,
+      "minimum": 0.0,
+      "maximum": 0.4284195601940155,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/evi2_month03_mean.tif",
+      "filename": "evi2_month03_mean.tif",
+      "index": "evi2",
+      "month": 3,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 185760327,
+      "sha256": "7f52d4c121598d12da103359aa6ce74cd6924fadb806b0a98d12f66dd7eab1ac",
+      "r2_etag": "223122266a74b8e9658526cc62ebfae4",
+      "r2_last_modified": "2026-07-12T18:47:02.069000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53558445,
+      "valid_fraction": 0.9945077291704512,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52311288,
+      "extent_coverage_fraction": 0.9999499941736331,
+      "minimum": -0.2377515435218811,
+      "maximum": 0.9270579814910889,
+      "accepted_range": [
+        -1.5,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/evi2_month03_std.tif",
+      "filename": "evi2_month03_std.tif",
+      "index": "evi2",
+      "month": 3,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 189030844,
+      "sha256": "627e035a1ff5f79c460d64e0b05d0bd2397defe2aa587bc3871fd5693d6b4b85",
+      "r2_etag": "069e29dfed089c4ecf128045403840c6",
+      "r2_last_modified": "2026-07-12T18:46:11.029000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53558445,
+      "valid_fraction": 0.9945077291704512,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52311288,
+      "extent_coverage_fraction": 0.9999499941736331,
+      "minimum": 0.0,
+      "maximum": 0.43356096744537354,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/evi2_month04_mean.tif",
+      "filename": "evi2_month04_mean.tif",
+      "index": "evi2",
+      "month": 4,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 185997034,
+      "sha256": "9194e3fafc7640ff5017adf8ddcddbbd12520218d41df34281b506fa8b58c984",
+      "r2_etag": "4fc11f49a54e509132b1d8b2fc0a7bca",
+      "r2_last_modified": "2026-07-12T18:45:46.357000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53548677,
+      "valid_fraction": 0.994326350650247,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52301260,
+      "extent_coverage_fraction": 0.9997583051725598,
+      "minimum": -0.25795698165893555,
+      "maximum": 0.9660725593566895,
+      "accepted_range": [
+        -1.5,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/evi2_month04_std.tif",
+      "filename": "evi2_month04_std.tif",
+      "index": "evi2",
+      "month": 4,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 189109884,
+      "sha256": "b27a7e4a16d3d2a8b55334cf562c6d3ffce978fa83bdd807b8643002806904f8",
+      "r2_etag": "52cb740fd0434aa09f99b1f838048f1f",
+      "r2_last_modified": "2026-07-12T18:44:51.398000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53548677,
+      "valid_fraction": 0.994326350650247,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52301260,
+      "extent_coverage_fraction": 0.9997583051725598,
+      "minimum": 0.0,
+      "maximum": 0.47015535831451416,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/evi2_month05_mean.tif",
+      "filename": "evi2_month05_mean.tif",
+      "index": "evi2",
+      "month": 5,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 184327512,
+      "sha256": "6ecb35ae9261d70ab1e0550afc0a04859301f47adda1f8a9b6baf5f79f16ce61",
+      "r2_etag": "f6e8adcabbf09c5660c4462418f3ed35",
+      "r2_last_modified": "2026-07-12T18:43:30.562000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561423,
+      "valid_fraction": 0.9945630265939942,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313898,
+      "extent_coverage_fraction": 0.9999998853077376,
+      "minimum": -0.25493621826171875,
+      "maximum": 0.9506502747535706,
+      "accepted_range": [
+        -1.5,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/evi2_month05_std.tif",
+      "filename": "evi2_month05_std.tif",
+      "index": "evi2",
+      "month": 5,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 187694538,
+      "sha256": "cd7c4b9ad89bbc1b90a3015df4aaaaaa2688bd0c01d7a40008efd155454c4ff3",
+      "r2_etag": "5771ed42ad1058fa28e6ac25564c2a96",
+      "r2_last_modified": "2026-07-12T18:43:11.575000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561423,
+      "valid_fraction": 0.9945630265939942,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313898,
+      "extent_coverage_fraction": 0.9999998853077376,
+      "minimum": 0.0,
+      "maximum": 0.41454461216926575,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/evi2_month06_mean.tif",
+      "filename": "evi2_month06_mean.tif",
+      "index": "evi2",
+      "month": 6,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 183133309,
+      "sha256": "0ef50374abc35cab48ba304120662bf021669f579030be0b5f190d6abde40320",
+      "r2_etag": "ed69ced0137046ead9a6959f4d7749b2",
+      "r2_last_modified": "2026-07-12T18:42:18.258000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": -0.25899291038513184,
+      "maximum": 0.8577967882156372,
+      "accepted_range": [
+        -1.5,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/evi2_month06_std.tif",
+      "filename": "evi2_month06_std.tif",
+      "index": "evi2",
+      "month": 6,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 186805796,
+      "sha256": "471259b1bc31ebba572167e7df2041a7b746f2d9630b2b46ef38476f3e6b65e5",
+      "r2_etag": "ab50545f214ef50b52608380c54758a1",
+      "r2_last_modified": "2026-07-12T18:41:46.355000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": 0.0,
+      "maximum": 0.3666682541370392,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/evi2_month07_mean.tif",
+      "filename": "evi2_month07_mean.tif",
+      "index": "evi2",
+      "month": 7,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 183301664,
+      "sha256": "ba117d670b34739532fd54b2a5330394ecc5de9fdfdb20794f31c79720ec5830",
+      "r2_etag": "c5f1cbebc5bb46ab3d745ea2f46cf3f9",
+      "r2_last_modified": "2026-07-12T18:40:59.278000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": -0.26033127307891846,
+      "maximum": 0.8671124577522278,
+      "accepted_range": [
+        -1.5,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/evi2_month07_std.tif",
+      "filename": "evi2_month07_std.tif",
+      "index": "evi2",
+      "month": 7,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 186966334,
+      "sha256": "1635bcd9813dcc8529b64f8abc4c4a26a3be76e12520af13a37afa8a5b3215cb",
+      "r2_etag": "5825baa0b9c9bd96d28daa93adbf330c",
+      "r2_last_modified": "2026-07-12T18:39:57.611000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": 0.00015242087829392403,
+      "maximum": 0.43059372901916504,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/evi2_month08_mean.tif",
+      "filename": "evi2_month08_mean.tif",
+      "index": "evi2",
+      "month": 8,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 183599194,
+      "sha256": "e72da76af0173146a59d5efbc74dbdc0fc39bca4ee2db90d2d890be8a0e2354b",
+      "r2_etag": "881fc5ff2b970c93321240f2f7332124",
+      "r2_last_modified": "2026-07-12T18:39:38.325000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": -0.2454042136669159,
+      "maximum": 0.8471594452857971,
+      "accepted_range": [
+        -1.5,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/evi2_month08_std.tif",
+      "filename": "evi2_month08_std.tif",
+      "index": "evi2",
+      "month": 8,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 186933585,
+      "sha256": "a2f93b15ab7a607be9f01e821be36d38bd8cadebe3f0dbdecd3fbaec80b02a7d",
+      "r2_etag": "6bd8888a4b82d028917cc24797cce6ee",
+      "r2_last_modified": "2026-07-12T18:38:32.167000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": 0.001757755526341498,
+      "maximum": 0.358719140291214,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/evi2_month09_mean.tif",
+      "filename": "evi2_month09_mean.tif",
+      "index": "evi2",
+      "month": 9,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 183430043,
+      "sha256": "96588b31fff9f15fa5523eb375949c1883ccb91b1930d4972b8dca770183590d",
+      "r2_etag": "4f4f96e0d330f686308d11938450a460",
+      "r2_last_modified": "2026-07-12T18:38:14.772000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": -0.24166996777057648,
+      "maximum": 0.8229116201400757,
+      "accepted_range": [
+        -1.5,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/evi2_month09_std.tif",
+      "filename": "evi2_month09_std.tif",
+      "index": "evi2",
+      "month": 9,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 187572489,
+      "sha256": "d3bfb2753dd3230239e2cbc9b2beef74c51573ab2c01bb50d7ba316fbee3783e",
+      "r2_etag": "5acc29b2c020f7cc7bf7652432737813",
+      "r2_last_modified": "2026-07-12T18:37:14.810000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": 0.0018518756842240691,
+      "maximum": 0.3961070775985718,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/evi2_month10_mean.tif",
+      "filename": "evi2_month10_mean.tif",
+      "index": "evi2",
+      "month": 10,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 183798176,
+      "sha256": "e75d47d83fe88a6c8e977ec3f6cb57f1625806ad054459f124d30203b78e8808",
+      "r2_etag": "b0435b1af4a01870fc3098623e8a9f4e",
+      "r2_last_modified": "2026-07-12T18:36:29.585000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": -0.22346477210521698,
+      "maximum": 0.8354387283325195,
+      "accepted_range": [
+        -1.5,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/evi2_month10_std.tif",
+      "filename": "evi2_month10_std.tif",
+      "index": "evi2",
+      "month": 10,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 188207063,
+      "sha256": "4c4fef33220845099077b218d25fb6c56fbe3c743e29235b62fb30572107b01a",
+      "r2_etag": "2bda966c3dd37b1feb4385e043aa9522",
+      "r2_last_modified": "2026-07-12T18:35:51.589000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": 0.0017148078186437488,
+      "maximum": 0.41097918152809143,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/evi2_month11_mean.tif",
+      "filename": "evi2_month11_mean.tif",
+      "index": "evi2",
+      "month": 11,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 184603392,
+      "sha256": "c3bf0a63dc01e5f1e3af27740f645d58481c5a6ce674b3bcb86cf567a2911b48",
+      "r2_etag": "baf711c1a910da68ad58fae04cea6e6e",
+      "r2_last_modified": "2026-07-12T18:34:25.117000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": -0.24800272285938263,
+      "maximum": 0.8404049873352051,
+      "accepted_range": [
+        -1.5,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/evi2_month11_std.tif",
+      "filename": "evi2_month11_std.tif",
+      "index": "evi2",
+      "month": 11,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 188219826,
+      "sha256": "9f081514a81351ae9035d9654b7c448cf8daee835379f99df013c9296019ee98",
+      "r2_etag": "2ac109d876b1d8236cefaf172729d10c",
+      "r2_last_modified": "2026-07-12T18:34:26.278000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": 0.0015649311244487762,
+      "maximum": 0.41724562644958496,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/evi2_month12_mean.tif",
+      "filename": "evi2_month12_mean.tif",
+      "index": "evi2",
+      "month": 12,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 185238928,
+      "sha256": "11dd35e5cda978dcdaf4b77116b59ba2561426dfcca48a2450b3b56fce3d8542",
+      "r2_etag": "0c4de384ad6d9321dab62794fbe74ee2",
+      "r2_last_modified": "2026-07-12T18:33:03.520000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561398,
+      "valid_fraction": 0.9945625623778799,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313873,
+      "extent_coverage_fraction": 0.9999994074233114,
+      "minimum": -0.2045460045337677,
+      "maximum": 0.8945663571357727,
+      "accepted_range": [
+        -1.5,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/evi2_month12_std.tif",
+      "filename": "evi2_month12_std.tif",
+      "index": "evi2",
+      "month": 12,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 188947758,
+      "sha256": "902eeb2c78eb08fb0526784f61b33c154646f2957c6de97216899b5b8e3a0f3c",
+      "r2_etag": "546b6925ff1c4c3d9b6dd4cec5f4ec25",
+      "r2_last_modified": "2026-07-12T18:33:03.233000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561398,
+      "valid_fraction": 0.9945625623778799,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313873,
+      "extent_coverage_fraction": 0.9999994074233114,
+      "minimum": 0.0,
+      "maximum": 0.41212978959083557,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/nbr_month01_mean.tif",
+      "filename": "nbr_month01_mean.tif",
+      "index": "nbr",
+      "month": 1,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 188006271,
+      "sha256": "0104f62c1859f12429caf5074658d5c2d964477dc380f0e5071e95ed292abf43",
+      "r2_etag": "b978b24f8b04db054f1885df52132fd2",
+      "r2_last_modified": "2026-07-12T18:49:34.211000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53404110,
+      "valid_fraction": 0.9916419374100384,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52157058,
+      "extent_coverage_fraction": 0.9970018295709684,
+      "minimum": -1.0,
+      "maximum": 1.0,
+      "accepted_range": [
+        -1.0,
+        1.0
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/nbr_month01_std.tif",
+      "filename": "nbr_month01_std.tif",
+      "index": "nbr",
+      "month": 1,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 150720123,
+      "sha256": "a33917333b5d0bc4e44e4cc0ac91922f3d116490e8b184f3ddc5db760a9d9cf0",
+      "r2_etag": "d0b63809a7fcc4f969ffe419718ce3c5",
+      "r2_last_modified": "2026-07-12T18:48:27.925000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53404110,
+      "valid_fraction": 0.9916419374100384,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52157058,
+      "extent_coverage_fraction": 0.9970018295709684,
+      "minimum": 0.0,
+      "maximum": 0.76844322681427,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/nbr_month02_mean.tif",
+      "filename": "nbr_month02_mean.tif",
+      "index": "nbr",
+      "month": 2,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 188346013,
+      "sha256": "227012da235e57ecde9aa30e0a4f839d72accdc3b7f8e15a9ee27b73487f36f4",
+      "r2_etag": "5812ff85e4e1a7f4c75d89995d233b9a",
+      "r2_last_modified": "2026-07-12T18:48:35.026000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53409594,
+      "valid_fraction": 0.9917437678568852,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52166939,
+      "extent_coverage_fraction": 0.997190708611615,
+      "minimum": -0.5727654099464417,
+      "maximum": 0.8681221604347229,
+      "accepted_range": [
+        -1.0,
+        1.0
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/nbr_month02_std.tif",
+      "filename": "nbr_month02_std.tif",
+      "index": "nbr",
+      "month": 2,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 182515431,
+      "sha256": "c6c9182061da84d09faffb6a9319fab57fb6f02d594adb7b8064cfdd246da057",
+      "r2_etag": "c2cb677900a3be5ac6c87212d77aa42c",
+      "r2_last_modified": "2026-07-12T18:48:06.314000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53409594,
+      "valid_fraction": 0.9917437678568852,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52166939,
+      "extent_coverage_fraction": 0.997190708611615,
+      "minimum": 0.0,
+      "maximum": 0.760401725769043,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/nbr_month03_mean.tif",
+      "filename": "nbr_month03_mean.tif",
+      "index": "nbr",
+      "month": 3,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 187641719,
+      "sha256": "1007edb6fb7ba88ad9aecb36a7346ea27a7528e7754d12130494c9c76510d6fc",
+      "r2_etag": "0cc6ea56c1a16acd04f7cc1757580744",
+      "r2_last_modified": "2026-07-12T18:47:18.981000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53558445,
+      "valid_fraction": 0.9945077291704512,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52311288,
+      "extent_coverage_fraction": 0.9999499941736331,
+      "minimum": -1.0,
+      "maximum": 0.895658016204834,
+      "accepted_range": [
+        -1.0,
+        1.0
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/nbr_month03_std.tif",
+      "filename": "nbr_month03_std.tif",
+      "index": "nbr",
+      "month": 3,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 189118999,
+      "sha256": "073b88f2ae631a72189d3fe601e3248b0fe2ff47561aec48e9d7261ef30c39b5",
+      "r2_etag": "40f015252fccaac45e32985bdf45f016",
+      "r2_last_modified": "2026-07-12T18:46:18.532000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53558445,
+      "valid_fraction": 0.9945077291704512,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52311288,
+      "extent_coverage_fraction": 0.9999499941736331,
+      "minimum": 0.0,
+      "maximum": 0.8225923180580139,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/nbr_month04_mean.tif",
+      "filename": "nbr_month04_mean.tif",
+      "index": "nbr",
+      "month": 4,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 186687567,
+      "sha256": "e88debd5f155e0548e0cc0a0be6f206f6d1450636647899a89f6b9be4d677115",
+      "r2_etag": "0c6b849817c1ae9481b34fa427cf4972",
+      "r2_last_modified": "2026-07-12T18:45:52.121000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53548677,
+      "valid_fraction": 0.994326350650247,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52301260,
+      "extent_coverage_fraction": 0.9997583051725598,
+      "minimum": -1.0,
+      "maximum": 0.8927608728408813,
+      "accepted_range": [
+        -1.0,
+        1.0
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/nbr_month04_std.tif",
+      "filename": "nbr_month04_std.tif",
+      "index": "nbr",
+      "month": 4,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 189700734,
+      "sha256": "70f15d0f6275e6733e5ae8ea1e9c16809b0db6211567c58c74690a398d4e32ea",
+      "r2_etag": "7c83e241dff223986afd3b3af0cd8fbe",
+      "r2_last_modified": "2026-07-12T18:44:57.992000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53548677,
+      "valid_fraction": 0.994326350650247,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52301260,
+      "extent_coverage_fraction": 0.9997583051725598,
+      "minimum": 0.0,
+      "maximum": 0.7362045645713806,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/nbr_month05_mean.tif",
+      "filename": "nbr_month05_mean.tif",
+      "index": "nbr",
+      "month": 5,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 186925176,
+      "sha256": "bc5a199f71bfdf4b8f82e0fde7ce5bb2ff482e9c93e2a8b068c9489c10a08799",
+      "r2_etag": "75ba97911d78f49a706b0ce9698b3454",
+      "r2_last_modified": "2026-07-12T18:44:19.368000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561423,
+      "valid_fraction": 0.9945630265939942,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313898,
+      "extent_coverage_fraction": 0.9999998853077376,
+      "minimum": -0.9101123809814453,
+      "maximum": 0.9088553190231323,
+      "accepted_range": [
+        -1.0,
+        1.0
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/nbr_month05_std.tif",
+      "filename": "nbr_month05_std.tif",
+      "index": "nbr",
+      "month": 5,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 188741375,
+      "sha256": "64113a22ca6ebe676d7cddfb39cf23de88458bb4f7e29fa430d2302be3b0c8d3",
+      "r2_etag": "a6a136e11c8a6b3ccc6356675a3cf565",
+      "r2_last_modified": "2026-07-12T18:43:23.087000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561423,
+      "valid_fraction": 0.9945630265939942,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313898,
+      "extent_coverage_fraction": 0.9999998853077376,
+      "minimum": 0.0,
+      "maximum": 0.6719282865524292,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/nbr_month06_mean.tif",
+      "filename": "nbr_month06_mean.tif",
+      "index": "nbr",
+      "month": 6,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 189407834,
+      "sha256": "f9f197e7a9ccac614d6815ed54b0eaecbb9994e28d040db2fd3ca102bc13df17",
+      "r2_etag": "98040c3498a0451a6baf089b227d5542",
+      "r2_last_modified": "2026-07-12T18:42:24.001000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": -0.7821782231330872,
+      "maximum": 0.898383378982544,
+      "accepted_range": [
+        -1.0,
+        1.0
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/nbr_month06_std.tif",
+      "filename": "nbr_month06_std.tif",
+      "index": "nbr",
+      "month": 6,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 187984542,
+      "sha256": "79cd04e1056d8fb5e069311dd4ade936ff67348dcdd121a2f2ca3db264db78ee",
+      "r2_etag": "d330b81f14414ee064739cdc9a5d2874",
+      "r2_last_modified": "2026-07-12T18:42:03.944000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": 0.0,
+      "maximum": 0.7489293217658997,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/nbr_month07_mean.tif",
+      "filename": "nbr_month07_mean.tif",
+      "index": "nbr",
+      "month": 7,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 191495277,
+      "sha256": "cbd47cced92adb1a6c49f44b98ed157758f54444150ea780dc5cb05d24b4c4a9",
+      "r2_etag": "f72622098a0c9afde450a47c6a330e84",
+      "r2_last_modified": "2026-07-12T18:41:09.575000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": -0.7111601829528809,
+      "maximum": 0.8667709827423096,
+      "accepted_range": [
+        -1.0,
+        1.0
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/nbr_month07_std.tif",
+      "filename": "nbr_month07_std.tif",
+      "index": "nbr",
+      "month": 7,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 187325857,
+      "sha256": "a469de485d77b9f60fa5f3222e6f280ac6ac9bd3641f9e4bc7d6346627eee7a5",
+      "r2_etag": "223dddea88adfe48db4bd24a57e687fa",
+      "r2_last_modified": "2026-07-12T18:40:29.463000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": 0.0009644762612879276,
+      "maximum": 0.6858294010162354,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/nbr_month08_mean.tif",
+      "filename": "nbr_month08_mean.tif",
+      "index": "nbr",
+      "month": 8,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 192063245,
+      "sha256": "a48d3bcfbe30ab16f667269d40442a62700ed3bb7ca091fc388412e85cdde22b",
+      "r2_etag": "a3b433c168fc38d6e68c52214062c1ac",
+      "r2_last_modified": "2026-07-12T18:39:45.686000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": -0.517241358757019,
+      "maximum": 0.8438786268234253,
+      "accepted_range": [
+        -1.0,
+        1.0
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/nbr_month08_std.tif",
+      "filename": "nbr_month08_std.tif",
+      "index": "nbr",
+      "month": 8,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 186255040,
+      "sha256": "18ae2b5692dafec4d337010c9b6bdc95b2517ac4388e8645042cddc71624da03",
+      "r2_etag": "3c6b150e5e7037a59191d608631f9142",
+      "r2_last_modified": "2026-07-12T18:38:46.700000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": 0.005202471278607845,
+      "maximum": 0.5961835980415344,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/nbr_month09_mean.tif",
+      "filename": "nbr_month09_mean.tif",
+      "index": "nbr",
+      "month": 9,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 192177099,
+      "sha256": "96c21582fef17436a24643483da47f126c46ee09d89d9e4da978c578937a709e",
+      "r2_etag": "36faf80957674676478b4d941653e988",
+      "r2_last_modified": "2026-07-12T18:38:30.686000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": -0.49501660466194153,
+      "maximum": 0.8357843160629272,
+      "accepted_range": [
+        -1.0,
+        1.0
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/nbr_month09_std.tif",
+      "filename": "nbr_month09_std.tif",
+      "index": "nbr",
+      "month": 9,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 186182876,
+      "sha256": "c303981cc188700a47f332252f79bdf26bc533520cc01c62d395caf6bd471a31",
+      "r2_etag": "4527860f1d757eb7981c6fc117bbb53c",
+      "r2_last_modified": "2026-07-12T18:37:12.692000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": 0.0035949209704995155,
+      "maximum": 0.5672310590744019,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/nbr_month10_mean.tif",
+      "filename": "nbr_month10_mean.tif",
+      "index": "nbr",
+      "month": 10,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 192443276,
+      "sha256": "22cfd8bcf15b6febdee1e0724eb96720ea8b6308b55911acd1d8e18e85d15cf3",
+      "r2_etag": "63a272768856a0238dd1ff9cb6081d80",
+      "r2_last_modified": "2026-07-12T18:37:05.188000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": -0.46065664291381836,
+      "maximum": 0.8159291744232178,
+      "accepted_range": [
+        -1.0,
+        1.0
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/nbr_month10_std.tif",
+      "filename": "nbr_month10_std.tif",
+      "index": "nbr",
+      "month": 10,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 186021763,
+      "sha256": "0a3b6f8388e6bd0cef46816d69da6cc5fdc1753ca748724655ba487d1a17cd38",
+      "r2_etag": "8611ea7eb946e44516adc2b073f51512",
+      "r2_last_modified": "2026-07-12T18:35:53.585000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": 0.0036619442980736494,
+      "maximum": 0.4970112144947052,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/nbr_month11_mean.tif",
+      "filename": "nbr_month11_mean.tif",
+      "index": "nbr",
+      "month": 11,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 193228962,
+      "sha256": "1b4a14b1abdd7e49f214d45c6724a74231fd4833eda7ab954d74299c5b3b7eca",
+      "r2_etag": "a338a79513bc87fcd6bc68822fe7b460",
+      "r2_last_modified": "2026-07-12T18:35:16.529000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": -0.5077206492424011,
+      "maximum": 0.8171161413192749,
+      "accepted_range": [
+        -1.0,
+        1.0
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/nbr_month11_std.tif",
+      "filename": "nbr_month11_std.tif",
+      "index": "nbr",
+      "month": 11,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 187763914,
+      "sha256": "2f4530a310cd6bfb59965f53eadc6a91bc65bf7917f4c8d1ff0809e853ad4368",
+      "r2_etag": "d1d8cce9eaa0fc3e15287885bc7a569f",
+      "r2_last_modified": "2026-07-12T18:34:27.505000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": 0.004946163389831781,
+      "maximum": 0.575023353099823,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/nbr_month12_mean.tif",
+      "filename": "nbr_month12_mean.tif",
+      "index": "nbr",
+      "month": 12,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 192458707,
+      "sha256": "7e47015c0d6e09450e4094828d8ed4e2f9920b31e366ea423a4432c0b547bf40",
+      "r2_etag": "12a869699a3c5e37b7f357a823ad626b",
+      "r2_last_modified": "2026-07-12T18:33:03.361000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561398,
+      "valid_fraction": 0.9945625623778799,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313873,
+      "extent_coverage_fraction": 0.9999994074233114,
+      "minimum": -0.8398510217666626,
+      "maximum": 0.8304635882377625,
+      "accepted_range": [
+        -1.0,
+        1.0
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/nbr_month12_std.tif",
+      "filename": "nbr_month12_std.tif",
+      "index": "nbr",
+      "month": 12,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 188323955,
+      "sha256": "aeee7310f0f4019fbccad051a2ece4a117bf301f58a2eb8a6c5c4685fb6c7ff8",
+      "r2_etag": "374284d79783c9d284d29fa1ac7cb1a1",
+      "r2_last_modified": "2026-07-12T18:33:01.334000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561398,
+      "valid_fraction": 0.9945625623778799,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313873,
+      "extent_coverage_fraction": 0.9999994074233114,
+      "minimum": 0.0,
+      "maximum": 0.5915088653564453,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/ndmi_month01_mean.tif",
+      "filename": "ndmi_month01_mean.tif",
+      "index": "ndmi",
+      "month": 1,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 190357692,
+      "sha256": "e4cab46f1ee759684dd63b153b60b382a2647750694678308a8cd9c9fbe51d79",
+      "r2_etag": "8e52a085a46957707c0c080cd95ed562",
+      "r2_last_modified": "2026-07-12T18:49:38.551000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53404110,
+      "valid_fraction": 0.9916419374100384,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52157058,
+      "extent_coverage_fraction": 0.9970018295709684,
+      "minimum": -1.0,
+      "maximum": 0.8265582919120789,
+      "accepted_range": [
+        -1.0,
+        1.0
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/ndmi_month01_std.tif",
+      "filename": "ndmi_month01_std.tif",
+      "index": "ndmi",
+      "month": 1,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 150987344,
+      "sha256": "fa4a5f9c3e87d3e2986b1f07b9a231644235264e1fc10cb5d35e78d6243478c8",
+      "r2_etag": "87eac2cffd9f0ae1c59e1e7575e10846",
+      "r2_last_modified": "2026-07-12T18:49:21.064000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53404110,
+      "valid_fraction": 0.9916419374100384,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52157058,
+      "extent_coverage_fraction": 0.9970018295709684,
+      "minimum": 0.0,
+      "maximum": 0.6792527437210083,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/ndmi_month02_mean.tif",
+      "filename": "ndmi_month02_mean.tif",
+      "index": "ndmi",
+      "month": 2,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 191099930,
+      "sha256": "eeb90811cc43b9904edb6a25e2a29af78aba8753ee08e3a036fd04fccb070af4",
+      "r2_etag": "d2b015abf92a6fc9f7fda00ab2239191",
+      "r2_last_modified": "2026-07-12T18:48:32.842000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53409594,
+      "valid_fraction": 0.9917437678568852,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52166939,
+      "extent_coverage_fraction": 0.997190708611615,
+      "minimum": -0.6343693137168884,
+      "maximum": 0.753629207611084,
+      "accepted_range": [
+        -1.0,
+        1.0
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/ndmi_month02_std.tif",
+      "filename": "ndmi_month02_std.tif",
+      "index": "ndmi",
+      "month": 2,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 181972799,
+      "sha256": "f5cd5323ca1daab21867451074c9e0202fc13d5f352a7f234b5f26ee0a7867db",
+      "r2_etag": "8eca5b5bdad16998ae93f097353b1c01",
+      "r2_last_modified": "2026-07-12T18:48:12.294000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53409594,
+      "valid_fraction": 0.9917437678568852,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52166939,
+      "extent_coverage_fraction": 0.997190708611615,
+      "minimum": 0.0,
+      "maximum": 0.568060040473938,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/ndmi_month03_mean.tif",
+      "filename": "ndmi_month03_mean.tif",
+      "index": "ndmi",
+      "month": 3,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 190263804,
+      "sha256": "994a637646488339956d88fdaa462518c342a5c8984559b9750539df3fe68758",
+      "r2_etag": "b872e398f2f6c1810355213078967486",
+      "r2_last_modified": "2026-07-12T18:47:26.899000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53558445,
+      "valid_fraction": 0.9945077291704512,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52311288,
+      "extent_coverage_fraction": 0.9999499941736331,
+      "minimum": -1.0,
+      "maximum": 0.811267614364624,
+      "accepted_range": [
+        -1.0,
+        1.0
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/ndmi_month03_std.tif",
+      "filename": "ndmi_month03_std.tif",
+      "index": "ndmi",
+      "month": 3,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 188462698,
+      "sha256": "f2c928b5ffda68cf500f33f9880c0deeadc5a9494d7a2ce07234f6bde13d389d",
+      "r2_etag": "0aacf8e2a3d463f7b1d0f8505145ccef",
+      "r2_last_modified": "2026-07-12T18:46:57.539000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53558445,
+      "valid_fraction": 0.9945077291704512,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52311288,
+      "extent_coverage_fraction": 0.9999499941736331,
+      "minimum": 0.0,
+      "maximum": 0.7154443264007568,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/ndmi_month04_mean.tif",
+      "filename": "ndmi_month04_mean.tif",
+      "index": "ndmi",
+      "month": 4,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 188283157,
+      "sha256": "2b8b51afaf602f66283a812a24d0ad41317e4b20f6f947907a259d81ea9a55b0",
+      "r2_etag": "0f540da79c459a4ae939ed2ed02dab79",
+      "r2_last_modified": "2026-07-12T18:46:05.330000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53548677,
+      "valid_fraction": 0.994326350650247,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52301260,
+      "extent_coverage_fraction": 0.9997583051725598,
+      "minimum": -1.0,
+      "maximum": 0.8209255337715149,
+      "accepted_range": [
+        -1.0,
+        1.0
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/ndmi_month04_std.tif",
+      "filename": "ndmi_month04_std.tif",
+      "index": "ndmi",
+      "month": 4,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 188435224,
+      "sha256": "2c0339de1675f6416fbb4f12cb8ba58cf459658e647d7efe9a719a681b1dc91b",
+      "r2_etag": "08a53d8129a468042e99c4a3d71a38c5",
+      "r2_last_modified": "2026-07-12T18:45:04.851000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53548677,
+      "valid_fraction": 0.994326350650247,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52301260,
+      "extent_coverage_fraction": 0.9997583051725598,
+      "minimum": 0.0,
+      "maximum": 0.6334227919578552,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/ndmi_month05_mean.tif",
+      "filename": "ndmi_month05_mean.tif",
+      "index": "ndmi",
+      "month": 5,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 190042343,
+      "sha256": "088334d7b888a83d9a82d750e759c40c4ff13c37b850c4515e47576399a59ddc",
+      "r2_etag": "ab465dfbc0d3926c1194320ce5d1739f",
+      "r2_last_modified": "2026-07-12T18:44:25.391000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561423,
+      "valid_fraction": 0.9945630265939942,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313898,
+      "extent_coverage_fraction": 0.9999998853077376,
+      "minimum": -0.9402984976768494,
+      "maximum": 0.8144190311431885,
+      "accepted_range": [
+        -1.0,
+        1.0
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/ndmi_month05_std.tif",
+      "filename": "ndmi_month05_std.tif",
+      "index": "ndmi",
+      "month": 5,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 187298356,
+      "sha256": "a6e0046409d02dd521b774e89ceea7e21f6f6a98f7a423e80dfa853bc59b3887",
+      "r2_etag": "3147f83f1267307609c179fc0e9528aa",
+      "r2_last_modified": "2026-07-12T18:43:26.295000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561423,
+      "valid_fraction": 0.9945630265939942,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313898,
+      "extent_coverage_fraction": 0.9999998853077376,
+      "minimum": 0.0,
+      "maximum": 0.6548055410385132,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/ndmi_month06_mean.tif",
+      "filename": "ndmi_month06_mean.tif",
+      "index": "ndmi",
+      "month": 6,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 192045516,
+      "sha256": "7bfd82605421f3ef5c48318076dd1ca82b32dfda485f69c87594d79adb8958a8",
+      "r2_etag": "391360bde01dd8e45cd3d88ed5060b9a",
+      "r2_last_modified": "2026-07-12T18:43:06.109000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": -0.8503401279449463,
+      "maximum": 0.8389261960983276,
+      "accepted_range": [
+        -1.0,
+        1.0
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/ndmi_month06_std.tif",
+      "filename": "ndmi_month06_std.tif",
+      "index": "ndmi",
+      "month": 6,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 186743098,
+      "sha256": "a1bcdf9812aeb2903962a5c304c47ec27eb81e502a10bbb80a08df63251c07d8",
+      "r2_etag": "cc23bf3d859d02d4f5dfbfb2a4c2e092",
+      "r2_last_modified": "2026-07-12T18:42:15.111000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": 0.0,
+      "maximum": 0.623554527759552,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/ndmi_month07_mean.tif",
+      "filename": "ndmi_month07_mean.tif",
+      "index": "ndmi",
+      "month": 7,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 191280441,
+      "sha256": "d928ea984a11e445d671e352eeebf68c455f48eb108586e115920b032160582f",
+      "r2_etag": "ab3073a0fde1c73ec28c22e3f37c0f6f",
+      "r2_last_modified": "2026-07-12T18:41:13.391000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": -0.801659107208252,
+      "maximum": 0.831270694732666,
+      "accepted_range": [
+        -1.0,
+        1.0
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/ndmi_month07_std.tif",
+      "filename": "ndmi_month07_std.tif",
+      "index": "ndmi",
+      "month": 7,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 187012805,
+      "sha256": "8f9a4e7326af15cdbdae5680419b85501e551d8fc09246f5d02023a56fe29dc9",
+      "r2_etag": "9aae31097c9eb405ac660394263267df",
+      "r2_last_modified": "2026-07-12T18:40:52.590000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": 0.0008327157702296972,
+      "maximum": 0.628065824508667,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/ndmi_month08_mean.tif",
+      "filename": "ndmi_month08_mean.tif",
+      "index": "ndmi",
+      "month": 8,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 188910560,
+      "sha256": "f049c7d0a3710b4d0204659278d70ae280d9afdf0b5cfb94a064755218e3e5f6",
+      "r2_etag": "08de7a30d16c073496a29b7e912a65a1",
+      "r2_last_modified": "2026-07-12T18:39:53.454000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": -0.6164383292198181,
+      "maximum": 0.7873183488845825,
+      "accepted_range": [
+        -1.0,
+        1.0
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/ndmi_month08_std.tif",
+      "filename": "ndmi_month08_std.tif",
+      "index": "ndmi",
+      "month": 8,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 186967640,
+      "sha256": "ea9ee9245f8de126572a72f3e135f53a5d33a922edcd37b8b11ac3f39fae39bc",
+      "r2_etag": "0726079410d18cfeff9297aa9b1a1b01",
+      "r2_last_modified": "2026-07-12T18:39:13.065000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": 0.0029064903501421213,
+      "maximum": 0.5343325734138489,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/ndmi_month09_mean.tif",
+      "filename": "ndmi_month09_mean.tif",
+      "index": "ndmi",
+      "month": 9,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 186991743,
+      "sha256": "30310c9b81e63842c55dc643fb498d9e37574a05620a372b47d15afd04bc5fd0",
+      "r2_etag": "f7aaa20c79e43625a3ab1a569e521c7e",
+      "r2_last_modified": "2026-07-12T18:38:27.877000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": -0.6096618175506592,
+      "maximum": 0.7662947773933411,
+      "accepted_range": [
+        -1.0,
+        1.0
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/ndmi_month09_std.tif",
+      "filename": "ndmi_month09_std.tif",
+      "index": "ndmi",
+      "month": 9,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 187476272,
+      "sha256": "0f475a2060df894568f95530f906f095d6cbf3fd228327b047f38d91ed20cc38",
+      "r2_etag": "7d6b13ca151cb1ed9628af2a08669465",
+      "r2_last_modified": "2026-07-12T18:37:40.014000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": 0.003005579113960266,
+      "maximum": 0.445893794298172,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/ndmi_month10_mean.tif",
+      "filename": "ndmi_month10_mean.tif",
+      "index": "ndmi",
+      "month": 10,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 186311774,
+      "sha256": "a52ffeb466fd19d37aa14c51e3d1d435fca5e73eb0704fa09b08b2f6bce4e6e7",
+      "r2_etag": "3a1b0a0d8e598ed9e922904bfd5893bc",
+      "r2_last_modified": "2026-07-12T18:37:11.026000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": -0.5808291435241699,
+      "maximum": 0.693905234336853,
+      "accepted_range": [
+        -1.0,
+        1.0
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/ndmi_month10_std.tif",
+      "filename": "ndmi_month10_std.tif",
+      "index": "ndmi",
+      "month": 10,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 187631020,
+      "sha256": "f0284990ed44c18229858f5408f57ccc0c9e627ad47a044a239c6f82622856fc",
+      "r2_etag": "2f64b547f37a2170fa4b35340ca2eb2a",
+      "r2_last_modified": "2026-07-12T18:35:56.585000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": 0.0033273182343691587,
+      "maximum": 0.4222855865955353,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/ndmi_month11_mean.tif",
+      "filename": "ndmi_month11_mean.tif",
+      "index": "ndmi",
+      "month": 11,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 188328944,
+      "sha256": "70846a6945e2d4375057918790c4bac913745d226fd9900737d3b8f32517aa5e",
+      "r2_etag": "065dcaeb1c5bd492eb581333d257af05",
+      "r2_last_modified": "2026-07-12T18:35:48.364000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": -0.6020128130912781,
+      "maximum": 0.70783531665802,
+      "accepted_range": [
+        -1.0,
+        1.0
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/ndmi_month11_std.tif",
+      "filename": "ndmi_month11_std.tif",
+      "index": "ndmi",
+      "month": 11,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 187846038,
+      "sha256": "05f73ae30959e4cea71e94fa6fd95e407f01c08554c981b2a7ff5aceeb5c106b",
+      "r2_etag": "750f6827f3a3268368131fa414ac7636",
+      "r2_last_modified": "2026-07-12T18:34:34.563000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561429,
+      "valid_fraction": 0.9945631380058616,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313904,
+      "extent_coverage_fraction": 1.0,
+      "minimum": 0.002079819794744253,
+      "maximum": 0.4903648793697357,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/ndmi_month12_mean.tif",
+      "filename": "ndmi_month12_mean.tif",
+      "index": "ndmi",
+      "month": 12,
+      "filename_statistic": "mean",
+      "statistic": "median",
+      "bytes": 193345798,
+      "sha256": "bf7a6a3ff6adbdc5d86c58d1f49f2a7556da6d8713c69ad73878e1a71da53a7f",
+      "r2_etag": "58ab0f8f6f362c708c68e7c38b284d71",
+      "r2_last_modified": "2026-07-12T18:34:19.572000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561398,
+      "valid_fraction": 0.9945625623778799,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313873,
+      "extent_coverage_fraction": 0.9999994074233114,
+      "minimum": -0.8748180270195007,
+      "maximum": 0.7658063173294067,
+      "accepted_range": [
+        -1.0,
+        1.0
+      ],
+      "range_violation_pixels": 0
+    },
+    {
+      "key": "baselines/ndmi_month12_std.tif",
+      "filename": "ndmi_month12_std.tif",
+      "index": "ndmi",
+      "month": 12,
+      "filename_statistic": "std",
+      "statistic": "standard_deviation",
+      "bytes": 188696260,
+      "sha256": "e9e14219ff17aa0c2ae0a4342ed9d3b19364eff9504e39f16dd48288f288efb6",
+      "r2_etag": "5c552b9f9ba5578752b3c68428caa34d",
+      "r2_last_modified": "2026-07-12T18:33:04.841000+00:00",
+      "r2_storage_class": "STANDARD",
+      "r2_content_type": "image/tiff",
+      "crs": "EPSG:32724",
+      "width": 10773,
+      "height": 4999,
+      "transform": [
+        20.0,
+        0.0,
+        290080.0,
+        0.0,
+        -20.0,
+        9231780.0
+      ],
+      "bounds": [
+        290080.0,
+        9131800.0,
+        505540.0,
+        9231780.0
+      ],
+      "pixel_size": [
+        20.0,
+        20.0
+      ],
+      "grid_matches_reference": true,
+      "dtype": "float32",
+      "band_count": 1,
+      "nodata": "NaN",
+      "compression": "deflate",
+      "tiled": true,
+      "block_shape": [
+        256,
+        256
+      ],
+      "overview_levels": [],
+      "finite_pixels": 53561398,
+      "valid_fraction": 0.9945625623778799,
+      "monitoring_extent_pixels": 52313904,
+      "monitoring_extent_valid_pixels": 52313873,
+      "extent_coverage_fraction": 0.9999994074233114,
+      "minimum": 0.0,
+      "maximum": 0.5046974420547485,
+      "accepted_range": [
+        0.0,
+        1.5
+      ],
+      "range_violation_pixels": 0
+    }
+  ]
+}

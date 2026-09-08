@@ -7,6 +7,7 @@ Cloud Optimized GeoTIFFs for efficient loading.
 
 from __future__ import annotations
 
+from functools import lru_cache
 from pathlib import Path
 from typing import Optional
 
@@ -16,7 +17,28 @@ import xarray as xr
 from loguru import logger
 from rasterio.transform import from_bounds
 
-from config.settings import BASELINES_DIR, BASELINE_MONTHS, TARGET_CRS
+from config.settings import (
+    BASELINES_DIR,
+    BASELINE_MANIFEST_PATH,
+    BASELINE_MONTHS,
+    TARGET_CRS,
+)
+from src.detection.baseline_manifest import load_manifest, sha256_file
+
+
+@lru_cache(maxsize=72)
+def _verify_authoritative_file(path_text: str) -> None:
+    """Bind a production-path raster to the accepted manifest once per process."""
+    path = Path(path_text)
+    manifest = load_manifest(BASELINE_MANIFEST_PATH)
+    by_filename = {obj["filename"]: obj for obj in manifest["objects"]}
+    expected = by_filename.get(path.name)
+    if expected is None:
+        raise ValueError(f"Baseline is not in authoritative manifest: {path.name}")
+    if path.stat().st_size != expected["bytes"]:
+        raise ValueError(f"Baseline size does not match manifest: {path.name}")
+    if sha256_file(path) != expected["sha256"]:
+        raise ValueError(f"Baseline checksum does not match manifest: {path.name}")
 
 
 def save_baseline_cog(
@@ -86,6 +108,8 @@ def load_baseline(
 
     if not path.exists():
         raise FileNotFoundError(f"Baseline not found: {path}")
+    if baselines_dir.resolve() == BASELINES_DIR.resolve():
+        _verify_authoritative_file(str(path.resolve()))
 
     da = rioxarray.open_rasterio(str(path))
     if "band" in da.dims and da.sizes["band"] == 1:

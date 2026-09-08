@@ -1,0 +1,451 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://observatoriodachapadadoararipe.com/data/schemas/observation-v1.schema.json",
+  "title": "Araripe Raw Observation v1",
+  "description": "One immutable raw detection polygon for one deterministic acquisition.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "observation_id",
+    "observation_identity_inputs_sha256",
+    "acquisition",
+    "event_id",
+    "persistence_contribution_key",
+    "monitoring_extent_id",
+    "algorithm_version",
+    "baseline_version",
+    "geometry_crs",
+    "geometry",
+    "canonical_geometry_sha256",
+    "area_ha",
+    "confidence",
+    "quality",
+    "context",
+    "raw_detection_policy",
+    "release_id",
+    "source_artifact",
+    "created_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "observation_id": {
+      "$ref": "#/$defs/observation_id"
+    },
+    "observation_identity_inputs_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "acquisition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "acquisition_id",
+        "identity_inputs_sha256",
+        "provider",
+        "collection_id",
+        "sensor",
+        "observed_on",
+        "scene_ids",
+        "composite_method_id"
+      ],
+      "properties": {
+        "acquisition_id": {
+          "$ref": "#/$defs/acquisition_id"
+        },
+        "identity_inputs_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "collection_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sensor": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observed_on": {
+          "type": "string",
+          "format": "date"
+        },
+        "scene_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "composite_method_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]*-v[1-9][0-9]*$"
+        }
+      }
+    },
+    "event_id": {
+      "$ref": "#/$defs/event_id"
+    },
+    "persistence_contribution_key": {
+      "$ref": "#/$defs/contribution_key"
+    },
+    "monitoring_extent_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "algorithm_version": {
+      "$ref": "#/$defs/semver"
+    },
+    "baseline_version": {
+      "$ref": "#/$defs/semver"
+    },
+    "geometry_crs": {
+      "const": "EPSG:4326"
+    },
+    "geometry": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/polygon"
+        },
+        {
+          "$ref": "#/$defs/multipolygon"
+        }
+      ]
+    },
+    "canonical_geometry_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "area_ha": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "confidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tier",
+        "numeric_level",
+        "rule_version",
+        "is_calibrated_probability"
+      ],
+      "properties": {
+        "tier": {
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "numeric_level": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3
+        },
+        "rule_version": {
+          "$ref": "#/$defs/semver"
+        },
+        "is_calibrated_probability": {
+          "const": false
+        }
+      }
+    },
+    "quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scene_decision",
+        "valid_coverage_fraction",
+        "minimum_required_fraction",
+        "qa_flags",
+        "rejection_reason"
+      ],
+      "properties": {
+        "scene_decision": {
+          "const": "accepted"
+        },
+        "valid_coverage_fraction": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "minimum_required_fraction": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "qa_flags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "rejection_reason": {
+          "type": "null"
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mapbiomas",
+        "spectral_signature_label"
+      ],
+      "properties": {
+        "mapbiomas": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "affects_observation_existence",
+            "annotations",
+            "strong_subset_membership"
+          ],
+          "properties": {
+            "affects_observation_existence": {
+              "const": false
+            },
+            "annotations": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/mapbiomas_annotation"
+              },
+              "uniqueItems": true
+            },
+            "strong_subset_membership": {
+              "type": "boolean"
+            }
+          }
+        },
+        "spectral_signature_label": {
+          "enum": [
+            "fire_like",
+            "exposed_soil_or_clearing_like",
+            "mixed_or_uncertain",
+            "not_assessed"
+          ]
+        }
+      }
+    },
+    "raw_detection_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "retained",
+        "immutable",
+        "mapbiomas_can_remove",
+        "persistence_can_remove"
+      ],
+      "properties": {
+        "retained": {
+          "const": true
+        },
+        "immutable": {
+          "const": true
+        },
+        "mapbiomas_can_remove": {
+          "const": false
+        },
+        "persistence_can_remove": {
+          "const": false
+        }
+      }
+    },
+    "release_id": {
+      "$ref": "#/$defs/release_id"
+    },
+    "source_artifact": {
+      "$ref": "#/$defs/artifact_reference"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "$defs": {
+    "semver": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "acquisition_id": {
+      "type": "string",
+      "pattern": "^acq-v1-[a-f0-9]{64}$"
+    },
+    "observation_id": {
+      "type": "string",
+      "pattern": "^obs-v1-[a-f0-9]{64}$"
+    },
+    "event_id": {
+      "type": "string",
+      "pattern": "^evt-v1-[a-f0-9]{64}$"
+    },
+    "contribution_key": {
+      "type": "string",
+      "pattern": "^pc-v1-[a-f0-9]{64}$"
+    },
+    "release_id": {
+      "type": "string",
+      "pattern": "^araripe-[a-z0-9][a-z0-9.-]*$"
+    },
+    "position": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        },
+        {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "ring": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/position"
+      },
+      "minItems": 4
+    },
+    "polygon_coordinates": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ring"
+      },
+      "minItems": 1
+    },
+    "polygon": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "coordinates"
+      ],
+      "properties": {
+        "type": {
+          "const": "Polygon"
+        },
+        "coordinates": {
+          "$ref": "#/$defs/polygon_coordinates"
+        }
+      }
+    },
+    "multipolygon": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "coordinates"
+      ],
+      "properties": {
+        "type": {
+          "const": "MultiPolygon"
+        },
+        "coordinates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/polygon_coordinates"
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "mapbiomas_annotation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "collection_id",
+        "collection_version",
+        "crop_version",
+        "source_national_sha256",
+        "regional_crop_sha256",
+        "crop_extent_id",
+        "native_resolution_m",
+        "dominant_group",
+        "natural_fraction",
+        "nodata_fraction"
+      ],
+      "properties": {
+        "collection_id": {
+          "type": "string",
+          "minLength": 1
+        },
+      "collection_version": {
+        "$ref": "#/$defs/semver"
+      },
+      "crop_version": {
+        "$ref": "#/$defs/semver"
+      },
+      "source_national_sha256": {
+        "$ref": "#/$defs/sha256"
+      },
+      "regional_crop_sha256": {
+        "$ref": "#/$defs/sha256"
+      },
+      "crop_extent_id": {
+        "type": "string",
+        "minLength": 1
+      },
+        "native_resolution_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "dominant_group": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "natural_fraction": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "nodata_fraction": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "artifact_reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "immutable_path",
+        "sha256",
+        "media_type"
+      ],
+      "properties": {
+        "immutable_path": {
+          "type": "string",
+          "pattern": "^releases/[a-z0-9][a-z0-9.-]*/.+$"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "media_type": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

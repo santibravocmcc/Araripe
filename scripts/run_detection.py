@@ -22,12 +22,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from config.settings import (
     ALERTS_DIR,
     AOI_BBOX,
+    BASELINE_VERSION,
     BASELINES_DIR,
+    DETECTION_ALGORITHM_VERSION,
     DEFAULT_LANDCOVER_COLLECTION,
     MAX_CLOUD_COVER,
+    MONITORING_EXTENT_ID,
     SCENE_ANOMALY_REJECT_FRAC,
     SCENE_CACHE_DIR,
     SEARCH_DAYS_BACK,
+    STREAMING_COMPOSITE_METHOD_ID,
 )
 from src.acquisition.aoi import clip_dataset_to_aoi, get_aoi_bbox_wgs84, load_aoi_polygon
 from src.acquisition.stac_client import (
@@ -44,12 +48,14 @@ from src.detection.alerts import save_alerts, summarize_alerts, vectorize_alerts
 from src.detection.baseline import load_baseline_pair
 from src.detection.change_detect import detect_deforestation
 from src.detection.landcover import annotate_alerts_all_collections
+from src.detection.identity import create_acquisition_identity
 from src.detection.persistence import (
     DEFAULT_MIN_OVERLAP_FRAC,
     load_persistence_state,
     save_persistence_state,
     update_tracks,
 )
+from src.detection.scene_quality import assess_scene_quality, save_scene_quality
 from src.processing.cloud_mask import (
     compute_clear_percentage,
     mask_hls,
@@ -82,11 +88,40 @@ def _load_and_mask(item, sensor, index_list):
 
 
 _GRID_TOLERANCE_M = {"sentinel2": 10, "landsat": 35, "hls": 35}
+_STREAMING_COLLECTIONS = {
+    "sentinel2": "sentinel-2-l2a",
+    "landsat": "landsat-c2-l2",
+    "hls": "hls-v2.0",
+}
 
 _CLEARING_LABELS = {0: "none", 1: "fire", 2: "mechanical", 3: "uncertain"}
 
 
-def _merge_and_confirm(scene_date, parts, persistence, min_overlap_frac, state):
+def _streaming_acquisition(scene_date, scene_records):
+    collection_ids = sorted({record["collection_id"] for record in scene_records})
+    if len(collection_ids) == 1:
+        collection_id = collection_ids[0]
+    else:
+        collection_id = "araripe/multi-collection/" + "+".join(collection_ids)
+    return create_acquisition_identity(
+        collection_id=collection_id,
+        observed_on=scene_date,
+        scene_ids=sorted({record["scene_id"] for record in scene_records}),
+        monitoring_extent_id=MONITORING_EXTENT_ID,
+        composite_method_id=STREAMING_COMPOSITE_METHOD_ID,
+    )
+
+
+def _merge_and_confirm(
+    scene_date,
+    parts,
+    persistence,
+    min_overlap_frac,
+    state,
+    acquisition=None,
+    *,
+    persistence_mode="live",
+):
     """Merge every tile's alerts for one acquisition date into a single
     GeoDataFrame and update the gap-tolerant persistence tracks.
 
@@ -111,16 +146,21 @@ def _merge_and_confirm(scene_date, parts, persistence, min_overlap_frac, state):
         crs=parts[0].crs,
     )
     if persistence:
-        try:
-            merged, state = update_tracks(
-                merged, state, scene_date, min_overlap_frac=min_overlap_frac,
-            )
-            vc = merged["persistence_status"].value_counts().to_dict()
-            logger.info("Persistência {}: {} | estado={} tracks", scene_date, vc, len(state))
-        except Exception as pe:
-            logger.warning("Persistence step failed ({}); marking candidate", pe)
-            merged["persistence_count"] = 1
-            merged["persistence_status"] = "candidate"
+        if acquisition is None:
+            raise ValueError("deterministic persistence requires acquisition metadata")
+        merged, state = update_tracks(
+            merged,
+            state,
+            scene_date,
+            acquisition=acquisition,
+            algorithm_version=DETECTION_ALGORITHM_VERSION,
+            baseline_version=BASELINE_VERSION,
+            monitoring_extent_id=MONITORING_EXTENT_ID,
+            mode=persistence_mode,
+            min_overlap_frac=min_overlap_frac,
+        )
+        vc = merged["persistence_status"].value_counts().to_dict()
+        logger.info("Persistência {}: {} | estado={} eventos", scene_date, vc, len(state))
     return merged, state
 
 
@@ -193,9 +233,14 @@ def _modal_class_per_polygon(gdf, class_da):
 @click.option(
     "--persistence/--no-persistence",
     default=True,
-    help="Only report alerts confirmed in >=2 consecutive observations "
-         "(compares against the most recent prior alert file). Non-destructive: "
-         "all alerts are saved with a persistence_status column.",
+    help="Assign deterministic event IDs and distinct-acquisition persistence "
+         "tiers. Non-destructive: every raw observation is retained.",
+)
+@click.option(
+    "--persistence-mode",
+    type=click.Choice(["live", "rebuild"]),
+    default="live",
+    help="Live rejects older dates; rebuild requires an isolated chronological state.",
 )
 @click.option(
     "--min-overlap-frac",
@@ -228,6 +273,7 @@ def main(
     max_scenes: int,
     extra_sources: str,
     persistence: bool,
+    persistence_mode: str,
     min_overlap_frac: float,
     landcover_collection: str,
     classify_clearing: bool,
@@ -260,21 +306,10 @@ def main(
         cache_dir.mkdir(parents=True, exist_ok=True)
         logger.info("Scene caching enabled: {}", cache_dir)
 
-    # Fetch current drought status via CHIRPS/SPI
-    spi_value = None
-    try:
-        from src.processing.spi import get_current_spi
-
-        spi_value = get_current_spi(aoi_bbox)
-        logger.info("Current 3-month SPI: {:.2f}", spi_value)
-        if spi_value < -1.0:
-            logger.warning(
-                "Drought conditions detected (SPI={:.2f}). "
-                "Z-score thresholds will be widened to reduce false positives.",
-                spi_value,
-            )
-    except Exception as e:
-        logger.warning("Could not compute SPI (CHIRPS unavailable): {}. Proceeding without drought adjustment.", e)
+    logger.info(
+        "Drought adjustment disabled: no qualified method is accepted; "
+        "operational detection always passes spi_3month=None"
+    )
 
     # Stage 1: Query recent imagery
     logger.info("Stage 1: Querying recent imagery...")
@@ -330,6 +365,7 @@ def main(
     # span several UTM tiles) so they can be merged into one file per date below
     # — saving per tile here would overwrite the file (see _merge_and_confirm).
     alerts_by_date: dict[str, list] = {}
+    acquisition_parts_by_date: dict[str, list[dict[str, str]]] = {}
     # Valid index pixels + total pixel count per (date, index), pooled across all
     # UTM tiles of a date, so regional stats are written once over the full AOI
     # in Stage 6 (writing per tile collided on UNIQUE(date,index,'full_aoi') and
@@ -442,40 +478,65 @@ def main(
                 logger.warning("No baselines available, skipping detection")
                 continue
 
-            # Stage 5: Detect changes (with drought adjustment if SPI available)
+            # Stage 5: no drought method is accepted for operational detection.
             detection = detect_deforestation(
                 current_indices=idx_ds,
                 baseline_means=baseline_means,
                 baseline_stds=baseline_stds,
-                spi_3month=spi_value,
+                spi_3month=None,
             )
 
-            # Scene-wide anomaly guard. If a large fraction of the clipped
-            # AOI pixels are flagged at any confidence level, the scene is
-            # almost certainly a thin-cirrus / BRDF / mosaic-seam artefact
-            # rather than a real deforestation event. Reject it wholesale.
-            try:
-                conf = detection["confidence"]
-                valid_mask = ~np.isnan(conf.values)
-                n_valid = int(valid_mask.sum())
-                n_alert = int(((conf.values >= 1) & valid_mask).sum())
-                if n_valid > 0:
-                    alert_frac = n_alert / n_valid
-                    if alert_frac > SCENE_ANOMALY_REJECT_FRAC:
-                        logger.warning(
-                            "Scene {}: {:.1%} of valid pixels flagged "
-                            "(>{:.0%} threshold) — likely scene-wide "
-                            "atmospheric anomaly, REJECTING this scene.",
-                            scene_date, alert_frac, SCENE_ANOMALY_REJECT_FRAC,
-                        )
-                        continue
-            except Exception as guard_err:
-                logger.warning("Scene-wide guard failed ({}); proceeding", guard_err)
+            collection_id = _STREAMING_COLLECTIONS[sensor]
+            scene_id = f"{collection_id}/{item.id}"
+            single_scene_acquisition = create_acquisition_identity(
+                collection_id=collection_id,
+                observed_on=scene_date,
+                scene_ids=[scene_id],
+                monitoring_extent_id=MONITORING_EXTENT_ID,
+                composite_method_id=STREAMING_COMPOSITE_METHOD_ID,
+            )
+            quality = assess_scene_quality(
+                detection,
+                minimum_required_fraction=min_clear / 100.0,
+                anomaly_reject_fraction=SCENE_ANOMALY_REJECT_FRAC,
+            )
+            save_scene_quality(
+                quality,
+                output_dir=ALERTS_DIR.parent / "scene_quality",
+                record_id=f"{scene_date}-{item.id}",
+                acquisition_id=single_scene_acquisition.acquisition_id,
+                observed_on=scene_date,
+                scene_ids=[scene_id],
+            )
+            if quality.scene_decision != "accepted":
+                logger.warning(
+                    "Scene {} rejected: {} (coverage {:.1%}, alerts/valid {:.1%})",
+                    scene_id,
+                    quality.rejection_reason,
+                    quality.valid_coverage_fraction,
+                    quality.alert_fraction_of_valid,
+                )
+                continue
+            acquisition_parts_by_date.setdefault(scene_date, []).append(
+                {"collection_id": collection_id, "scene_id": scene_id}
+            )
 
             # Vectorize alerts (drops both too-small and too-large polygons)
             alerts_gdf = vectorize_alerts(detection["confidence"])
 
             if not alerts_gdf.empty:
+                alerts_gdf["scene_decision"] = quality.scene_decision
+                alerts_gdf["valid_coverage_fraction"] = (
+                    quality.valid_coverage_fraction
+                )
+                alerts_gdf["minimum_required_fraction"] = (
+                    quality.minimum_required_fraction
+                )
+                alerts_gdf["scene_alert_fraction"] = (
+                    quality.alert_fraction_of_valid
+                )
+                alerts_gdf["scene_qa_flags"] = "|".join(quality.qa_flags)
+                alerts_gdf["scene_rejection_reason"] = quality.rejection_reason
                 # ─── Task 7.2: annotate clearing type (fire vs mechanical) ────
                 if do_classify and "nbr" in baseline_means and "bsi" in idx_ds:
                     try:
@@ -537,14 +598,32 @@ def main(
     # confirms its own consecutive dates as well as against prior history.
     all_alerts = []
     state_path = ALERTS_DIR.parent / "persistence_state.geojson"
-    # Fail-closed (Package 2B.1): ver run_detection_from_gee.py — um estado
-    # ilegível para a execução, nunca vira um estado vazio.
+    # Fail-closed (Packages 2B.1 e 2A.6): um estado ilegível para a execução e
+    # nunca vira um estado vazio, e um estado de geração anterior exige
+    # reconstrução cronológica em vez de conserto local. Sem `state_path.exists()`
+    # aqui de propósito — o loader é a única autoridade sobre "ausente", senão a
+    # checagem do chamador e a do loader podem divergir.
     state = load_persistence_state(state_path) if persistence else None
+    if state is not None:
+        logger.info("Persistência: estado carregado ({} eventos)", len(state))
     for scene_date in sorted(alerts_by_date):
         parts = alerts_by_date[scene_date]
-        merged, state = _merge_and_confirm(
-            scene_date, parts, persistence, min_overlap_frac, state,
+        acquisition = _streaming_acquisition(
+            scene_date, acquisition_parts_by_date[scene_date]
         )
+        merged, state = _merge_and_confirm(
+            scene_date,
+            parts,
+            persistence,
+            min_overlap_frac,
+            state,
+            acquisition,
+            persistence_mode=persistence_mode,
+        )
+        transition = merged.attrs.get("persistence_transition", {})
+        if transition.get("outcome") == "no_op_replay":
+            logger.info("Date {} is an exact replay; alerts/state remain unchanged", scene_date)
+            continue
         save_alerts(merged, scene_date)
         summary = summarize_alerts(merged)
         store_alert_stats(scene_date, summary)

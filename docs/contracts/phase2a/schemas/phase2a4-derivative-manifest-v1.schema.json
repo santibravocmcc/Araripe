@@ -1,0 +1,784 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://observatoriodachapadadoararipe.com/data/schemas/phase2a4-derivative-manifest-v1.schema.json",
+  "title": "Phase 2A.4 provisional blinded method-comparison derivative package manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schema_version",
+    "package_id",
+    "package_type",
+    "scientific_status",
+    "method_decision_status",
+    "generated_at",
+    "generation_command",
+    "runtime_versions",
+    "generator_source_inventory",
+    "local_only",
+    "parent_binding",
+    "registry_binding",
+    "schema_bindings",
+    "factorial_design",
+    "case_population",
+    "source_provenance",
+    "review",
+    "blinding",
+    "decision_state",
+    "claims",
+    "integrity",
+    "generation_limitations",
+    "artifact_inventory_rule",
+    "artifact_inventory",
+    "checksum_file"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "https://observatoriodachapadadoararipe.com/data/schemas/phase2a4-derivative-manifest-v1.schema.json"
+    },
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "package_id": {
+      "type": "string",
+      "pattern": "^p2a4-derivative-package-v1-[0-9a-f]{64}$"
+    },
+    "package_type": {
+      "const": "phase2a4_provisional_blinded_method_comparison_derivative"
+    },
+    "scientific_status": {
+      "const": "provisional_audit_inputs_only"
+    },
+    "method_decision_status": {
+      "const": "none"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "generation_command": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "runtime_versions": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "generator_source_inventory": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/artifact"
+      }
+    },
+    "local_only": {
+      "const": true
+    },
+    "parent_binding": {
+      "$ref": "#/$defs/parent_binding"
+    },
+    "registry_binding": {
+      "$ref": "#/$defs/registry_binding"
+    },
+    "schema_bindings": {
+      "$ref": "#/$defs/schema_bindings"
+    },
+    "factorial_design": {
+      "$ref": "#/$defs/factorial_design"
+    },
+    "case_population": {
+      "$ref": "#/$defs/case_population"
+    },
+    "source_provenance": {
+      "$ref": "#/$defs/source_provenance"
+    },
+    "review": {
+      "$ref": "#/$defs/review"
+    },
+    "blinding": {
+      "$ref": "#/$defs/blinding"
+    },
+    "decision_state": {
+      "$ref": "#/$defs/decision_state"
+    },
+    "claims": {
+      "$ref": "#/$defs/claims"
+    },
+    "integrity": {
+      "$ref": "#/$defs/integrity"
+    },
+    "generation_limitations": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "artifact_inventory_rule": {
+      "type": "string",
+      "minLength": 1
+    },
+    "artifact_inventory": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/artifact"
+      }
+    },
+    "checksum_file": {
+      "const": "CHECKSUMS.sha256"
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "safe_path": {
+      "type": "string",
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9_.@/-]+$"
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "bytes",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/safe_path"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "parent_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "phase2a3_package_id",
+        "population_snapshot_id",
+        "phase2a3_manifest_sha256",
+        "scientific_status",
+        "parent_artifact_inventory_sha256",
+        "parent_package_mutated",
+        "canonical_observation_or_event_ids_inferred"
+      ],
+      "properties": {
+        "phase2a3_package_id": {
+          "const": "p2a3-pilot-package-v1-050d2b944679385e1a3e3bf209fbe2f3a6a3892a4016ef2a24c1f96e281bf5c8"
+        },
+        "population_snapshot_id": {
+          "const": "p2a3-population-v1-100c4e3e2f293235211d519392323c6ee0e6f2b88928d9fc8a74a71b52d80c6c"
+        },
+        "phase2a3_manifest_sha256": {
+          "const": "4b78167930fcb7a928b40d50ae1d54675e4cca47a10857bcbf28db803c18946b"
+        },
+        "scientific_status": {
+          "const": "provisional_audit_inputs_only"
+        },
+        "parent_artifact_inventory_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "parent_package_mutated": {
+          "const": false
+        },
+        "canonical_observation_or_event_ids_inferred": {
+          "const": false
+        }
+      }
+    },
+    "registry_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "registry_id",
+        "registry_version",
+        "path",
+        "bytes",
+        "sha256"
+      ],
+      "properties": {
+        "registry_id": {
+          "const": "araripe-phase2a4-candidates-v1"
+        },
+        "registry_version": {
+          "const": "1.0.0"
+        },
+        "path": {
+          "const": "config/phase2a4_candidates_v1.json"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "schema_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "path",
+        "bytes",
+        "sha256"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "path": {
+          "$ref": "#/$defs/safe_path"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "schema_bindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_registry",
+        "method_evidence",
+        "derivative_manifest",
+        "phase2a4_review_export",
+        "phase2a3_review"
+      ],
+      "properties": {
+        "candidate_registry": {
+          "$ref": "#/$defs/schema_binding"
+        },
+        "method_evidence": {
+          "$ref": "#/$defs/schema_binding"
+        },
+        "derivative_manifest": {
+          "$ref": "#/$defs/schema_binding"
+        },
+        "phase2a4_review_export": {
+          "$ref": "#/$defs/schema_binding"
+        },
+        "phase2a3_review": {
+          "$ref": "#/$defs/schema_binding"
+        }
+      }
+    },
+    "factorial_design": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "design_id",
+        "type",
+        "factor_order",
+        "candidate_ids",
+        "expected_cell_count_per_case",
+        "same_frozen_cases",
+        "same_source_scene_set_within_case",
+        "same_case_window_within_case",
+        "other_factors_compared_as_paired_strata",
+        "desired_total_tuning_performed"
+      ],
+      "properties": {
+        "design_id": {
+          "const": "phase2a4-full-factorial-2x2x2-v1"
+        },
+        "type": {
+          "const": "full_factorial"
+        },
+        "factor_order": {
+          "const": [
+            "drought_adjustment",
+            "cloud_mask",
+            "daily_composition"
+          ]
+        },
+        "candidate_ids": {
+          "const": {
+            "drought_adjustment": [
+              "drought-disabled-v1",
+              "chirps-v2-spi3-season-matched-1981-2025-v1"
+            ],
+            "cloud_mask": [
+              "scl-explicit-clear-shadow-v1",
+              "scl-cloudprob-darkshadow-dilate-v1"
+            ],
+            "daily_composition": [
+              "coverage-ranked-first-valid-v1",
+              "min-cloudprob-sclrank-sceneid-v1"
+            ]
+          }
+        },
+        "expected_cell_count_per_case": {
+          "const": 8
+        },
+        "same_frozen_cases": {
+          "const": true
+        },
+        "same_source_scene_set_within_case": {
+          "const": true
+        },
+        "same_case_window_within_case": {
+          "const": true
+        },
+        "other_factors_compared_as_paired_strata": {
+          "const": true
+        },
+        "desired_total_tuning_performed": {
+          "const": false
+        }
+      }
+    },
+    "case_population": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "primary_case_count",
+        "double_review_case_count",
+        "case_replacement_performed",
+        "missing_cases_retained",
+        "blind_case_ids_sha256",
+        "method_evidence_sidecar_count",
+        "evidence_status_counts"
+      ],
+      "properties": {
+        "primary_case_count": {
+          "const": 60
+        },
+        "double_review_case_count": {
+          "const": 12
+        },
+        "case_replacement_performed": {
+          "const": false
+        },
+        "missing_cases_retained": {
+          "const": true
+        },
+        "blind_case_ids_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "method_evidence_sidecar_count": {
+          "const": 60
+        },
+        "evidence_status_counts": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "source_provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "monitoring_extent_id",
+        "monitoring_extent_geometry_sha256",
+        "baseline_version",
+        "baseline_manifest_sha256",
+        "sentinel_catalog",
+        "sentinel_collection",
+        "case_window_evaluation",
+        "stac_item_json_hashes_bound",
+        "unsigned_asset_urls_bound",
+        "asset_checksums_and_http_metadata_bound",
+        "remote_assets_range_read",
+        "local_window_checksums_cover_full_remote_assets",
+        "rainfall_artifact_id",
+        "rainfall_manifest_sha256",
+        "rainfall_plan_sha256",
+        "rainfall_full_upstream_cog_checksums_available"
+      ],
+      "properties": {
+        "monitoring_extent_id": {
+          "const": "araripe-implementation-rectangle-v1"
+        },
+        "monitoring_extent_geometry_sha256": {
+          "const": "b4986ef80d8a0d6e65bbb41b575dbd952c010415bf3aee93a88412b3b657e8c7"
+        },
+        "baseline_version": {
+          "const": "1.0.0"
+        },
+        "baseline_manifest_sha256": {
+          "const": "15a1ed3cea7c804d18d2c82c86a7b9a030687fedb01b315d543965b1f26f0a82"
+        },
+        "sentinel_catalog": {
+          "const": "https://earth-search.aws.element84.com/v1"
+        },
+        "sentinel_collection": {
+          "const": "sentinel-2-l2a"
+        },
+        "case_window_evaluation": {
+          "const": "fixed_20m_windows_aligned_to_accepted_reference_grid"
+        },
+        "stac_item_json_hashes_bound": {
+          "const": true
+        },
+        "unsigned_asset_urls_bound": {
+          "const": true
+        },
+        "asset_checksums_and_http_metadata_bound": {
+          "const": true
+        },
+        "remote_assets_range_read": {
+          "const": true
+        },
+        "local_window_checksums_cover_full_remote_assets": {
+          "const": false
+        },
+        "rainfall_artifact_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^p2a4-rainfall-reference-v1-[0-9a-f]{64}$"
+        },
+        "rainfall_manifest_sha256": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rainfall_plan_sha256": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rainfall_full_upstream_cog_checksums_available": {
+          "const": false
+        }
+      }
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "review_schema_version",
+        "primary_case_count",
+        "double_review_case_count",
+        "isolated_reviewer_workflow",
+        "primary_change_assessment_required_before_method_reveal",
+        "primary_fields_locked_after_method_reveal",
+        "human_labels_present",
+        "qualified_reviewer_evidence_present",
+        "mapbiomas_and_contextual_signature_policy_modified"
+      ],
+      "properties": {
+        "review_schema_version": {
+          "const": "1.0.0"
+        },
+        "primary_case_count": {
+          "const": 60
+        },
+        "double_review_case_count": {
+          "const": 12
+        },
+        "isolated_reviewer_workflow": {
+          "const": true
+        },
+        "primary_change_assessment_required_before_method_reveal": {
+          "const": true
+        },
+        "primary_fields_locked_after_method_reveal": {
+          "const": true
+        },
+        "human_labels_present": {
+          "const": false
+        },
+        "qualified_reviewer_evidence_present": {
+          "const": false
+        },
+        "mapbiomas_and_contextual_signature_policy_modified": {
+          "const": false
+        }
+      }
+    },
+    "reviewer_package": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reviewer_slot",
+        "case_count",
+        "directory",
+        "artifact_inventory_sha256",
+        "true_candidate_mapping_present",
+        "other_reviewer_outputs_present"
+      ],
+      "properties": {
+        "reviewer_slot": {
+          "enum": [
+            "reviewer-a",
+            "reviewer-b"
+          ]
+        },
+        "case_count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 60
+        },
+        "directory": {
+          "$ref": "#/$defs/safe_path"
+        },
+        "artifact_inventory_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "true_candidate_mapping_present": {
+          "const": false
+        },
+        "other_reviewer_outputs_present": {
+          "const": false
+        }
+      }
+    },
+    "blinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reviewer_option_labels",
+        "true_mapping_coordinator_only",
+        "mapping_artifact",
+        "mapping_distributed_to_reviewers",
+        "mapping_bijection_validated",
+        "deterministic_display_order_validated",
+        "double_review_evidence_identical",
+        "double_review_order_independently_derived",
+        "reviewer_packages"
+      ],
+      "properties": {
+        "reviewer_option_labels": {
+          "const": [
+            "A",
+            "B"
+          ]
+        },
+        "true_mapping_coordinator_only": {
+          "const": true
+        },
+        "mapping_artifact": {
+          "$ref": "#/$defs/artifact"
+        },
+        "mapping_distributed_to_reviewers": {
+          "const": false
+        },
+        "mapping_bijection_validated": {
+          "const": true
+        },
+        "deterministic_display_order_validated": {
+          "const": true
+        },
+        "double_review_evidence_identical": {
+          "const": true
+        },
+        "double_review_order_independently_derived": {
+          "const": true
+        },
+        "reviewer_packages": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "$ref": "#/$defs/reviewer_package"
+            },
+            {
+              "$ref": "#/$defs/reviewer_package"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        }
+      }
+    },
+    "decision_state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "selected_candidates",
+        "drought_adjustment_activated",
+        "cloud_mask_locked",
+        "daily_composition_locked",
+        "release_or_replay_authorized"
+      ],
+      "properties": {
+        "selected_candidates": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "drought_adjustment",
+            "cloud_mask",
+            "daily_composition"
+          ],
+          "properties": {
+            "drought_adjustment": {
+              "type": "null"
+            },
+            "cloud_mask": {
+              "type": "null"
+            },
+            "daily_composition": {
+              "type": "null"
+            }
+          }
+        },
+        "drought_adjustment_activated": {
+          "const": false
+        },
+        "cloud_mask_locked": {
+          "const": false
+        },
+        "daily_composition_locked": {
+          "const": false
+        },
+        "release_or_replay_authorized": {
+          "const": false
+        }
+      }
+    },
+    "claims": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "qualified_human_labels_present",
+        "scientific_accuracy_claim",
+        "tool_integrity_interpreted_as_scientific_accuracy",
+        "method_promoted_or_activated",
+        "raw_detection_modified",
+        "missing_evidence_interpreted_as_zero",
+        "canonical_identity_inferred",
+        "phase2a5_policy_modified",
+        "baseline_rebuilt",
+        "current_year_replayed"
+      ],
+      "properties": {
+        "qualified_human_labels_present": {
+          "const": false
+        },
+        "scientific_accuracy_claim": {
+          "const": false
+        },
+        "tool_integrity_interpreted_as_scientific_accuracy": {
+          "const": false
+        },
+        "method_promoted_or_activated": {
+          "const": false
+        },
+        "raw_detection_modified": {
+          "const": false
+        },
+        "missing_evidence_interpreted_as_zero": {
+          "const": false
+        },
+        "canonical_identity_inferred": {
+          "const": false
+        },
+        "phase2a5_policy_modified": {
+          "const": false
+        },
+        "baseline_rebuilt": {
+          "const": false
+        },
+        "current_year_replayed": {
+          "const": false
+        }
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_validated",
+        "checksum_file_validated",
+        "artifact_inventory_reconciled",
+        "parent_binding_reconciled",
+        "registry_binding_reconciled",
+        "all_sidecars_validated",
+        "all_factorial_cells_reconciled",
+        "case_windows_reconciled",
+        "source_scene_provenance_reconciled",
+        "contributing_scene_counts_reconciled",
+        "coverage_reconciled",
+        "mapping_bijection_reconciled",
+        "reviewer_isolation_reconciled",
+        "missing_evidence_retained"
+      ],
+      "properties": {
+        "schema_validated": {
+          "const": true
+        },
+        "checksum_file_validated": {
+          "const": true
+        },
+        "artifact_inventory_reconciled": {
+          "const": true
+        },
+        "parent_binding_reconciled": {
+          "const": true
+        },
+        "registry_binding_reconciled": {
+          "const": true
+        },
+        "all_sidecars_validated": {
+          "const": true
+        },
+        "all_factorial_cells_reconciled": {
+          "const": true
+        },
+        "case_windows_reconciled": {
+          "const": true
+        },
+        "source_scene_provenance_reconciled": {
+          "const": true
+        },
+        "contributing_scene_counts_reconciled": {
+          "const": true
+        },
+        "coverage_reconciled": {
+          "const": true
+        },
+        "mapping_bijection_reconciled": {
+          "const": true
+        },
+        "reviewer_isolation_reconciled": {
+          "const": true
+        },
+        "missing_evidence_retained": {
+          "const": true
+        }
+      }
+    }
+  }
+}
