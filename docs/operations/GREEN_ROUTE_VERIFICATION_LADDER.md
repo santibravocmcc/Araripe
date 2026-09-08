@@ -89,11 +89,18 @@ Worker** — vale registrar porque cada uma ensinou algo:
 
 **Custo: um token de API da Cloudflare, e ele é mais amplo do que parece.**
 
-Acrescentar `"experimental_remote": true` ao binding R2 faz o `wrangler dev`
-rodar o Worker **localmente** e mandar as chamadas de R2 para o **bucket real**
+Acrescentar **`"remote": true`** ao binding R2 faz o `wrangler dev` rodar o
+Worker **localmente** e mandar as chamadas de R2 para o **bucket real**
 (<https://developers.cloudflare.com/workers/local-development/#remote-bindings>).
 Isso fecha "o binding real se comporta igual" sem publicar nada, sem subdomínio
 e sem tocar o Worker implantado — a auditoria do broker continua verde.
+
+O nome do campo é `remote`, medido no wrangler 4.129.1. **Não** é
+`experimental_remote`: esse produz `Unexpected fields found in r2_buckets[0]` e é
+**ignorado**, o que faria a verificação rodar contra a simulação local
+reportando sucesso. `scripts/verify_green_route_remote.sh` gera a configuração e
+recusa seguir se o wrangler reclamar, exatamente para que esse aviso não passe
+por ruído.
 
 **A pegadinha, medida:** bindings remotos falam com a **REST API** da
 Cloudflare, e tokens de nível *Object* (`Object Read only`, `Object Read &
@@ -114,28 +121,65 @@ Consequências, e não são negociáveis:
 
 ### Passo a passo do degrau 2
 
+**Um comando, depois do token.** A primeira versão desta seção pedia para editar
+o JSON à mão e tinha três defeitos — §"O procedimento que isto substitui" abaixo.
+
 1. Cloudflare → **R2** → **API Tokens** → **Manage** → **Create Account API
-   token**. Nome `araripe-remote-binding-ro`, permissão **`Admin Read`**,
-   e uma data de expiração curta (dias, não meses).
-2. Na máquina, **sem** colocar em arquivo do repositório:
+   token**. Nome `araripe-remote-binding-ro`, permissão **`Admin Read`**, e uma
+   data de expiração curta (dias, não meses).
+2. No shell, e **só** no shell:
 
-       export CLOUDFLARE_API_TOKEN=…      # cole o valor aqui, no shell, e só
+       export CLOUDFLARE_API_TOKEN=…      # cole o valor aqui, e em nenhum arquivo
 
-3. No `site/wrangler.green.jsonc`, acrescente `"experimental_remote": true` ao
-   objeto de `r2_buckets` — **temporariamente, e não commite**. Se preferir não
-   editar o arquivo, use uma cópia:
-   `cp wrangler.green.jsonc /tmp/green-remote.jsonc` e edite a cópia.
-4. `npx --yes wrangler@4.129.1 dev --config /tmp/green-remote.jsonc --port 8790`
-5. Repita à mão as checagens que mais importam contra o bucket real — o ponteiro
-   e um produto:
+3. Rode:
 
-       curl -sS -D - -o /dev/null http://localhost:8790/data/green/current.json
-       curl -sS http://localhost:8790/data/green/release.json | python3 -m json.tool | head -30
-       curl -sS http://localhost:8790/data/green/alerts/2026-04-07/19741870aa21.geojson | shasum -a 256
+       cd site
+       bash scripts/verify_green_route_remote.sh
 
-   O sha256 deve dar
-   `a5a2103c187c1324911479c5931df0eb8d2271a10c4b0dbb47f2202677f1e675`.
-6. **Revogue o token** e apague a cópia da configuração.
+4. **Revogue o token** na Cloudflare quando terminar. O script termina lembrando.
+
+O script gera a configuração com o binding remoto, confere que o wrangler
+**aceitou** o campo, sobe o Worker com estado local **vazio**, e então verifica
+contra `araripe-v2-staging` de verdade: o ponteiro, o manifesto, o ledger, o
+sha256 de cada produto declarado, e que `runs/`, o prefixo de probe e a release
+recusada por cobertura seguem em 404. No fim apaga a configuração gerada e o
+estado local.
+
+Sem `CLOUDFLARE_API_TOKEN` ele para com a explicação e aponta o degrau 1.
+
+### A prova de que o binding é realmente remoto
+
+O script parte de um estado local **vazio** de propósito. Se a rota devolve o
+ponteiro nessas condições, ele só pode ter vindo do R2 — porque não há nada
+localmente para vir. Se o binding não estivesse remoto, a resposta seria
+`503 pointer_absent`, que é exatamente o que o degrau 1 vê antes de semear.
+
+Sem essa checagem o script teria o mesmo defeito do procedimento que substitui:
+reportar sucesso sobre a simulação local.
+
+### O procedimento que isto substitui, e por que ele falhava
+
+Registrado porque o terceiro defeito é o interessante.
+
+1. **Mandava copiar a configuração para `/tmp`.** Medido: `main` é resolvido
+   relativo ao **arquivo de configuração**, não ao diretório de trabalho. Rodado
+   de dentro de `site/` com `--config /tmp/copia.jsonc`, o wrangler falha com
+   *The entry-point file at "worker/green.js" was not found* — ele procurou
+   `/tmp/worker/green.js`. Por isso a configuração gerada fica **ao lado** de
+   `worker/`, e um teste afirma que o nome dela não tem componente de diretório.
+2. **Um passo dizia que a cópia era opcional e o seguinte fixava o caminho
+   dela.** Quem editasse o arquivo no lugar batia num `ENOENT`.
+3. **Mandava acrescentar `"experimental_remote": true`, que não é campo
+   válido.** Medido no wrangler 4.129.1: ele responde
+   `Unexpected fields found in r2_buckets[0] field: "experimental_remote"` — um
+   **aviso**, não um erro, e segue rodando. O campo certo é `"remote": true`,
+   que passa sem aviso nenhum.
+
+O defeito 3 é da mesma família de um teste que passa pelo motivo errado: o
+operador teria lido a simulação **local** acreditando estar lendo o bucket real,
+e a verificação reportaria sucesso sem ter verificado nada. É por isso que o
+script recusa seguir se o wrangler reclamar de campo inesperado, em vez de
+tratar o aviso como ruído.
 
 ## Degrau 3 — um hostname temporário. Só quando a borda importar.
 
