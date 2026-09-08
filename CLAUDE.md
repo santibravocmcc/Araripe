@@ -16,7 +16,8 @@ or require an operation not already allowlisted, stop and use the
 
 # Claude-specific branch boundary
 
-`main` is pull-request-only (`AGENTS.md`; rationale in `ROADMAP.md` §6). Never
+`main` is pull-request-only (`AGENTS.md`; rationale in
+`docs/implementation/PENDING_CAPABILITIES.md` §6). Never
 push to it, never add yourself or the Actions bot to a ruleset bypass list, and
 never change repository settings to work around the ruleset. Automated
 time-series publication has its own PR lane; if that lane breaks, fix the lane
