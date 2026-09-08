@@ -1,0 +1,1873 @@
+{
+  "authority": "src/publication/site_artifact.py",
+  "contract": "araripe.site.alert_index/1",
+  "fixture": {
+    "source": "SENTINEL-2 L2A · LANDSAT 8/9",
+    "strong_points_file": "all-strong-points.json"
+  },
+  "generated_by": "scripts/check_site_artifact.py vectors --write",
+  "index_cases": [
+    {
+      "expected": {
+        "last_run": null,
+        "runs": [],
+        "schema": "araripe.site.alert_index/1",
+        "source": "SENTINEL-2 L2A · LANDSAT 8/9",
+        "stats_policy_version": "1",
+        "strong_points_file": "all-strong-points.json",
+        "totals": {
+          "area_ha": 0.0,
+          "candidate": 0,
+          "confirmed": 0,
+          "count": 0,
+          "first_obs": 0,
+          "high": 0,
+          "pcount_max": 1,
+          "strong": 0
+        }
+      },
+      "name": "no runs is a legitimate index",
+      "runs": [],
+      "why": "The state before the first release. last_run is null and pcount_max falls back to the floor; refusing this state would make the site fail on a correct, empty green release."
+    },
+    {
+      "expected": {
+        "last_run": "2026-08-30",
+        "runs": [
+          {
+            "area_ha": 73930.0,
+            "candidate": 0,
+            "confirmed": 0,
+            "count": 3,
+            "date": "2026-01-02",
+            "file": "run-2026-01-02.geojson",
+            "file_strong": "run-2026-01-02.strong.geojson",
+            "first_obs": 3,
+            "high": 2,
+            "low": 0,
+            "medium": 1,
+            "pcount_max": 1,
+            "strong": 0
+          },
+          {
+            "area_ha": 120.5,
+            "candidate": 3,
+            "confirmed": 1,
+            "count": 5,
+            "date": "2026-04-04",
+            "file": "run-2026-04-04.geojson",
+            "file_strong": "run-2026-04-04.strong.geojson",
+            "first_obs": 1,
+            "high": 4,
+            "low": 1,
+            "medium": 0,
+            "pcount_max": 17,
+            "strong": 2
+          },
+          {
+            "area_ha": 45883.5,
+            "candidate": 1,
+            "confirmed": 1,
+            "count": 2,
+            "date": "2026-08-30",
+            "file": "run-2026-08-30.geojson",
+            "file_strong": "run-2026-08-30.strong.geojson",
+            "first_obs": 0,
+            "high": 1,
+            "low": 0,
+            "medium": 1,
+            "pcount_max": 9,
+            "strong": 1
+          }
+        ],
+        "schema": "araripe.site.alert_index/1",
+        "source": "SENTINEL-2 L2A · LANDSAT 8/9",
+        "stats_policy_version": "1",
+        "strong_points_file": "all-strong-points.json",
+        "totals": {
+          "area_ha": 119934.0,
+          "candidate": 4,
+          "confirmed": 2,
+          "count": 10,
+          "first_obs": 4,
+          "high": 7,
+          "pcount_max": 17,
+          "strong": 3
+        }
+      },
+      "name": "totals aggregate rows whose features were never supplied",
+      "runs": [
+        {
+          "area_ha": 73930.0,
+          "candidate": 0,
+          "confirmed": 0,
+          "count": 3,
+          "date": "2026-01-02",
+          "file": "run-2026-01-02.geojson",
+          "file_strong": "run-2026-01-02.strong.geojson",
+          "first_obs": 3,
+          "high": 2,
+          "low": 0,
+          "medium": 1,
+          "pcount_max": 1,
+          "strong": 0
+        },
+        {
+          "area_ha": 120.5,
+          "candidate": 3,
+          "confirmed": 1,
+          "count": 5,
+          "date": "2026-04-04",
+          "file": "run-2026-04-04.geojson",
+          "file_strong": "run-2026-04-04.strong.geojson",
+          "first_obs": 1,
+          "high": 4,
+          "low": 1,
+          "medium": 0,
+          "pcount_max": 17,
+          "strong": 2
+        },
+        {
+          "area_ha": 45883.5,
+          "candidate": 1,
+          "confirmed": 1,
+          "count": 2,
+          "date": "2026-08-30",
+          "file": "run-2026-08-30.geojson",
+          "file_strong": "run-2026-08-30.strong.geojson",
+          "first_obs": 0,
+          "high": 1,
+          "low": 0,
+          "medium": 1,
+          "pcount_max": 9,
+          "strong": 1
+        }
+      ],
+      "why": "THE point of the design: every totals field is a function of the rows alone, so a consumer verifies the whole document without reading 429k features. If any total needed a feature, this case could not be built."
+    },
+    {
+      "expected": {
+        "last_run": "2026-05-03",
+        "runs": [
+          {
+            "area_ha": 0.1,
+            "candidate": 0,
+            "confirmed": 0,
+            "count": 1,
+            "date": "2026-05-01",
+            "file": "run-2026-05-01.geojson",
+            "file_strong": "run-2026-05-01.strong.geojson",
+            "first_obs": 1,
+            "high": 1,
+            "low": 0,
+            "medium": 0,
+            "pcount_max": 1,
+            "strong": 0
+          },
+          {
+            "area_ha": 0.1,
+            "candidate": 0,
+            "confirmed": 0,
+            "count": 1,
+            "date": "2026-05-02",
+            "file": "run-2026-05-02.geojson",
+            "file_strong": "run-2026-05-02.strong.geojson",
+            "first_obs": 1,
+            "high": 1,
+            "low": 0,
+            "medium": 0,
+            "pcount_max": 1,
+            "strong": 0
+          },
+          {
+            "area_ha": 0.1,
+            "candidate": 0,
+            "confirmed": 0,
+            "count": 1,
+            "date": "2026-05-03",
+            "file": "run-2026-05-03.geojson",
+            "file_strong": "run-2026-05-03.strong.geojson",
+            "first_obs": 1,
+            "high": 1,
+            "low": 0,
+            "medium": 0,
+            "pcount_max": 1,
+            "strong": 0
+          }
+        ],
+        "schema": "araripe.site.alert_index/1",
+        "source": "SENTINEL-2 L2A · LANDSAT 8/9",
+        "stats_policy_version": "1",
+        "strong_points_file": "all-strong-points.json",
+        "totals": {
+          "area_ha": 0.3,
+          "candidate": 0,
+          "confirmed": 0,
+          "count": 3,
+          "first_obs": 3,
+          "high": 3,
+          "pcount_max": 1,
+          "strong": 0
+        }
+      },
+      "name": "the total area sums values already rounded",
+      "runs": [
+        {
+          "area_ha": 0.1,
+          "candidate": 0,
+          "confirmed": 0,
+          "count": 1,
+          "date": "2026-05-01",
+          "file": "run-2026-05-01.geojson",
+          "file_strong": "run-2026-05-01.strong.geojson",
+          "first_obs": 1,
+          "high": 1,
+          "low": 0,
+          "medium": 0,
+          "pcount_max": 1,
+          "strong": 0
+        },
+        {
+          "area_ha": 0.1,
+          "candidate": 0,
+          "confirmed": 0,
+          "count": 1,
+          "date": "2026-05-02",
+          "file": "run-2026-05-02.geojson",
+          "file_strong": "run-2026-05-02.strong.geojson",
+          "first_obs": 1,
+          "high": 1,
+          "low": 0,
+          "medium": 0,
+          "pcount_max": 1,
+          "strong": 0
+        },
+        {
+          "area_ha": 0.1,
+          "candidate": 0,
+          "confirmed": 0,
+          "count": 1,
+          "date": "2026-05-03",
+          "file": "run-2026-05-03.geojson",
+          "file_strong": "run-2026-05-03.strong.geojson",
+          "first_obs": 1,
+          "high": 1,
+          "low": 0,
+          "medium": 0,
+          "pcount_max": 1,
+          "strong": 0
+        }
+      ],
+      "why": "Three rows at .05 sum to a different number depending on whether the rounding happened per row or once at the end. The per-row value is what a reader can add up by hand, so it is the one that is summed."
+    },
+    {
+      "expected": {
+        "last_run": "2026-06-02",
+        "runs": [
+          {
+            "area_ha": 1.0,
+            "candidate": 0,
+            "confirmed": 1,
+            "count": 1,
+            "date": "2026-06-01",
+            "file": "run-2026-06-01.geojson",
+            "file_strong": "run-2026-06-01.strong.geojson",
+            "first_obs": 0,
+            "high": 0,
+            "low": 1,
+            "medium": 0,
+            "pcount_max": 42,
+            "strong": 0
+          },
+          {
+            "area_ha": 1.0,
+            "candidate": 0,
+            "confirmed": 0,
+            "count": 1,
+            "date": "2026-06-02",
+            "file": "run-2026-06-02.geojson",
+            "file_strong": "run-2026-06-02.strong.geojson",
+            "first_obs": 1,
+            "high": 0,
+            "low": 1,
+            "medium": 0,
+            "pcount_max": 1,
+            "strong": 0
+          }
+        ],
+        "schema": "araripe.site.alert_index/1",
+        "source": "SENTINEL-2 L2A · LANDSAT 8/9",
+        "stats_policy_version": "1",
+        "strong_points_file": "all-strong-points.json",
+        "totals": {
+          "area_ha": 2.0,
+          "candidate": 0,
+          "confirmed": 1,
+          "count": 2,
+          "first_obs": 1,
+          "high": 0,
+          "pcount_max": 42,
+          "strong": 0
+        }
+      },
+      "name": "pcount_max is the maximum of the rows, not of the last one",
+      "runs": [
+        {
+          "area_ha": 1.0,
+          "candidate": 0,
+          "confirmed": 1,
+          "count": 1,
+          "date": "2026-06-01",
+          "file": "run-2026-06-01.geojson",
+          "file_strong": "run-2026-06-01.strong.geojson",
+          "first_obs": 0,
+          "high": 0,
+          "low": 1,
+          "medium": 0,
+          "pcount_max": 42,
+          "strong": 0
+        },
+        {
+          "area_ha": 1.0,
+          "candidate": 0,
+          "confirmed": 0,
+          "count": 1,
+          "date": "2026-06-02",
+          "file": "run-2026-06-02.geojson",
+          "file_strong": "run-2026-06-02.strong.geojson",
+          "first_obs": 1,
+          "high": 0,
+          "low": 1,
+          "medium": 0,
+          "pcount_max": 1,
+          "strong": 0
+        }
+      ],
+      "why": "The largest streak may belong to any date. Taking the last row's value would shrink the UI slider whenever the newest run happens to be quiet."
+    }
+  ],
+  "note": "Neither the Python authority nor the site's composer is the reference: this file is. Add a case to the generator and regenerate; never hand-edit.",
+  "policy": {
+    "candidate_min_sightings": 2,
+    "confidence_labels": [
+      "high",
+      "medium",
+      "low"
+    ],
+    "confirmed_min_sightings": 15,
+    "counted_geometry_types": [
+      "Polygon",
+      "MultiPolygon"
+    ],
+    "min_pcount_max": 1,
+    "strong_confidence_label": "high",
+    "strong_min_natural_fraction": 0.5
+  },
+  "rejection_cases": [
+    {
+      "document": {
+        "last_run": "2026-07-08",
+        "runs": [
+          {
+            "area_ha": 10.0,
+            "candidate": 2,
+            "confirmed": 2,
+            "count": 4,
+            "date": "2026-07-01",
+            "file": "run-2026-07-01.geojson",
+            "file_strong": "run-2026-07-01.strong.geojson",
+            "first_obs": 1,
+            "high": 3,
+            "low": 0,
+            "medium": 1,
+            "pcount_max": 20,
+            "strong": 2
+          },
+          {
+            "area_ha": 2.5,
+            "candidate": 0,
+            "confirmed": 0,
+            "count": 1,
+            "date": "2026-07-08",
+            "file": "run-2026-07-08.geojson",
+            "file_strong": "run-2026-07-08.strong.geojson",
+            "first_obs": 1,
+            "high": 0,
+            "low": 1,
+            "medium": 0,
+            "pcount_max": 1,
+            "strong": 0
+          }
+        ],
+        "schema": "araripe.site.alert_index/1",
+        "source": "SENTINEL-2 L2A · LANDSAT 8/9",
+        "stats_policy_version": "1",
+        "strong_points_file": "all-strong-points.json",
+        "totals": {
+          "area_ha": 12.5,
+          "candidate": 2,
+          "confirmed": 1,
+          "count": 5,
+          "first_obs": 2,
+          "high": 3,
+          "pcount_max": 20,
+          "strong": 2
+        }
+      },
+      "expected_codes": [
+        "persistence_tiers_do_not_partition",
+        "total_does_not_aggregate_the_runs"
+      ],
+      "name": "the persistence tiers no longer partition the count",
+      "why": "A tier gained a feature the count never had; the page would show more confirmed alerts than alerts."
+    },
+    {
+      "document": {
+        "last_run": "2026-07-08",
+        "runs": [
+          {
+            "area_ha": 10.0,
+            "candidate": 2,
+            "confirmed": 1,
+            "count": 4,
+            "date": "2026-07-01",
+            "file": "run-2026-07-01.geojson",
+            "file_strong": "run-2026-07-01.strong.geojson",
+            "first_obs": 1,
+            "high": 3,
+            "low": 0,
+            "medium": 0,
+            "pcount_max": 20,
+            "strong": 2
+          },
+          {
+            "area_ha": 2.5,
+            "candidate": 0,
+            "confirmed": 0,
+            "count": 1,
+            "date": "2026-07-08",
+            "file": "run-2026-07-08.geojson",
+            "file_strong": "run-2026-07-08.strong.geojson",
+            "first_obs": 1,
+            "high": 0,
+            "low": 1,
+            "medium": 0,
+            "pcount_max": 1,
+            "strong": 0
+          }
+        ],
+        "schema": "araripe.site.alert_index/1",
+        "source": "SENTINEL-2 L2A · LANDSAT 8/9",
+        "stats_policy_version": "1",
+        "strong_points_file": "all-strong-points.json",
+        "totals": {
+          "area_ha": 12.5,
+          "candidate": 2,
+          "confirmed": 1,
+          "count": 5,
+          "first_obs": 2,
+          "high": 3,
+          "pcount_max": 20,
+          "strong": 2
+        }
+      },
+      "expected_codes": [
+        "confidence_labels_do_not_partition"
+      ],
+      "name": "the confidence labels no longer partition the count",
+      "why": "Dropping a label bin loses features silently — the totals still look plausible because high is unchanged."
+    },
+    {
+      "document": {
+        "last_run": "2026-07-08",
+        "runs": [
+          {
+            "area_ha": 10.0,
+            "candidate": 2,
+            "confirmed": 1,
+            "count": 4,
+            "date": "2026-07-01",
+            "file": "run-2026-07-01.geojson",
+            "file_strong": "run-2026-07-01.strong.geojson",
+            "first_obs": 1,
+            "high": 3,
+            "low": 0,
+            "medium": 1,
+            "pcount_max": 20,
+            "strong": 4
+          },
+          {
+            "area_ha": 2.5,
+            "candidate": 0,
+            "confirmed": 0,
+            "count": 1,
+            "date": "2026-07-08",
+            "file": "run-2026-07-08.geojson",
+            "file_strong": "run-2026-07-08.strong.geojson",
+            "first_obs": 1,
+            "high": 0,
+            "low": 1,
+            "medium": 0,
+            "pcount_max": 1,
+            "strong": 0
+          }
+        ],
+        "schema": "araripe.site.alert_index/1",
+        "source": "SENTINEL-2 L2A · LANDSAT 8/9",
+        "stats_policy_version": "1",
+        "strong_points_file": "all-strong-points.json",
+        "totals": {
+          "area_ha": 12.5,
+          "candidate": 2,
+          "confirmed": 1,
+          "count": 5,
+          "first_obs": 2,
+          "high": 3,
+          "pcount_max": 20,
+          "strong": 2
+        }
+      },
+      "expected_codes": [
+        "strong_exceeds_high",
+        "total_does_not_aggregate_the_runs"
+      ],
+      "name": "strong exceeds the high-confidence features it is drawn from",
+      "why": "Strong membership requires the high label, so strong > high is arithmetically impossible and means the subset was computed against a different rule than the one reported."
+    },
+    {
+      "document": {
+        "last_run": "2026-07-08",
+        "runs": [
+          {
+            "area_ha": 2.5,
+            "candidate": 0,
+            "confirmed": 0,
+            "count": 1,
+            "date": "2026-07-08",
+            "file": "run-2026-07-08.geojson",
+            "file_strong": "run-2026-07-08.strong.geojson",
+            "first_obs": 1,
+            "high": 0,
+            "low": 1,
+            "medium": 0,
+            "pcount_max": 1,
+            "strong": 0
+          },
+          {
+            "area_ha": 10.0,
+            "candidate": 2,
+            "confirmed": 1,
+            "count": 4,
+            "date": "2026-07-01",
+            "file": "run-2026-07-01.geojson",
+            "file_strong": "run-2026-07-01.strong.geojson",
+            "first_obs": 1,
+            "high": 3,
+            "low": 0,
+            "medium": 1,
+            "pcount_max": 20,
+            "strong": 2
+          }
+        ],
+        "schema": "araripe.site.alert_index/1",
+        "source": "SENTINEL-2 L2A · LANDSAT 8/9",
+        "stats_policy_version": "1",
+        "strong_points_file": "all-strong-points.json",
+        "totals": {
+          "area_ha": 12.5,
+          "candidate": 2,
+          "confirmed": 1,
+          "count": 5,
+          "first_obs": 2,
+          "high": 3,
+          "pcount_max": 20,
+          "strong": 2
+        }
+      },
+      "expected_codes": [
+        "last_run_is_not_the_last_run",
+        "runs_out_of_order"
+      ],
+      "name": "runs are not in chronological order",
+      "why": "The release's dates[] is required to be chronological. The site reads runs[len-1] as the latest run, so a reversed index shows the OLDEST date as the newest detection."
+    },
+    {
+      "document": {
+        "last_run": "2026-07-01",
+        "runs": [
+          {
+            "area_ha": 10.0,
+            "candidate": 2,
+            "confirmed": 1,
+            "count": 4,
+            "date": "2026-07-01",
+            "file": "run-2026-07-01.geojson",
+            "file_strong": "run-2026-07-01.strong.geojson",
+            "first_obs": 1,
+            "high": 3,
+            "low": 0,
+            "medium": 1,
+            "pcount_max": 20,
+            "strong": 2
+          },
+          {
+            "area_ha": 2.5,
+            "candidate": 0,
+            "confirmed": 0,
+            "count": 1,
+            "date": "2026-07-08",
+            "file": "run-2026-07-08.geojson",
+            "file_strong": "run-2026-07-08.strong.geojson",
+            "first_obs": 1,
+            "high": 0,
+            "low": 1,
+            "medium": 0,
+            "pcount_max": 1,
+            "strong": 0
+          }
+        ],
+        "schema": "araripe.site.alert_index/1",
+        "source": "SENTINEL-2 L2A · LANDSAT 8/9",
+        "stats_policy_version": "1",
+        "strong_points_file": "all-strong-points.json",
+        "totals": {
+          "area_ha": 12.5,
+          "candidate": 2,
+          "confirmed": 1,
+          "count": 5,
+          "first_obs": 2,
+          "high": 3,
+          "pcount_max": 20,
+          "strong": 2
+        }
+      },
+      "expected_codes": [
+        "last_run_is_not_the_last_run"
+      ],
+      "name": "last_run does not name the last row",
+      "why": "Two places in the page disagree about which run is current: the caption reads last_run and the map reads runs[len-1]."
+    },
+    {
+      "document": {
+        "last_run": "2026-07-08",
+        "runs": [
+          {
+            "area_ha": 10.0,
+            "candidate": 2,
+            "confirmed": 1,
+            "count": 4,
+            "date": "2026-07-01",
+            "file": "run-2026-07-01.geojson",
+            "file_strong": "run-2026-07-01.strong.geojson",
+            "first_obs": 1,
+            "high": 3,
+            "low": 0,
+            "medium": 1,
+            "pcount_max": 20,
+            "strong": 2
+          },
+          {
+            "area_ha": 2.5,
+            "candidate": 0,
+            "confirmed": 0,
+            "count": 1,
+            "date": "2026-07-08",
+            "file": "run-2026-07-08.geojson",
+            "file_strong": "run-2026-07-08.strong.geojson",
+            "first_obs": 1,
+            "high": 0,
+            "low": 1,
+            "medium": 0,
+            "pcount_max": 1,
+            "strong": 0
+          }
+        ],
+        "schema": "araripe.site.alert_index/1",
+        "source": "SENTINEL-2 L2A · LANDSAT 8/9",
+        "stats_policy_version": "1",
+        "strong_points_file": "all-strong-points.json",
+        "totals": {
+          "area_ha": 12.5,
+          "candidate": 2,
+          "confirmed": 1,
+          "count": 99,
+          "first_obs": 2,
+          "high": 3,
+          "pcount_max": 20,
+          "strong": 2
+        }
+      },
+      "expected_codes": [
+        "total_does_not_aggregate_the_runs"
+      ],
+      "name": "a total does not aggregate its rows",
+      "why": "The all-runs headline number is the one figure a reader cannot check against anything else on the page."
+    },
+    {
+      "document": {
+        "last_run": "2026-07-08",
+        "runs": [
+          {
+            "area_ha": 10.0,
+            "candidate": 2,
+            "confirmed": 1,
+            "count": 4,
+            "date": "2026-07-01",
+            "file": "run-2026-07-01.geojson",
+            "file_strong": "run-2026-07-01.strong.geojson",
+            "first_obs": 1,
+            "high": 3,
+            "low": 0,
+            "medium": 1,
+            "pcount_max": 20,
+            "strong": 2
+          },
+          {
+            "area_ha": 2.5,
+            "candidate": 0,
+            "confirmed": 0,
+            "count": 1,
+            "date": "2026-07-08",
+            "file": "run-2026-07-08.geojson",
+            "file_strong": "run-2026-07-08.strong.geojson",
+            "first_obs": 1,
+            "high": 0,
+            "low": 1,
+            "medium": 0,
+            "pcount_max": 1,
+            "strong": 0
+          }
+        ],
+        "schema": "araripe.site.alert_index/1",
+        "source": "SENTINEL-2 L2A · LANDSAT 8/9",
+        "stats_policy_version": "1",
+        "strong_points_file": "all-strong-points.json",
+        "totals": {
+          "area_ha": 12.5001,
+          "candidate": 2,
+          "confirmed": 1,
+          "count": 5,
+          "first_obs": 2,
+          "high": 3,
+          "pcount_max": 20,
+          "strong": 2
+        }
+      },
+      "expected_codes": [
+        "total_does_not_aggregate_the_runs"
+      ],
+      "name": "the total area was recomputed at a different precision",
+      "why": "Reproducibility, not tidiness: an index derived from the same immutable release must be byte-identical, and a stray decimal means two builds of one release disagree."
+    },
+    {
+      "document": {
+        "last_run": "2026-07-08",
+        "runs": [
+          {
+            "area_ha": 10.0,
+            "candidate": 2,
+            "confirmed": 1,
+            "count": 4,
+            "date": "2026-07-01",
+            "file": "run-2026-07-01.geojson",
+            "file_strong": "run-2026-07-01.strong.geojson",
+            "first_obs": 1,
+            "high": 3,
+            "low": 0,
+            "medium": 1,
+            "pcount_max": 20,
+            "strong": 2
+          },
+          {
+            "area_ha": 2.5,
+            "candidate": 0,
+            "confirmed": 0,
+            "count": 1,
+            "date": "2026-07-08",
+            "file": "run-2026-07-08.strong.geojson",
+            "file_strong": "run-2026-07-08.strong.geojson",
+            "first_obs": 1,
+            "high": 0,
+            "low": 1,
+            "medium": 0,
+            "pcount_max": 1,
+            "strong": 0
+          }
+        ],
+        "schema": "araripe.site.alert_index/1",
+        "source": "SENTINEL-2 L2A · LANDSAT 8/9",
+        "stats_policy_version": "1",
+        "strong_points_file": "all-strong-points.json",
+        "totals": {
+          "area_ha": 12.5,
+          "candidate": 2,
+          "confirmed": 1,
+          "count": 5,
+          "first_obs": 2,
+          "high": 3,
+          "pcount_max": 20,
+          "strong": 2
+        }
+      },
+      "expected_codes": [
+        "full_and_strong_are_the_same_object"
+      ],
+      "name": "the full object and the strong subset are the same object",
+      "why": "The default view would serve every candidate alert — 429k features instead of 125k, and a claim of high confidence the data does not carry."
+    },
+    {
+      "document": {
+        "last_run": "2026-07-08",
+        "runs": [
+          {
+            "area_ha": 10.0,
+            "candidate": 2,
+            "confirmed": 1,
+            "count": 4,
+            "date": "2026-07-01",
+            "file": "run-2026-07-01.geojson",
+            "file_strong": "run-2026-07-01.strong.geojson",
+            "first_obs": 1,
+            "high": 3,
+            "low": 0,
+            "medium": 1,
+            "pcount_max": 20,
+            "strong": 2
+          },
+          {
+            "area_ha": 2.5,
+            "candidate": 0,
+            "confirmed": 0,
+            "count": 1,
+            "date": "2026-07-08",
+            "file": "run-2026-07-08.geojson",
+            "file_strong": "run-2026-07-08.strong.geojson",
+            "first_obs": 1,
+            "high": 0,
+            "low": 1,
+            "medium": 0,
+            "pcount_max": 1,
+            "strong": 0
+          },
+          {
+            "area_ha": 2.5,
+            "candidate": 0,
+            "confirmed": 0,
+            "count": 1,
+            "date": "2026-07-08",
+            "file": "run-2026-07-08.geojson",
+            "file_strong": "run-2026-07-08.strong.geojson",
+            "first_obs": 1,
+            "high": 0,
+            "low": 1,
+            "medium": 0,
+            "pcount_max": 1,
+            "strong": 0
+          }
+        ],
+        "schema": "araripe.site.alert_index/1",
+        "source": "SENTINEL-2 L2A · LANDSAT 8/9",
+        "stats_policy_version": "1",
+        "strong_points_file": "all-strong-points.json",
+        "totals": {
+          "area_ha": 12.5,
+          "candidate": 2,
+          "confirmed": 1,
+          "count": 5,
+          "first_obs": 2,
+          "high": 3,
+          "pcount_max": 20,
+          "strong": 2
+        }
+      },
+      "expected_codes": [
+        "run_date_repeated",
+        "total_does_not_aggregate_the_runs"
+      ],
+      "name": "a UTC date appears twice",
+      "why": "The release declares each date exactly once, so a repeated row means the composer double-counted and every total is inflated."
+    }
+  ],
+  "run_cases": [
+    {
+      "expected": {
+        "area_ha": 0.0,
+        "candidate": 0,
+        "confirmed": 0,
+        "count": 0,
+        "first_obs": 0,
+        "high": 0,
+        "low": 0,
+        "medium": 0,
+        "pcount_max": 1,
+        "strong": 0
+      },
+      "features": [],
+      "name": "empty run reports zeros and the pcount floor",
+      "why": "A date with no alerts is a valid observation of absence (GREEN_RELEASE_CONTRACT_V1 alert_state 'zero_alerts'), never to be collapsed into no-data. pcount_max must still be 1 or the UI slider range collapses."
+    },
+    {
+      "expected": {
+        "area_ha": 5.0,
+        "candidate": 2,
+        "confirmed": 2,
+        "count": 5,
+        "first_obs": 1,
+        "high": 0,
+        "low": 5,
+        "medium": 0,
+        "pcount_max": 16,
+        "strong": 0
+      },
+      "features": [
+        {
+          "geometry": {
+            "coordinates": [
+              [
+                [
+                  -39.5,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.2
+                ]
+              ]
+            ],
+            "type": "Polygon"
+          },
+          "properties": {
+            "area_ha": 1.0,
+            "confidence_label": "low",
+            "persistence_count": 1
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "coordinates": [
+              [
+                [
+                  -39.5,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.2
+                ]
+              ]
+            ],
+            "type": "Polygon"
+          },
+          "properties": {
+            "area_ha": 1.0,
+            "confidence_label": "low",
+            "persistence_count": 2
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "coordinates": [
+              [
+                [
+                  -39.5,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.2
+                ]
+              ]
+            ],
+            "type": "Polygon"
+          },
+          "properties": {
+            "area_ha": 1.0,
+            "confidence_label": "low",
+            "persistence_count": 14
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "coordinates": [
+              [
+                [
+                  -39.5,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.2
+                ]
+              ]
+            ],
+            "type": "Polygon"
+          },
+          "properties": {
+            "area_ha": 1.0,
+            "confidence_label": "low",
+            "persistence_count": 15
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "coordinates": [
+              [
+                [
+                  -39.5,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.2
+                ]
+              ]
+            ],
+            "type": "Polygon"
+          },
+          "properties": {
+            "area_ha": 1.0,
+            "confidence_label": "low",
+            "persistence_count": 16
+          },
+          "type": "Feature"
+        }
+      ],
+      "name": "the three persistence tiers partition the features",
+      "why": "Boundaries at exactly CANDIDATE_MIN_SIGHTINGS and CONFIRMED_MIN_SIGHTINGS, plus one either side of each. An off-by-one in either comparison moves a feature between tiers."
+    },
+    {
+      "expected": {
+        "area_ha": 4.0,
+        "candidate": 0,
+        "confirmed": 0,
+        "count": 2,
+        "first_obs": 2,
+        "high": 2,
+        "low": 0,
+        "medium": 0,
+        "pcount_max": 1,
+        "strong": 0
+      },
+      "features": [
+        {
+          "geometry": {
+            "coordinates": [
+              [
+                [
+                  -39.5,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.2
+                ]
+              ]
+            ],
+            "type": "Polygon"
+          },
+          "properties": {
+            "area_ha": 2.0,
+            "confidence_label": "high",
+            "persistence_count": null
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "coordinates": [
+              [
+                [
+                  -39.5,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.2
+                ]
+              ]
+            ],
+            "type": "Polygon"
+          },
+          "properties": {
+            "area_ha": 2.0,
+            "confidence_label": "high"
+          },
+          "type": "Feature"
+        }
+      ],
+      "name": "a missing streak counts as one sighting, not as a crash",
+      "why": "The producer writes null for a track it has not counted yet, and int(None) raises. 'Not counted' means seen once, which is what a first observation is."
+    },
+    {
+      "expected": {
+        "area_ha": 20.0,
+        "candidate": 3,
+        "confirmed": 0,
+        "count": 4,
+        "first_obs": 1,
+        "high": 3,
+        "low": 0,
+        "medium": 1,
+        "pcount_max": 3,
+        "strong": 1
+      },
+      "features": [
+        {
+          "geometry": {
+            "coordinates": [
+              [
+                [
+                  -39.5,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.2
+                ]
+              ]
+            ],
+            "type": "Polygon"
+          },
+          "properties": {
+            "area_ha": 5.0,
+            "confidence_label": "high",
+            "lc_natural_frac_10m": 0.9,
+            "persistence_count": 3
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "coordinates": [
+              [
+                [
+                  -39.5,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.2
+                ]
+              ]
+            ],
+            "type": "Polygon"
+          },
+          "properties": {
+            "area_ha": 5.0,
+            "confidence_label": "medium",
+            "lc_natural_frac_10m": 0.9,
+            "persistence_count": 3
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "coordinates": [
+              [
+                [
+                  -39.5,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.2
+                ]
+              ]
+            ],
+            "type": "Polygon"
+          },
+          "properties": {
+            "area_ha": 5.0,
+            "confidence_label": "high",
+            "lc_natural_frac_10m": 0.9,
+            "persistence_count": 1
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "coordinates": [
+              [
+                [
+                  -39.5,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.2
+                ]
+              ]
+            ],
+            "type": "Polygon"
+          },
+          "properties": {
+            "area_ha": 5.0,
+            "confidence_label": "high",
+            "lc_natural_frac_10m": 0.49,
+            "persistence_count": 3
+          },
+          "type": "Feature"
+        }
+      ],
+      "name": "strong membership needs all three conjuncts",
+      "why": "One feature satisfies everything; the other three each fail exactly one conjunct. Dropping any conjunct from the policy makes one of them strong and this case fails."
+    },
+    {
+      "expected": {
+        "area_ha": 2.0,
+        "candidate": 2,
+        "confirmed": 0,
+        "count": 2,
+        "first_obs": 0,
+        "high": 2,
+        "low": 0,
+        "medium": 0,
+        "pcount_max": 2,
+        "strong": 2
+      },
+      "features": [
+        {
+          "geometry": {
+            "coordinates": [
+              [
+                [
+                  -39.5,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.2
+                ]
+              ]
+            ],
+            "type": "Polygon"
+          },
+          "properties": {
+            "area_ha": 1.0,
+            "confidence_label": "high",
+            "lc_natural_frac_10m": 0.5,
+            "persistence_count": 2
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "coordinates": [
+              [
+                [
+                  -39.5,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.2
+                ]
+              ]
+            ],
+            "type": "Polygon"
+          },
+          "properties": {
+            "area_ha": 1.0,
+            "confidence_label": "high",
+            "lc_natural_frac_10m": 0.4999,
+            "persistence_count": 2
+          },
+          "type": "Feature"
+        }
+      ],
+      "name": "the natural-fraction threshold is inclusive at the boundary",
+      "why": "STRONG_MIN_NATURAL_FRACTION is a floor, not a strict bound. The value is rounded to three decimals first, so 0.4999 is below and 0.5 is in."
+    },
+    {
+      "expected": {
+        "area_ha": 1.0,
+        "candidate": 1,
+        "confirmed": 0,
+        "count": 1,
+        "first_obs": 0,
+        "high": 1,
+        "low": 0,
+        "medium": 0,
+        "pcount_max": 2,
+        "strong": 1
+      },
+      "features": [
+        {
+          "geometry": {
+            "coordinates": [
+              [
+                [
+                  -39.5,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.2
+                ]
+              ]
+            ],
+            "type": "Polygon"
+          },
+          "properties": {
+            "area_ha": 1.0,
+            "confidence_label": "high",
+            "lc_natural_frac": 0.8,
+            "persistence_count": 2
+          },
+          "type": "Feature"
+        }
+      ],
+      "name": "the pre-2A.6 natural-fraction field is read as a fallback",
+      "why": "Tracked alert files span two annotation schemas. Reading only lc_natural_frac_10m would silently empty the strong subset for every older date."
+    },
+    {
+      "expected": {
+        "area_ha": 2.0,
+        "candidate": 0,
+        "confirmed": 0,
+        "count": 2,
+        "first_obs": 2,
+        "high": 0,
+        "low": 2,
+        "medium": 0,
+        "pcount_max": 1,
+        "strong": 0
+      },
+      "features": [
+        {
+          "geometry": {
+            "coordinates": [
+              [
+                [
+                  -39.5,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.2
+                ]
+              ]
+            ],
+            "type": "Polygon"
+          },
+          "properties": {
+            "area_ha": 1.0,
+            "persistence_count": 1
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "coordinates": [
+              [
+                [
+                  -39.5,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.2
+                ]
+              ]
+            ],
+            "type": "Polygon"
+          },
+          "properties": {
+            "area_ha": 1.0,
+            "confidence_label": "unknown",
+            "persistence_count": 1
+          },
+          "type": "Feature"
+        }
+      ],
+      "name": "an unlabelled feature is counted low, never high",
+      "why": "A label the policy does not name — including a missing one — must land in the conservative bin. Counting it as high would advertise confidence the detector never claimed."
+    },
+    {
+      "expected": {
+        "area_ha": 3.0,
+        "candidate": 1,
+        "confirmed": 0,
+        "count": 1,
+        "first_obs": 0,
+        "high": 1,
+        "low": 0,
+        "medium": 0,
+        "pcount_max": 2,
+        "strong": 1
+      },
+      "features": [
+        {
+          "geometry": {
+            "coordinates": [
+              [
+                [
+                  -39.5,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.2
+                ]
+              ]
+            ],
+            "type": "Polygon"
+          },
+          "properties": {
+            "area_ha": 3.0,
+            "confidence_label": "high",
+            "lc_natural_frac_10m": 0.7,
+            "persistence_count": 2
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "coordinates": [
+              -39.45,
+              -7.15
+            ],
+            "type": "Point"
+          },
+          "properties": {
+            "area_ha": 99.0,
+            "confidence_label": "high",
+            "persistence_count": 30
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": null,
+          "properties": {
+            "area_ha": 99.0
+          },
+          "type": "Feature"
+        }
+      ],
+      "name": "a non-areal geometry is not a counted alert",
+      "why": "count is not len(features). A Point carries no area, and counting it would break the tier partition the validator checks."
+    },
+    {
+      "expected": {
+        "area_ha": 7.2,
+        "candidate": 2,
+        "confirmed": 0,
+        "count": 2,
+        "first_obs": 0,
+        "high": 0,
+        "low": 0,
+        "medium": 2,
+        "pcount_max": 4,
+        "strong": 0
+      },
+      "features": [
+        {
+          "geometry": {
+            "coordinates": [
+              [
+                [
+                  [
+                    -39.5,
+                    -7.2
+                  ],
+                  [
+                    -39.4,
+                    -7.2
+                  ],
+                  [
+                    -39.4,
+                    -7.1
+                  ],
+                  [
+                    -39.5,
+                    -7.1
+                  ],
+                  [
+                    -39.5,
+                    -7.2
+                  ]
+                ]
+              ]
+            ],
+            "type": "MultiPolygon"
+          },
+          "properties": {
+            "area_ha": 7.25,
+            "confidence_label": "medium",
+            "persistence_count": 4
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "coordinates": [
+              [
+                [
+                  -39.5,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.2
+                ]
+              ]
+            ],
+            "type": "Polygon"
+          },
+          "properties": {
+            "area_ha": null,
+            "confidence_label": "medium",
+            "persistence_count": 4
+          },
+          "type": "Feature"
+        }
+      ],
+      "name": "MultiPolygon counts and a null area contributes nothing",
+      "why": "The backend writes MultiPolygon for split clearings. A null area_ha must add 0.0 rather than raise, because the feature still exists and still belongs to a tier. This case also pins a cross-language trap: 7.25 rounds to 7.2 under Python's round() and to 7.3 under JavaScript's toFixed(1). The expected value is the Python one, because that is what the site has published since the first run and moving it would restate history."
+    },
+    {
+      "expected": {
+        "area_ha": 0.1,
+        "candidate": 0,
+        "confirmed": 0,
+        "count": 3,
+        "first_obs": 3,
+        "high": 0,
+        "low": 3,
+        "medium": 0,
+        "pcount_max": 1,
+        "strong": 0
+      },
+      "features": [
+        {
+          "geometry": {
+            "coordinates": [
+              [
+                [
+                  -39.5,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.2
+                ]
+              ]
+            ],
+            "type": "Polygon"
+          },
+          "properties": {
+            "area_ha": 0.04,
+            "confidence_label": "low",
+            "persistence_count": 1
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "coordinates": [
+              [
+                [
+                  -39.5,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.2
+                ]
+              ]
+            ],
+            "type": "Polygon"
+          },
+          "properties": {
+            "area_ha": 0.04,
+            "confidence_label": "low",
+            "persistence_count": 1
+          },
+          "type": "Feature"
+        },
+        {
+          "geometry": {
+            "coordinates": [
+              [
+                [
+                  -39.5,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.2
+                ],
+                [
+                  -39.4,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.1
+                ],
+                [
+                  -39.5,
+                  -7.2
+                ]
+              ]
+            ],
+            "type": "Polygon"
+          },
+          "properties": {
+            "area_ha": 0.04,
+            "confidence_label": "low",
+            "persistence_count": 1
+          },
+          "type": "Feature"
+        }
+      ],
+      "name": "area is rounded once, to one decimal",
+      "why": "Three areas that only sum to a stable value if the rounding happens after the summation. Rounding each feature first drifts from the total the page adds up."
+    }
+  ],
+  "stats_policy_version": "1"
+}
