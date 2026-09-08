@@ -131,6 +131,13 @@ o JSON à mão e tinha três defeitos — §"O procedimento que isto substitui" 
 
        export CLOUDFLARE_API_TOKEN=…      # cole o valor aqui, e em nenhum arquivo
 
+   **Qual dos três valores.** A página de criação mostra **Access Key ID**,
+   **Secret Access Key** e **Token Value** juntos. `CLOUDFLARE_API_TOKEN` quer o
+   **Token Value** — os outros dois são da API S3-compatível (é o que o perfil
+   `araripe-r2-staging` do AWS CLI usa) e não servem aqui. É a armadilha do
+   Package 2B.2B invertida: lá o erro era usar o Token Value onde se queria o
+   Access Key ID.
+
 3. Rode:
 
        cd site
@@ -145,7 +152,31 @@ sha256 de cada produto declarado, e que `runs/`, o prefixo de probe e a release
 recusada por cobertura seguem em 404. No fim apaga a configuração gerada e o
 estado local.
 
-Sem `CLOUDFLARE_API_TOKEN` ele para com a explicação e aponta o degrau 1.
+Sem `CLOUDFLARE_API_TOKEN` ele para com a explicação e aponta o degrau 1. **Se
+o wrangler falhar, o script imprime a saída dele** — a primeira versão a
+descartava e morria com "token inválido? sem rede?", uma adivinhação onde havia
+um log.
+
+### O `.env` do repositório não pertence ao Worker — MEDIDO
+
+`wrangler dev` carrega o `.env` do repositório do site e o injeta como variáveis
+de ambiente **do Worker**. Contado na saída do próprio wrangler em 2026-09-08:
+
+| | `Using secrets defined in .env` | bindings de credencial |
+| --- | --- | --- |
+| default | 1 | **5** |
+| `CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV=false` | 0 | **0** |
+
+Os cinco incluem `env.R2_ACCESS_KEY` e `env.R2_SECRET_KEY` — as chaves de
+**produção** do bucket `araripe-cogs` — mais os três do Earthdata. O Worker
+verde não as lê, e o ponto é que não tem por que tê-las ao alcance: uma edição
+futura em `data_route.js` que lesse `env.R2_ACCESS_KEY` funcionaria localmente
+sem ninguém notar.
+
+Os dois arnêses e a entrada `worker-verde` do `launch.json` desligam isso, e um
+teste afirma que desligam. **Não afeta o deploy:** `.env` é só de
+desenvolvimento local, e o `deploy --dry-run` desta configuração imprime
+exatamente dois bindings — conferido.
 
 ### A prova de que o binding é realmente remoto
 
@@ -174,6 +205,10 @@ Registrado porque o terceiro defeito é o interessante.
    `Unexpected fields found in r2_buckets[0] field: "experimental_remote"` — um
    **aviso**, não um erro, e segue rodando. O campo certo é `"remote": true`,
    que passa sem aviso nenhum.
+4. **Descartava a saída do wrangler** e, quando o dev server não subia, morria
+   com "token inválido? sem rede?". O dono bateu nisso com o token definido, e a
+   mensagem não deu nenhuma pista. O erro real era legível o tempo inteiro; só
+   estava no `/dev/null`.
 
 O defeito 3 é da mesma família de um teste que passa pelo motivo errado: o
 operador teria lido a simulação **local** acreditando estar lendo o bucket real,
