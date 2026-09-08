@@ -1,5 +1,12 @@
 # Exit gate P2B — o montador da rodada, e o fechamento da Phase 2B
 
+> **FECHADO em 2026-09-08.** Os quatro itens do escopo foram entregues e o
+> gate foi provado contra o R2 real com dado de execução real. O registro é
+> [`../implementation/PHASE_2B_GATE_2026-09-08.md`](../implementation/PHASE_2B_GATE_2026-09-08.md),
+> e é ele que diz o que ficou provado e o que continua sem prova. Este
+> documento fica como o briefing que foi executado — **não é mais uma tarefa
+> aberta**. O ponto de entrada que faltava é `scripts/assemble_green_run.py`.
+
 Escrito em 2026-09-08 depois de fechar o Package 2B.4B, e **revisado no mesmo
 dia** — leia a §0 antes de qualquer coisa, porque o item 1 do escopo mudou de
 estado.
