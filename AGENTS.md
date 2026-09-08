@@ -19,14 +19,21 @@ plain-language method, and the relevant focused document under `docs/`. Treat
 `config/settings.py` and the implementation as the runtime source of truth when
 prose is stale.
 
-**`ROADMAP.md` is two different documents with one name.** The copy on `main`
-(~240 lines) tracks explicitly not-yet-implemented items and is *not* the plan.
-The canonical plan — decision ledger, numbered topic table with approval
-status, Phases 0-6, packages and exit gates — is `ROADMAP.md` on the planning
-branch (~980 lines, currently `claude/phase2a6d-mapbiomas`; confirm against the
-newest record in `docs/implementation/`). Read it with
-`git show <planning-branch>:ROADMAP.md`. Planning against `main`'s copy
-duplicates approved work — see the note at the top of that file.
+**`ROADMAP.md` on `main` IS the plan — since 2026-09-08.** It carries the
+decision ledger, the numbered topic table with approval status, and Phases 0-7
+with their packages and exit gates. Read it from `origin/main`.
+
+Until the Package 2A.6 landing (PR `#54`) two different documents shared this
+name, and planning against the wrong one duplicated approved work. That is
+over: the tracker that used to occupy `main`'s `ROADMAP.md` — not-yet-implemented
+capabilities and incident records — now lives at
+`docs/implementation/PENDING_CAPABILITIES.md`, and it is **not** the plan. The
+planning branch `claude/phase2a6d-mapbiomas` is kept for history; do not read
+its `ROADMAP.md` as canonical.
+
+Its decision-baseline is 2026-08-11 and the `Implementation status` lines were
+deliberately not rewritten; a dated block at the top of the file records what
+closed since.
 
 ## Orient before editing
 
@@ -79,7 +86,8 @@ Do this first, every session — the shared `../AGENTS.md` has the full protocol
   has an empty bypass list, so nobody — including `github-actions[bot]` — can
   push to it. Land every change through a pull request, and expect the
   scheduled workflows to publish `data/timeseries/` through the automatic PR
-  lane recorded in `ROADMAP.md` §6. Never add a bypass actor, relax the
+  lane recorded in `docs/implementation/PENDING_CAPABILITIES.md` §6. Never add
+  a bypass actor, relax the
   ruleset, or flip repository settings to restore a direct push.
 - Every package session ends by writing the next session's briefing at
   `docs/operations/PACKAGE_<package>_PROMPT.md`, following
