@@ -17,6 +17,7 @@
       },
       "method": "GET",
       "name": "the pointer is public and never cached",
+      "object_patch": null,
       "path": "/data/green/current.json"
     },
     {
@@ -35,6 +36,7 @@
       },
       "method": "GET",
       "name": "the live manifest is public",
+      "object_patch": null,
       "path": "/data/green/release.json"
     },
     {
@@ -53,6 +55,7 @@
       },
       "method": "GET",
       "name": "the live ledger is public, so a consumer can verify the manifest",
+      "object_patch": null,
       "path": "/data/green/ledger.json"
     },
     {
@@ -74,6 +77,7 @@
       },
       "method": "GET",
       "name": "a declared product is served from the live release prefix",
+      "object_patch": null,
       "path": "/data/green/alerts/2026-04-07/19741870aa21.geojson"
     },
     {
@@ -95,6 +99,7 @@
       },
       "method": "HEAD",
       "name": "HEAD is allowed and resolves identically",
+      "object_patch": null,
       "path": "/data/green/series.json"
     },
     {
@@ -117,6 +122,7 @@
       },
       "method": "GET",
       "name": "a download names the file from the declared path",
+      "object_patch": null,
       "path": "/data/green/series.json"
     },
     {
@@ -127,6 +133,7 @@
       },
       "method": "GET",
       "name": "an undeclared path is refused, however ordinary it looks",
+      "object_patch": null,
       "path": "/data/green/alerts/2026-04-08/other.geojson"
     },
     {
@@ -137,6 +144,7 @@
       },
       "method": "GET",
       "name": "a processing input cannot be addressed",
+      "object_patch": null,
       "path": "/data/green/runs/proof-a-2026-09-07/run.json"
     },
     {
@@ -147,6 +155,7 @@
       },
       "method": "GET",
       "name": "a release prefix cannot be addressed, not even the live one",
+      "object_patch": null,
       "path": "/data/green/releases/rel-g1-a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1/release.json"
     },
     {
@@ -157,6 +166,7 @@
       },
       "method": "GET",
       "name": "traversal is refused as undeclared, not sanitised",
+      "object_patch": null,
       "path": "/data/green/../../pointers/green/current.json"
     },
     {
@@ -167,6 +177,7 @@
       },
       "method": "GET",
       "name": "an absolute-looking path is refused as undeclared",
+      "object_patch": null,
       "path": "/data/green//etc/passwd"
     },
     {
@@ -177,7 +188,84 @@
       },
       "method": "GET",
       "name": "the mount is not a prefix match on the site's static assets",
+      "object_patch": null,
       "path": "/data/alerts/manifest.json"
+    },
+    {
+      "download": false,
+      "expect": {
+        "code": "content_type_unusable",
+        "outcome": "refused"
+      },
+      "method": "GET",
+      "name": "a content type carrying CRLF is refused, not placed in a header",
+      "object_patch": {
+        "content_type": "application/json\r\nX-Injected: yes"
+      },
+      "path": "/data/green/alerts/2026-04-07/19741870aa21.geojson"
+    },
+    {
+      "download": false,
+      "expect": {
+        "code": "content_type_unusable",
+        "outcome": "refused"
+      },
+      "method": "GET",
+      "name": "a content type carrying a bare LF is refused",
+      "object_patch": {
+        "content_type": "text/plain\nSet-Cookie: a=b"
+      },
+      "path": "/data/green/alerts/2026-04-07/19741870aa21.geojson"
+    },
+    {
+      "download": false,
+      "expect": {
+        "code": "content_type_unusable",
+        "outcome": "refused"
+      },
+      "method": "GET",
+      "name": "a content type that is not a media type at all is refused",
+      "object_patch": {
+        "content_type": "notamediatype"
+      },
+      "path": "/data/green/alerts/2026-04-07/19741870aa21.geojson"
+    },
+    {
+      "download": false,
+      "expect": {
+        "code": "content_type_unusable",
+        "outcome": "refused"
+      },
+      "method": "GET",
+      "name": "an empty content type is refused",
+      "object_patch": {
+        "content_type": ""
+      },
+      "path": "/data/green/alerts/2026-04-07/19741870aa21.geojson"
+    },
+    {
+      "download": false,
+      "expect": {
+        "bytes": 78,
+        "headers": {
+          "Cache-Control": "public, max-age=60, must-revalidate",
+          "Content-Type": "text/plain; charset=\"utf-8\"",
+          "ETag": "\"b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1\"",
+          "X-Araripe-Release-Id": "rel-g1-a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+          "X-Araripe-Sha256": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1",
+          "X-Content-Type-Options": "nosniff"
+        },
+        "key": "releases/rel-g1-a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1/alerts/2026-04-07/19741870aa21.geojson",
+        "outcome": "served",
+        "sha256": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1",
+        "status": 200
+      },
+      "method": "GET",
+      "name": "a media type with a quoted parameter is accepted verbatim",
+      "object_patch": {
+        "content_type": "text/plain; charset=\"utf-8\""
+      },
+      "path": "/data/green/alerts/2026-04-07/19741870aa21.geojson"
     },
     {
       "download": false,
@@ -187,6 +275,7 @@
       },
       "method": "PUT",
       "name": "a write method is refused before anything is resolved",
+      "object_patch": null,
       "path": "/data/green/series.json"
     },
     {
@@ -197,6 +286,7 @@
       },
       "method": "DELETE",
       "name": "DELETE is refused; this route reads",
+      "object_patch": null,
       "path": "/data/green/series.json"
     }
   ],

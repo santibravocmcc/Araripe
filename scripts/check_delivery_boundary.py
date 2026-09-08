@@ -88,6 +88,10 @@ FIXTURE = {
     },
 }
 
+#: The declared path the content-type cases exercise; naming it keeps the
+#: patch and the request pointing at the same object.
+ALERT_PATH = "/data/green/alerts/2026-04-07/19741870aa21.geojson"
+
 #: Every case is named for the property it defends, not for its input.
 CASES: list[dict] = [
     {"name": "the pointer is public and never cached",
@@ -114,11 +118,42 @@ CASES: list[dict] = [
      "method": "GET", "path": "/data/green//etc/passwd"},
     {"name": "the mount is not a prefix match on the site's static assets",
      "method": "GET", "path": "/data/alerts/manifest.json"},
+    {"name": "a content type carrying CRLF is refused, not placed in a header",
+     "method": "GET", "path": ALERT_PATH,
+     "object_patch": {"content_type": "application/json\r\nX-Injected: yes"}},
+    {"name": "a content type carrying a bare LF is refused",
+     "method": "GET", "path": ALERT_PATH,
+     "object_patch": {"content_type": "text/plain\nSet-Cookie: a=b"}},
+    {"name": "a content type that is not a media type at all is refused",
+     "method": "GET", "path": ALERT_PATH,
+     "object_patch": {"content_type": "notamediatype"}},
+    {"name": "an empty content type is refused",
+     "method": "GET", "path": ALERT_PATH, "object_patch": {"content_type": ""}},
+    {"name": "a media type with a quoted parameter is accepted verbatim",
+     "method": "GET", "path": ALERT_PATH,
+     "object_patch": {"content_type": "text/plain; charset=\"utf-8\""}},
     {"name": "a write method is refused before anything is resolved",
      "method": "PUT", "path": "/data/green/series.json"},
     {"name": "DELETE is refused; this route reads",
      "method": "DELETE", "path": "/data/green/series.json"},
 ]
+
+
+def _manifest_for(case: dict) -> dict:
+    """The fixture manifest, with one object field replaced when a case asks.
+
+    Needed because the sharpest cases are about a manifest field the release
+    schema barely constrains — ``content_type`` — and a vector suite that could
+    not vary it would leave the one branch a header-injection depends on
+    unchecked in every implementation but the Python one.
+    """
+
+    patch = case.get("object_patch")
+    if not patch:
+        return FIXTURE["manifest"]
+    manifest = json.loads(json.dumps(FIXTURE["manifest"]))
+    manifest["objects"][0].update(patch)
+    return manifest
 
 
 def _evaluate(case: dict) -> dict:
@@ -127,7 +162,7 @@ def _evaluate(case: dict) -> dict:
             case["method"],
             case["path"],
             pointer=FIXTURE["pointer"],
-            manifest=FIXTURE["manifest"],
+            manifest=_manifest_for(case),
             download=case.get("download", False),
         )
     except db.DeliveryRefused as exc:
@@ -161,6 +196,7 @@ def build_vectors() -> dict:
                 "method": case["method"],
                 "path": case["path"],
                 "download": case.get("download", False),
+                "object_patch": case.get("object_patch"),
                 "expect": _evaluate(case),
             }
             for case in CASES
