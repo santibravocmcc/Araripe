@@ -536,3 +536,93 @@ def test_a_geracao_2_1_0_esta_presente_e_verificada_byte_a_byte():
     assert local["expected"] == 72
     assert local["mismatched"] == []
     assert local["verified"] == local["present"]
+
+
+# ── o runbook nomeia os alvos que o código resolve ──────────────────────────
+
+RUNBOOK = ROOT / "docs" / "operations" / "PHASE_3_REPLAY_RUNBOOK.md"
+
+
+def test_o_runbook_existe_e_declara_a_revisao_do_dono():
+    """O bullet pede revisão explícita do dono antes do cutover. O runbook não
+    pode declarar-se revisado por conta própria.
+    """
+
+    text = RUNBOOK.read_text(encoding="utf-8")
+    assert "Estado da revisão do dono" in text
+    assert "PENDENTE" in text
+    assert "- [ ]" in text, "os itens da revisão têm de estar desmarcados"
+
+
+def test_o_runbook_nomeia_os_alvos_resolvidos_lidos_do_codigo():
+    """Se um destes nomes mudar no código e não no runbook, isto cai — que é a
+    única coisa que impede um runbook de descrever um sistema que já não
+    existe.
+    """
+
+    from src.publication import conditional_store as cs
+    from src.publication.green_release import POINTER_KEY
+
+    text = RUNBOOK.read_text(encoding="utf-8")
+    for value in (
+        cs.STAGING_BUCKET,
+        cs.PRODUCTION_BUCKET,
+        POINTER_KEY,
+        "v2_candidate_replay.yml",
+        "phase3_replay_freeze_v1.json",
+        f"SEARCH_DAYS_BACK = {settings.SEARCH_DAYS_BACK}",
+    ):
+        assert value in text, value
+
+
+def test_o_runbook_nomeia_os_documentos_que_esta_fase_gravou():
+    """Um runbook que apontasse para uma fotografia inexistente não seria
+    seguível. Os nomes são construídos da data provisória do corte.
+    """
+
+    stamp = cut.read_provisional_cutoff().date
+    text = RUNBOOK.read_text(encoding="utf-8")
+    for name in (
+        f"PHASE_3_SNAPSHOT_{stamp}.json",
+        f"PHASE_3_POST_CUTOFF_QUEUE_{stamp}.json",
+    ):
+        assert name in text, name
+        assert (ROOT / "docs" / "implementation" / name).is_file(), name
+
+
+def test_o_runbook_nao_finge_ter_a_lista_do_broker_maior():
+    """A lista allowlistada do broker é exatamente três operações. Um runbook
+    que nomeasse uma quarta convidaria a tentativa.
+    """
+
+    text = RUNBOOK.read_text(encoding="utf-8")
+    broker = (
+        ROOT / ".github" / "workflows" / "cloudflare_green_control.yml"
+    ).read_text(encoding="utf-8")
+    for operation in ("audit", "enforce-worker-isolation", "disable-site-branch-deploy"):
+        assert operation in text, operation
+        assert operation in broker, operation
+
+
+def test_a_recomendacao_de_baseline_carrega_o_custo_dela():
+    """A 2.1.0 admite produtos pré-Collection-1 nos meses 1-4, e a ESA está
+    reprocessando — então um replay contra ela pode ter de ser refeito para
+    janeiro-abril. Uma recomendação sem o custo não é uma recomendação.
+    """
+
+    text = RUNBOOK.read_text(encoding="utf-8")
+    assert "pré-Collection-1" in text
+    assert "check_esa_reprocessing.py" in text
+    amendment = json.loads(
+        (
+            ROOT / "config" / "phase2a6c1_seasonal_source_regime_amendment_v2.json"
+        ).read_text(encoding="utf-8")
+    )
+    wet = next(
+        regime
+        for regime in amendment["source_regime_contract"]["regimes"]
+        if regime["regime_id"] == "wet-season-mixed-lineage-v1"
+    )
+    assert wet["months"] == [1, 2, 3, 4]
+    assert wet["provenance_state"] == "mixed_lineage_pending_esa_reprocessing"
+    assert wet["watch"] == "scripts/check_esa_reprocessing.py"
