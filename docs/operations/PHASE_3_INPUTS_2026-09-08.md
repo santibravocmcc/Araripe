@@ -4,6 +4,13 @@
 **Status:** insumos medidos e uma recomendação. **A Phase 3 é quem registra a
 decisão** — este documento existe para ela não rederivar as medições.
 
+> **Fechado em 2026-09-09 — leia a §3 antes da §1.** O dono abriu a página de
+> cotas de `ee-araripe` e o **X** desta estimativa deixou de ser um X. Com o
+> número real, o replay custa **~3% de um mês** de alocação, e não os ~6% que a
+> §1 estimou nem os ~19% da correção intermediária. A §3 traz a aritmética e a
+> razão de cada uma das duas correções. **A §1 fica como estava, de propósito:
+> ela é o registro do que se sabia em 08/09.**
+
 A Phase 3 tem sete bullets. Dois deles são perguntas que valem responder antes,
 porque a resposta muda o desenho das Fases 4 e 6: *"estimate GEE quotas, batch
 sizes, storage, transfer, and runtime"* e *"choose and record the replay cutoff
@@ -172,3 +179,112 @@ A fila pós-corte tem de ser **enfileirada de propósito**, não esquecida. A Ph
 processing"* — ou seja, existe um registro explícito das datas que ficaram de
 fora, e o cutover o consome. Sem esse registro, a diferença entre "data
 enfileirada" e "data perdida" não é observável.
+
+---
+
+## 3. Adendo de 2026-09-09 — a cota está medida, e as duas correções
+
+**Escrito:** 2026-09-09, depois de o dono abrir as duas páginas de cota.
+**Nada da §1 ou da §2 foi reescrito.** Elas registram o que se sabia em 08/09; o
+que segue é o que mudou com a medição.
+
+### 3.1 O que o dono mediu
+
+| projeto | limite mensal | uso no mês | % |
+| --- | --- | --- | --- |
+| **`ee-araripe`** (detecção — e o do replay) | 3.600.000 EECU-s | **6.242** | **0,17%** |
+| `ee-araripe-baseline-v2` (baseline) | 3.600.000 EECU-s | 122.783 | 3,41% |
+
+E o resto continua folgado nos dois: EECU-s por **dia** ilimitado, 6.000
+leituras/minuto com 0% de uso, BigQuery slot-time 0%.
+
+### 3.2 Quantas execuções gastaram esses 6.242
+
+Medido com `gh run list --workflow detect_gee.yml`, setembro de 2026:
+
+| data | gatilho | resultado |
+| --- | --- | --- |
+| 2026-09-03 | `schedule` | sucesso |
+| 2026-09-07 | `schedule` | **falha** |
+| 2026-09-07 | `workflow_dispatch` | sucesso (é a `run_id` do `RELEASE.json`) |
+
+A falha **não gastou compute**: `gh run view 34120627779` mostra que ela parou em
+*"Fetch persistence state from R2"*, e o passo *"Run GEE detection"* saiu como
+`skipped`. Então os 6.242 EECU-s vêm de **duas** execuções completas:
+
+    6.242 / 2 = 3.121 EECU-s por execução de detecção
+
+Setembro de 2026 tem 4 segundas e 4 quintas, ou seja **8** execuções agendadas:
+
+    X = 8 x 3.121 = 24.968 EECU-s/mês  =  0,69% da alocação
+
+### 3.3 O custo do replay, com o X medido
+
+A operação processa cada data **mais de uma vez** e o replay a processa **uma**.
+A janela é de seis dias (`start = hoje - 5`, `end = hoje + 1`, e `filterDate` é
+semiaberto), e as execuções são segunda e quinta. Contando, para cada dia da
+semana, quantos dias-de-execução caem em `[D, D+5]`:
+
+| D | seg | ter | qua | qui | sex | sáb | dom | média |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| execuções que a alcançam | 2 | 1 | 2 | 2 | 1 | 2 | 2 | **12/7 = 1,71** |
+
+Logo o replay de um intervalo custa **1/1,71 = 0,585** do que a operação gastou
+naquele mesmo intervalo — e essa razão não precisa saber quantas datas existem,
+o que é justamente a sua vantagem: as duas passam pelo mesmo conjunto de datas
+disponíveis.
+
+    2026-01-01 .. 2026-08-30           = 242 dias = 7,95 meses
+    operação naquele intervalo          = 7,95 x 24.968  ~ 198.500 EECU-s
+    REPLAY, uma passagem                = 198.500 / 1,71 ~ 115.800 EECU-s
+                                        = 3,2% de um mês de alocação
+
+| cenário | EECU-s | % de um mês |
+| --- | --- | --- |
+| uma passagem do replay | ~115.800 | **3,2%** |
+| duas passagens | ~231.600 | 6,4% |
+| uma passagem com erro de **10x** | ~1.157.900 | **32%** — ainda cabe |
+
+**Confirmação independente:** a reconstrução da baseline v2 custou 122.783
+EECU-s, e o replay estimado é **0,94x** disso. Um trabalho real, já pago, de
+escala comparável.
+
+### 3.4 As duas correções, e por que a segunda também estava errada
+
+| estimativa | insumo | resultado |
+| --- | --- | --- |
+| §1, 08/09 | `SEARCH_DAYS_BACK = 16`, X não medido | 1,75 X, ~6% de um mês |
+| `PHASE_3_2026-09-08.md` §3 | janela **5** (correto), X ≈ o uso da baseline | 5,6 X, ~19% de um mês |
+| **aqui**, 09/09 | janela 6 dias medida, **X medido** | **3,2% de um mês** |
+
+A primeira correção estava certa no que corrigiu: a janela é 5 dias
+(`config/settings.py:53`), não 16. **Mas a magnitude que ela publicou estava
+errada por outro motivo:** ela usou os 3,41% do projeto `ee-araripe-baseline-v2`
+como proxy do consumo da detecção. Medido agora, a detecção consome **0,69%**, ou
+seja o proxy era **4,9x alto** — a baseline é um trabalho muito mais pesado por
+mês do que a detecção.
+
+**E a frase que a §1 diz e que a primeira correção declarou morta volta a
+valer:** *"mesmo com uma margem de erro de 10x continua caber num mês"*. Com
+32%, cabe.
+
+### 3.5 As ressalvas que continuam de pé
+
+- **O mecanismo do replay não é o da operação.** A operação puxa com
+  `getDownloadURL` em tiles; o replay exporta com `Export.image.toDrive`. O
+  compute do composto domina e é o mesmo, mas os dois não foram medidos lado a
+  lado.
+- **O custo por data não é constante.** Mais cenas por data — nuvem,
+  sobreposição de datatakes — custa mais. A razão de 0,585 usa uma média
+  implícita, e o intervalo do replay inclui a estação chuvosa.
+- **A Phase 4 faz mais que detecção**: anotações versionadas do MapBiomas, tiers
+  de persistência, subconjuntos fortes, estatísticas e série temporal. Parte
+  disso é local, não GEE.
+- **A Phase 5 pode forçar um segundo replay**, e pelos números acima isso
+  continua confortável.
+- **A baseline já foi paga** e não entra nesta conta.
+
+### 3.6 Nada mais é ação do dono nesta conta
+
+A linha *"o que ainda precisa ser medido, e é ação do dono"* da §1 está
+**fechada**. Não há mais X.

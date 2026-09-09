@@ -3,8 +3,12 @@
 **Escrito:** 2026-09-08, na Phase 3
 **Base verificada:** `origin/main` em
 `c39c5238d8e939f6a37bc9060ea5c9ec6da8bd3e`
-**Estado da revisão do dono:** **PENDENTE** — ver §7. O bullet do roadmap pede
-uma revisão explícita antes do cutover, e ela é ação do dono, não do agente.
+**Baseline do replay:** **DECIDIDA em 2026-09-09 — `2.1.0`**, registrada em
+[`../../config/phase3_replay_baseline_decision_v1.json`](../../config/phase3_replay_baseline_decision_v1.json).
+Ver §2.1.
+**Revisão pré-cutover do dono:** **PENDENTE** para os itens restantes — ver §7.
+O bullet do roadmap pede a revisão *antes do cutover*, então ela **não** bloqueia
+a Phase 4; bloqueia a Phase 6.
 
 Este documento é o procedimento da Phase 4 (o reprocessamento) e da drenagem da
 fila na Phase 6, com os alvos resolvidos por nome. Ele não autoriza nada: as
@@ -37,11 +41,28 @@ cria o que for nomeado, sem proteção e sem política de branch.
 
 ## 2. As duas decisões que precedem a Phase 4
 
-### 2.1 Qual baseline o replay usa — decisão do dono, científica
+### 2.1 Qual baseline o replay usa — DECIDIDA: `2.1.0`
 
-O congelamento registra as duas gerações e **não escolhe**
-(`baseline.replay_generation.decided = false`). As duas estão carregáveis pelo
-runtime desde a Phase 3; o replay escolhe por `--baseline-version`.
+**Decidida pelo dono em 2026-09-09.** Perguntado *"qual referência o recálculo
+usa — a antiga ou a nova"*, respondeu **"a nova"**, seguindo a recomendação
+técnica desta seção com o custo dela declarado.
+
+A decisão está registrada em
+`config/phase3_replay_baseline_decision_v1.json`, com autorização datada, e o
+congelamento a **lê** dali em vez de a repetir — `build_freeze` valida que a
+versão nomeada é uma geração **registrada** e que a autorização existe, então
+um erro de digitação ou a `2.0.0` superada falham fechado.
+
+**Decidir o replay não moveu o default do azul.** `BASELINE_VERSION` em
+`config/settings.py` continua `1.0.0`, o arquivo de decisão declara
+`blue_default_change_permitted: false`, e
+`tests/test_replay_freeze.py::test_decidir_o_replay_nao_move_o_default_do_azul`
+exige que os dois valores continuem diferentes e ambos gravados. A produção
+congelada resolve `1.0.0` sem argumento; o replay nomeia `2.1.0`.
+
+O que segue é a comparação que sustentou a recomendação. As duas gerações estão
+carregáveis pelo runtime desde a Phase 3; o replay escolhe por
+`--baseline-version 2.1.0`.
 
 Medido, e é o insumo da decisão:
 
@@ -72,9 +93,16 @@ a 2.1.0 pode ter de ser refeito para janeiro-abril.** A vigilância existe
 (`scripts/check_esa_reprocessing.py`). A Phase 5 já podia forçar um segundo
 replay de qualquer forma, e a cota não é o limitante.
 
-**A decisão é do dono porque é científica**, e porque é contra a geração
+**A decisão foi do dono porque é científica**, e porque é contra a geração
 escolhida que o ano inteiro será comparado. Um candidato comparado contra a
 referência errada não fica obviamente errado — fica plausível.
+
+**O custo foi aceito com a decisão**, e está no próprio arquivo dela
+(`accepted_cost`): pode ser preciso refazer janeiro-abril quando o
+reprocessamento da ESA alcançar a estação chuvosa. A razão de aceitar: a Phase 5
+podia forçar um segundo replay de todo modo, e a cota **não** é o limitante —
+uma passagem custa ~3% de um mês de alocação, medido em
+[`PHASE_3_INPUTS_2026-09-08.md`](PHASE_3_INPUTS_2026-09-08.md) §3.
 
 ### 2.2 A data de corte — regra, resolvida na hora
 
@@ -101,7 +129,9 @@ Não rode nada disto na Phase 3.
 
 1. **Confirmar o congelamento.** `pytest -q tests/test_replay_freeze.py`. Se
    cair, uma constante congelada mudou: descubra qual antes de processar.
-2. **Escolher a baseline** (§2.1) e registrar a escolha e o porquê.
+2. **A baseline já está escolhida e registrada** (§2.1): `2.1.0`. Confirme que
+   o congelamento a lê — `baseline.replay_generation.version` — e não a
+   redecida.
 3. **Re-exportar os compositos** com o datatake físico:
    `python3 build_detection_gee.py --project ee-araripe --start 2026-01-01
    --end <corte+1 dia>` em Cloud Shell. Ele escreve dois documentos: o
@@ -112,7 +142,7 @@ Não rode nada disto na Phase 3.
    literal.
 5. **Processar em lotes cronológicos limitados**, com estado isolado:
    `python scripts/run_detection_from_gee.py --in-dir <dir>
-   --baseline-version <escolhida> --persistence-mode rebuild
+   --baseline-version 2.1.0 --persistence-mode rebuild
    --state-path <caminho isolado> --out-dir <caminho isolado>`.
    **`--persistence-mode rebuild` exige `--state-path` explícito e isolado** —
    o modo `live` recusa datas mais antigas, que é exatamente o que um replay
@@ -173,22 +203,26 @@ correm, a ~2 datas observadas por semana.
 credencial é o banco de série temporal, que é o produto **azul** e só conhece as
 datas que o azul processou. A Phase 4 enumera do GEE e verá mais.
 
-## 7. A revisão do dono — pendente
+## 7. A revisão do dono — um item fechado, o resto pré-cutover
 
-O bullet do roadmap pede *"an explicit pre-cutover review of the runbook and
-resolved targets"*. Isto é o que precisa da sua assinatura, e **nada abaixo
-disto está decidido**:
+O bullet do roadmap pede *"an explicit **pre-cutover** review of the runbook and
+resolved targets"*. Pré-cutover: a revisão é portão da **Phase 6**, não da
+Phase 4. O que a Phase 4 precisava era a decisão da baseline, e ela está feita.
 
+- [x] **qual baseline o replay usa** (§2.1) — **`2.1.0`, decidida em
+      2026-09-09**, com o custo aceito e registrado;
+- [x] **a cota de `ee-araripe` está medida** — 3.600.000 EECU-s/mês, 0,17%
+      usados; o replay é ~3% de um mês
+      ([`PHASE_3_INPUTS_2026-09-08.md`](PHASE_3_INPUTS_2026-09-08.md) §3);
 - [ ] os alvos resolvidos da §1 estão certos;
-- [ ] **qual baseline o replay usa** (§2.1) — a recomendação técnica é 2.1.0, e
-      o custo dela está dito por inteiro;
 - [ ] a regra do corte da §2.2, e a aceitação de que a data resolve na hora;
 - [ ] o procedimento da §3, incluindo que a produção azul continua rodando;
 - [ ] a divergência de unidade de composição da §8 é da Phase 4 e não bloqueia
       a Phase 3.
 
 Registre a revisão como um bloco datado neste arquivo, ou num
-`docs/implementation/PHASE_3_REVIEW_<data>.md`. Sem ela o cutover não começa.
+`docs/implementation/PHASE_3_REVIEW_<data>.md`. **Sem ela o cutover não
+começa** — a Phase 4 pode começar.
 
 ## 8. Uma divergência medida, e ela é da Phase 4
 

@@ -4,29 +4,48 @@ Escrito em 2026-09-08, ao fechar a Phase 3. Método:
 [`HANDOFF_PROMPT_METHOD.md`](HANDOFF_PROMPT_METHOD.md) versão 2 — o corpo é para
 o agente executor e a **seção final é para o dono**.
 
-**A Phase 3 fechou o seu gate.** As duas ativações de runtime entraram, as
-versões estão congeladas com pin medido, a fotografia está tirada, a fila está
-registrada e o ensaio limitado rodou. O que falta antes de processar é **uma
-decisão do dono**, e ela é científica.
+**A Phase 3 fechou o seu gate, e a decisão do dono está tomada.** As duas
+ativações de runtime entraram, as versões estão congeladas com pin medido, a
+fotografia está tirada, a fila está registrada, o ensaio limitado rodou, **a
+baseline do replay está decidida** e **a cota está medida**. Nada bloqueia esta
+fase.
 
 **Esta é a fase caríssima em tempo de máquina.** A Phase 3 existiu para que ela
 rode **uma** vez.
 
 ---
 
-## 0. A decisão do dono que precede tudo
+## 0. A decisão que precedia tudo — TOMADA
 
-**Qual baseline o replay usa.** O runbook
-[`PHASE_3_REPLAY_RUNBOOK.md`](PHASE_3_REPLAY_RUNBOOK.md) §2.1 traz a
-comparação medida e a recomendação técnica (**2.1.0**) com o custo dela por
-inteiro. `config/phase3_replay_freeze_v1.json` registra
-`baseline.replay_generation.decided = false`.
+**A baseline do replay é a `2.1.0`.** Decidida pelo dono em **2026-09-09**:
+perguntado *"qual referência o recálculo usa — a antiga ou a nova"*, respondeu
+**"a nova"**, seguindo a recomendação com o custo declarado.
 
-**Não processe sem essa decisão registrada.** É contra essa geração que o ano
-inteiro é comparado, e um candidato comparado contra a referência errada não
-fica obviamente errado — fica plausível.
+Registrada em `config/phase3_replay_baseline_decision_v1.json` com autorização
+datada. O congelamento **lê** a decisão dali — `build_freeze` valida que a
+versão nomeada é uma geração **registrada** e que a autorização existe, então
+um erro de digitação ou a `2.0.0` superada falham fechado. Confirme com:
 
-A revisão do runbook (§7 dele) é a mesma conversa e também está pendente.
+    /opt/anaconda3/envs/araripe/bin/python -c "from src.replay import freeze; \
+      print(freeze.load_freeze()['baseline']['replay_generation'])"
+
+**Não redecida.** E não mova o default do azul: `BASELINE_VERSION` em
+`config/settings.py` continua `1.0.0`, o arquivo de decisão declara
+`blue_default_change_permitted: false`, e
+`test_decidir_o_replay_nao_move_o_default_do_azul` exige que os dois valores
+continuem diferentes e ambos gravados. O replay nomeia
+`--baseline-version 2.1.0`.
+
+**O custo que veio com a decisão, e que a Phase 4 herda:** a `2.1.0` admite
+produtos pré-Collection-1 nos meses 1-4, que a ESA está reprocessando. **Um
+replay contra ela pode ter de ser refeito para janeiro-abril.** Vigilância em
+`scripts/check_esa_reprocessing.py`. Não é motivo para hesitar — é motivo para
+que o registro da execução diga contra qual regime sazonal cada mês foi
+composto, para que refazer quatro meses seja possível sem refazer doze.
+
+**A revisão do runbook (§7 dele) é PRÉ-CUTOVER**, ou seja portão da Phase 6.
+Dois itens fecharam (a baseline e a cota) e quatro continuam abertos. **Ela não
+bloqueia esta fase.**
 
 ## 1. Dependência que precede tudo — confirme por conteúdo
 
@@ -35,13 +54,13 @@ A revisão do runbook (§7 dele) é a mesma conversa e também está pendente.
     git show origin/main:ROADMAP.md | sed -n '/^### Phase 4 —/,/^### Phase 5 —/p'
     git show origin/main:docs/implementation/PHASE_3_2026-09-08.md
 
-Medido na `main` em `c39c5238d8e939f6a37bc9060ea5c9ec6da8bd3e` **antes** desta
-fase; a PR da Phase 3 acrescenta 130 testes ao backend e 2 ao site:
+Medido com a Phase 3 já mesclada. `origin/main` do backend em
+`baea4f7326caca198f61a2a640909010b0070111`, `origin/main` do site em `5304a81`:
 
 | repositório | comando | resultado |
 | --- | --- | --- |
-| backend | `/opt/anaconda3/envs/araripe/bin/python -m pytest -q` | **1593** na base, **1723** com a PR da Phase 3 |
-| site | `/opt/anaconda3/envs/araripe/bin/python -m pytest -q` | **201** na base, **203** com a PR do site |
+| backend | `/opt/anaconda3/envs/araripe/bin/python -m pytest -q` | **1723** na `main`, **1738** com a PR da decisão |
+| site | `/opt/anaconda3/envs/araripe/bin/python -m pytest -q` | **203** na `main` |
 | site | `npm ci && npm run test:worker` | **44 tests, 44 pass** |
 
 **`ROADMAP.md` na `main` É o plano.** O rastreador está em
@@ -102,13 +121,35 @@ evidência de que ninguém assumiu alinhamento com a baseline é o
 `scripts/run_detection_from_gee.py`. Fixar a transform removeria aquele reindex
 e **mudaria pixels exportados** — decisão desta fase, não de metadado.
 
-**f. MEDIDO — a estimativa de cota tinha um insumo errado, e a conclusão
-sobrevive.** `PHASE_3_INPUTS_2026-09-08.md` §1 parte de
-`SEARCH_DAYS_BACK = 16`; o valor é **5** (`config/settings.py:53`, e o mesmo em
-`ed5f913`). A aritmética corrigida dá ~**5,6 X** em vez de 1,75 X, ou ~**19% de
-um mês** de alocação em vez de ~6%. A cota **continua não limitando**; o que não
-sobrevive é a margem declarada de 10×. Detalhe em
-`docs/implementation/PHASE_3_2026-09-08.md` §3. **Não refaça a análise.**
+**f. MEDIDO — a cota está fechada, e o X não é mais um X.** O dono abriu as duas
+páginas em 2026-09-09. `ee-araripe` (o projeto da detecção e do replay): limite
+**3.600.000** EECU-s/mês, uso **6.242** = **0,17%**. Diário ilimitado.
+
+Medido de `gh run list`: esses 6.242 vêm de **duas** execuções completas
+(2026-09-03 e o dispatch de 2026-09-07); a execução agendada que falhou em
+07/09 parou em *"Fetch persistence state from R2"*, **antes** do passo de GEE,
+e gastou zero. Logo **3.121 EECU-s por execução**, e com 8 execuções/mês
+**X = 24.968 EECU-s/mês = 0,69%** da alocação.
+
+A janela é de **seis** dias e a cadência seg/qui, então cada data cai em **1,71**
+janelas em média; o replay processa cada data uma vez, logo custa **1/1,71** do
+que a operação gastou no mesmo intervalo:
+
+| | EECU-s | % de um mês |
+| --- | --- | --- |
+| uma passagem (242 dias) | ~115.800 | **3,2%** |
+| duas passagens | ~231.600 | 6,4% |
+| uma passagem com erro de 10× | ~1.157.900 | 32% — **ainda cabe** |
+
+Confirmação independente: é **0,94×** o custo da reconstrução da baseline v2
+(122.783 EECU-s), um trabalho real já pago de escala comparável.
+
+**Duas correções, e a segunda foi minha:** a §1 dos insumos usou janela 16 (era
+5); a correção de 08/09 acertou a janela mas usou o consumo do projeto da
+**baseline** como proxy do da detecção, e o proxy era **4,9× alto**. A frase
+*"mesmo com erro de 10× continua caber num mês"* que aquela correção declarou
+morta **volta a valer**. Aritmética inteira em
+`docs/operations/PHASE_3_INPUTS_2026-09-08.md` §3. **Não refaça a análise.**
 
 **g. MEDIDO — a baseline 2.1.0 está íntegra em disco.** Os 72 rasters (13 GB)
 estão em `data/baselines_v2/2.1.0/` e os **72 casam byte a byte** com o
@@ -163,10 +204,11 @@ repositórios é pull-request-only.
 
 ### Escopo, na ordem em que se sustenta
 
-1. **Registrar a decisão da baseline** (§0) e a revisão do runbook. Sem elas,
-   pare.
-2. **Decidir a unidade de composição** (§2d) por escrito, com a base. É a
-   segunda decisão mais consequente da fase, e a divergência já está medida.
+1. **Confirmar a decisão da baseline** (§0) lendo o congelamento — não
+   redecidir. E confirmar que `pytest -q tests/test_replay_freeze.py` passa
+   antes de gastar compute.
+2. **Decidir a unidade de composição** (§2d) por escrito, com a base. É agora a
+   decisão mais consequente da fase, e a divergência já está medida.
 3. **Preservar a geração antiga como release histórica imutável** — bullet 1 do
    roadmap. Nada é apagado, e desde que a Phase 5 virou publicação científica
    isso é **requisito**, não prudência.
@@ -296,10 +338,12 @@ obrigatória do método de handoff.
 ## 8. Estado que esta fase herda
 
 - **Phase 2B fechada**; **Package 2A.6 na `main`** (`#54`); **Phase 3 fechada**
-  com uma decisão do dono pendente.
+  (`#56`, merge commit — os 5 commits preservados) e a decisão da baseline
+  **tomada** em 2026-09-09.
 - **`ROADMAP.md` na `main` é o plano** desde 2026-09-08.
-- **Duas PRs abertas e não mescladas** ao fim da Phase 3: a do backend e a do
-  site. As duas são texto, teste e documento; nenhuma muda o que está publicado.
+- **As duas PRs da Phase 3 foram mescladas** em 2026-09-09: backend `#56`
+  (merge commit) e site `#25` (squash). Confirmado por conteúdo, não por
+  ancestralidade.
 - **A fila pós-corte registrada tem 0 datas**, porque a última data do banco de
   série temporal É a data provisória do corte. Ela cresce a ~2 datas observadas
   por semana enquanto as Fases 4 e 5 correm.
@@ -330,81 +374,50 @@ obrigatória do método de handoff.
 
 ### O que ficou pendente da tarefa atual
 
-**Uma coisa, e ela é sua: escolher contra qual referência o ano de 2026 vai ser
-recalculado.** Tudo o mais que essa etapa prometia está entregue.
+**Nada.** A etapa de congelar e ensaiar fechou, o senhor escolheu a referência
+nova, mediu a cota, e as duas propostas foram mescladas. O recálculo do ano
+inteiro pode começar quando o senhor quiser abrir a próxima sessão.
 
-Existem duas referências possíveis. A antiga é a que o sistema usa hoje. A nova
-foi construída no trabalho científico das etapas anteriores e é melhor por um
-motivo concreto: ela guarda de onde veio cada imagem que a formou, e a etapa
-seguinte exige exatamente isso para poder conferir o próprio trabalho. A antiga
-não guarda.
+Duas coisas ficaram **preparadas e não decididas**, e nenhuma precisa do senhor:
 
-As duas cobrem a mesma área, na mesma resolução, com os mesmos arquivos — a
-troca não é uma reforma, é uma troca. Mas elas não têm **nenhuma** imagem em
-comum, então o resultado muda.
-
-**O que a nova custa, e é honesto dizer:** de janeiro a abril ela usa imagens
-que a agência espacial europeia ainda está reprocessando. Quando esse
-reprocessamento chegar a esses meses, esses quatro meses provavelmente terão de
-ser recalculados de novo. A recomendação técnica continua sendo a nova, porque a
-etapa seguinte também podia forçar um recálculo de qualquer forma e porque o
-custo de máquina não é o gargalo.
-
-Também ficou preparado — e não decidido — um segundo ponto técnico sobre como
-agrupar as imagens de cada dia. Ele não precisa de você; a próxima sessão decide
-com o que está medido.
+1. **Como agrupar as imagens de cada dia.** O satélite pode passar duas vezes
+   sobre a área no mesmo dia, e as duas metades do sistema hoje contam isso de
+   maneiras diferentes. Está medido e escrito; a próxima sessão decide.
+2. **Se o recálculo deve alinhar a grade das imagens à da referência.** Hoje ele
+   não alinha e compensa depois. Alinhar seria melhor, mas muda os pixels
+   exportados, então é decisão da etapa que exporta.
 
 ### O que você precisa fazer
 
-1. **Decidir qual referência o recálculo usa** — a antiga ou a nova. É a única
-   coisa que trava o próximo passo. Se preferir, responda só "a nova": é a
-   recomendação, e o custo dela está descrito acima.
-2. **Ler e aprovar o roteiro do recálculo**, quando tiver um momento. Ele está
-   no repositório do monitoramento como um documento com uma lista de itens para
-   marcar, e o primeiro item é a decisão acima. Sem essa aprovação a troca final
-   não começa — mas o recálculo pode começar só com a decisão da referência.
-3. **Mesclar duas propostas, quando quiser** — uma no repositório do
-   monitoramento e uma no do site. As duas são texto, teste e documento; não
-   mudam nada do que está publicado.
-4. **Não mesclar ainda** a proposta que tira os arquivos grandes do site. Ela
-   entra na troca final.
-5. **Abrir a página de cota do Google Earth Engine** do projeto que roda a
-   detecção e anotar duas linhas: o limite do mês e quanto já foi usado. Pode
-   esperar — o recálculo cabe com folga pelas contas que temos.
-6. **Anotar 6 de novembro:** a chave da NASA expira e o mapa de chuva para de
-   novo. Essa falha é vermelha, não silenciosa.
+1. **Nada urgente.** Quando quiser, abra a próxima sessão para o recálculo — o
+   texto acima já diz ao assistente tudo o que ele precisa.
+2. **Anotar 6 de novembro:** a chave da NASA expira e o mapa de chuva para de
+   novo. Essa falha é vermelha, não silenciosa, e é a única data no calendário.
+3. **Guardar uma expectativa sobre o recálculo:** de janeiro a abril ele usa
+   imagens que a agência espacial europeia ainda está reprocessando, então esses
+   quatro meses provavelmente serão refeitos uma segunda vez mais adiante. Isso
+   já estava no preço quando o senhor escolheu a referência nova, e o custo de
+   máquina não é o gargalo — uma passagem inteira usa cerca de 3% da cota de um
+   mês.
 
 ### Tem algo preocupante?
 
-**Nada quebrado.** Produção não foi tocada, o site publicado continua igual,
-nada foi apagado, e nenhuma senha ou chave foi usada em lugar nenhum.
+**Não.** Produção não foi tocada, o site publicado continua igual, nada foi
+apagado, e nenhuma senha ou chave foi usada.
 
-Três coisas que vale saber, e nenhuma é alarme:
-
-**A primeira é a decisão da referência**, e é por isso que ela está no topo. Se
-a referência errada for congelada, o resultado não fica obviamente errado —
-fica plausível, e comparado contra a coisa errada. Foi para dar tempo a essa
-decisão que a etapa que acabou existiu.
-
-**A segunda é uma conta que eu corrigi.** O documento de insumos que o senhor
-pediu antes desta etapa estimou o custo de máquina partindo de um número que
-mudou meses atrás. Refazendo a conta com o número certo, o recálculo custa cerca
-de três vezes mais do que aquele documento dizia. **A conclusão não muda: cabe
-com folga.** O que não vale mais é a frase de que caberia mesmo se a conta
-estivesse dez vezes errada. Está registrado, e o número certo agora é lido do
-próprio sistema por um teste, para a próxima conta não repetir o erro.
-
-**A terceira é um teste do site que ia quebrar sozinho.** Ele afirmava que o
-site tem exatamente 40 dias de alerta publicados. Na próxima publicação
-bem-sucedida ele passaria a ter 41 e o teste falharia — um teste que acusa
-problema quando nada está errado deixa de ser lido. Está consertado na proposta
-do site, sem afrouxar nenhuma verificação de verdade.
+Uma correção que vale registrar, porque é de um número que eu mesmo publiquei
+errado: na entrega anterior eu disse que o recálculo custaria cerca de 19% da
+cota de um mês. Com a medição que o senhor trouxe, o número real é **cerca de
+3%**. O erro foi meu e tinha uma causa concreta — eu não tinha o consumo do
+projeto da detecção, então usei o consumo do projeto da referência como
+substituto, e ele é quase cinco vezes maior. Agora o número vem da medição, e
+há uma conferência independente: o recálculo custa aproximadamente o mesmo que a
+construção da referência nova, que já foi paga e correu sem problema.
 
 ### O que ainda falta no caminho
 
-- **Reprocessar 2026 inteiro** num candidato guardado, sem publicar. É a próxima
-  etapa, e a caríssima em tempo de máquina. Ela começa com a decisão da
-  referência.
+- **Reprocessar 2026 inteiro** num candidato guardado, sem publicar — a próxima
+  etapa, e a caríssima em tempo de máquina. Está desbloqueada.
 - **A validação científica** — a etapa que o senhor pediu para não travar nada, e
   que agora tem portão: ela não começa sem a sua revisão, porque o objetivo
   passou a ser uma publicação.
@@ -413,8 +426,8 @@ do site, sem afrouxar nenhuma verificação de verdade.
   prudência em requisito.
 - **A troca final:** o novo substitui o antigo, a página passa a ler pelo
   caminho novo, o robô antigo é desligado, o endereço público antigo é fechado, e
-  a publicação passa a acontecer sozinha num horário. É aqui que os dois
-  pré-requisitos guardados se pagam.
+  a publicação passa a acontecer sozinha num horário. **É aqui que a sua revisão
+  do roteiro é obrigatória** — ela é portão desta etapa, não do recálculo.
 - **O endurecimento:** ligar as verificações automáticas nos dois repositórios
   (hoje elas só rodam na minha máquina), proteção de branch, acessibilidade e as
   ferramentas reusáveis.

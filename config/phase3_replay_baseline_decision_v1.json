@@ -1,0 +1,45 @@
+{
+  "decision_id": "araripe-phase3-replay-baseline-decision-v1",
+  "schema_version": "1.0.0",
+  "decision_date": "2026-09-09",
+  "baseline_version": "2.1.0",
+  "scope": "the baseline generation the Phase 4 replay of 2026 composes against",
+  "authorization": {
+    "authorized_by": "project_owner",
+    "authorized_on": "2026-09-09",
+    "asked_as": "qual referência o recálculo usa — a antiga ou a nova",
+    "answered": "a nova",
+    "recommendation_followed": true,
+    "recommendation_source": "docs/operations/PHASE_3_REPLAY_RUNBOOK.md §2.1",
+    "blue_default_change_permitted": false,
+    "production_mutation_permitted": false,
+    "baseline_v1_mutation_permitted": false,
+    "phase_4_execution_authorized_by_this_decision": false
+  },
+  "why": [
+    "2.1.0 retains the provenance the Phase 4 exit gate requires of itself — provider-native scene IDs per datatake, per-scene processing baselines, GEE project and task IDs, the query fingerprint and the 12 month-export checksums. 1.0.0 declares provenance_completeness partial and retains none of those, so a replay against it could not verify acquisition/scene IDs and checksums before accepting each batch.",
+    "The swap is not a reprojection: both generations share the grid (EPSG:32724, 10773x4999, transform [20,0,290080,0,-20,9231780]), the monitoring extent (same geometry_sha256) and the same 72 filenames.",
+    "2.1.0 has a strictly higher valid_fraction in 72 of 72 objects, by 0.51 to 0.82 percentage points.",
+    "2.1.0 declares a composition contract, its observed platforms with a fail-closed policy, population dispersion computed in float64, and per-index monthly contribution depth. 1.0.0 declares none of these."
+  ],
+  "accepted_cost": {
+    "wet_season_lineage": "2.1.0 admits pre-Collection-1 products in months 1-4 under the regime wet-season-mixed-lineage-v1, whose provenance_state is mixed_lineage_pending_esa_reprocessing. ESA is actively reprocessing those months; when that reaches them the regime is to be retired and the wet season rebuilt.",
+    "consequence": "a replay composed against 2.1.0 may have to be redone for January through April.",
+    "watch": "scripts/check_esa_reprocessing.py",
+    "why_accepted": "Phase 5 could force a second replay regardless (\"if a conditional method changes, rerun the affected 2026 stages\"), and the measured GEE cost is not the limiting factor: one full replay is about 3% of one month's noncommercial allocation."
+  },
+  "does_not_change": {
+    "blue_runtime_default": "1.0.0",
+    "blue_default_location": "config/settings.py BASELINE_VERSION",
+    "reason": "production is frozen through roadmap Phases 2B-5. The replay names 2.1.0 explicitly through --baseline-version; the scheduled blue detection keeps resolving 1.0.0 with no argument, which is what tests/test_baseline_selection.py proves."
+  },
+  "how_the_replay_names_it": "python scripts/run_detection_from_gee.py --baseline-version 2.1.0 --persistence-mode rebuild --state-path <isolated> --out-dir <isolated>",
+  "evidence": {
+    "manifest_path": "config/baseline_manifest_v2_1.json",
+    "manifest_sha256": "c012924ab8be3d55d7f1d2f632900a5362ad4402c543ed01c08b1a08da2eba29",
+    "superseded_generation": "2.0.0",
+    "superseded_manifest_retained_at": "config/baseline_manifest_v2.json",
+    "rasters_verified_locally": "72 of 72 byte-for-byte against the manifest, recorded in docs/implementation/PHASE_3_SNAPSHOT_2026-08-30.json",
+    "pixel_level_comparison_between_generations": "NOT performed; the 1.0.0 rasters are not local and are fetched from R2 at run time. The comparison above is of manifest identities and per-object statistics."
+  }
+}
