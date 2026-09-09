@@ -158,17 +158,27 @@ def main(argv=None) -> int:
     for label in sorted(months_by_baseline):
         spread = dict(sorted(months_by_baseline[label].items()))
         print("  %-12s %s" % (label, spread))
-    overlapping = [
-        label for label, spread in months_by_baseline.items()
-        if len(spread) > 1
-    ]
-    if len(months_by_baseline) > 1 and not any(
-        len(set(a) & set(b)) > 1
-        for i, a in enumerate(months_by_baseline.values())
-        for b in list(months_by_baseline.values())[i + 1:]
-    ):
-        print("  -> the baselines do not share months: lineage and season are the")
-        print("     same partition here, so the table above CANNOT separate them.")
+    # State the overlap as a measurement rather than as a verdict. The first
+    # version of this block asserted "the baselines do not share months" while
+    # 05.11 and 05.12 both carried February — it tested for a shared month
+    # count above one instead of above zero, and printed a false conclusion
+    # from true data. Print the shared months and let the reader judge.
+    labels = sorted(months_by_baseline)
+    shared_pairs = []
+    for i, left in enumerate(labels):
+        for right in labels[i + 1:]:
+            shared = sorted(
+                set(months_by_baseline[left]) & set(months_by_baseline[right])
+            )
+            shared_pairs.append((left, right, shared))
+    for left, right, shared in shared_pairs:
+        if shared:
+            print("  %s and %s share %s" % (left, right, ", ".join(shared)))
+        else:
+            print("  %s and %s share no month" % (left, right))
+    if shared_pairs and all(len(shared) <= 1 for _, _, shared in shared_pairs):
+        print("  -> the baselines are near-collinear with the calendar, so the")
+        print("     table above CANNOT be read as a lineage effect.")
 
     print()
     print("dates blue accepted and the replay rejected:")
@@ -200,10 +210,14 @@ def main(argv=None) -> int:
                     k: dict(sorted(v.items()))
                     for k, v in sorted(months_by_baseline.items())
                 },
+                "shared_months_between_processing_baselines": {
+                    "%s|%s" % (left, right): shared
+                    for left, right, shared in shared_pairs
+                },
                 "confound": (
                     "a processing baseline that occupies only part of the year "
                     "is not separable from the season it occupies; check "
-                    "months_by_processing_baseline before reading "
+                    "shared_months_between_processing_baselines before reading "
                     "baseline_against_outcome as a lineage effect"
                 ),
                 "caveat": (

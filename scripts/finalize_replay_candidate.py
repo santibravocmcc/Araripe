@@ -223,8 +223,9 @@ def command(args) -> int:
         persistence_state_sha256=state_sha,
         persistence_state_bytes=len(state_bytes),
     )
-    print("assembled     : %s" % ra.describe(run).splitlines()[0])
-    print("objects       : %d" % len(run.document["objects"]))
+    print()
+    print(ra.describe(run))
+    print()
 
     # ── the execution record ────────────────────────────────────────────────
     regimes_path = out / "composition_regimes.json"
