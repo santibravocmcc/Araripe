@@ -1,0 +1,242 @@
+{
+  "algorithm": {
+    "alert_area_ha": {
+      "maximum": "1000.0",
+      "minimum": "1.0"
+    },
+    "confidence_levels": {
+      "0": "none",
+      "1": "low",
+      "2": "medium",
+      "3": "high"
+    },
+    "delta_thresholds": {
+      "high": "-0.2",
+      "low": "-0.15",
+      "medium": "-0.15"
+    },
+    "detection_algorithm_version": "1.0.0",
+    "incremental_search_days_back": 5,
+    "indices": [
+      "ndmi",
+      "nbr",
+      "evi2"
+    ],
+    "persistence": {
+      "confirmed_minimum_sightings": 15,
+      "grace_days": 180,
+      "minimum_overlap_fraction": "0.05"
+    },
+    "reflectance_scaling": true,
+    "scene_anomaly_reject_fraction": "0.3",
+    "z_thresholds": {
+      "high": "-3.0",
+      "low": "-2.0",
+      "medium": "-2.5"
+    }
+  },
+  "baseline": {
+    "registered_generations": {
+      "1.0.0": {
+        "inventory_sha256": "c0ede11bb02cdcfbf67653dfee521f0e922955179c8da5b69c07ea5069cc1054",
+        "key_prefix": "baselines/",
+        "manifest_path": "config/baseline_manifest_v1.json",
+        "manifest_sha256": "15a1ed3cea7c804d18d2c82c86a7b9a030687fedb01b315d543965b1f26f0a82",
+        "object_count": 72,
+        "status": "accepted_audit_generation",
+        "total_bytes": 13408183319
+      },
+      "2.1.0": {
+        "inventory_sha256": "4a4c1d15c0a67da0a853bc4ad723190df1bd381a2225f51f58dc795d933334aa",
+        "key_prefix": "baselines_v2/2.1.0/",
+        "manifest_path": "config/baseline_manifest_v2_1.json",
+        "manifest_sha256": "c012924ab8be3d55d7f1d2f632900a5362ad4402c543ed01c08b1a08da2eba29",
+        "object_count": 72,
+        "status": "rebuilt_candidate_generation",
+        "total_bytes": 13626201392
+      }
+    },
+    "replay_generation": {
+      "decided": false,
+      "decided_by": "project_owner",
+      "reason": "the whole year is compared against this generation; the two registered generations share no raster, so the choice is scientific and is recorded, not defaulted"
+    },
+    "runtime_default": "1.0.0",
+    "source_years": [
+      2017,
+      2019,
+      2021,
+      2022,
+      2025
+    ],
+    "superseded_generations": {
+      "2.0.0": "2.1.0"
+    }
+  },
+  "cloud_and_mosaic": {
+    "datatake_composition": {
+      "method_id": "coverage-ranked-first-valid-v1",
+      "pixel_selection": "first_valid_scene_in_explicit_order",
+      "scene_order_policy": [
+        "valid_pixel_count_desc",
+        "provider_native_scene_id_utf8_asc"
+      ],
+      "scope_version": "datatake-scoped-v2"
+    },
+    "detection_export": {
+      "collection_id": "COPERNICUS/S2_SR_HARMONIZED",
+      "composite_method_id": "daily_mosaic-v1",
+      "grid_request": {
+        "crs": "EPSG:32724",
+        "crs_transform_pinned": false,
+        "scale_m": 20
+      },
+      "open_question_for_phase_4": "the export composes one mosaic per UTC date under daily_mosaic-v1; CompositionRunV3 mints identities under coverage-ranked-first-valid-v1, which is datatake-scoped",
+      "scl_clear_classes": [
+        2,
+        4,
+        5,
+        6,
+        7,
+        11
+      ],
+      "streaming_composite_method_id": "same-date-vector-union-v1"
+    },
+    "scl_mask": {
+      "accepted_classes": [
+        4,
+        5,
+        6,
+        7
+      ],
+      "cloud_shadow_dilation_m": 0,
+      "dark_nir_proximity_mask": false,
+      "method_id": "scl-explicit-allowlist-v2",
+      "rejected_classes": [
+        0,
+        1,
+        2,
+        3,
+        8,
+        9,
+        10,
+        11
+      ],
+      "reviewed_processing_baseline_registry_id": "araripe-reviewed-processing-baselines-v1",
+      "reviewed_processing_baselines": [
+        "05.11",
+        "05.12"
+      ]
+    }
+  },
+  "drought": {
+    "chirps_base_url": "https://data.chc.ucsb.edu/products/CHIRPS-2.0/global_monthly/tifs",
+    "drought_z_adjustment": "0.5",
+    "operational_evidence": "scripts/run_detection_from_gee.py and scripts/run_detection.py always pass spi_3month=None; no qualified drought method is accepted",
+    "operationally_applied": false,
+    "spi_drought_threshold": "-1.0"
+  },
+  "environment": {
+    "conda_environment_name": "araripe",
+    "conditional_write_note": "the 1.35.x pin exposes IfNoneMatch but not IfMatch; the compare-and-swap is issued outside botocore's typed parameters",
+    "environment_yml_sha256": "eb7fa7eb123b1c379f51718aeee931e1a681957bc133a19a5fcd1659e700b1ef",
+    "interpreter": "/opt/anaconda3/envs/araripe/bin/python",
+    "pinned_of_record": [
+      "boto3>=1.35.0,<1.36.0",
+      "botocore>=1.35.0,<1.36.0",
+      "geopandas>=1.0.0",
+      "python=3.11",
+      "rasterio>=1.3.10"
+    ]
+  },
+  "freeze_sha256": "3554cf715af82cc80be591ddc115e5390a2f2e1bd39894b7e1a6f31b6a481fa3",
+  "label": {
+    "clearing_types": [
+      "none",
+      "fire",
+      "mechanical",
+      "uncertain"
+    ],
+    "confidence_labels": [
+      "low",
+      "medium",
+      "high"
+    ],
+    "persistence_tiers": [
+      "first_observation",
+      "candidate",
+      "confirmed"
+    ],
+    "qualified_validation_labels": {
+      "frozen": false,
+      "owner": "Phase 5, behind the owner's review gate"
+    },
+    "site_strong_confidence_label": "high",
+    "terminal_ledger_statuses": [
+      "complete_with_alerts",
+      "complete_zero_alerts",
+      "rejected_low_coverage",
+      "rejected_quality",
+      "failed_download",
+      "failed_missing_input",
+      "failed_processing"
+    ]
+  },
+  "mapbiomas": {
+    "collection10_1_export": {
+      "asset_id": "projects/mapbiomas-public/assets/brazil/lulc/collection10_1/mapbiomas_brazil_collection10_1_coverage_v1",
+      "manifest_id": "collection10_1_export_manifest_v1",
+      "manifest_path": "config/collection10_1_export_manifest_v1.json",
+      "manifest_sha256": "de282086f9dedf95c1a0b5a3a8d254d6105fa865ae5abd4e0ed036f4de3af3b8",
+      "monitoring_extent_id": "araripe-implementation-rectangle-v1"
+    },
+    "default_collection": "mapbiomas10m",
+    "natural_vegetation_minimum_fraction": "0.5",
+    "rasters": {
+      "mapbiomas10m": {
+        "bytes": 16258902,
+        "path": "data/landcover/mapbiomas10m_araripe_2023.tif",
+        "present_locally": true
+      },
+      "mapbiomas30m": {
+        "bytes": 62822,
+        "path": "data/landcover/mapbiomas30m_araripe_2023.tif",
+        "present_locally": true
+      }
+    }
+  },
+  "monitoring_extent": {
+    "bounds_epsg4326": [
+      "-40.89236812577142",
+      "-7.840780758480428",
+      "-38.95208146319247",
+      "-6.957104781339829"
+    ],
+    "bounds_sha256": "93f254373d6b203bca33aa5c356bd03fec3bff7f43c9c15b368cc2bdb7029f28",
+    "extent_id": "araripe-implementation-rectangle-v1",
+    "geometry_sha256": "b4986ef80d8a0d6e65bbb41b575dbd952c010415bf3aee93a88412b3b657e8c7",
+    "scope": "APA and surroundings",
+    "settings_extent_id": "araripe-implementation-rectangle-v1"
+  },
+  "release": {
+    "is_a_photograph_not_a_pin": true,
+    "latest_observation": "2026-08-30",
+    "published_utc": "2026-09-07T15:52:37Z",
+    "run_id": "34137318406",
+    "schema": "araripe.timeseries.release/1",
+    "timeseries_db_bytes": 57344,
+    "timeseries_db_sha256": "28f7f4f6f4ae45069c989360e462dcea70c632240ac3698eef537fec01ffaeaf",
+    "timeseries_release_path": "data/timeseries/RELEASE.json",
+    "timeseries_release_sha256": "ed689eeed8d126d478a9536a5d25b053b0579389672fffeab8f17c87f0d441da"
+  },
+  "replay_freeze_version": "phase3-replay-freeze-v1",
+  "schema": {
+    "green_pointer": "araripe.green.pointer/1",
+    "green_pointer_key": "pointers/green/current.json",
+    "green_release": "araripe.green.release/1",
+    "identity_and_ledger_v3": "3.0.0",
+    "site_alert_index": "araripe.site.alert_index/1",
+    "site_stats_policy_version": "1",
+    "timeseries": "1.0.0"
+  }
+}
