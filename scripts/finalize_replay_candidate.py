@@ -51,10 +51,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 #: Where the regenerated 2026 time-series rows go.  Inside the out-dir, always.
 REPLAY_DB_NAME = "timeseries_replay.db"
 
-#: The strong subset of each date, written beside the full alerts.
-STRONG_SUFFIX = ".strong.geojson"
-
-
 class FinalizeError(RuntimeError):
     """The replay's outputs cannot support the step being asked for."""
 
@@ -144,20 +140,18 @@ def command(args) -> int:
     assembler_cli = load_assembler_cli()
     features_by_date = assembler_cli.collect_features(alerts_dir, states)
 
+    # The statistics and the tier bins, from the authority that defines them.
+    # The strong subset OBJECTS are deliberately not written here: the run
+    # assembler emits one full and one strong object per publishable date from
+    # the same site_artifact.strong_features, and a second copy beside the
+    # alerts would be two answers to one question. What is recorded here is
+    # the count, so the record can be checked against the objects.
     per_date_statistics: dict[str, dict] = {}
-    strong_written: dict[str, int] = {}
+    strong_counts: dict[str, int] = {}
     for observed_on in sorted(features_by_date):
         features = features_by_date[observed_on]
-        if not features:
-            # A positive observation of absence still gets a statistics row of
-            # zeros further down; it has no strong subset to write.
-            continue
         per_date_statistics[observed_on] = site_artifact.run_statistics(features)
-        strong = site_artifact.strong_features(features)
-        strong_written[observed_on] = len(strong)
-        (alerts_dir / ("alerts_%s%s" % (observed_on, STRONG_SUFFIX))).write_text(
-            json.dumps({"type": "FeatureCollection", "features": strong},
-                       sort_keys=True) + "\n", encoding="utf-8")
+        strong_counts[observed_on] = len(site_artifact.strong_features(features))
 
     # the clean 2026 time-series rows, into the ISOLATED database
     from src.detection.alerts import summarize_alerts  # noqa: E402
@@ -172,8 +166,9 @@ def command(args) -> int:
         rows += 1
     print("bullet 8      : %d date(s) with features, %d time-series row(s) -> %s"
           % (len(per_date_statistics), rows, db_path.name))
-    print("strong subsets: %d date(s) written"
-          % len([k for k, v in strong_written.items()]))
+    print("strong subsets: %d feature(s) across %d date(s) (objects come from "
+          "the assembler)"
+          % (sum(strong_counts.values()), len(strong_counts)))
 
     # ── 3. the post-cutoff queue, with the cutoff just resolved ─────────────
     manifest = json.loads((out / "run_manifest_v3.json").read_text(encoding="utf-8"))
@@ -227,6 +222,26 @@ def command(args) -> int:
     print(ra.describe(run))
     print()
 
+    # Materialise the run prefix exactly as the deposit lane would upload it.
+    # `bodies` is keyed by the path inside `runs/<run-id>/`, so this is the
+    # candidate on disk with nothing left to decide — and its checksums are
+    # what a deposit can be verified against afterwards.
+    prefix_dir = require_inside(out / "run_prefix", out, label="run prefix")
+    import hashlib as _hashlib
+    object_digests = {}
+    for path, body in sorted(run.bodies.items()):
+        target = require_inside(prefix_dir / path, prefix_dir, label="run object")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(body)
+        object_digests[path] = {
+            "bytes": len(body),
+            "sha256": _hashlib.sha256(body).hexdigest(),
+        }
+    print("run prefix    : %d object(s), %d bytes -> %s/"
+          % (len(object_digests),
+             sum(item["bytes"] for item in object_digests.values()),
+             prefix_dir.name))
+
     # ── the execution record ────────────────────────────────────────────────
     regimes_path = out / "composition_regimes.json"
     record = {
@@ -260,7 +275,11 @@ def command(args) -> int:
         "bullet_8": {
             "dates_with_features": sorted(per_date_statistics),
             "per_date_statistics": per_date_statistics,
-            "strong_feature_counts": strong_written,
+            "strong_feature_counts": strong_counts,
+            "strong_objects_are_written_by": (
+                "src.publication.run_assembler.assemble_run, from "
+                "site_artifact.strong_features; not duplicated beside the alerts"
+            ),
             "timeseries_rows_written": rows,
             "timeseries_database": REPLAY_DB_NAME,
             "database_is_isolated_from_blue": True,
@@ -270,6 +289,9 @@ def command(args) -> int:
         "assembly": {
             "run_schema": run.document["schema"],
             "object_count": len(run.document["objects"]),
+            "run_prefix": run.prefix,
+            "object_keys": list(run.keys()),
+            "object_digests": object_digests,
             "persistence_state_sha256": state_sha,
             "persistence_state_bytes": len(state_bytes),
         },
