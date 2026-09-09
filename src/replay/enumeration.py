@@ -65,6 +65,11 @@ GATE_COVERAGE_REASON_CODE = "scene-valid-coverage-below-minimum"
 #: Reason code for the real gate's anomaly rejection.
 GATE_ANOMALY_REASON_CODE = "scene-alert-fraction-anomalous"
 
+#: A date whose event lineage the accepted persistence contract refuses to
+#: resolve.  Package 2A.1: "Ambiguous many-to-many components fail closed for
+#: reviewed correction", and no reviewed-correction mechanism exists yet.
+LINEAGE_REASON_CODE = "persistence-ambiguous-lineage"
+
 
 class EnumerationError(RuntimeError):
     """The manifest or the measurements do not support an expected set."""
@@ -283,6 +288,41 @@ def gate_rejection(quality: Any) -> tuple[str, dict[str, str]]:
                 f"{reason or 'no reason recorded'} "
                 f"(alert fraction of valid "
                 f"{float(getattr(quality, 'alert_fraction_of_valid', 0.0)) * 100:.2f}%)"
+            ),
+        },
+    )
+
+
+def lineage_failure(error: BaseException) -> tuple[str, dict[str, str]]:
+    """Translate a fail-closed persistence refusal into a terminal row.
+
+    ``update_tracks`` raises when a date's overlap graph contains a
+    many-to-many split/merge component, which the accepted Package 2A.1
+    contract says must "fail closed for reviewed correction".  The correction
+    mechanism does not exist, so the replay cannot give that date event
+    lineage under the frozen rules.
+
+    It records the date instead of dropping it.  ``failed_processing`` is one
+    of the seven contract terminal statuses and roadmap bullet 4 names it, so
+    the exit gate still gets one terminal row per expected acquisition, and
+    the affected dates are enumerable from the ledger rather than only from a
+    log line.  The blue path drops them: ``run_detection_from_gee`` catches
+    every exception around its per-date block and continues, which is why the
+    blue time-series carries fewer dates than were observed.
+
+    This translates and does not decide.  It never returns a success status,
+    so a date whose lineage was refused can never be recorded as complete —
+    that would claim observations the persistence layer declined to bind.
+    """
+
+    message = str(error).strip() or error.__class__.__name__
+    return (
+        "failed_processing",
+        {
+            "code": LINEAGE_REASON_CODE,
+            "message": (
+                "update_tracks failed closed for reviewed correction: "
+                f"{message[:300]}"
             ),
         },
     )
