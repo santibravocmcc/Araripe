@@ -86,11 +86,33 @@ errou ~1,5x nos **dois** eixos, para baixo. A mediana de janeiro-abril é
 260 MB e a do ano é 556,5 MB. **Uma subamostra sazonal engana com qualquer
 tamanho de amostra quando o eixo da amostragem correlaciona com o custo.**
 
-**d. A recusa de linhagem é o obstáculo central, está medida, e o MECANISMO
-está isolado — leia isto antes de tocar em qualquer coisa.** É o contrato
-aceito do Package 2A.1 (`PHASE_2A1_2026-07-28.md`): *"Ambiguous many-to-many
-components fail closed for reviewed correction"*, e o mecanismo de reviewed
-correction **nunca foi construído**.
+**d. A recusa de linhagem é o obstáculo central, e A REGRA DO DONO JÁ FOI
+EXECUTADA CONTRA ELA — leia isto antes de tocar em qualquer coisa.** É o
+contrato aceito do Package 2A.1 (`PHASE_2A1_2026-07-28.md`): *"Ambiguous
+many-to-many components fail closed for reviewed correction"*, e o mecanismo de
+reviewed correction **nunca foi construído**.
+
+**O dono decidiu `min_overlap_frac = 0.55`** em 2026-09-09
+(`config/phase4_persistence_overlap_decision_v1.json`), com a exigência de que
+nada precise de revisão humana no sistema final. Executado, com o replay
+rerodado do estado vazio. **Resultado: 2 datas → 3, e o subconjunto forte de
+vazio → 716 feições.** Ganho real e insuficiente.
+
+**NÃO TENTE OUTRO VALOR. O parâmetro é autodestrutivo, e isso está medido**
+(`PHASE_4B_2026-09-09.md` §15.3): um limiar alto faz a maioria das detecções
+não se ligar, o que não se liga vira **track de origem novo**, e a geometria
+desse track novo **se sobrepõe** à do antigo que ele não alcançou — 1 288 pares
+`(2026-02-11, 2026-03-13)` medidos, contra 20 dentro da mesma data. Na data
+seguinte, dois pais que se sobrepõem podem ambos ter a maioria da mesma
+detecção, e a recusa volta. Aumentar o limiar **fabrica** a condição que causa
+a recusa.
+
+**E corrija a sua leitura da minha afirmação anterior, se você a encontrar em
+algum lugar:** eu afirmei que acima de `0.5` a recusa era inalcançável *por
+construção*, e a afirmação era **falsa**. A aritmética (`2f <= 1` para pais
+disjuntos) está certa; a premissa de disjunção foi medida no único estado em
+que nada havia encadeado. Corrigido em `overlap_decision.py`, cujo
+`MAJORITY_BOUND` é política e não garantia.
 
 As 107 aquisições fecharam em: `rejected_low_coverage` **66**,
 `failed_processing` **34**, `rejected_quality` **5**, `complete_with_alerts`
@@ -131,8 +153,14 @@ publicada, com totais de **262 036 candidatos**, **47 246 confirmados** e
 azul só às vezes. **Por que não foi medido**, e não pode ser com o que existe
 local: a baseline `1.0.0` tem **0 rasters** em `data/baselines`.
 
-**f.1 MEDIDO — o subconjunto forte do candidato é VAZIO, e é o que decide
-tudo.** `is_strong` exige `CANDIDATE_MIN_SIGHTINGS = 2` avistamentos, e a
+**f.1 MEDIDO — o subconjunto forte saiu de vazio para 716, e ainda são 3 datas
+de 90.** Depois da regra do dono: 2026-02-11 tem 0 fortes (primeira data, nada
+tem dois avistamentos), 2026-03-13 tem **229** e 2026-04-04 tem **487**. Contra
+o azul: **3** aceitas pelos dois, **41** só pelo azul, **0** só pelo replay.
+O parágrafo abaixo é o estado da tentativa 1, mantido porque é o que a decisão
+do dono mudou:
+
+**MEDIDO na tentativa 1 — o subconjunto forte do candidato era VAZIO.** `is_strong` exige `CANDIDATE_MIN_SIGHTINGS = 2` avistamentos, e a
 sequência é o que a persistência não amarrou. Nas **duas** datas do candidato
 (17 704 e 5 049 feições), `persistence_count` é **1 em todas**, `first_obs` é
 o total, `candidate` e `confirmed` são **0**, `pcount_max` é **1** e o
@@ -204,14 +232,20 @@ próxima sessão pode fazer sem ela, na ordem em que se sustenta:
    por aquisição, a reconciliação diária e a ausência de status irresolvido não
    dependem do bucket. Diga quais fecham e quais não.
 
-3. **Não deposite o candidato atual sem a decisão da linhagem.** Ele é
-   internamente consistente e reprodutível, e o seu **subconjunto forte é
-   vazio** (§2f.1) — a única data com observações amarradas é a primeira,
-   porque o estado estava vazio, e nada pode ter dois avistamentos quando nada
-   encadeia. Depositar isso criaria uma release **imutável** de um candidato
-   que a Phase 5 vai rejeitar, e **nada pode ser apagado**. A falta da lane
-   (§2h) deixou de ser o obstáculo mais forte: mesmo com ela, o depósito
-   estaria errado.
+3. **A decisão que falta agora é a resolução determinística**, e ela é do
+   dono porque muda o que o dado significa. O que atenderia a exigência dele
+   não é parâmetro: **resolver o caso muitos-para-muitos deterministicamente
+   em vez de levantar** — por exemplo atribuir cada detecção ao seu único
+   melhor pai pela maior fração de sobreposição, com desempate pelo `event_id`.
+   É pequeno, determinístico e não pede pessoa nenhuma. **Não foi
+   implementado de propósito:** é uma regra nova, não a que o dono autorizou,
+   e a sessão que a escreveria acabou de errar uma afirmação de garantia — não
+   é a hora de inventar uma segunda régua sem revisão.
+
+4. **Não deposite o candidato atual sem essa decisão.** Ele é internamente
+   consistente e reprodutível, e agora publica **3 datas de 90** com 716
+   feições fortes. Depositar criaria uma release **imutável** de um candidato
+   que a Phase 5 quase certamente vai rejeitar, e **nada pode ser apagado**.
 
 **Fora de escopo, explicitamente:** promover o candidato; a validação
 qualificada (**Phase 5**, com portão de revisão do dono, e ela **não** começa
@@ -396,14 +430,22 @@ leva **47 segundos** em vez de 75, e ocupa **15 GB** em vez de 35.
 
 ### O que você precisa fazer
 
-1. **Decidir a questão do acompanhamento das manchas** — é a única coisa que
-   trava tudo, e é sua porque é uma decisão científica. Em linguagem simples: o
-   que o sistema deve fazer quando não consegue distinguir uma mancha que
-   cresceu de duas que se encostaram? As opções são (a) afrouxar a regra que
-   decide quando duas manchas "se tocam", (b) construir a revisão humana que a
-   regra pressupõe, ou (c) aceitar que essas datas fiquem sem acompanhamento
-   temporal e sejam contadas como observações isoladas. **Não é urgente hoje**,
-   mas nada avança sem ela. Eu não escolhi por você, e não vou.
+1. **Aprovar a regra de desempate automático.** O senhor já decidiu afrouxar a
+   regra do overlap, eu executei, e **funcionou em parte**: o mapa padrão saiu
+   de vazio para 716 manchas. Mas medi que **nenhum ajuste desse número
+   resolve** — ele se autossabota, porque quanto mais alto o número, mais
+   manchas viram "manchas novas" que ficam por cima das antigas, e é justamente
+   isso que confunde o sistema na data seguinte.
+
+   O que resolve, e atende a sua exigência de não ter revisão humana: quando o
+   sistema não conseguir decidir, ele **escolhe sozinho, por uma regra fixa** —
+   a mancha nova pertence à mancha antiga com a qual ela mais se sobrepõe, e
+   em caso de empate exato, à de identificador menor. Sempre o mesmo resultado,
+   nenhuma pessoa envolvida.
+
+   **Não fiz isso sem lhe perguntar** porque é uma regra nova sobre o
+   significado do dado, e não o ajuste que o senhor autorizou. **Não é urgente**,
+   mas nada avança sem ela.
 
 2. **Mesclar a proposta desta sessão quando lhe convier** — é a número 59, e
    está aberta sem mesclar. Ela não muda nada do que está no ar: acrescenta o
