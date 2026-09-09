@@ -3,7 +3,6 @@
   "schema_version": "1.0.0",
   "decision_date": "2026-09-09",
   "scope": "the minimum overlap fraction the 2026 replay binds event lineage with, and therefore whether the ambiguous-lineage refusal can occur at all",
-
   "authorization": {
     "decided_by": "project_owner",
     "instruction": "loosen the overlap rule and run again; nothing that requires human review may remain in the final production system",
@@ -13,51 +12,52 @@
     "production_mutation_permitted": false,
     "quality_gate_change_permitted": false
   },
-
   "decided": {
     "min_overlap_fraction": "0.55",
     "applies_to": "the Phase 4 replay only; the blue runtime default is untouched",
     "rule_in_words": "a new detection joins an existing event only when the MAJORITY of the new detection's area lies inside that event. Below that it is a new event.",
     "supersedes_for_the_replay": "0.05"
   },
-
   "why_this_direction_and_not_the_other": {
     "the_instruction_was_directionally_ambiguous": "'loosen the overlap rule' can mean requiring LESS overlap or building a LOOSER lineage graph, and the two are opposite. Measured rather than guessed.",
     "measured": "a parent-child link is created only when intersection/current_area >= min_overlap_frac (src/detection/persistence.py:838-846), so RAISING the threshold creates FEWER links and therefore fewer many-to-many components. LOWERING it makes the refusal more likely, not less.",
     "sweep": {
       "method": "update_tracks called directly against real data — the state rebuilt from 2026-02-11's saved alerts, and 2026-03-13's polygons re-derived from the composite on disk. No reimplementation of the guard.",
-      "raises": ["0.01", "0.05", "0.10", "0.20"],
-      "succeeds": ["0.30", "0.40", "0.50", "0.51", "0.55", "0.60", "0.75", "0.90"],
+      "raises": [
+        "0.01",
+        "0.05",
+        "0.10",
+        "0.20"
+      ],
+      "succeeds": [
+        "0.30",
+        "0.40",
+        "0.50",
+        "0.51",
+        "0.55",
+        "0.60",
+        "0.75",
+        "0.90"
+      ],
       "reading": "the frozen 0.05 refuses; so does every value below it. The refusal clears at 0.30 and above."
     }
   },
-
-  "why_strictly_above_one_half_and_not_the_lowest_that_worked": {
-    "requirement": "the owner requires that nothing needing human review remain in the final production system. 0.30 merely did not raise on the date that was measured; it is not prevented from raising on data not yet seen.",
-    "structural_argument": "two DISTINCT parents can each cover a fraction f of the same current polygon only if their intersections with it are disjoint subsets of it, so 2f <= 1 and f <= 0.5. For a threshold strictly greater than 0.5 a current polygon can therefore have AT MOST ONE parent. Both branches of the guard require some polygon to have more than one parent, so both become unreachable — by construction, not by luck.",
-    "premise_that_argument_needs": "the parents' intersections with the current polygon are disjoint, which holds when active track geometries do not overlap each other in area.",
-    "premise_measured": {
-      "state": "the replay's own persistence state, 5049 active tracks",
-      "intersecting_distinct_pairs": 281,
-      "overlap_area_as_fraction_of_a_track": {"p50": "0.000000", "p90": "0.000000", "p99": "0.000000", "p100": "0.000000"},
-      "pairs_overlapping_more_than_half_a_track": 0,
-      "reading": "active tracks touch at boundaries and never overlap in area, so the premise holds on the measured state. 281 pairs intersect by the 'intersects' predicate, which includes touching."
-    },
-    "why_0_55_and_not_0_501": "0.55 clears the 0.5 boundary with margin against geometry and floating-point noise while keeping as much chaining as the guarantee allows, and it states a rule a reader can repeat: a majority of the new detection must lie inside the existing event.",
-    "not_a_proof_of_impossibility": "the structural argument is exact in real arithmetic given area-disjoint tracks. It is not a proof that update_tracks can never raise, because nothing in the producer PROMISES that active tracks stay area-disjoint; it is measured on this state. If a future state carries overlapping active tracks the argument weakens from impossible to unlikely, and that is why the guard is left in place rather than deleted."
-  },
-
   "measured_cost": {
     "what_is_lost": "chaining. A higher threshold means fewer new detections are recognised as continuations of an existing event, so fewer alerts accumulate a persistence streak.",
     "measured_on": "2026-03-13, 6839 polygons against 17704 tracks",
     "chained_at_each_threshold": {
-      "0.30": 457, "0.40": 426, "0.50": 389, "0.51": 382,
-      "0.55": 369, "0.60": 344, "0.75": 282, "0.90": 224
+      "0.30": 457,
+      "0.40": 426,
+      "0.50": 389,
+      "0.51": 382,
+      "0.55": 369,
+      "0.60": 344,
+      "0.75": 282,
+      "0.90": 224
     },
     "reading": "0.55 chains 369 of 6839 against 457 at the lowest threshold that cleared the refusal — about 19 percent fewer chained alerts than 0.30 would give, in exchange for the refusal becoming structurally unreachable instead of merely unobserved.",
     "what_is_NOT_lost": "no detection is discarded. Every polygon is still published; what changes is whether it is labelled a continuation of an earlier event or a new one. Compare with the frozen value, under which 34 of 107 acquisitions produced NO published alerts at all."
   },
-
   "does_not_change": {
     "blue_default": "src/detection/persistence.py DEFAULT_MIN_OVERLAP_FRAC stays 0.05, and the scheduled pipeline keeps resolving it.",
     "the_guard_itself": "AmbiguousLineageError is not removed and update_tracks is not modified. The threshold makes it unreachable; deleting it would remove the evidence if the premise ever failed.",
@@ -66,9 +66,42 @@
     "baseline_generation": "2.1.0, the owner's earlier decision, unchanged.",
     "composition_unit": "physical_datatake under datatake_mosaic-v1, unchanged."
   },
-
   "what_this_does_not_settle": {
     "the_production_cutover": "the blue runtime still resolves 0.05. Carrying this value into the scheduled pipeline is a Phase 6 change with its own review, and the owner's no-human-review requirement applies to it there.",
-    "whether_0_55_is_the_scientifically_right_majority": "the value is justified structurally and by cost, not by validation against labelled data. Phase 5 owns that question and now has the sweep as its input."
+    "whether_0_55_is_the_scientifically_right_majority": "the value is justified structurally and by cost, not by validation against labelled data. Phase 5 owns that question and now has the sweep as its input.",
+    "the_owners_no_human_review_requirement": "NOT satisfied by this decision. Measured end to end, the refusal still fires. And it is one of SEVEN PersistenceTransitionError subclasses that stop the blue workflow, because scripts/run_detection_from_gee.py re-raises that family while swallowing everything else. Meeting the requirement needs a deterministic resolution for the many-to-many case rather than a threshold, and that is design work for a later phase. See docs/implementation/PHASE_4B_2026-09-09.md §14.",
+    "persistence_v2_and_v3_carry_their_own_copy": "persistence_v2.py and persistence_v3.py each hold their own copy of the guard and their own DEFAULT_MIN_OVERLAP_FRAC of 0.05. They are imported only by the validators today and the live update_tracks is src/detection/persistence.py, so this decision does not reach them. Switching the runtime to v3 would reinstate the blocker with the frozen value."
+  },
+  "why_strictly_above_one_half": {
+    "the_rule_is_a_majority_rule": "the decision states in words that a new detection joins an existing event only when the MAJORITY of its area lies inside that event. A value at or below one half would not be a majority, so the floor keeps the number and the words saying the same thing.",
+    "a_correction_recorded_because_the_first_version_claimed_more": {
+      "what_was_claimed": "that a threshold strictly above 0.5 makes the ambiguous-lineage refusal unreachable BY CONSTRUCTION, because two distinct parents can each cover a fraction f of the same current polygon only if their intersections with it are disjoint, so 2f <= 1.",
+      "why_it_was_wrong": "the argument needs active track geometries to be area-disjoint. That was measured — and measured on the ONE state in which almost nothing had chained, which is the state selected precisely by the condition that keeps tracks disjoint. Once chaining works, update_tracks performs split and merge operations and the tracks it leaves behind DO overlap in area.",
+      "measured_after_the_correction": {
+        "after_2026-02-11_nothing_chained": {
+          "tracks": 17704,
+          "pairs_with_real_area_overlap": 0,
+          "max_overlap_of_a_track": "0.000000"
+        },
+        "after_2026-03-13": {
+          "tracks": 24174,
+          "pairs_with_real_area_overlap": 1308,
+          "max_overlap_of_a_track": "1.000000"
+        },
+        "after_2026-04-04": {
+          "tracks": 30810,
+          "pairs_with_real_area_overlap": 5655
+        },
+        "of_the_first_400_overlapping_pairs": {
+          "both_tracks_active": 299,
+          "parent_child_by_lineage": 79
+        },
+        "reading": "two genuinely distinct ACTIVE parents can each hold a majority of the same new detection, so len(parents) > 1 stays possible and the refusal stays reachable."
+      },
+      "the_methodological_mistake": "a sample chosen along an axis that correlates with the property being measured misleads at any sample size. This is the same failure this line of work had just recorded about cost projections from a seasonal subsample, committed within the hour.",
+      "consequence_for_the_owners_requirement": "the owner's requirement that nothing needing human review remain in the final production system is NOT met by this change alone. The refusal is sharply reduced, not eliminated."
+    },
+    "so_what_the_floor_is": "a policy consistent with the recorded rule, not a proof. AmbiguousLineageError is deliberately left in place because it is still reachable, and it is the evidence when it fires.",
+    "why_0_55_and_not_0_501": "0.55 clears the majority boundary with margin against geometry and floating-point noise while keeping as much chaining as the rule allows. Measured: in the exact 50/50 case the link is decided by reprojection noise, so a value immediately above 0.5 would be knife-edge."
   }
 }

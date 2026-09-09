@@ -14,7 +14,7 @@ import json
 import pytest
 
 from src.replay.overlap_decision import (
-    STRUCTURAL_BOUND,
+    MAJORITY_BOUND,
     OverlapDecisionError,
     load_decision,
 )
@@ -45,35 +45,45 @@ def _write(tmp_path, document):
     return path
 
 
-def test_a_decisao_real_do_dono_e_lida_e_torna_o_guarda_inalcancavel():
-    """O caminho honesto: a decisão gravada, lida, e acima do limite estrutural."""
+def test_a_decisao_real_do_dono_e_lida_e_e_uma_regra_de_maioria():
+    """O caminho honesto: a decisão gravada, lida, e coerente com as palavras.
+
+    Nota: `is_majority_rule` NÃO afirma que a recusa de linhagem ficou
+    impossível. A primeira versão deste módulo afirmava isso e a medição a
+    desmentiu — ver o docstring de `src/replay/overlap_decision.py`.
+    """
 
     decision = load_decision()
     assert decision.decided_by == "project_owner"
     assert decision.min_overlap_fraction == 0.55
-    assert decision.min_overlap_fraction > STRUCTURAL_BOUND
-    assert decision.guard_is_structurally_unreachable is True
+    assert decision.min_overlap_fraction > MAJORITY_BOUND
+    assert decision.is_majority_rule is True
+    assert not hasattr(decision, "guard_is_structurally_unreachable"), (
+        "the property that asserted impossibility was removed because the "
+        "claim was measured false; it must not come back"
+    )
     assert decision.supersedes == "0.05"
     assert "majority" in decision.rule_in_words.lower()
 
 
-def test_um_valor_que_deixa_a_recusa_alcancavel_e_RECUSADO(tmp_path):
-    """Derruba: aceitar 0.30, que foi o menor valor que funcionou na medição.
+def test_um_valor_que_nao_e_maioria_e_RECUSADO(tmp_path):
+    """Derruba: um número que contradiz as palavras da própria decisão.
 
-    Esta é a mutação que importa, e ela é tentadora: `0.30` **limpou** a recusa
-    na data medida e preserva mais encadeamento que `0.55`. Aceitá-la seria
-    trocar a exigência do dono — que nada precise de revisão humana — por
-    "não levantou nas datas em que olhamos".
+    O documento declara, em palavras, uma regra de **maioria**: a maioria da
+    área da nova detecção tem de estar dentro do evento. Um valor de `0.30`
+    grava um número que não é maioria de nada, e o par documento-número passa
+    a dizer duas coisas.
 
-    Dois pais distintos só podem cobrir uma fração `f` do mesmo polígono atual
-    se as suas interseções com ele forem disjuntas, logo `2f <= 1`. Em `0.30`
-    dois pais ainda cabem; acima de `0.5` não cabem.
+    Este teste **não** afirma que `0.55` torna a recusa impossível. A primeira
+    versão dele afirmava, com o argumento de que dois pais disjuntos não cabem
+    acima de meio — e a medição mostrou que os pais **não são disjuntos** depois
+    que a linhagem opera. O piso é política coerente com a regra, não prova.
     """
 
     for reachable in ("0.30", "0.40", "0.50", "0.05", "0.01"):
         document = _document()
         document["decided"]["min_overlap_fraction"] = reachable
-        with pytest.raises(OverlapDecisionError, match="stays reachable"):
+        with pytest.raises(OverlapDecisionError, match="not the majority rule"):
             load_decision(_write(tmp_path, document))
 
     # and strictly above the bound is accepted
@@ -211,8 +221,8 @@ def _frame(polygons):
     )
 
 
-def test_o_valor_decidido_torna_INALCANCAVEL_uma_ambiguidade_real():
-    """Derruba: a suposição de que o valor escolhido resolve o bloqueio.
+def test_o_valor_decidido_resolve_uma_ambiguidade_QUE_O_ANTIGO_RECUSAVA():
+    """Derruba: a suposição de que o valor escolhido não muda nada.
 
     Esta é a prova em código, e ela não é sintética no comportamento: chama o
     `update_tracks` de verdade, com o guarda de verdade, sobre uma geometria
@@ -225,6 +235,13 @@ def test_o_valor_decidido_torna_INALCANCAVEL_uma_ambiguidade_real():
     sua área dentro de um único evento.
 
     Medido: C fica 25% em cada pai e D fica 50% em cada.
+
+    O que este teste **não** mostra: que a recusa ficou impossível. Ele usa
+    dois pais DISJUNTOS. Medido no estado real, depois que a linhagem opera os
+    tracks ativos se sobrepõem em área — 1308 pares após 2026-03-13 e 5655
+    após 2026-04-04, com sobreposição máxima de 1,000000 — e aí dois pais
+    distintos podem ambos ter a maioria da mesma detecção. A recusa continua
+    alcançável, e a execução real a viu novamente.
     """
 
     from shapely.geometry import box
@@ -279,25 +296,24 @@ def test_o_valor_decidido_torna_INALCANCAVEL_uma_ambiguidade_real():
     assert (merged["persistence_count"] == 1).all()
 
 
-def test_acima_de_meio_um_poligono_tem_no_maximo_um_pai():
-    """Derruba: a aritmética por trás do limite estrutural.
+def test_a_aritmetica_vale_para_pais_disjuntos_e_NAO_TRANSFERE():
+    """Fixa a aritmética E a razão pela qual ela não prova o que eu afirmei.
 
-    O argumento inteiro é: as interseções de pais DISTINTOS com o mesmo
-    polígono atual são subconjuntos disjuntos dele, logo as frações somam no
-    máximo 1, logo duas frações não podem ambas exceder 1/2. Se essa
-    aritmética estiver errada, o valor escolhido não garante nada — então ela
-    é exercida em vez de afirmada em prosa.
+    A aritmética é verdadeira: partes **disjuntas** de um polígono têm frações
+    que somam no máximo 1, logo no máximo uma pode exceder 1/2. Foi daí que
+    saiu a afirmação de que acima de meio a recusa era impossível.
 
-    Nota medida: no caso exato de 50/50 a ligação é decidida por ruído de
-    reprojeção, e foi por isso que a decisão tomou margem em vez de escolher
-    um valor imediatamente acima de 0,5.
+    A premissa é que os pais sejam disjuntos, e ela é **falsa** no estado real
+    depois que a linhagem opera. Este teste fixa as duas metades: a aritmética
+    vale, e a hipótese de disjunção é o que ela exige — para que ninguém
+    reconstrua a afirmação a partir da metade verdadeira.
     """
 
-    # every way two disjoint parts can split a polygon
+    # the arithmetic, for DISJOINT parts
     for first in range(0, 101):
         second = 100 - first
         fractions = (first / 100.0, second / 100.0)
-        above = [f for f in fractions if f > STRUCTURAL_BOUND]
+        above = [f for f in fractions if f > MAJORITY_BOUND]
         assert len(above) <= 1, (fractions, above)
 
     # and with three parts, likewise
@@ -305,5 +321,15 @@ def test_acima_de_meio_um_poligono_tem_no_maximo_um_pai():
         for second in range(0, 101 - first, 5):
             third = 100 - first - second
             fractions = (first / 100.0, second / 100.0, third / 100.0)
-            above = [f for f in fractions if f > STRUCTURAL_BOUND]
+            above = [f for f in fractions if f > MAJORITY_BOUND]
             assert len(above) <= 1, (fractions, above)
+
+    # and the hypothesis the arithmetic needs: OVERLAPPING parents break it.
+    # Two parents that each cover 0.6 of the same polygon are possible exactly
+    # when they overlap each other, which is what the real state does.
+    overlapping = (0.6, 0.6)
+    assert sum(overlapping) > 1.0
+    assert len([f for f in overlapping if f > MAJORITY_BOUND]) == 2, (
+        "two overlapping parents can both hold a majority, which is why the "
+        "threshold reduces the refusal instead of preventing it"
+    )

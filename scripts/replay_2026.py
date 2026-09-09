@@ -390,9 +390,10 @@ def command_run(args):
 
     print("baseline generation %s from %s" % (baseline.version, baseline.directory))
     print("composition unit    %s under %s" % (decision.unit, decision.composite_method_id))
-    print("overlap rule        %s (%s) — guard structurally unreachable: %s"
+    print("overlap rule        %s (%s, majority rule: %s) — the ambiguous-"
+          "lineage refusal is REDUCED, not impossible"
           % (overlap.min_overlap_fraction, overlap.decided_by,
-             overlap.guard_is_structurally_unreachable))
+             overlap.is_majority_rule))
 
     # The manifest is the WHOLE replay window's, written once by `plan`, and
     # a batch is a chronological slice of its acquisitions. Re-enumerating per

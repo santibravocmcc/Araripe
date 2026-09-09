@@ -10,38 +10,48 @@ owner decided the rule, and the decision lives in
 
 Why the reader refuses anything at or below one half
 ----------------------------------------------------
-This is the whole reason the module exists, and it is not a style choice.
+Because the recorded rule is a **majority** rule — *a new detection joins an
+existing event only when the majority of the new detection's area lies inside
+that event* — and a value at or below one half is not a majority of anything.
+The floor keeps the document and the number saying the same thing.
 
-The owner's requirement is that **nothing needing human review remains in the
-final production system**.  A threshold that merely *happened* not to raise on
-the dates we looked at does not satisfy that: it is unreviewed luck.  A
-threshold strictly greater than ``0.5`` satisfies it structurally.
+**A correction, recorded because the first version of this module claimed
+more.**  It argued that a threshold above ``0.5`` makes the refusal unreachable
+*by construction*: two distinct parents can each cover a fraction ``f`` of the
+same current polygon only if their intersections with it are disjoint, so
+``2f <= 1``.  That argument needs active track geometries to be area-disjoint,
+which was measured — 5049 active tracks, 281 intersecting pairs, overlap area
+``0.000000`` at every percentile including the maximum.
 
-Two *distinct* parents can each cover a fraction ``f`` of the same current
-polygon only if their intersections with it are disjoint subsets of it, so
-``2f <= 1`` and ``f <= 0.5``.  For a threshold strictly above ``0.5`` a current
-polygon therefore has **at most one** parent, and both branches of the guard
-require some polygon to have more than one.  The refusal becomes unreachable
-by construction.
+**The premise was measured on the wrong state and the claim was false.**  That
+state came from the run in which almost nothing chained.  Once chaining works,
+``update_tracks`` performs split and merge operations, and the tracks it leaves
+behind *do* overlap in area:
 
-So a decision naming ``0.30`` — which did clear the refusal on the date that
-was measured — is **refused here**, because it buys observation where the owner
-asked for a guarantee.  Refusing it is the difference between enforcing the
-requirement and documenting it.
+===========================  ======  ==========================
+state                        tracks  pairs with real area overlap
+===========================  ======  ==========================
+after 2026-02-11 (no chain)   17704   0   (max overlap 0.000000)
+after 2026-03-13              24174   1308 (max overlap 1.000000)
+after 2026-04-04              30810   5655
+===========================  ======  ==========================
 
-The premise, and why the guard is not deleted
----------------------------------------------
-The argument needs the parents' intersections with the current polygon to be
-disjoint, which holds when active track geometries do not overlap each other in
-area.  Measured on the replay's own state: 5049 active tracks, 281 intersecting
-distinct pairs, and an overlap area of ``0.000000`` at every percentile
-including the maximum — they touch at boundaries and never overlap.
+Of the first 400 overlapping pairs, 299 have **both** tracks ``active``.  So
+two genuinely distinct parents can each hold a majority of the same new
+detection, ``len(parents) > 1`` stays possible, and the refusal stays
+**reachable**.  Measured end to end: the owner's value cuts the refusals sharply
+but does not eliminate them.
 
-But **no producer promises** that active tracks stay area-disjoint.  So this is
-a measured premise, not a guaranteed one, and ``AmbiguousLineageError`` is
-deliberately left in place: if the premise ever fails, the refusal is the
-evidence.  Removing the guard because a threshold makes it unreachable would
-throw away exactly the signal that the threshold stopped working.
+The mistake is worth naming, because it is the same one this line of work had
+just written down about cost projections: **a sample chosen along an axis that
+correlates with the property being measured misleads at any sample size.**  The
+disjointness measurement was taken from the only state in which nothing had
+chained — that is, the state selected precisely by the condition that makes
+tracks disjoint.
+
+So the floor at one half is a **policy** consistent with the recorded rule, not
+a proof, and ``AmbiguousLineageError`` stays in place because it is still
+reachable and is the evidence when it fires.
 
 Determinism
 -----------
@@ -67,10 +77,12 @@ DECISION_PATH = (
 #: Identifier of the decision document.
 DECISION_ID = "araripe-phase4-persistence-overlap-decision-v1"
 
-#: The bound below which the guard is reachable.  A current polygon can have
-#: two distinct parents only when each covers at most half of it, so a
-#: threshold at or below one half leaves the many-to-many component possible.
-STRUCTURAL_BOUND = 0.5
+#: A majority of the new detection's area.  The recorded rule is a majority
+#: rule, so a value at or below this is not the rule the document states.
+#:
+#: This is NOT a guarantee that the ambiguous-lineage refusal cannot fire —
+#: the module docstring records the measurement that disproved that claim.
+MAJORITY_BOUND = 0.5
 
 
 class OverlapDecisionError(RuntimeError):
@@ -89,10 +101,17 @@ class OverlapDecision:
     supersedes: str
 
     @property
-    def guard_is_structurally_unreachable(self) -> bool:
-        """True when no current polygon can acquire two distinct parents."""
+    def is_majority_rule(self) -> bool:
+        """True when the threshold requires a majority of the new detection.
 
-        return self.min_overlap_fraction > STRUCTURAL_BOUND
+        Deliberately **not** called ``guard_is_structurally_unreachable``,
+        which is what this property was first named.  That name asserted an
+        impossibility the module docstring now records as false: once lineage
+        operations run, active tracks overlap in area and a current polygon can
+        still acquire two distinct parents.
+        """
+
+        return self.min_overlap_fraction > MAJORITY_BOUND
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -102,8 +121,11 @@ class OverlapDecision:
             "decision_date": self.decision_date,
             "decision_sha256": self.decision_sha256,
             "supersedes": self.supersedes,
-            "guard_is_structurally_unreachable": (
-                self.guard_is_structurally_unreachable
+            "is_majority_rule": self.is_majority_rule,
+            "refusal_remains_reachable": (
+                "measured: active tracks overlap in area once lineage "
+                "operations run, so this threshold reduces the ambiguous-"
+                "lineage refusal but does not make it impossible"
             ),
         }
 
@@ -189,15 +211,16 @@ def load_decision(path: Path | str = DECISION_PATH) -> OverlapDecision:
     decided = document.get("decided") or {}
     value = _fraction(decided.get("min_overlap_fraction"))
 
-    # The requirement, enforced rather than documented.
+    # The recorded rule is a majority rule; keep the number and the words
+    # saying the same thing.
     _require(
-        value > STRUCTURAL_BOUND,
+        value > MAJORITY_BOUND,
         f"min_overlap_fraction {value!r} is not strictly greater than "
-        f"{STRUCTURAL_BOUND}, so a current polygon can still acquire two "
-        "distinct parents and the ambiguous-lineage refusal stays reachable. "
-        "The owner's requirement is that nothing needing human review remain "
-        "in the final system, and a value that merely was not observed to "
-        "raise does not meet it.",
+        f"{MAJORITY_BOUND}, so it is not the majority rule the decision "
+        "states in words. Raising the floor is a policy consistent with that "
+        "rule and NOT a guarantee that the ambiguous-lineage refusal cannot "
+        "fire; see this module's docstring for the measurement that "
+        "disproved the guarantee.",
     )
 
     rule = decided.get("rule_in_words")
