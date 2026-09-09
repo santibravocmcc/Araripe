@@ -1,0 +1,111 @@
+{
+  "decision_id": "araripe-phase4-composition-unit-decision-v1",
+  "schema_version": "1.0.0",
+  "decision_date": "2026-09-09",
+  "scope": "the unit the Phase 4 replay composes on, and whether the export grid transform is pinned",
+  "authorization": {
+    "decided_by": "executing_agent",
+    "delegated_by": "project_owner",
+    "delegation_source": "docs/operations/PACKAGE_P4_REPLAY_PROMPT.md §9, 'nenhuma precisa do senhor'",
+    "why_not_the_owner": "both questions are technical: the first is settled by what the v3 ledger can represent, the second by a measurement of two grids. Neither changes which baseline generation the year is compared against, which is the scientific question and was the owner's (config/phase3_replay_baseline_decision_v1.json).",
+    "blue_default_change_permitted": false,
+    "production_mutation_permitted": false,
+    "quality_gate_change_permitted": false
+  },
+
+  "composition_unit": {
+    "decided": "physical_datatake",
+    "composite_method_id": "datatake_mosaic-v1",
+    "composite_scope_version": "datatake-scoped-v1",
+    "method_definition": "the same server-side preparation the detection export already performs — SCL allowlist [2,4,5,6,7,11], reflectance divided by 10000, NDMI/NBR/EVI2/BSI — mosaicked in Earth Engine over the provider-native scenes of exactly one physical datatake, clipped to the monitoring extent. Different datatakes are never composed together.",
+    "supersedes_for_the_replay": "daily_mosaic-v1",
+    "why": [
+      "The v3 processing ledger cannot represent a composition unit coarser than its accounting unit. ProcessingLedgerV3 accepts exactly seven terminal statuses (src/detection/ledger_v3.py:37-45) and none of them expresses 'this acquisition's pixels entered another acquisition's composite'. complete_with_alerts requires at least one obs-v3 observation and an artifact checksum; observations bind acquisition_id. On a date carrying two physical datatakes and one daily mosaic, one artifact would have to answer for two expected acquisitions and every alert would be attributed to one of them arbitrarily or minted twice. Both are false statements about which physical acquisition produced which observation.",
+      "The roadmap fixes the accounting unit and the exit gate depends on it: Phase 4 bullet 2 says 'Query every available 2026 physical acquisition/datatake ... grouping only the ledger summaries by UTC date', and exit gate P4 requires that 'every manifest-bound expected acquisition has one terminal ledger row'. The run manifest that build_detection_gee.py writes enumerates datatakes, so the expected set is the datatake set.",
+      "The divergence is measured and not hypothetical, and composing per date leaves it unrecorded. See measurement below."
+    ],
+    "not_chosen": {
+      "coverage-ranked-first-valid-v1": {
+        "what": "recompose locally from provider-native scenes with src.detection.composition_run_v3.CompositionRunV3.compose_all, the same method the 2.1.0 baseline was built under",
+        "why_not": "it consumes SceneInputV2, which carries a per-scene SCL grid and per-scene raw band arrays (src/processing/composition_v2.py:97-107). The detection export produces neither: it emits four already-masked index bands per composite. Supplying them means exporting 510 scenes times seven bands instead of 107 four-band composites. Measured on this machine, one four-band full-extent composite takes 525 s and 729 MB through the synchronous tiled pull, so this is a different export, not a parameter change.",
+        "status": "available in the code and not chosen; recorded so a later phase can choose it deliberately rather than rediscover it"
+      },
+      "daily_mosaic-v1": {
+        "what": "keep composing a whole UTC date, and account per date",
+        "why_not": "rejected by the first reason above: the ledger has no honest row for the second acquisition of a date."
+      }
+    },
+    "why_the_method_id_is_new": "Calling this coverage-ranked-first-valid-v1 would claim equality with src.processing.composition_v2.compose_datatake, which orders scenes by valid_pixel_count descending then scene-ID UTF-8 ascending and takes every band from the first valid scene. An Earth Engine mosaic() takes the last unmasked image in collection order. The two agree on any pixel covered by a single scene and are not proven to agree elsewhere. A method ID that looks right and does not match is worse than a new one, which is the same reason the export refuses to pre-compute acquisition_id."
+  },
+
+  "export_grid": {
+    "decided": "do_not_pin_crs_transform",
+    "grid_id": "araripe-detection-export-epsg32724-20m-v1",
+    "why": "the question was whether to pin crsTransform so the export aligns with the baseline grid. Measured instead of assumed: it already aligns. A composite pulled at crs EPSG:32724 and scale 20 with no crsTransform came back on transform origin (290920, 9231000); the 2.1.0 baseline grid origin is (290080, 9231780). The offset is 840 m east and 780 m north, exactly 42 and 39 pixels of 20 m. Every one of the composite's 10719 x-coordinates and 4909 y-coordinates has an exact match in the baseline raster, and reindex_like(method='nearest', tolerance=15) returns a fully finite window. This is structural rather than lucky: an Earth Engine request at scale 20 with no pinned transform snaps to multiples of 20 in the target CRS, and the baseline's own crsTransform is also a multiple of 20, so both are anchored to the same absolute lattice.",
+    "consequence": "pinning the transform is unnecessary, and pinning it is the change that would risk exported pixels. The 15 m nearest-neighbour tolerance in scripts/run_detection_from_gee.py is retained as a fail-safe that the measurement shows is never exercised for this extent and scale.",
+    "measured_on": "GS2C_20260830T130241_010361_N05.12 against data/baselines_v2/2.1.0/ndmi_month08_mean.tif",
+    "not_proven": "measured on one composite. The grid is a function of the requested region, CRS and scale, all of which are constants for this extent, so it is expected to hold for every composite; the replay re-checks it per composite rather than assuming it."
+  },
+
+  "measurement": {
+    "measured_on": "2026-09-09",
+    "measured_by": "live Earth Engine queries against project ee-araripe from the maintainer machine",
+    "query": {
+      "collection_id": "COPERNICUS/S2_SR_HARMONIZED",
+      "monitoring_extent_id": "araripe-implementation-rectangle-v1",
+      "start": "2026-01-01",
+      "end_exclusive": "2026-08-31",
+      "scene_cloud_filter_percent": 60
+    },
+    "scenes": 510,
+    "physical_datatakes": 107,
+    "distinct_utc_dates": 90,
+    "dates_with_one_datatake": 73,
+    "dates_with_two_datatakes": 17,
+    "dates_with_three_or_more_datatakes": 0,
+    "relative_orbits": {
+      "R095": {"datatakes": 55, "overpass_utc": "about 13:02", "extent_coverage": "up to 99.6% of the monitoring extent"},
+      "R138": {"datatakes": 52, "overpass_utc": "about 13:13", "extent_coverage": "at most 5.8% of the monitoring extent — a geometric sliver at the swath edge, not a cloud effect"}
+    },
+    "platforms_observed": {"S2A": 34, "S2B": 36, "S2C": 37},
+    "processing_baselines_observed": {"05.12": 96, "05.11": 11},
+    "what_the_daily_mosaic_does_today": "on the 17 dual dates it blends two physical acquisitions taken ten minutes apart from two different relative orbits into one raster labelled with one date, and in the orbit sidelap the per-pixel choice is Earth Engine's collection order — a rule no product records."
+  },
+
+  "consequence_of_the_decision": {
+    "acquisitions_expected": 107,
+    "acquisitions_the_unmodified_coverage_gate_rejects": 52,
+    "why_they_are_rejected": "all 52 are R138, whose footprint covers at most 5.8% of the monitoring extent, below the min_clear=20% valid-coverage minimum that scripts/run_detection_from_gee.py already applies. rejected_low_coverage is the literally correct terminal status for them.",
+    "already_rejected_today": 35,
+    "already_rejected_today_detail": "on the 35 dates whose only datatake is R138, today's pipeline already exports, downloads and then rejects the date on the same rule. The replay reaches the same decision without the download, and records the measured fraction as evidence.",
+    "newly_rejected": 17,
+    "newly_rejected_detail": "the R138 half of each dual date. Today it rides along inside the daily mosaic instead of being accounted for.",
+    "no_date_changes_its_accept_reject_outcome": "measured for all 17 dual dates: the R095 datatake's own coverage falls on the same side of the 20% gate as the date union does, for every one of them. 41 of the 90 dates pass the gate either way.",
+    "measured_science_cost": {
+      "what_is_lost": "the pixels only the R138 acquisition observed, on the dual dates that pass the gate",
+      "dual_dates_passing_the_gate": 13,
+      "unique_R138_contribution_max_pp": "0.85",
+      "unique_R138_contribution_mean_pp": "0.28",
+      "dates_where_it_is_zero": 8,
+      "reading": "on at most 0.85% of the monitoring extent, on 13 of the 41 accepted dates, a pixel that today carries an R138 observation will instead carry the R095 observation or none. It is a real loss and it is small, and unlike today it is recorded per acquisition with the measured fraction rather than absorbed silently."
+    },
+    "deliberately_not_done": {
+      "what": "reinterpreting the coverage gate against each datatake's own footprint instead of the monitoring extent, which would accept the R138 slivers and lose nothing",
+      "why_not": "that changes what scene quality means, and scientific choices are Phase 5's, behind the owner's review gate. Phase 4 reprocesses under the frozen rules; it does not redesign them. The measurement above is the input Phase 5 needs to decide it.",
+      "owner": "Phase 5"
+    }
+  },
+
+  "what_stays_date_scoped_and_why_that_is_not_a_contradiction": {
+    "persistence": "roadmap Phase 4 bullet 7 requires at most one persistence contribution per event and UTC date, and contribution_key (src/detection/identity.py:459-466) is keyed by (event_id, acq-v1 acquisition_id) with one acquisition-v1 identity minted per UTC date. So persistence stays date-scoped: a date's per-datatake alert sets are merged and update_tracks is applied once for that UTC date.",
+    "daily_summaries": "ProcessingLedgerV3.daily_summary is derived only after every acquisition the manifest expects for that date is terminal, which is roadmap bullet 4.",
+    "reading": "the ledger accounts per physical acquisition and persistence contributes per UTC date. The roadmap asks for exactly that pair, in the same two bullets."
+  },
+
+  "does_not_change": {
+    "blue_runtime": "scripts/build_detection_gee.py keeps its per-date export path and daily_mosaic-v1 unchanged; the per-datatake path is additive and only the replay names it. No workflow runs build_detection_gee.py — verified again with `grep -rn build_detection_gee .github/`, which returns nothing.",
+    "scene_quality_rule": "min_clear and SCENE_ANOMALY_REJECT_FRAC are untouched.",
+    "baseline_generation": "2.1.0, the owner's decision, unchanged.",
+    "blue_default": "config/settings.py BASELINE_VERSION stays 1.0.0."
+  }
+}

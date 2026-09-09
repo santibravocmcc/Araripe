@@ -83,6 +83,21 @@ MONITORING_EXTENT_ID = "araripe-implementation-rectangle-v1"
 COLLECTION_ID = "COPERNICUS/S2_SR_HARMONIZED"
 COMPOSITE_METHOD_ID = "daily_mosaic-v1"
 
+#: Phase 4's composition unit, decided in
+#: ``config/phase4_composition_unit_decision_v1.json`` and enforced at run time
+#: by ``src.replay.composition_unit``. One physical datatake per composite,
+#: because the v3 ledger cannot honestly represent a composition unit coarser
+#: than its accounting unit: on a date carrying two datatakes there is no
+#: terminal status for "this acquisition's pixels went into the other one's
+#: composite". Deliberately NOT ``coverage-ranked-first-valid-v1`` — that names
+#: the library's ranked first-valid selection, and an Earth Engine ``mosaic()``
+#: is not proven equal to it.
+COMPOSITE_METHOD_ID_DATATAKE = "datatake_mosaic-v1"
+
+#: The two units this export can enumerate and compose. ``date`` is what blue
+#: has always written and is untouched; ``datatake`` is Phase 4's.
+COMPOSITION_UNITS = ("date", "datatake")
+
 #: Scene properties pulled once per query window, in this order. Mirrors
 #: ``SCENE_PROPERTIES`` in build_baseline_v2_gee.py; the parity test compares
 #: the two tuples so a field added there is not silently missing here.
@@ -311,7 +326,28 @@ def group_into_datatakes(records):
     return datatakes
 
 
-def build_run_manifest(*, start, end, max_cloud, datatakes, exported_dates):
+def composite_method_for(composition_unit):
+    """The composite method ID that goes with a composition unit.
+
+    Fails closed on an unknown unit: a manifest that named a unit this script
+    cannot compose would be a document about a run nobody can reproduce.
+    """
+
+    if composition_unit not in COMPOSITION_UNITS:
+        raise ValueError(
+            "composition_unit %r is not one of %s"
+            % (composition_unit, ", ".join(COMPOSITION_UNITS))
+        )
+    return (
+        COMPOSITE_METHOD_ID
+        if composition_unit == "date"
+        else COMPOSITE_METHOD_ID_DATATAKE
+    )
+
+
+def build_run_manifest(
+    *, start, end, max_cloud, datatakes, exported_dates, composition_unit="date"
+):
     """Assemble the v3 run manifest and derive its own binding.
 
     ``run_manifest_id`` is ``run-v3-<sha256 of the body>`` and
@@ -334,6 +370,23 @@ def build_run_manifest(*, start, end, max_cloud, datatakes, exported_dates):
     replay — so it enumerates the physical acquisitions and lets the
     composition run mint their identities. A pre-computed ID that looks right
     and does not match is worse than no ID at all.
+
+    ``composition_unit``
+    --------------------
+    Phase 4 decided the unit (``config/phase4_composition_unit_decision_v1.json``)
+    and this parameter is how the manifest records which one it describes. It
+    defaults to ``date``, which is what blue has always exported.
+
+    Note what this is **not**: adding ``composition_unit`` to the sealed body
+    changes the bytes, so a date-unit manifest built now has a different
+    ``run_manifest_id`` than one built before this change. That is intended and
+    it is safe here for a measured reason — ``grep -rn build_detection_gee
+    .github/`` returns nothing, no producer on ``main`` writes a v3 ledger
+    (``src/publication/run_assembler.py``), and therefore no recorded binding
+    cites an old ID. Recording the unit is worth that: the composite method
+    alone would leave a reader to infer whether to expect one composite per
+    date or one per datatake, and inferring it is how the two halves of this
+    system disagreed in the first place.
     """
 
     body = {
@@ -343,7 +396,8 @@ def build_run_manifest(*, start, end, max_cloud, datatakes, exported_dates):
         "monitoring_extent_bounds_epsg4326": [
             decimal_text(bound) for bound in AOI_BOUNDS
         ],
-        "composite_method_id": COMPOSITE_METHOD_ID,
+        "composite_method_id": composite_method_for(composition_unit),
+        "composition_unit": composition_unit,
         "grid_id": GRID_ID,
         "acquisition_identity": {
             "minted_by": "src.detection.composition_run_v3.CompositionRunV3",
@@ -384,6 +438,27 @@ def dates_of(datatakes):
     return sorted({item["observed_on"] for item in datatakes})
 
 
+def composite_name(composition_unit, *, observed_on=None, datatake_id=None):
+    """The export/download basename for one composite.
+
+    Date unit keeps ``araripe_detect_YYYY-MM-DD``, which
+    ``run_detection_from_gee.py`` already matches on. Datatake unit appends the
+    provider datatake ID, so the date stays parseable by the same regex while
+    two composites of one date no longer collide — which is the bug the
+    date-keyed name would reintroduce the moment a date carries two datatakes.
+    """
+
+    if composition_unit == "date":
+        if not observed_on:
+            raise ValueError("the date unit needs observed_on")
+        return "araripe_detect_%s" % observed_on
+    if composition_unit == "datatake":
+        if not observed_on or not datatake_id:
+            raise ValueError("the datatake unit needs observed_on and datatake_id")
+        return "araripe_detect_%s_%s" % (observed_on, datatake_id)
+    raise ValueError("composition_unit %r is unknown" % (composition_unit,))
+
+
 def write_json(path, document):
     with open(path, "w", encoding="utf-8") as stream:
         json.dump(document, stream, ensure_ascii=False, indent=2, sort_keys=True)
@@ -405,6 +480,10 @@ def main(argv=None):
     end = _arg("--end", "2026-07-13", argv)  # exclusive-ish upper bound
     max_cloud = int(_arg("--max-cloud", "60", argv))
     drive_folder = _arg("--drive-folder", "araripe_detection", argv)
+    composition_unit = _arg("--composition-unit", "date", argv)
+    if composition_unit not in COMPOSITION_UNITS:
+        raise SystemExit(
+            "--composition-unit must be one of %s" % ", ".join(COMPOSITION_UNITS))
 
     ee.Initialize(project=project)
     aoi = ee.Geometry.Rectangle(AOI_BOUNDS)
@@ -455,6 +534,52 @@ def main(argv=None):
 
     n = 0
     acquisition_manifest = {}
+
+    if composition_unit == "datatake":
+        # Phase 4's unit. One composite per physical datatake: the scenes of a
+        # single datatake are mosaicked, and two datatakes of one UTC date are
+        # never composed together. The date-keyed acquisition-v1 manifest is
+        # still written unchanged, because persistence stays date-scoped
+        # (contribution_key is keyed by an acq-v1 identity, one per UTC date)
+        # while the ledger accounts per acquisition.
+        for d in dates:
+            day = ee.Date(d)
+            daily = base.filterDate(day, day.advance(1, "day"))
+            scene_ids = [
+                qualify_scene_id(value)
+                for value in daily.aggregate_array("system:index").getInfo()
+            ]
+            acquisition_manifest[d] = acquisition_v1_identity(d, scene_ids)
+        for item in datatakes:
+            one = base.filter(
+                ee.Filter.eq("DATATAKE_IDENTIFIER", item["datatake_id"])
+            )
+            comp = one.map(prep).mosaic()
+            comp = (comp.select(["ndmi", "nbr", "evi2", "bsi"])
+                    .clip(aoi).unmask(-9999).toFloat())
+            desc = composite_name(
+                "datatake",
+                observed_on=item["observed_on"],
+                datatake_id=item["datatake_id"],
+            )
+            task = ee.batch.Export.image.toDrive(
+                image=comp, description=desc, folder=drive_folder,
+                fileNamePrefix=desc, region=aoi, scale=SCALE, crs=TARGET_CRS,
+                maxPixels=int(1e10), fileFormat="GeoTIFF")
+            task.start(); n += 1
+            print("  queued %s (%s)" % (desc, task.id))
+        write_json(ACQUISITION_MANIFEST_NAME, acquisition_manifest)
+        run_manifest = build_run_manifest(
+            start=start, end=end, max_cloud=max_cloud, datatakes=datatakes,
+            exported_dates=dates, composition_unit="datatake",
+        )
+        write_json(RUN_MANIFEST_NAME, run_manifest)
+        print("\n%d per-datatake export tasks started. Monitor: earthengine task list" % n)
+        print("Run manifest %s (%d physical datatake(s), unit %s)"
+              % (run_manifest["run_manifest_id"], len(run_manifest["datatakes"]),
+                 run_manifest["composition_unit"]))
+        return
+
     for d in dates:
         day = ee.Date(d)
         daily = base.filterDate(day, day.advance(1, "day"))
@@ -466,7 +591,7 @@ def main(argv=None):
         # All tiles of this date -> masked+indexed -> mosaic into one AOI image.
         comp = daily.map(prep).mosaic()
         comp = comp.select(["ndmi", "nbr", "evi2", "bsi"]).clip(aoi).unmask(-9999).toFloat()
-        desc = "araripe_detect_%s" % d
+        desc = composite_name("date", observed_on=d)
         task = ee.batch.Export.image.toDrive(
             image=comp, description=desc, folder=drive_folder, fileNamePrefix=desc,
             region=aoi, scale=SCALE, crs=TARGET_CRS, maxPixels=int(1e10),
@@ -481,6 +606,7 @@ def main(argv=None):
         max_cloud=max_cloud,
         datatakes=datatakes,
         exported_dates=dates,
+        composition_unit="date",
     )
     write_json(RUN_MANIFEST_NAME, run_manifest)
 

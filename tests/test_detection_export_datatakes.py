@@ -305,20 +305,99 @@ def test_o_export_nao_cunha_acquisition_id():
 
 
 def test_a_divergencia_de_metodo_de_composicao_esta_medida_e_nao_suposta():
-    """O achado, fixado onde ele se romperia: se `CompositionRunV3` passar a
-    aceitar o método de composição do manifest, ou se o export passar a compor
-    por datatake, este teste cai e a decisão volta a ser explícita.
+    """A divergência que a Phase 3 mediu, e a Phase 4 RESOLVEU por decisão.
+
+    Este teste dizia que cairia "se o export passar a compor por datatake". Em
+    2026-09-09 o export passou a compor por datatake e **ele não caiu** — a
+    asserção era `export.COMPOSITE_METHOD_ID == "daily_mosaic-v1"`, e a mudança
+    acrescentou uma segunda constante em vez de mexer nessa. É a quarta vez que
+    o padrão "o teste passa pelo motivo errado" aparece nesta linha de
+    trabalho, e a primeira em que o próprio docstring do teste nomeava a
+    mutação que ele deixou passar.
+
+    O que ele fixa agora é a resolução, e cada asserção tem uma mutação:
+    o export expõe as DUAS unidades; a do azul continua `daily_mosaic-v1`; a
+    da Phase 4 é um ID novo; e nenhuma das duas é a da biblioteca, porque um
+    `mosaic()` do Earth Engine não está provado igual à seleção ranqueada.
     """
 
     from src.processing.composition_v2 import COMPOSITION_METHOD_ID
 
-    assert export.COMPOSITE_METHOD_ID == "daily_mosaic-v1"
+    assert export.COMPOSITION_UNITS == ("date", "datatake")
+    assert export.composite_method_for("date") == "daily_mosaic-v1"
+    assert export.composite_method_for("datatake") == "datatake_mosaic-v1"
     assert COMPOSITION_METHOD_ID == "coverage-ranked-first-valid-v1"
-    assert export.COMPOSITE_METHOD_ID != COMPOSITION_METHOD_ID
+    minted = {export.composite_method_for(unit) for unit in export.COMPOSITION_UNITS}
+    assert COMPOSITION_METHOD_ID not in minted
+    with pytest.raises(ValueError):
+        export.composite_method_for("scene")
     source = (ROOT / "src" / "detection" / "composition_run_v3.py").read_text(
         encoding="utf-8"
     )
     assert "composite_method_id=COMPOSITION_METHOD_ID," in source
+
+
+def test_o_manifest_declara_a_unidade_que_ele_descreve():
+    """Derruba: deixar o leitor inferir a unidade a partir do método.
+
+    Inferir foi exatamente como as duas metades do sistema discordaram. Os dois
+    manifests também têm de ter identidades distintas: se a unidade não
+    entrasse nos bytes selados, uma consulta idêntica produziria o mesmo
+    `run_manifest_id` para dois runs que compõem coisas diferentes.
+    """
+
+    common = dict(
+        start="2026-08-25",
+        end="2026-09-01",
+        max_cloud=60,
+        datatakes=export.group_into_datatakes(TWO_DATATAKES_ONE_DATE),
+        exported_dates=["2026-08-30"],
+    )
+    by_date = export.build_run_manifest(**common, composition_unit="date")
+    by_datatake = export.build_run_manifest(**common, composition_unit="datatake")
+
+    assert by_date["composition_unit"] == "date"
+    assert by_datatake["composition_unit"] == "datatake"
+    assert by_date["composite_method_id"] == "daily_mosaic-v1"
+    assert by_datatake["composite_method_id"] == "datatake_mosaic-v1"
+    assert by_date["run_manifest_id"] != by_datatake["run_manifest_id"]
+    assert export.build_run_manifest(**common)["composition_unit"] == "date"
+    with pytest.raises(ValueError):
+        export.build_run_manifest(**common, composition_unit="scene")
+
+
+def test_o_nome_do_composto_por_datatake_nao_colide_numa_data_com_dois():
+    """Derruba: reaproveitar o nome por data na unidade por datatake.
+
+    `TWO_DATATAKES_ONE_DATE` é o caso: dois datatakes, uma data. Com o nome
+    antigo os dois arquivos teriam o mesmo caminho e o segundo sobrescreveria
+    o primeiro — a mesma classe de bug que o mosaico por data foi criado para
+    resolver no caminho de streaming.
+    """
+
+    # the consumer's own regex, not a copy of it: a name the export can write
+    # and run_detection_from_gee cannot parse is the failure worth catching.
+    import importlib
+
+    consumer = importlib.import_module("scripts.run_detection_from_gee")
+
+    datatakes = export.group_into_datatakes(TWO_DATATAKES_ONE_DATE)
+    assert len({item["observed_on"] for item in datatakes}) == 1
+    names = {
+        export.composite_name(
+            "datatake",
+            observed_on=item["observed_on"],
+            datatake_id=item["datatake_id"],
+        )
+        for item in datatakes
+    }
+    assert len(names) == len(datatakes) == 2
+    # the date is still the first thing a reader (and _DATE_RE) finds
+    for name in names:
+        assert consumer._DATE_RE.search(name).group(1) == datatakes[0]["observed_on"]
+    assert export.composite_name("date", observed_on="2026-08-30") == (
+        "araripe_detect_2026-08-30"
+    )
 
 
 def test_os_campos_fisicos_bastam_para_a_biblioteca_cunhar_a_identidade():
