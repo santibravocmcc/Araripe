@@ -260,13 +260,18 @@ def _preflight():
     """Everything that must hold before a single EECU-second is spent."""
     from src.replay import freeze
     from src.replay.composition_unit import load_decision
+    from src.replay.overlap_decision import load_decision as load_overlap
 
     frozen = freeze.load_freeze()
     baseline = frozen["baseline"]["replay_generation"]
     if not baseline.get("decided"):
         raise SystemExit("the replay baseline is not decided; Phase 4 does not default it")
     decision = load_decision()
-    return frozen, baseline, decision
+    # The overlap rule is the owner's, read and never defaulted. There is no
+    # command-line flag for it on purpose: a scientific rule that an operator
+    # could override per invocation is not a recorded decision.
+    overlap = load_overlap()
+    return frozen, baseline, decision, overlap
 
 
 def command_plan(args):
@@ -276,13 +281,16 @@ def command_plan(args):
         expected_acquisitions, screen_by_coverage, screen_summary,
     )
 
-    frozen, baseline, decision = _preflight()
+    frozen, baseline, decision, overlap = _preflight()
     print("freeze          : %s" % frozen["freeze_sha256"])
     print("baseline        : %s (%s, %s)"
           % (baseline["version"], baseline["decided_by"], baseline["authorized_on"]))
     print("composition unit: %s under %s (%s)"
           % (decision.unit, decision.composite_method_id, decision.decision_sha256[:12]))
     print("grid            : %s" % decision.grid_decision)
+    print("overlap rule    : %s (%s, %s)"
+          % (overlap.min_overlap_fraction, overlap.decided_by,
+             overlap.decision_date))
     print()
 
     ee.Initialize(project=args.project)
@@ -374,7 +382,7 @@ def command_run(args):
     from src.replay.seasonal_regime import composition_regime_record
     from scripts.run_detection_from_gee import INDICES, _load_composite
 
-    frozen, baseline_decision, decision = _preflight()
+    frozen, baseline_decision, decision, overlap = _preflight()
     baseline = resolve_baseline(args.baseline_version)
     out = Path(args.out_dir); out.mkdir(parents=True, exist_ok=True)
     composites = out / "composites"; composites.mkdir(exist_ok=True)
@@ -382,6 +390,9 @@ def command_run(args):
 
     print("baseline generation %s from %s" % (baseline.version, baseline.directory))
     print("composition unit    %s under %s" % (decision.unit, decision.composite_method_id))
+    print("overlap rule        %s (%s) — guard structurally unreachable: %s"
+          % (overlap.min_overlap_fraction, overlap.decided_by,
+             overlap.guard_is_structurally_unreachable))
 
     # The manifest is the WHOLE replay window's, written once by `plan`, and
     # a batch is a chronological slice of its acquisitions. Re-enumerating per
@@ -430,6 +441,7 @@ def command_run(args):
         window_start=args.start,
         window_end_exclusive=args.end,
     )
+    regime_record["persistence_overlap_rule"] = overlap.as_dict()
     (out / "composition_regimes.json").write_text(
         json.dumps(regime_record, indent=2, sort_keys=True) + "\n",
         encoding="utf-8")
@@ -605,7 +617,8 @@ def command_run(args):
                     merged, state, date, acquisition=acq_v1,
                     algorithm_version=DETECTION_ALGORITHM_VERSION,
                     baseline_version=baseline.version,
-                    monitoring_extent_id=MONITORING_EXTENT_ID, mode="rebuild")
+                    monitoring_extent_id=MONITORING_EXTENT_ID, mode="rebuild",
+                    min_overlap_frac=overlap.min_overlap_fraction)
             except AmbiguousLineageError as exc:
                 # The accepted Package 2A.1 contract says ambiguous
                 # many-to-many split/merge components "fail closed for
