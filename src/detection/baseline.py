@@ -23,22 +23,27 @@ from config.settings import (
     BASELINE_MONTHS,
     TARGET_CRS,
 )
-from src.detection.baseline_manifest import load_manifest, sha256_file
+from src.detection.baseline_selection import (
+    MANIFEST_SCHEMA_V1,
+    BaselineGeneration,
+    verify_baseline_object,
+    verify_object_against_manifest,
+)
 
 
 @lru_cache(maxsize=72)
 def _verify_authoritative_file(path_text: str) -> None:
-    """Bind a production-path raster to the accepted manifest once per process."""
-    path = Path(path_text)
-    manifest = load_manifest(BASELINE_MANIFEST_PATH)
-    by_filename = {obj["filename"]: obj for obj in manifest["objects"]}
-    expected = by_filename.get(path.name)
-    if expected is None:
-        raise ValueError(f"Baseline is not in authoritative manifest: {path.name}")
-    if path.stat().st_size != expected["bytes"]:
-        raise ValueError(f"Baseline size does not match manifest: {path.name}")
-    if sha256_file(path) != expected["sha256"]:
-        raise ValueError(f"Baseline checksum does not match manifest: {path.name}")
+    """Bind a production-path raster to the accepted manifest once per process.
+
+    The frozen blue default, kept on its own cache and reading its manifest
+    path from this module's globals — which is how
+    ``test_production_loader_rejects_unmanifested_bytes`` redirects it. The
+    check itself lives in one place (``verify_object_against_manifest``) so
+    the default path and a named generation cannot drift apart.
+    """
+    verify_object_against_manifest(
+        Path(BASELINE_MANIFEST_PATH), MANIFEST_SCHEMA_V1, Path(path_text)
+    )
 
 
 def save_baseline_cog(
@@ -81,7 +86,9 @@ def load_baseline(
     index_name: str,
     month: int,
     stat: str = "mean",
-    baselines_dir: Path = BASELINES_DIR,
+    baselines_dir: Path | None = None,
+    *,
+    generation: BaselineGeneration | None = None,
 ) -> xr.DataArray:
     """Load a pre-computed baseline COG.
 
@@ -93,8 +100,16 @@ def load_baseline(
         Calendar month (1–12).
     stat : str
         Statistic type: "mean" or "std".
-    baselines_dir : Path
-        Directory containing baseline COGs.
+    baselines_dir : Path, optional
+        Directory containing baseline COGs. Defaults to ``BASELINES_DIR``, the
+        frozen v1 production directory, which is also the only directory whose
+        rasters are bound to the accepted manifest when no generation is named.
+    generation : BaselineGeneration, optional
+        A registered baseline generation (Phase 3). When given, its own
+        directory is read and every raster is bound to *its* manifest, so a
+        v2 raster can never be accepted against the v1 inventory or the other
+        way round. Mutually exclusive with ``baselines_dir``: the two would be
+        two answers to one question.
 
     Returns
     -------
@@ -103,12 +118,23 @@ def load_baseline(
     """
     import rioxarray  # noqa: F401
 
+    if generation is not None and baselines_dir is not None:
+        raise ValueError(
+            "name a baseline generation or a directory, never both"
+        )
+    if generation is not None:
+        directory = Path(generation.directory)
+    else:
+        directory = Path(BASELINES_DIR if baselines_dir is None else baselines_dir)
+
     filename = f"{index_name}_month{month:02d}_{stat}.tif"
-    path = baselines_dir / filename
+    path = directory / filename
 
     if not path.exists():
         raise FileNotFoundError(f"Baseline not found: {path}")
-    if baselines_dir.resolve() == BASELINES_DIR.resolve():
+    if generation is not None:
+        verify_baseline_object(generation, path)
+    elif directory.resolve() == Path(BASELINES_DIR).resolve():
         _verify_authoritative_file(str(path.resolve()))
 
     da = rioxarray.open_rasterio(str(path))
@@ -125,7 +151,9 @@ def load_baseline(
 def load_baseline_pair(
     index_name: str,
     month: int,
-    baselines_dir: Path = BASELINES_DIR,
+    baselines_dir: Path | None = None,
+    *,
+    generation: BaselineGeneration | None = None,
 ) -> tuple[xr.DataArray, xr.DataArray]:
     """Load both mean and std baselines for a given index and month.
 
@@ -134,8 +162,12 @@ def load_baseline_pair(
     tuple[xr.DataArray, xr.DataArray]
         (mean baseline, std baseline)
     """
-    mean = load_baseline(index_name, month, "mean", baselines_dir)
-    std = load_baseline(index_name, month, "std", baselines_dir)
+    mean = load_baseline(
+        index_name, month, "mean", baselines_dir, generation=generation
+    )
+    std = load_baseline(
+        index_name, month, "std", baselines_dir, generation=generation
+    )
     return mean, std
 
 

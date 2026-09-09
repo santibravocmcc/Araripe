@@ -22,7 +22,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from config.settings import (
     ALERTS_DIR,
     AOI_BBOX,
-    BASELINE_VERSION,
     BASELINES_DIR,
     DETECTION_ALGORITHM_VERSION,
     DEFAULT_LANDCOVER_COLLECTION,
@@ -46,6 +45,7 @@ from src.acquisition.download import (
 )
 from src.detection.alerts import save_alerts, summarize_alerts, vectorize_alerts
 from src.detection.baseline import load_baseline_pair
+from src.detection.baseline_selection import resolve_baseline
 from src.detection.change_detect import detect_deforestation
 from src.detection.landcover import annotate_alerts_all_collections
 from src.detection.identity import create_acquisition_identity
@@ -121,6 +121,7 @@ def _merge_and_confirm(
     acquisition=None,
     *,
     persistence_mode="live",
+    baseline_version=None,
 ):
     """Merge every tile's alerts for one acquisition date into a single
     GeoDataFrame and update the gap-tolerant persistence tracks.
@@ -141,6 +142,10 @@ def _merge_and_confirm(
     """
     import geopandas as gpd
 
+    # ``None`` resolves the frozen blue default (Phase 3); the replay names a
+    # generation. The version stamped here is the one that was actually loaded.
+    resolved_baseline = resolve_baseline(baseline_version).version
+
     merged = gpd.GeoDataFrame(
         gpd.pd.concat(parts, ignore_index=True),
         crs=parts[0].crs,
@@ -154,7 +159,7 @@ def _merge_and_confirm(
             scene_date,
             acquisition=acquisition,
             algorithm_version=DETECTION_ALGORITHM_VERSION,
-            baseline_version=BASELINE_VERSION,
+            baseline_version=resolved_baseline,
             monitoring_extent_id=MONITORING_EXTENT_ID,
             mode=persistence_mode,
             min_overlap_frac=min_overlap_frac,
@@ -259,6 +264,12 @@ def _modal_class_per_polygon(gdf, class_da):
     help="Annotate each alert with a likely clearing type (fire vs mechanical).",
 )
 @click.option(
+    "--baseline-version",
+    default=None,
+    help="Baseline generation to compare against (default: the frozen "
+         "production baseline from config/settings.py). The replay names it.",
+)
+@click.option(
     "--log-level",
     default="INFO",
     help="Console log level (file always captures full DEBUG detail under logs/).",
@@ -277,10 +288,15 @@ def main(
     min_overlap_frac: float,
     landcover_collection: str,
     classify_clearing: bool,
+    baseline_version: str | None,
     log_level: str,
 ) -> None:
     """Run the twice-weekly deforestation detection pipeline."""
     configure_run_logging("run_detection", console_level=log_level)
+    baseline = resolve_baseline(baseline_version)
+    logger.info(
+        "Baseline generation {} from {}", baseline.version, baseline.directory
+    )
     index_list = [idx.strip() for idx in indices.split(",")]
     extra = [s.strip() for s in extra_sources.split(",") if s.strip()]
     # BSI is needed only to classify fire vs mechanical clearing; it is loaded
@@ -464,7 +480,9 @@ def main(
 
             for idx_name in index_list:
                 try:
-                    mean, std = load_baseline_pair(idx_name, scene_month)
+                    mean, std = load_baseline_pair(
+                        idx_name, scene_month, generation=baseline
+                    )
                     # Align baseline grid to current scene grid.
                     ref_var = list(idx_ds.data_vars)[0]
                     mean = mean.reindex_like(idx_ds[ref_var], method="nearest", tolerance=tol)
@@ -619,6 +637,7 @@ def main(
             state,
             acquisition,
             persistence_mode=persistence_mode,
+            baseline_version=baseline.version,
         )
         transition = merged.attrs.get("persistence_transition", {})
         if transition.get("outcome") == "no_op_replay":

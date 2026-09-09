@@ -392,6 +392,79 @@ def test_nenhum_script_verde_importa_o_carregador_de_dotenv():
         assert offenders == [], f"{name} imports {offenders}"
 
 
+def _first_party_module_path(module: str) -> Path | None:
+    """Where a dotted first-party module lives, or ``None`` if it is external."""
+
+    if module.split(".")[0] not in {"src", "config", "scripts", "tests"}:
+        return None
+    candidate = ROOT / Path(*module.split("."))
+    if (candidate / "__init__.py").exists():
+        return candidate / "__init__.py"
+    if candidate.with_suffix(".py").exists():
+        return candidate.with_suffix(".py")
+    return None
+
+
+def _reachable_imports(entry: Path) -> dict[str, list[str]]:
+    """Every first-party module reachable from ``entry``, and who imported it.
+
+    Follows `import`/`from ... import` through first-party files only, so an
+    external package ends the walk. Sibling imports inside ``scripts/`` are
+    resolved as ``scripts.<name>`` because the scripts insert their own
+    directory on ``sys.path`` — ``run_detection_gee.py`` imports
+    ``run_detection_from_gee`` exactly that way.
+    """
+
+    reached: dict[str, list[str]] = {}
+    pending = [(entry, entry.name)]
+    seen = {entry.resolve()}
+    while pending:
+        path, importer = pending.pop()
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+            if isinstance(node, ast.Import):
+                names = [alias.name for alias in node.names]
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                names = [node.module]
+            else:
+                continue
+            for module in names:
+                reached.setdefault(module, []).append(importer)
+                target = _first_party_module_path(module)
+                if target is None and (ROOT / "scripts" / f"{module}.py").exists():
+                    module = f"scripts.{module}"
+                    reached.setdefault(module, []).append(importer)
+                    target = ROOT / "scripts" / f"{module.split('.')[1]}.py"
+                if target is None or target.resolve() in seen:
+                    continue
+                seen.add(target.resolve())
+                pending.append((target, module))
+    return reached
+
+
+def test_nenhum_script_verde_alcanca_o_carregador_de_dotenv_transitivamente():
+    """O teste acima olha só os imports do PRÓPRIO script, e isso não basta.
+
+    Um script verde que importasse `src.detection.baseline_selection` — que
+    importa `config.settings` — carregaria o `.env` de produção e **passaria**
+    no teste direto, porque `config` não aparece no seu próprio AST. A Phase 3
+    acrescentou exatamente esse tipo de módulo: um resolvedor de baseline no
+    lado azul, que o lane verde não pode alcançar nem por dois saltos.
+
+    Mutação que este teste derruba, e que o direto não derruba: acrescentar
+    `from src.detection.baseline_selection import resolve_baseline` a qualquer
+    um dos cinco scripts verdes. Verificado por edição temporária.
+    """
+
+    for name in GREEN_SCRIPTS:
+        reached = _reachable_imports(ROOT / "scripts" / name)
+        offenders = {
+            module: sorted(set(importers))
+            for module, importers in reached.items()
+            if module.split(".")[0] in {"config", "dotenv"}
+        }
+        assert offenders == {}, f"{name} reaches {offenders}"
+
+
 # ── as fronteiras do lane 2, lidas deste arquivo ───────────────────────────
 
 

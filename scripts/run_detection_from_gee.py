@@ -34,7 +34,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from config.settings import (
     ALERTS_DIR,
-    BASELINE_VERSION,
     DETECTION_ALGORITHM_VERSION,
     DEFAULT_LANDCOVER_COLLECTION,
     MONITORING_EXTENT_ID,
@@ -43,6 +42,7 @@ from config.settings import (
 )
 from src.detection.alerts import save_alerts, summarize_alerts, vectorize_alerts
 from src.detection.baseline import load_baseline_pair
+from src.detection.baseline_selection import resolve_baseline
 from src.detection.change_detect import classify_fire_vs_mechanical, detect_deforestation
 from src.detection.landcover import annotate_alerts_all_collections
 from src.detection.identity import load_composite_acquisition
@@ -115,18 +115,29 @@ def run_detection_on_dir(in_dir, out_dir=ALERTS_DIR, *, min_clear=20.0,
                          persistence=True, min_overlap_frac=DEFAULT_MIN_OVERLAP_FRAC,
                          landcover_collection=DEFAULT_LANDCOVER_COLLECTION,
                          classify_clearing=True, state_path=None,
-                         persistence_mode="live"):
+                         persistence_mode="live", baseline_version=None):
     """Run the existing detection logic over a directory of per-date GEE
     composites (``araripe_detect_YYYY-MM-DD.tif``). Reused by both the manual
     path (this script's CLI) and the headless CI path
     (``scripts/run_detection_gee.py``), so the science is identical regardless
-    of how the composites were obtained (Drive download vs direct pull)."""
+    of how the composites were obtained (Drive download vs direct pull).
+
+    ``baseline_version`` names the baseline generation to compare against
+    (Phase 3). ``None`` resolves the frozen blue default from
+    ``config.settings.BASELINE_VERSION``, so the scheduled production run is
+    unchanged; the replay names ``2.1.0`` explicitly. Whatever resolves is the
+    version stamped on every track, because a persistence tier that does not
+    say which baseline produced it cannot be reconciled later."""
     in_dir = Path(in_dir); out_dir = Path(out_dir); out_dir.mkdir(parents=True, exist_ok=True)
+    baseline = resolve_baseline(baseline_version)
     files = sorted((f for f in in_dir.glob("*.tif") if _DATE_RE.search(f.stem)),
                    key=lambda f: _DATE_RE.search(f.stem).group(1))
     if not files:
         logger.error("No araripe_detect_*.tif (with a date) in {}", in_dir); raise SystemExit(1)
     logger.info("Found {} per-date composites in {}", len(files), in_dir)
+    logger.info(
+        "Baseline generation {} from {}", baseline.version, baseline.directory
+    )
 
     logger.info(
         "Drought adjustment disabled: no qualified method is accepted; "
@@ -182,7 +193,9 @@ def run_detection_on_dir(in_dir, out_dir=ALERTS_DIR, *, min_clear=20.0,
             baseline_means, baseline_stds = {}, {}
             for idx_name in INDICES:
                 try:
-                    mean, std = load_baseline_pair(idx_name, month)
+                    mean, std = load_baseline_pair(
+                        idx_name, month, generation=baseline
+                    )
                     mean = mean.reindex_like(ref, method="nearest", tolerance=15)
                     std = std.reindex_like(ref, method="nearest", tolerance=15)
                     baseline_means[idx_name] = mean; baseline_stds[idx_name] = std
@@ -258,7 +271,7 @@ def run_detection_on_dir(in_dir, out_dir=ALERTS_DIR, *, min_clear=20.0,
                     date,
                     acquisition=acquisition,
                     algorithm_version=DETECTION_ALGORITHM_VERSION,
-                    baseline_version=BASELINE_VERSION,
+                    baseline_version=baseline.version,
                     monitoring_extent_id=MONITORING_EXTENT_ID,
                     mode=persistence_mode,
                     min_overlap_frac=min_overlap_frac,
@@ -315,11 +328,17 @@ def run_detection_on_dir(in_dir, out_dir=ALERTS_DIR, *, min_clear=20.0,
 @click.option("--state-path", default=None, help="Persistence-state GeoJSON "
               "(deterministic event state). Default: <out-dir>/../persistence_state.geojson. "
               "In CI, fetch from / push to R2.")
+@click.option(
+    "--baseline-version",
+    default=None,
+    help="Baseline generation to compare against (default: the frozen "
+         "production baseline from config/settings.py). The replay names it.",
+)
 @click.option("--log-level", default="INFO", help="Console log level (file always "
               "captures full DEBUG detail under logs/). Use DEBUG to mirror everything.")
 def main(in_dir, out_dir, min_clear, persistence, persistence_mode,
          min_overlap_frac, landcover_collection, classify_clearing,
-         state_path, log_level):
+         state_path, baseline_version, log_level):
     configure_run_logging("run_detection_from_gee", console_level=log_level)
     run_detection_on_dir(
         in_dir, out_dir, min_clear=min_clear, persistence=persistence,
@@ -327,6 +346,7 @@ def main(in_dir, out_dir, min_clear, persistence, persistence_mode,
         classify_clearing=classify_clearing,
         state_path=state_path,
         persistence_mode=persistence_mode,
+        baseline_version=baseline_version,
     )
 
 

@@ -1,0 +1,390 @@
+{
+  "baseline_objects": {
+    "generations": [
+      {
+        "inventory_sha256": "c0ede11bb02cdcfbf67653dfee521f0e922955179c8da5b69c07ea5069cc1054",
+        "key_prefix": "baselines/",
+        "manifest_path": "config/baseline_manifest_v1.json",
+        "manifest_sha256": "15a1ed3cea7c804d18d2c82c86a7b9a030687fedb01b315d543965b1f26f0a82",
+        "measured": true,
+        "object_count": 72,
+        "rasters_local": {
+          "directory": "data/baselines",
+          "expected": 72,
+          "mismatched": [],
+          "present": 0,
+          "verified": 0
+        },
+        "status": "accepted_audit_generation",
+        "total_bytes": 13408183319,
+        "version": "1.0.0"
+      },
+      {
+        "inventory_sha256": "4a4c1d15c0a67da0a853bc4ad723190df1bd381a2225f51f58dc795d933334aa",
+        "key_prefix": "baselines_v2/2.1.0/",
+        "manifest_path": "config/baseline_manifest_v2_1.json",
+        "manifest_sha256": "c012924ab8be3d55d7f1d2f632900a5362ad4402c543ed01c08b1a08da2eba29",
+        "measured": true,
+        "object_count": 72,
+        "rasters_local": {
+          "directory": "data/baselines_v2/2.1.0",
+          "expected": 72,
+          "mismatched": [],
+          "present": 72,
+          "verified": 72
+        },
+        "status": "rebuilt_candidate_generation",
+        "total_bytes": 13626201392,
+        "version": "2.1.0"
+      }
+    ],
+    "measured": true
+  },
+  "persistence_state": {
+    "measured": false,
+    "path": "data/persistence_state.geojson",
+    "reason": "persistence state is not present at data/persistence_state.geojson"
+  },
+  "public_products": {
+    "alerts": {
+      "file_count": 42,
+      "files": [
+        {
+          "bytes": 4482913,
+          "name": "all-strong-points.json",
+          "sha256": "7d1e18c76fac7376c7cea62d7eea62e47d4006338978362c0f032b43d66a854b"
+        },
+        {
+          "bytes": 12182,
+          "name": "manifest.json",
+          "sha256": "90ac5e1616cf64b8b6e6de4c2bfba0fcdb9174898c9abeb2ac33a4c79bf4a35f"
+        },
+        {
+          "bytes": 42,
+          "name": "run-2026-01-02.strong.geojson",
+          "sha256": "ed778c73ea51338d6576fb5992b189f2b94d9f3d5e199f46c1af520d6b0b3e6c"
+        },
+        {
+          "bytes": 3236519,
+          "name": "run-2026-01-04.strong.geojson",
+          "sha256": "d560d95fc4d41e78bd283449e55b897030e09e20485675abf195d8465f5d2fc4"
+        },
+        {
+          "bytes": 4162639,
+          "name": "run-2026-01-22.strong.geojson",
+          "sha256": "a885db2fc16e1fcfa358bb7a2e0b5d107a3ce4272e845ffc4b34059225521368"
+        },
+        {
+          "bytes": 6536786,
+          "name": "run-2026-02-11.strong.geojson",
+          "sha256": "9f7a1eb4309df17c1c80101b6fb695eba9680db74887c7e01787005d024f6c6a"
+        },
+        {
+          "bytes": 1678689,
+          "name": "run-2026-03-13.strong.geojson",
+          "sha256": "6a0c32f6aa1405a5974e606fb09d239511cd47cacfe55bec4d64e846eec95642"
+        },
+        {
+          "bytes": 1555680,
+          "name": "run-2026-04-04.strong.geojson",
+          "sha256": "ba78fccc194f68c4a3be2c8c8a6da6ce319e1064ca49fe79bb8e140e6e3f7d95"
+        },
+        {
+          "bytes": 2118810,
+          "name": "run-2026-04-07.strong.geojson",
+          "sha256": "982204c0c80dc3eb214ebc4b0e08a1a7c393fdd044362ab39027e8a16ccfafab"
+        },
+        {
+          "bytes": 3520929,
+          "name": "run-2026-04-17.strong.geojson",
+          "sha256": "69e208ae88edd763c378fc96a80e7164d72c9b39278949ed4e867145cfa427ba"
+        },
+        {
+          "bytes": 7594606,
+          "name": "run-2026-04-27.strong.geojson",
+          "sha256": "d81ffe4f8ac5d4cce96ba88fdb55713c4ea5d329881de1ae0618fca85493faca"
+        },
+        {
+          "bytes": 5415042,
+          "name": "run-2026-05-02.strong.geojson",
+          "sha256": "896238e3ca2b812106e4c8c671e24a2b06bfb37d375e890c57b039e3ab4ad6a0"
+        },
+        {
+          "bytes": 2790796,
+          "name": "run-2026-05-04.strong.geojson",
+          "sha256": "97e8f8dc1adaa63e69b01d569e2baa3157734d0eac90374e55c63e8df2d93446"
+        },
+        {
+          "bytes": 8835192,
+          "name": "run-2026-05-07.strong.geojson",
+          "sha256": "f5dcd98fd1e068390ca8671421ddd1745a7639a5e637f3446f8a50eb9b56253b"
+        },
+        {
+          "bytes": 4074127,
+          "name": "run-2026-05-12.strong.geojson",
+          "sha256": "e47088eb0c7552e5de1ba1d8e6debfbf2e4f614ef0eb2379620d95502fa1e1bd"
+        },
+        {
+          "bytes": 11197839,
+          "name": "run-2026-05-17.strong.geojson",
+          "sha256": "ad5184d9fd1e444ef6708cf41348cf371857520543f1b11cdf03dd97f81e43b9"
+        },
+        {
+          "bytes": 2636104,
+          "name": "run-2026-05-22.strong.geojson",
+          "sha256": "878fd8b12b3ef4ec6e4ca24f5cafe688c118a9fad2c54861ecb922561418d53e"
+        },
+        {
+          "bytes": 11471947,
+          "name": "run-2026-05-24.strong.geojson",
+          "sha256": "43a7f2a0e1be8b83bb8d98b79d914602654a5c3424e344bae3ddbc70cd7ba195"
+        },
+        {
+          "bytes": 4924607,
+          "name": "run-2026-06-01.strong.geojson",
+          "sha256": "6e78c1e834b572162c2fa0e1631b7d015dc8638a49d3d05debe2bc3bbeda6b2f"
+        },
+        {
+          "bytes": 7128380,
+          "name": "run-2026-06-03.strong.geojson",
+          "sha256": "21c340d58c1b45e931f224c23ad30bb91f119cd65fdf758a722540d33b93af54"
+        },
+        {
+          "bytes": 1148097,
+          "name": "run-2026-06-06.strong.geojson",
+          "sha256": "ad20ad235d9c44f24b1b5eb7b47affb05f90013bde4907051f39492d10eef374"
+        },
+        {
+          "bytes": 2085659,
+          "name": "run-2026-06-13.strong.geojson",
+          "sha256": "9d726a59133f0f4915e31c591c75320a5969ef67635864b122b5c9b1d6991564"
+        },
+        {
+          "bytes": 13933519,
+          "name": "run-2026-06-21.strong.geojson",
+          "sha256": "cd84ff243e0c166a8cfa9f2a05d83e57944552a4c2ac47623167a786417b9504"
+        },
+        {
+          "bytes": 18563939,
+          "name": "run-2026-06-23.strong.geojson",
+          "sha256": "bba027f17b6934c096cf36401f3a881b51a273537b32c861c6dc96f87be49389"
+        },
+        {
+          "bytes": 17746243,
+          "name": "run-2026-06-26.strong.geojson",
+          "sha256": "2719b33e378be5c615d691cf36f61449259533ed81ec4f751e6e2bb2503b447c"
+        },
+        {
+          "bytes": 5568103,
+          "name": "run-2026-07-01.strong.geojson",
+          "sha256": "a75bbcaf7796e99905a1497547b9f9a3fb72e6ad4903f6227a37f3706c698e7d"
+        },
+        {
+          "bytes": 7727867,
+          "name": "run-2026-07-03.strong.geojson",
+          "sha256": "60733090114807bf5bec336184957913a6536a72eee73b21a391374490cb399f"
+        },
+        {
+          "bytes": 8282377,
+          "name": "run-2026-07-06.strong.geojson",
+          "sha256": "c9051bdc2daf7dd15bd254662b29960db64a97902b9cfa348c9ec3d72a0774c7"
+        },
+        {
+          "bytes": 8737189,
+          "name": "run-2026-07-11.strong.geojson",
+          "sha256": "7cb1b9e345c8ecffbc70276980cd6be419ce6636229f6938fe517554643c2de7"
+        },
+        {
+          "bytes": 8673424,
+          "name": "run-2026-07-13.strong.geojson",
+          "sha256": "d716e8b86c6b6c88b1ba92e6fbe7fec127153d5a1fd39769b08068b65073823a"
+        },
+        {
+          "bytes": 5606059,
+          "name": "run-2026-07-16.strong.geojson",
+          "sha256": "7e7347b0500ab990d99ff75e318b9dd49946d95432054e60c600e356a7aa21fa"
+        },
+        {
+          "bytes": 458924,
+          "name": "run-2026-07-21.strong.geojson",
+          "sha256": "f9f02b0f4bb31b78d289127f1fe744b4caf4c05f29804e25c083f50922a8da22"
+        },
+        {
+          "bytes": 12981912,
+          "name": "run-2026-07-26.strong.geojson",
+          "sha256": "e3f168783cfdeac933a3ddc454c82bf0d0ccdb7ee862d3b3ecfbb56b1eda86a0"
+        },
+        {
+          "bytes": 14139934,
+          "name": "run-2026-07-31.strong.geojson",
+          "sha256": "ab4de1af2bd555a36307ff754bf57202866d4b40e606fc634d1ed5d7456f3979"
+        },
+        {
+          "bytes": 2327513,
+          "name": "run-2026-08-02.strong.geojson",
+          "sha256": "30ad0e25aa9f12efe48ac782d199587f2b57983ac9136bf5d25cf9c8e53c14af"
+        },
+        {
+          "bytes": 3798376,
+          "name": "run-2026-08-05.strong.geojson",
+          "sha256": "2ed948bdac52b3015e5aeb18a863a4cd8f8cebe8dea4f17ee541a616e5edcf09"
+        },
+        {
+          "bytes": 2123250,
+          "name": "run-2026-08-10.strong.geojson",
+          "sha256": "3fd62454332c349bdfbb6ace54812af2f15b6fb6d699382ff021af9b3d46e6ff"
+        },
+        {
+          "bytes": 4725761,
+          "name": "run-2026-08-15.strong.geojson",
+          "sha256": "a568fb12939feead253521611bd24fb0bcbb5ae9afb80b27f31b03750ffd4e81"
+        },
+        {
+          "bytes": 6511657,
+          "name": "run-2026-08-20.strong.geojson",
+          "sha256": "ecdeefd530077c93597ed933f5700ee4263dcfd10829658eba255b929a085b20"
+        },
+        {
+          "bytes": 5748153,
+          "name": "run-2026-08-22.strong.geojson",
+          "sha256": "f5323d169fc69906f942da2fb909cf24ec358589c2b207c95b3b50269c99a783"
+        },
+        {
+          "bytes": 6586528,
+          "name": "run-2026-08-25.strong.geojson",
+          "sha256": "a1c56e19c38b72fe6ab835ceb71856e02440a22f668e96d1a6ead301866f3790"
+        },
+        {
+          "bytes": 7975791,
+          "name": "run-2026-08-30.strong.geojson",
+          "sha256": "75062856bdc610aaa4844dff9e8ae99adaeefe421d9c7c3930a042a595688f07"
+        }
+      ],
+      "inventory_sha256": "026bf7d475f030ae1a8b58afdd8ef2b3c92fdb46d3c85dfe09b5bd30c1e0bfaf",
+      "measured": true,
+      "path": "public/data/alerts",
+      "total_bytes": 258824104
+    },
+    "measured": true,
+    "published_run_dates": {
+      "count": 40,
+      "dates": [
+        "2026-01-02",
+        "2026-01-04",
+        "2026-01-22",
+        "2026-02-11",
+        "2026-03-13",
+        "2026-04-04",
+        "2026-04-07",
+        "2026-04-17",
+        "2026-04-27",
+        "2026-05-02",
+        "2026-05-04",
+        "2026-05-07",
+        "2026-05-12",
+        "2026-05-17",
+        "2026-05-22",
+        "2026-05-24",
+        "2026-06-01",
+        "2026-06-03",
+        "2026-06-06",
+        "2026-06-13",
+        "2026-06-21",
+        "2026-06-23",
+        "2026-06-26",
+        "2026-07-01",
+        "2026-07-03",
+        "2026-07-06",
+        "2026-07-11",
+        "2026-07-13",
+        "2026-07-16",
+        "2026-07-21",
+        "2026-07-26",
+        "2026-07-31",
+        "2026-08-02",
+        "2026-08-05",
+        "2026-08-10",
+        "2026-08-15",
+        "2026-08-20",
+        "2026-08-22",
+        "2026-08-25",
+        "2026-08-30"
+      ],
+      "earliest": "2026-01-02",
+      "latest": "2026-08-30",
+      "measured": true
+    },
+    "repository": "site",
+    "timeseries": {
+      "file_count": 0,
+      "files": [],
+      "inventory_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "measured": true,
+      "path": "public/data",
+      "total_bytes": 0
+    }
+  },
+  "r2_alerts": {
+    "measured": false,
+    "reason": "no R2 credential is present and production is read-only through Phases 2B-5; run this tool with --r2-read from an environment that holds a read-only key to fill it in"
+  },
+  "replay_snapshot_version": "phase3-replay-snapshot-v1",
+  "repository_commits": {
+    "backend": {
+      "branch": "claude/phase3-freeze",
+      "dirty_paths": [],
+      "head": "824d43e11d747d254e8787551d809778300a22a1",
+      "head_subject": "feat(phase3): congelar as versoes, a regra do corte, a fila e o ensaio limitado",
+      "label": "backend",
+      "measured": true,
+      "origin_main": "c39c5238d8e939f6a37bc9060ea5c9ec6da8bd3e",
+      "path": ".",
+      "tree_clean": true
+    },
+    "measured": true,
+    "site": {
+      "branch": "main",
+      "dirty_paths": [],
+      "head": "99805f6640d74a5bb0f3f4c4c746aa38c4679580",
+      "head_subject": "docs: o plano do backend esta na main agora, nao na branch de planejamento (#24)",
+      "label": "site",
+      "measured": true,
+      "origin_main": "99805f6640d74a5bb0f3f4c4c746aa38c4679580",
+      "path": ".",
+      "tree_clean": true
+    }
+  },
+  "site_manifest": {
+    "bytes": 12182,
+    "measured": true,
+    "path": "public/data/alerts/manifest.json",
+    "sha256": "90ac5e1616cf64b8b6e6de4c2bfba0fcdb9174898c9abeb2ac33a4c79bf4a35f"
+  },
+  "snapshot_sha256": "f1f54e615bb0df6538486f8872bd3a3d3d954717011ea38bfe3b404b8ab8bed8",
+  "timeseries_database": {
+    "audit": {
+      "alert_rows": 45,
+      "audit_schema_version": "1.0.0",
+      "disposition": "quarantined_mixed_generation_audit",
+      "indices": [
+        "evi2",
+        "nbr",
+        "ndmi"
+      ],
+      "issue_count": 7,
+      "measured": true,
+      "publishable": false,
+      "regional_date_range": [
+        "2026-01-02",
+        "2026-08-30"
+      ],
+      "regional_dates": 55,
+      "regional_rows": 165,
+      "report_sha256": "92922909a6076cd7a0d9a14980185e69eebc75293562978b52213db1520552a1"
+    },
+    "bytes": 57344,
+    "measured": true,
+    "path": "data/timeseries/timeseries.db",
+    "sha256": "28f7f4f6f4ae45069c989360e462dcea70c632240ac3698eef537fec01ffaeaf"
+  }
+}
