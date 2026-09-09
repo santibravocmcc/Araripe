@@ -82,12 +82,29 @@ def require_inside(path: Path, root: Path, *, label: str) -> Path:
     return resolved
 
 
-def load_features(path: Path) -> list[dict]:
-    document = json.loads(Path(path).read_text(encoding="utf-8"))
-    features = document.get("features")
-    if not isinstance(features, list):
-        raise FinalizeError(f"{path} is not a FeatureCollection")
-    return features
+def load_assembler_cli():
+    """The lane-2 entry point, loaded as a module.
+
+    Its ``collect_features`` is reused rather than reimplemented, and that is
+    a correctness decision and not tidiness: it distinguishes an ``alerts``
+    date with no file (left absent, so the assembler refuses) from a
+    ``zero_alerts`` date with no file (``[]``, a positive observation of
+    absence). A loop that mapped every missing file to ``[]`` would turn a
+    detection that failed to write into a published claim that the day was
+    quiet — which is the defect that function's own docstring records.
+
+    It is a script rather than a package module, so it loads the way
+    ``replay_2026.py`` loads the export: by path. It deliberately does not
+    import ``config.settings``, so loading it does not read the production
+    ``.env``.
+    """
+
+    import importlib.util
+    path = Path(__file__).resolve().parent / "assemble_green_run.py"
+    spec = importlib.util.spec_from_file_location("assemble_green_run", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def command(args) -> int:
@@ -124,19 +141,17 @@ def command(args) -> int:
     alerts_dir = out / "alerts"
     db_path = require_inside(out / REPLAY_DB_NAME, out, label="time-series database")
 
-    features_by_date: dict[str, list[dict]] = {}
+    assembler_cli = load_assembler_cli()
+    features_by_date = assembler_cli.collect_features(alerts_dir, states)
+
     per_date_statistics: dict[str, dict] = {}
     strong_written: dict[str, int] = {}
-    for observed_on in sorted(states):
-        source = alerts_dir / ("alerts_%s.geojson" % observed_on)
-        if not source.exists():
-            # A date the ledger reconciles as unobserved has no features, and
-            # that is not a gap. An observed date with no file is, and the
-            # assembler is what refuses it — not a guess made here.
-            features_by_date[observed_on] = []
+    for observed_on in sorted(features_by_date):
+        features = features_by_date[observed_on]
+        if not features:
+            # A positive observation of absence still gets a statistics row of
+            # zeros further down; it has no strong subset to write.
             continue
-        features = load_features(source)
-        features_by_date[observed_on] = features
         per_date_statistics[observed_on] = site_artifact.run_statistics(features)
         strong = site_artifact.strong_features(features)
         strong_written[observed_on] = len(strong)
