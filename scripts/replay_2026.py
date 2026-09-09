@@ -362,12 +362,16 @@ def command_run(args):
     from src.detection.identity import create_acquisition_identity
     from src.detection.landcover import annotate_alerts_all_collections
     from src.detection.ledger_v3 import ProcessingLedgerV3
-    from src.detection.persistence import load_persistence_state, save_persistence_state, update_tracks
+    from src.detection.persistence import (
+        AmbiguousLineageError, load_persistence_state, save_persistence_state,
+        update_tracks,
+    )
     from src.detection.scene_quality import assess_scene_quality
     from src.replay.enumeration import (
-        expected_acquisitions, gate_rejection, reconciles, screen_by_coverage,
-        screen_rejection, screen_summary,
+        expected_acquisitions, gate_rejection, lineage_failure, reconciles,
+        screen_by_coverage, screen_rejection, screen_summary,
     )
+    from src.replay.seasonal_regime import composition_regime_record
     from scripts.run_detection_from_gee import INDICES, _load_composite
 
     frozen, baseline_decision, decision = _preflight()
@@ -411,6 +415,30 @@ def command_run(args):
     print("batch         : %s..%s -> %d of %d expected acquisition(s)"
           % (args.batch_start, args.batch_end, len(screened), len(screened_all)))
 
+    # Which seasonal source regime each month of the window was composed
+    # against.  This is the counterpart of the cost the owner accepted when he
+    # chose 2.1.0: it admits pre-Collection-1 products in months 1-4, so those
+    # months may have to be redone when ESA's reprocessing reaches them.
+    # Without this record, redoing four months means redoing twelve, because
+    # nothing says which months depended on the retiring regime.  It is a pure
+    # function of the window's months and the generation manifest, so every
+    # batch of one replay writes it byte for byte identically.
+    regime_record = composition_regime_record(
+        baseline.load_manifest(),
+        months={int(item.observed_on[5:7]) for item in acquisitions},
+        baseline_version=baseline.version,
+        window_start=args.start,
+        window_end_exclusive=args.end,
+    )
+    (out / "composition_regimes.json").write_text(
+        json.dumps(regime_record, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8")
+    print("regime scope  : %s"
+          % json.dumps(regime_record["rework_scope_by_regime"]))
+    print("pending on ESA: month(s) %s of %d in the window"
+          % (regime_record["pending_on_esa_reprocessing"]["months"],
+             len(regime_record["months"])))
+
     ee.Initialize(project=args.project)
 
     rows_path = out / "terminal_rows.json"
@@ -427,6 +455,21 @@ def command_run(args):
         algorithm_version=DETECTION_ALGORITHM_VERSION,
         created_at=_utc_now())
 
+    def flush_rows() -> None:
+        """Merge this batch's terminal rows into the accumulating file.
+
+        Called at the top of every loop iteration rather than only at the end.
+        A batch that dies part-way used to lose its whole accounting — measured
+        on 2026-09-09, when an ambiguous-lineage failure in the per-date pass
+        discarded seventeen acquisitions' worth of finished work whose
+        composites were already on disk. The rows are per-acquisition and
+        independently valid, so writing them early is not a partial document:
+        `ledger.json` is still written only when the whole set is terminal.
+        """
+        for row in ledger.terminal_rows:
+            rows_by_id[row["acquisition_id"]] = row
+        _write_rows(rows_path, rows_by_id)
+
     # ── per acquisition, in timestamp then acquisition-ID order ──────────────
     frames_by_date: dict[str, list] = {}
     pending: dict[str, list] = {}
@@ -438,6 +481,7 @@ def command_run(args):
     for item in sorted(screened,
                        key=lambda s: (s.acquisition.acquisition_timestamp_utc,
                                       s.acquisition_id)):
+        flush_rows()
         label = "%s %s" % (item.observed_on, item.acquisition.datatake_id)
         if item.acquisition_id in already:
             print("  done      %s  (terminal in an earlier batch)" % label)
@@ -538,6 +582,7 @@ def command_run(args):
     state = load_persistence_state(Path(args.state_path)) if Path(args.state_path).exists() else None
     accepted_ids = set(_CARRY)
     for date in sorted({i.observed_on for i in screened}):
+        flush_rows()
         day_items = [i for i in screened if i.observed_on == date
                      and i.acquisition_id in accepted_ids
                      and i.acquisition_id not in already]
@@ -555,11 +600,42 @@ def command_run(args):
         if frames:
             merged = gpd.GeoDataFrame(
                 pd.concat(frames, ignore_index=True), crs=frames[0].crs)
-            merged, state = update_tracks(
-                merged, state, date, acquisition=acq_v1,
-                algorithm_version=DETECTION_ALGORITHM_VERSION,
-                baseline_version=baseline.version,
-                monitoring_extent_id=MONITORING_EXTENT_ID, mode="rebuild")
+            try:
+                merged, state = update_tracks(
+                    merged, state, date, acquisition=acq_v1,
+                    algorithm_version=DETECTION_ALGORITHM_VERSION,
+                    baseline_version=baseline.version,
+                    monitoring_extent_id=MONITORING_EXTENT_ID, mode="rebuild")
+            except AmbiguousLineageError as exc:
+                # The accepted Package 2A.1 contract says ambiguous
+                # many-to-many split/merge components "fail closed for
+                # reviewed correction", and no reviewed-correction mechanism
+                # exists yet.  So this date cannot be given event lineage
+                # under the frozen rules.
+                #
+                # It is recorded, not skipped.  `failed_processing` is one of
+                # the seven terminal statuses precisely for this, and roadmap
+                # bullet 4 names it; the exit gate needs one terminal row per
+                # expected acquisition, and a date silently dropped would
+                # leave the gate unclosable while looking complete.  The blue
+                # path does drop it — `run_detection_from_gee.py` catches
+                # every exception around its per-date block and continues —
+                # which is why production never stopped on this and why its
+                # time-series carries fewer dates than were observed.
+                #
+                # Nothing is loosened here: `state` is unchanged because the
+                # assignment never happened, no alerts are saved for the date,
+                # and no science parameter is touched.  The reviewed
+                # correction is Phase 5's, and it now has the exact list.
+                status, reason = lineage_failure(exc)
+                for i in day_items:
+                    ledger.record_terminal(
+                        acquisition_id=i.acquisition_id,
+                        status=status, reason=reason,
+                        terminal_at=_utc_now())
+                print("  AMBIGUOUS LINEAGE %s: %d acquisition(s) recorded "
+                      "failed_processing (%s)" % (date, len(day_items), exc))
+                continue
             save_alerts(merged, date, alerts_dir=alerts_dir)
             print("  date %s: %d alert(s) from %d acquisition(s)"
                   % (date, len(merged), len(day_items)))
@@ -590,9 +666,7 @@ def command_run(args):
     # batch of this driver raised IncompleteDateError here, which is the guard
     # working. So each batch appends its rows and only the batch that completes
     # the set writes ledger.json.
-    for row in ledger.terminal_rows:
-        rows_by_id[row["acquisition_id"]] = row
-    _write_rows(rows_path, rows_by_id)
+    flush_rows()
 
     finding = reconciles(expected=acquisitions, rows=rows_by_id)
     print()
