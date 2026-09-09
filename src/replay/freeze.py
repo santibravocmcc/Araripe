@@ -24,10 +24,17 @@ What is deliberately **not** frozen here
   (:mod:`src.replay.cutoff`), and none of the ten version groups depends on
   it, which is exactly why the freeze can stand while the date is still open.
 * **Which baseline generation the replay uses.** The freeze records both
-  registered generations with their identities and marks the choice as the
-  owner's, open.  Recording a default here would decide a scientific question
-  by omission — and it is the most consequential decision of this phase,
-  because the whole year is compared against whatever wins.
+  registered generations with their identities and reads the *decision* from
+  ``config/phase3_replay_baseline_decision_v1.json`` — the owner's, dated and
+  authorized — rather than restating it.  While that file is absent the freeze
+  says ``decided: false``, because recording a default here would decide a
+  scientific question by omission, and it is the most consequential decision of
+  this phase: the whole year is compared against whatever wins.
+
+  Deciding it does **not** move the blue default.  ``BASELINE_VERSION`` in
+  ``config/settings.py`` stays ``1.0.0`` and the freeze records both values
+  side by side, because production is frozen through Phase 5 and the replay
+  names its generation explicitly.
 * **Anything the producer does not promise.** The detection export's grid, for
   instance, is recorded as *requested* (``crs`` + ``scale``, no pinned
   transform) rather than as the baseline grid, because nothing guarantees the
@@ -86,6 +93,16 @@ REPLAY_FREEZE_VERSION = "phase3-replay-freeze-v1"
 
 #: Where the checked-in freeze lives.
 FREEZE_PATH = Path(settings.ROOT_DIR) / "config" / "phase3_replay_freeze_v1.json"
+
+#: The owner's recorded decision about which baseline generation the replay
+#: composes against.  Absent until the owner answers; the freeze then reads it
+#: rather than restating it, so there is one place the decision lives.
+BASELINE_DECISION_PATH = (
+    Path(settings.ROOT_DIR) / "config" / "phase3_replay_baseline_decision_v1.json"
+)
+
+#: Version token of the decision document.
+BASELINE_DECISION_ID = "araripe-phase3-replay-baseline-decision-v1"
 
 #: The ten groups the roadmap bullet names, in its order.  Present as a
 #: constant so a group cannot be dropped from the document without the test
@@ -180,6 +197,71 @@ def _algorithm() -> dict[str, Any]:
     }
 
 
+def _read_baseline_decision() -> dict[str, Any]:
+    """The owner's recorded baseline decision, validated, or "not decided".
+
+    Validated rather than trusted: the named version must be a **registered**
+    generation, so a typo, a retired name, or the superseded ``2.0.0`` fails
+    closed here instead of producing a replay against something nobody chose.
+    An authorization block is required for the same reason the seasonal-regime
+    amendments carry one — "the owner said so" has to be a fact in a file, not
+    a memory of a conversation.
+    """
+
+    path = Path(BASELINE_DECISION_PATH)
+    if not path.exists():
+        return {
+            "decided": False,
+            "decided_by": "project_owner",
+            "reason": (
+                "the whole year is compared against this generation; the two "
+                "registered generations share no raster, so the choice is "
+                "scientific and is recorded, not defaulted"
+            ),
+        }
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise FreezeError(
+            f"cannot read the baseline decision {path}: {exc}"
+        ) from exc
+    if document.get("decision_id") != BASELINE_DECISION_ID:
+        raise FreezeError(
+            f"{path.name} declares decision_id "
+            f"{document.get('decision_id')!r}, expected {BASELINE_DECISION_ID!r}"
+        )
+    version = document.get("baseline_version")
+    if version not in BASELINE_GENERATIONS:
+        raise FreezeError(
+            f"the recorded replay baseline {version!r} is not a registered "
+            "generation; registered: " + ", ".join(sorted(BASELINE_GENERATIONS))
+        )
+    authorization = document.get("authorization") or {}
+    if authorization.get("authorized_by") != "project_owner":
+        raise FreezeError(
+            f"{path.name} carries no project_owner authorization; a scientific "
+            "decision is recorded with who made it or it is not recorded"
+        )
+    if not authorization.get("authorized_on"):
+        raise FreezeError(f"{path.name} carries no authorization date")
+    if authorization.get("blue_default_change_permitted") is not False:
+        raise FreezeError(
+            f"{path.name} must state that it does not permit changing the blue "
+            "default; production is frozen through Phase 5"
+        )
+    return {
+        "decided": True,
+        "decided_by": "project_owner",
+        "version": version,
+        "decision_path": path.relative_to(settings.ROOT_DIR).as_posix(),
+        "decision_sha256": _sha256_of(path),
+        "decision_id": document["decision_id"],
+        "decision_date": document.get("decision_date"),
+        "authorized_on": authorization["authorized_on"],
+        "accepted_cost": (document.get("accepted_cost") or {}).get("consequence"),
+    }
+
+
 def _baseline() -> dict[str, Any]:
     generations = {}
     for version, generation in sorted(BASELINE_GENERATIONS.items()):
@@ -199,15 +281,7 @@ def _baseline() -> dict[str, Any]:
         "registered_generations": generations,
         "superseded_generations": dict(sorted(SUPERSEDED_GENERATIONS.items())),
         "runtime_default": settings.BASELINE_VERSION,
-        "replay_generation": {
-            "decided": False,
-            "decided_by": "project_owner",
-            "reason": (
-                "the whole year is compared against this generation; the two "
-                "registered generations share no raster, so the choice is "
-                "scientific and is recorded, not defaulted"
-            ),
-        },
+        "replay_generation": _read_baseline_decision(),
         "source_years": list(settings.BASELINE_SOURCE_YEARS),
     }
 

@@ -57,9 +57,15 @@
       }
     },
     "replay_generation": {
-      "decided": false,
+      "accepted_cost": "a replay composed against 2.1.0 may have to be redone for January through April.",
+      "authorized_on": "2026-09-09",
+      "decided": true,
       "decided_by": "project_owner",
-      "reason": "the whole year is compared against this generation; the two registered generations share no raster, so the choice is scientific and is recorded, not defaulted"
+      "decision_date": "2026-09-09",
+      "decision_id": "araripe-phase3-replay-baseline-decision-v1",
+      "decision_path": "config/phase3_replay_baseline_decision_v1.json",
+      "decision_sha256": "e67e436d6b489bbc2c8500bddb6b4c427e08650b534737ab2dd13cdb6921c7d1",
+      "version": "2.1.0"
     },
     "runtime_default": "1.0.0",
     "source_years": [
@@ -149,7 +155,7 @@
       "rasterio>=1.3.10"
     ]
   },
-  "freeze_sha256": "3554cf715af82cc80be591ddc115e5390a2f2e1bd39894b7e1a6f31b6a481fa3",
+  "freeze_sha256": "e877e9b1b1150d64c5ac71aeaf7bb23ff7c8b59b29984bd301bfdc3f8611a577",
   "label": {
     "clearing_types": [
       "none",

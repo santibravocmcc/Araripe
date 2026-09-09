@@ -130,17 +130,181 @@ def test_o_congelamento_nao_tem_caminho_absoluto():
 # ── o que o congelamento deliberadamente NÃO decide ──────────────────────────
 
 
-def test_o_congelamento_nao_escolhe_a_baseline_do_replay():
-    """A decisão mais consequente da fase é do dono. Registrar um default aqui
-    a decidiria por omissão.
+def test_o_congelamento_le_a_decisao_da_baseline_e_nao_a_reafirma():
+    """A decisão mais consequente da fase é do dono, e o congelamento a LÊ do
+    arquivo em que ela foi registrada — não a repete.
+
+    Registrada em 2026-09-09: o dono respondeu "a nova", ou seja a `2.1.0`.
+    Enquanto o arquivo não existia, o congelamento dizia `decided: false`, e
+    é isso que `test_sem_o_arquivo_de_decisao_o_congelamento_diz_nao_decidido`
+    ainda prova.
     """
 
     baseline = fz.build_freeze()["baseline"]
-    assert baseline["replay_generation"]["decided"] is False
-    assert baseline["replay_generation"]["decided_by"] == "project_owner"
+    decision = baseline["replay_generation"]
+    assert decision["decided"] is True
+    assert decision["decided_by"] == "project_owner"
+    assert decision["version"] == "2.1.0"
+    assert decision["version"] in baseline["registered_generations"]
+    assert decision["decision_path"] == (
+        "config/phase3_replay_baseline_decision_v1.json"
+    )
+    assert len(decision["decision_sha256"]) == 64
+    assert decision["authorized_on"] == "2026-09-09"
     assert sorted(baseline["registered_generations"]) == ["1.0.0", "2.1.0"]
-    assert baseline["runtime_default"] == "1.0.0"
     assert baseline["superseded_generations"] == {"2.0.0": "2.1.0"}
+
+
+def test_decidir_o_replay_nao_move_o_default_do_azul():
+    """A propriedade que a fase inteira existiu para preservar.
+
+    O dono escolheu a `2.1.0` para o REPLAY. `config/settings.py` continua em
+    `1.0.0`, e o congelamento grava os dois valores lado a lado — porque a
+    produção está congelada até a Phase 5 e o replay nomeia a geração dele.
+    """
+
+    baseline = fz.build_freeze()["baseline"]
+    assert baseline["runtime_default"] == "1.0.0" == settings.BASELINE_VERSION
+    assert baseline["replay_generation"]["version"] == "2.1.0"
+    assert baseline["runtime_default"] != baseline["replay_generation"]["version"]
+    decision = json.loads(
+        (ROOT / "config" / "phase3_replay_baseline_decision_v1.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert decision["authorization"]["blue_default_change_permitted"] is False
+    assert decision["does_not_change"]["blue_runtime_default"] == "1.0.0"
+
+
+def test_sem_o_arquivo_de_decisao_o_congelamento_diz_nao_decidido(monkeypatch, tmp_path):
+    """A propriedade original, preservada: sem decisão registrada, o
+    congelamento NÃO escolhe. Um default aqui decidiria por omissão.
+    """
+
+    monkeypatch.setattr(fz, "BASELINE_DECISION_PATH", tmp_path / "ausente.json")
+    decision = fz.build_freeze()["baseline"]["replay_generation"]
+    assert decision["decided"] is False
+    assert "version" not in decision
+    assert decision["decided_by"] == "project_owner"
+
+
+@pytest.mark.parametrize(
+    "mutation,expected",
+    [
+        ({"baseline_version": "2.0.0"}, "not a registered generation"),
+        ({"baseline_version": "3.0.0"}, "not a registered generation"),
+        ({"baseline_version": None}, "not a registered generation"),
+        ({"decision_id": "outra-coisa"}, "declares decision_id"),
+    ],
+)
+def test_uma_decisao_mal_formada_falha_fechado(monkeypatch, tmp_path, mutation, expected):
+    """A decisão é VALIDADA e não confiada. Um erro de digitação, um nome
+    retirado, ou a `2.0.0` superada falham aqui — em vez de produzirem um
+    replay contra algo que ninguém escolheu.
+    """
+
+    document = json.loads(
+        (ROOT / "config" / "phase3_replay_baseline_decision_v1.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    document.update(mutation)
+    path = tmp_path / "decisao.json"
+    path.write_text(json.dumps(document), encoding="utf-8")
+    monkeypatch.setattr(fz, "BASELINE_DECISION_PATH", path)
+    with pytest.raises(fz.FreezeError, match=expected):
+        fz.build_freeze()
+
+
+@pytest.mark.parametrize(
+    "field,value,expected",
+    [
+        ("authorized_by", "an_agent", "no project_owner authorization"),
+        ("authorized_by", None, "no project_owner authorization"),
+        ("authorized_on", None, "no authorization date"),
+        ("blue_default_change_permitted", True, "does not permit changing"),
+    ],
+)
+def test_uma_decisao_sem_autorizacao_do_dono_falha_fechado(
+    monkeypatch, tmp_path, field, value, expected
+):
+    """"O dono disse" tem de ser fato num arquivo, não memória de conversa —
+    a mesma disciplina das emendas de regime sazonal. E a decisão não pode
+    autorizar mexer no default do azul.
+    """
+
+    document = json.loads(
+        (ROOT / "config" / "phase3_replay_baseline_decision_v1.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    if value is None:
+        document["authorization"].pop(field, None)
+    else:
+        document["authorization"][field] = value
+    path = tmp_path / "decisao.json"
+    path.write_text(json.dumps(document), encoding="utf-8")
+    monkeypatch.setattr(fz, "BASELINE_DECISION_PATH", path)
+    with pytest.raises(fz.FreezeError, match=expected):
+        fz.build_freeze()
+
+
+def test_a_decisao_carrega_o_custo_que_o_dono_aceitou():
+    """A recomendação vinha com um preço; a decisão tem de carregá-lo, senão
+    dentro de três meses ninguém sabe se ele foi considerado.
+    """
+
+    decision = json.loads(
+        (ROOT / "config" / "phase3_replay_baseline_decision_v1.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    cost = decision["accepted_cost"]
+    assert "January through April" in cost["consequence"]
+    assert cost["watch"] == "scripts/check_esa_reprocessing.py"
+    assert "mixed_lineage_pending_esa_reprocessing" in cost["wet_season_lineage"]
+    # E o congelamento carrega a consequência, não só o ponteiro para ela.
+    assert (
+        fz.build_freeze()["baseline"]["replay_generation"]["accepted_cost"]
+        == cost["consequence"]
+    )
+
+
+def test_o_checksum_do_manifest_na_decisao_e_o_medido_e_nao_um_plausivel():
+    """Este arquivo nasceu com um `sha256` INVENTADO — 64 caracteres hex,
+    plausível, e falso. `AGENTS.md`: *"um identificador plausível é pior que um
+    obviamente ausente, porque a revisão não o pega"*.
+
+    O teste compara o valor gravado na decisão com o que o congelamento lê do
+    MESMO arquivo, então os dois não podem divergir em silêncio.
+    """
+
+    decision = json.loads(
+        (ROOT / "config" / "phase3_replay_baseline_decision_v1.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    version = decision["baseline_version"]
+    generation = fz.build_freeze()["baseline"]["registered_generations"][version]
+    assert decision["evidence"]["manifest_path"] == generation["manifest_path"]
+    assert decision["evidence"]["manifest_sha256"] == generation["manifest_sha256"]
+
+
+def test_a_decisao_nao_autoriza_rodar_a_phase_4():
+    """Escolher a referência e autorizar o reprocessamento são coisas
+    diferentes, e o arquivo diz qual das duas ele é.
+    """
+
+    decision = json.loads(
+        (ROOT / "config" / "phase3_replay_baseline_decision_v1.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert (
+        decision["authorization"]["phase_4_execution_authorized_by_this_decision"]
+        is False
+    )
+    assert decision["authorization"]["production_mutation_permitted"] is False
 
 
 def test_as_duas_geracoes_registradas_trazem_a_identidade_do_inventario():
@@ -543,15 +707,53 @@ def test_a_geracao_2_1_0_esta_presente_e_verificada_byte_a_byte():
 RUNBOOK = ROOT / "docs" / "operations" / "PHASE_3_REPLAY_RUNBOOK.md"
 
 
-def test_o_runbook_existe_e_declara_a_revisao_do_dono():
-    """O bullet pede revisão explícita do dono antes do cutover. O runbook não
-    pode declarar-se revisado por conta própria.
+def test_o_runbook_declara_a_revisao_pre_cutover_ainda_aberta():
+    """O bullet pede revisão explícita do dono **antes do cutover**, e o runbook
+    não pode declarar-se revisado por conta própria.
+
+    Em 2026-09-09 dois itens fecharam — a baseline e a cota — e os outros
+    quatro continuam abertos. O teste exige que ainda haja item aberto e que o
+    documento diga que o cutover não começa sem ela; se algum dia todos
+    fecharem, este teste cai e a linha tem de mudar deliberadamente.
     """
 
     text = RUNBOOK.read_text(encoding="utf-8")
-    assert "Estado da revisão do dono" in text
+    assert "Revisão pré-cutover do dono" in text
     assert "PENDENTE" in text
-    assert "- [ ]" in text, "os itens da revisão têm de estar desmarcados"
+    assert "- [ ]" in text, "a revisão pré-cutover ainda tem item aberto"
+    assert "- [x]" in text, "e tem item já fechado, que é o estado real"
+    assert "cutover não" in text and "começa" in text
+
+
+def test_o_runbook_registra_a_decisao_da_baseline_que_o_congelamento_le():
+    """As duas metades têm de dizer a mesma coisa: se o runbook nomeasse uma
+    geração e o congelamento lesse outra, a Phase 4 seguiria a errada.
+    """
+
+    text = RUNBOOK.read_text(encoding="utf-8")
+    decided = fz.build_freeze()["baseline"]["replay_generation"]
+    assert decided["decided"] is True
+    assert f"DECIDIDA em {decided['authorized_on']}" in text
+    assert decided["version"] in text
+    assert decided["decision_path"] in text
+    # E TODA ocorrência de `--baseline-version` no runbook nomeia a geração
+    # decidida. Verificar só que a decidida aparece em algum lugar não bastava:
+    # medido, com o comando do procedimento trocado para `1.0.0` o teste passava,
+    # porque a §2.1 menciona `--baseline-version 2.1.0` noutra linha.
+    import re
+
+    named = set(re.findall(r"--baseline-version\s+`?(\d+\.\d+\.\d+)", text))
+    assert named == {decided["version"]}, named
+
+
+def test_o_runbook_nao_diz_que_a_decisao_bloqueia_a_phase_4():
+    """`pre-cutover` é literal no bullet: a revisão é portão da Phase 6. Um
+    runbook que dissesse o contrário travaria o reprocessamento sem motivo.
+    """
+
+    text = RUNBOOK.read_text(encoding="utf-8")
+    assert "não** bloqueia" in text or "não bloqueia" in text
+    assert "a Phase 4 pode começar" in text
 
 
 def test_o_runbook_nomeia_os_alvos_resolvidos_lidos_do_codigo():
