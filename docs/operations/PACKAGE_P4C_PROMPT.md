@@ -233,14 +233,29 @@ próxima sessão pode fazer sem ela, na ordem em que se sustenta:
    dependem do bucket. Diga quais fecham e quais não.
 
 3. **A decisão que falta agora é a resolução determinística**, e ela é do
-   dono porque muda o que o dado significa. O que atenderia a exigência dele
-   não é parâmetro: **resolver o caso muitos-para-muitos deterministicamente
-   em vez de levantar** — por exemplo atribuir cada detecção ao seu único
-   melhor pai pela maior fração de sobreposição, com desempate pelo `event_id`.
-   É pequeno, determinístico e não pede pessoa nenhuma. **Não foi
-   implementado de propósito:** é uma regra nova, não a que o dono autorizou,
-   e a sessão que a escreveria acabou de errar uma afirmação de garantia — não
-   é a hora de inventar uma segunda régua sem revisão.
+   dono porque muda o que o dado significa. **O ADENDO §16 do registro mediu o
+   que faltava e MUDOU a recomendação — leia-o antes de propor qualquer regra.**
+
+   Medido: os emaranhados que bloqueiam cada data contêm **0,13% a 0,39%** das
+   manchas dela (9 a 47 de 7 000 a 19 000), em formas quase sempre
+   **2 novas × 2 antigas**, e a data **inteira** é descartada por causa delas.
+   Validado por controle negativo nas 7 datas testadas, nos dois sentidos, com
+   `scripts/measure_lineage_ambiguity.py`.
+
+   As três opções estão tabeladas em §16.4 com o custo de cada uma.
+   **Recomendação: (c) — as detecções do emaranhado nascem como `origin`**,
+   porque com 0,1-0,4% em jogo é a única que nunca afirma uma ancestralidade
+   que não se sabe.
+
+   **A recomendação anterior — "o pai de maior sobreposição vence" — foi
+   RETIRADA**, e a razão é instrutiva: no caso vizinho (vários pais, uma
+   detecção) o `update_tracks` **já** registra todos os pais, então escolher um
+   seria *menos* fiel do que o comportamento existente ao lado. Eu a havia
+   recomendado sem ler o que o código já fazia ali.
+
+   **Nenhuma foi implementada de propósito:** é regra nova, não a que o dono
+   autorizou, e a §15.4 registra por que esta linha de trabalho não deve
+   inventar uma segunda régua científica sem revisão.
 
 4. **Não deposite o candidato atual sem essa decisão.** Ele é internamente
    consistente e reprodutível, e agora publica **3 datas de 90** com 716
@@ -430,22 +445,38 @@ leva **47 segundos** em vez de 75, e ocupa **15 GB** em vez de 35.
 
 ### O que você precisa fazer
 
-1. **Aprovar a regra de desempate automático.** O senhor já decidiu afrouxar a
-   regra do overlap, eu executei, e **funcionou em parte**: o mapa padrão saiu
-   de vazio para 716 manchas. Mas medi que **nenhum ajuste desse número
-   resolve** — ele se autossabota, porque quanto mais alto o número, mais
-   manchas viram "manchas novas" que ficam por cima das antigas, e é justamente
-   isso que confunde o sistema na data seguinte.
+1. **Escolher o que o sistema faz quando não consegue decidir.** O senhor já
+   decidiu afrouxar a regra do overlap, eu executei, e **funcionou em parte**:
+   o mapa padrão saiu de vazio para 716 manchas. Mas medi que **nenhum ajuste
+   desse número resolve** — ele se autossabota, porque quanto mais alto, mais
+   manchas viram "manchas novas" que ficam por cima das antigas, e é isso que
+   confunde o sistema na data seguinte.
 
-   O que resolve, e atende a sua exigência de não ter revisão humana: quando o
-   sistema não conseguir decidir, ele **escolhe sozinho, por uma regra fixa** —
-   a mancha nova pertence à mancha antiga com a qual ela mais se sobrepõe, e
-   em caso de empate exato, à de identificador menor. Sempre o mesmo resultado,
-   nenhuma pessoa envolvida.
+   **E medi o tamanho real do problema:** os nozinhos que travam cada data
+   contêm de **0,13% a 0,39%** das manchas dela — 9 a 47 manchas de 7 a 19 mil.
+   A data **inteira** é descartada por causa delas. O senhor não está arbitrando
+   entre teorias; está decidindo o que fazer com menos de meio por cento dos
+   dados para não perder os outros 99,6%.
 
-   **Não fiz isso sem lhe perguntar** porque é uma regra nova sobre o
-   significado do dado, e não o ajuste que o senhor autorizou. **Não é urgente**,
-   mas nada avança sem ela.
+   Três caminhos, todos automáticos e sem pessoa nenhuma envolvida:
+
+   - **(a)** a mancha nova pertence à antiga com a qual mais se sobrepõe —
+     simples, mas *afirma* uma origem que, nos empates, não tem base real;
+   - **(b)** o nozinho inteiro vira uma fusão — preserva tudo, mas num caso
+     grande junta oito manchas sobre quatro eventos numa história só;
+   - **(c)** as manchas do nozinho começam como manchas novas — o sistema diz
+     "aqui eu não sei", registra isso, e nunca inventa uma origem.
+
+   **Recomendo (c)**, porque com menos de meio por cento em jogo o ganho de
+   acertar a origem é pequeno e o custo de afirmar uma errada é permanente —
+   vai para o artigo.
+
+   **Eu havia recomendado (a) e retiro a recomendação:** descobri que no caso
+   vizinho o sistema já registra *todas* as origens, então escolher uma seria
+   menos fiel do que o que ele já faz ao lado. Eu havia recomendado sem ler
+   essa parte do código.
+
+   **Não é urgente**, mas nada avança sem a sua escolha.
 
 2. **Mesclar a proposta desta sessão quando lhe convier** — é a número 59, e
    está aberta sem mesclar. Ela não muda nada do que está no ar: acrescenta o
