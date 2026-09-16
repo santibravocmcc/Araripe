@@ -64,7 +64,17 @@ def _annotate(message: str) -> str:
 
 
 def build_read_only_store() -> ri.ReadOnlyStore:
-    """A candidate-identity store with no expressible write."""
+    """A candidate-identity store with no expressible write.
+
+    An operator with no ``R2_STAGING_*`` in the environment falls back to the
+    named AWS CLI profile that
+    ``docs/operations/CLOUDFLARE_STAGING_ACCESS_FOR_CLAUDE.md`` prescribes, so
+    the secret never enters this process's environment or a transcript.  The
+    lane passes the variables explicitly and therefore never reaches that
+    branch — ``v2_operational_publish.yml`` is unchanged by this.  The fallback
+    is opt-in here and is **not** available to
+    ``scripts/publish_green_release.py``: see ``cs.build_client``.
+    """
 
     bucket = os.environ.get(BUCKET_VAR, cs.STAGING_BUCKET)
     endpoint = os.environ.get(ENDPOINT_VAR)
@@ -76,6 +86,7 @@ def build_read_only_store() -> ri.ReadOnlyStore:
             "secret_access_key": os.environ.get(SECRET_KEY_VAR, ""),
             "region": os.environ.get("AWS_REGION", "auto"),
         },
+        profile_fallback=True,
     )
     return ri.ReadOnlyStore(client, bucket)
 
