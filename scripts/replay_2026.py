@@ -260,6 +260,7 @@ def _preflight():
     """Everything that must hold before a single EECU-second is spent."""
     from src.replay import freeze
     from src.replay.composition_unit import load_decision
+    from src.replay.lineage_decision import load_decision as load_lineage
     from src.replay.overlap_decision import load_decision as load_overlap
 
     frozen = freeze.load_freeze()
@@ -271,7 +272,12 @@ def _preflight():
     # command-line flag for it on purpose: a scientific rule that an operator
     # could override per invocation is not a recorded decision.
     overlap = load_overlap()
-    return frozen, baseline, decision, overlap
+    # The owner's rule for a lineage that cannot be determined. Read, never
+    # defaulted, and with no command-line flag, for the same reason as the
+    # overlap fraction: a scientific rule an operator could override per
+    # invocation is not a recorded decision.
+    lineage = load_lineage()
+    return frozen, baseline, decision, overlap, lineage
 
 
 def command_plan(args):
@@ -281,7 +287,7 @@ def command_plan(args):
         expected_acquisitions, screen_by_coverage, screen_summary,
     )
 
-    frozen, baseline, decision, overlap = _preflight()
+    frozen, baseline, decision, overlap, lineage = _preflight()
     print("freeze          : %s" % frozen["freeze_sha256"])
     print("baseline        : %s (%s, %s)"
           % (baseline["version"], baseline["decided_by"], baseline["authorized_on"]))
@@ -291,6 +297,9 @@ def command_plan(args):
     print("overlap rule    : %s (%s, %s)"
           % (overlap.min_overlap_fraction, overlap.decided_by,
              overlap.decision_date))
+    print("lineage rule    : %s under %s (%s, %s)"
+          % (lineage.resolution, lineage.rule_id, lineage.decided_by,
+             lineage.decision_date))
     print()
 
     ee.Initialize(project=args.project)
@@ -382,7 +391,7 @@ def command_run(args):
     from src.replay.seasonal_regime import composition_regime_record
     from scripts.run_detection_from_gee import INDICES, _load_composite
 
-    frozen, baseline_decision, decision, overlap = _preflight()
+    frozen, baseline_decision, decision, overlap, lineage = _preflight()
     baseline = resolve_baseline(args.baseline_version)
     out = Path(args.out_dir); out.mkdir(parents=True, exist_ok=True)
     composites = out / "composites"; composites.mkdir(exist_ok=True)
@@ -390,10 +399,12 @@ def command_run(args):
 
     print("baseline generation %s from %s" % (baseline.version, baseline.directory))
     print("composition unit    %s under %s" % (decision.unit, decision.composite_method_id))
-    print("overlap rule        %s (%s, majority rule: %s) — the ambiguous-"
-          "lineage refusal is REDUCED, not impossible"
+    print("overlap rule        %s (%s, majority rule: %s)"
           % (overlap.min_overlap_fraction, overlap.decided_by,
              overlap.is_majority_rule))
+    print("lineage rule        %s under %s (%s) — an undeterminable lineage "
+          "becomes a NEW event and is recorded as such"
+          % (lineage.resolution, lineage.rule_id, lineage.decided_by))
 
     # The manifest is the WHOLE replay window's, written once by `plan`, and
     # a batch is a chronological slice of its acquisitions. Re-enumerating per
@@ -443,6 +454,7 @@ def command_run(args):
         window_end_exclusive=args.end,
     )
     regime_record["persistence_overlap_rule"] = overlap.as_dict()
+    regime_record["lineage_ambiguity_rule"] = lineage.as_dict()
     (out / "composition_regimes.json").write_text(
         json.dumps(regime_record, indent=2, sort_keys=True) + "\n",
         encoding="utf-8")
@@ -591,6 +603,11 @@ def command_run(args):
               % (label, 0 if frame.empty else len(frame),
                  100 * quality.valid_coverage_fraction))
 
+    # How often the owner's lineage rule actually fired, per date. Recorded
+    # because option (c) is defensible in a publication only if the affected
+    # detections are enumerable.
+    ambiguity_by_date: dict[str, int] = {}
+
     # ── per UTC date: persistence once, then the terminal rows it minted ─────
     state = load_persistence_state(Path(args.state_path)) if Path(args.state_path).exists() else None
     accepted_ids = set(_CARRY)
@@ -619,7 +636,8 @@ def command_run(args):
                     algorithm_version=DETECTION_ALGORITHM_VERSION,
                     baseline_version=baseline.version,
                     monitoring_extent_id=MONITORING_EXTENT_ID, mode="rebuild",
-                    min_overlap_frac=overlap.min_overlap_fraction)
+                    min_overlap_frac=overlap.min_overlap_fraction,
+                    ambiguous_lineage=lineage.resolution)
             except AmbiguousLineageError as exc:
                 # The accepted Package 2A.1 contract says ambiguous
                 # many-to-many split/merge components "fail closed for
@@ -651,8 +669,13 @@ def command_run(args):
                       "failed_processing (%s)" % (date, len(day_items), exc))
                 continue
             save_alerts(merged, date, alerts_dir=alerts_dir)
-            print("  date %s: %d alert(s) from %d acquisition(s)"
-                  % (date, len(merged), len(day_items)))
+            resolved = int(merged.attrs.get("persistence_transition", {})
+                           .get("lineage_ambiguity_resolved_count", 0))
+            ambiguity_by_date[date] = resolved
+            print("  date %s: %d alert(s) from %d acquisition(s)%s"
+                  % (date, len(merged), len(day_items),
+                     "" if not resolved else
+                     "  [%d with undeterminable lineage recorded as new]" % resolved))
         else:
             merged = None
             print("  date %s: zero alerts from %d acquisition(s)" % (date, len(day_items)))
@@ -690,6 +713,20 @@ def command_run(args):
     print("screen (window): %s" % json.dumps(screen_summary(screened_all)))
     (out / "reconciliation.json").write_text(
         json.dumps(finding, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    if ambiguity_by_date:
+        existing = {}
+        ambiguity_path = out / "lineage_ambiguity.json"
+        if ambiguity_path.exists():
+            existing = json.loads(ambiguity_path.read_text(encoding="utf-8")).get(
+                "resolved_as_origin_by_date", {})
+        existing.update(ambiguity_by_date)
+        ambiguity_path.write_text(json.dumps({
+            "rule": lineage.as_dict(),
+            "resolved_as_origin_by_date": dict(sorted(existing.items())),
+            "total_resolved_as_origin": sum(existing.values()),
+        }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        print("lineage rule  : %d detection(s) recorded as new across %d date(s)"
+              % (sum(ambiguity_by_date.values()), len(ambiguity_by_date)))
 
     if finding["complete"]:
         whole = ProcessingLedgerV3(

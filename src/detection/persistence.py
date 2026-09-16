@@ -39,6 +39,21 @@ from config.settings import TARGET_CRS
 # differences between dates.
 DEFAULT_MIN_OVERLAP_FRAC = 0.05
 
+#: What ``update_tracks`` does with a genuinely ambiguous lineage graph.
+#:
+#: ``raise`` is the accepted Package 2A.1 behaviour and stays the default, so
+#: the scheduled pipeline is unchanged: an ambiguous many-to-many split/merge
+#: component fails closed for reviewed correction.
+#:
+#: ``origin`` is the owner's decision of 2026-09-16 for the replay
+#: (``config/phase4_lineage_ambiguity_decision_v1.json``): the detections whose
+#: lineage cannot be determined are recorded as NEW events, and the ambiguity
+#: is recorded with them, so nothing waits for a person and nothing asserts an
+#: ancestry nobody knows.
+AMBIGUOUS_LINEAGE_RAISE = "raise"
+AMBIGUOUS_LINEAGE_ORIGIN = "origin"
+AMBIGUOUS_LINEAGE_MODES = (AMBIGUOUS_LINEAGE_RAISE, AMBIGUOUS_LINEAGE_ORIGIN)
+
 
 def _to_metric(gdf: gpd.GeoDataFrame, crs: str = TARGET_CRS) -> gpd.GeoDataFrame:
     """Reproject to a metric CRS so intersection areas are meaningful."""
@@ -691,6 +706,7 @@ def update_tracks(
     grace_days: int = GRACE_DAYS,
     confirmed_min: int = CONFIRMED_MIN,
     min_overlap_frac: float = DEFAULT_MIN_OVERLAP_FRAC,
+    ambiguous_lineage: str = AMBIGUOUS_LINEAGE_RAISE,
 ) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
     """Apply one canonical acquisition exactly once in chronological order."""
     import numpy as np
@@ -707,6 +723,10 @@ def update_tracks(
 
     if mode not in {"live", "rebuild"}:
         raise ValueError("mode must be 'live' or 'rebuild'")
+    if ambiguous_lineage not in AMBIGUOUS_LINEAGE_MODES:
+        raise ValueError(
+            "ambiguous_lineage must be one of %r" % (AMBIGUOUS_LINEAGE_MODES,)
+        )
     if acquisition.observed_on != date:
         raise ValueError("acquisition observed_on differs from transition date")
     if acquisition.monitoring_extent_id != monitoring_extent_id:
@@ -845,6 +865,44 @@ def update_tracks(
                     int(current_index)
                 )
 
+    # The detections whose lineage is genuinely ambiguous: more than one
+    # eligible parent, at least one of which also claims another detection.
+    #
+    # This set is exactly the condition of the first branch of the original
+    # two-branch guard, and the second branch can only fire when it is
+    # non-empty -- a sibling with more than one parent satisfies the first
+    # condition itself.  That equivalence is brute-forced over every bipartite
+    # graph up to three detections by three events in
+    # ``tests/test_replay_lineage_ambiguity.py``, because "the reformulation
+    # is equivalent" is exactly the kind of claim that should not rest on
+    # reading.
+    ambiguous_currents = {
+        current_index
+        for current_index, parents in parents_by_current.items()
+        if len(parents) > 1
+        and any(len(currents_by_parent[parent]) > 1 for parent in parents)
+    }
+    resolved_as_origin: list[int] = []
+    if ambiguous_currents:
+        if ambiguous_lineage == AMBIGUOUS_LINEAGE_RAISE:
+            raise AmbiguousLineageError(
+                "many-to-many split/merge component requires reviewed correction"
+            )
+        # The owner's rule: record them as NEW events rather than assign an
+        # ancestry nobody can determine.  Only the ambiguous detections lose
+        # their links; their single-parent neighbours inside the same tangle
+        # are not ambiguous and keep continuing their one parent.
+        resolved_as_origin = sorted(ambiguous_currents)
+        for current_index in resolved_as_origin:
+            for parent in tuple(parents_by_current[current_index]):
+                currents_by_parent[parent].discard(current_index)
+                if not currents_by_parent[parent]:
+                    del currents_by_parent[parent]
+            parents_by_current[current_index] = set()
+
+    # Re-check rather than assume the drop silenced it.  Links are only ever
+    # removed, so no new violation can appear -- but this guard exists because
+    # "cannot happen" was wrong before.
     for current_index, parents in parents_by_current.items():
         if len(parents) > 1 and any(
             len(currents_by_parent[parent]) > 1 for parent in parents
@@ -1089,5 +1147,14 @@ def update_tracks(
         "state_changed": True,
         "new_contribution_count": n,
         "duplicate_contribution_count": 0,
+        "lineage_ambiguity_resolved_count": len(resolved_as_origin),
     }
+    if resolved_as_origin:
+        # Only when the rule actually fired, so the blue alert files keep their
+        # exact property set.  Option (c) is defensible in a publication only
+        # if the affected detections are enumerable, so they are labelled.
+        resolved = set(resolved_as_origin)
+        cur["lineage_ambiguity_resolved"] = [
+            index in resolved for index in range(n)
+        ]
     return cur, new_state
