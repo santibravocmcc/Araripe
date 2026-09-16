@@ -16,6 +16,44 @@ O estado do gate P4, cláusula por cláusula, está em
 
 ---
 
+## 0. Bloco datado de 2026-09-16 — o dono decidiu, e a execução ficou em curso
+
+**LEIA ISTO ANTES DO RESTO DO DOCUMENTO.** O corpo abaixo foi escrito em
+2026-09-09, quando a regra de linhagem ainda era uma pergunta aberta. Ela foi
+decidida e implementada.
+
+**O dono escolheu a opção (c)** da §16.4 do registro: uma detecção cuja
+linhagem não pode ser determinada é registrada como evento **novo**, e a
+ambiguidade é registrada com ela. Gravada em
+`config/phase4_lineage_ambiguity_decision_v1.json`, lida por
+`src/replay/lineage_decision.py`, com `update_tracks` recebendo um parâmetro
+aditivo cujo default do azul continua `raise`.
+
+**O bloqueio acabou: zero recusas em 17 datas**, contra 3 datas no ano inteiro
+da tentativa anterior.
+
+**O PRIMEIRO PASSO DESTA SESSÃO, e não é começar nada novo:**
+
+1. conferir `ALL BATCHES DONE` em `run4.log` no diretório isolado — a execução
+   rodava destacada da sessão e termina sozinha; estava em **69 de 107**;
+2. se faltar aquisição, rodar os lotes restantes (os 48 compostos estão em
+   disco, não há download);
+3. rodar `scripts/finalize_replay_candidate.py` e
+   `scripts/compare_replay_to_blue.py`;
+4. atualizar a §17 do registro com os números finais e fechar o gate P4
+   cláusula por cláusula.
+
+**ATENÇÃO a um número que mudou e que o dono já sabe:** a minha estimativa de
+0,13-0,39% de detecções afetadas **estava baixa**. Ela foi medida com o estado
+congelado em 04-04; com a regra ativa as datas encadeiam, o estado cresce, e a
+fração real sobe para **2-6%** em maio-junho, com **1,82%** acumulado nas 17
+primeiras datas. Não invalida a decisão — invalida o número que eu havia dado.
+O que vai para a publicação é *"cerca de 2%"*, e a trajetória dele ao longo do
+ano é insumo da Phase 5.
+
+**Não redecida a regra de linhagem, nem a do overlap, nem a baseline, nem a
+unidade de composição.** As quatro estão seladas com autorização datada.
+
 ## 1. A dependência que precede tudo — confirme por conteúdo
 
     git fetch origin
