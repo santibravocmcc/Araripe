@@ -55,6 +55,7 @@ siblings) are in beta, so nothing here is built on them.
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from typing import Any
 
@@ -75,6 +76,17 @@ STAGING_ENDPOINT = "https://9416750169311ee4afc18a8ff3c771d4.r2.cloudflarestorag
 PRODUCTION_BUCKET = "araripe-cogs"
 
 CONDITIONAL_PARAMETERS = ("IfMatch", "IfNoneMatch")
+
+#: The two entries of a ``credentials`` mapping that are the credential.
+#: ``region`` travels in the same dict and is not a secret, so the profile
+#: fallback below must not treat a missing region as a missing credential.
+CREDENTIAL_KEYS = ("access_key_id", "secret_access_key")
+
+#: The environment variable an operator sets to name a local AWS CLI profile.
+#: ``docs/operations/CLOUDFLARE_STAGING_ACCESS_FOR_CLAUDE.md`` is the reason
+#: this name and no other: it forbids a repository ``.env`` and prescribes
+#: ``aws configure --profile araripe-r2-staging`` plus ``export AWS_PROFILE``.
+PROFILE_VAR = "AWS_PROFILE"
 
 
 class ObjectStoreError(RuntimeError):
@@ -191,28 +203,108 @@ def require_conditional_write_support(client: Any) -> None:
         )
 
 
-def build_client(bucket: str, endpoint_url: str | None, credentials: dict[str, str]):
+def build_client(
+    bucket: str,
+    endpoint_url: str | None,
+    credentials: dict[str, str],
+    *,
+    profile_fallback: bool = False,
+):
     """A boto3 S3 client for the staging bucket, or a refusal.
 
     The target guard runs first, so a misconfigured bucket or endpoint is
-    refused before a credential is even handed to boto3.
+    refused before a credential is even handed to boto3 — and before
+    ``profile_fallback`` is consulted, because a wrong bucket must not become
+    reachable merely by changing where the key comes from.
+
+    ``profile_fallback`` and why it is not the default
+    -------------------------------------------------
+    ``docs/operations/CLOUDFLARE_STAGING_ACCESS_FOR_CLAUDE.md`` says **"do not
+    use a repository `.env`"** and prescribes a named AWS CLI profile in
+    ``~/.aws/credentials`` at mode 600, reached by exporting ``AWS_PROFILE``.
+    Every caller here passed the key explicitly from ``R2_STAGING_*``, so the
+    prescribed profile was never consulted and a local operator's only route
+    was to export the secret into the process environment — which is the
+    exposure the document exists to avoid.  Measured 2026-09-16: the profile
+    ``araripe-r2-staging`` lists ``araripe-v2-staging`` and is refused on
+    ``araripe-cogs`` with ``AccessDenied``.
+
+    It is **opt-in per call site** rather than a property of this function,
+    and that is the whole design:
+
+    * ``scripts/publish_green_release.py`` also calls this function, with the
+      *promotion* identity.  A fallback that applied to every caller would let
+      a shell holding ``AWS_PROFILE=araripe-r2-staging`` publish a release and
+      move the green pointer with the **candidate** key — collapsing the one
+      separation ``docs/operations/PROMOTION_IDENTITY_SETUP.md`` exists to
+      keep: *"if the two lanes used the same key, any candidate run could move
+      the pointer"*.  Only the two lane-2 entry points pass ``True``, and
+      ``tests/test_profile_credential_fallback.py`` reads the promotion CLI's
+      source to prove it does not.
+    * With no explicit key and no fallback, the refusal stays exactly as it
+      was.  ``v2_operational_publish.yml`` passes ``R2_STAGING_*`` from its
+      Environment, so the lane never reaches this branch and needs no edit;
+      an Environment whose secret went missing still fails closed there rather
+      than silently authenticating with whatever ambient credential a runner
+      happens to carry.
+
+    Three conditions, all required, so nothing ambient is ever picked up:
+
+    1. the call site opted in;
+    2. **both** explicit credential values are absent — a half-set pair is a
+       configuration error and is still named, never quietly replaced;
+    3. ``AWS_PROFILE`` is set and non-empty.  The profile is passed to
+       ``boto3.Session`` by name rather than left to the bare default chain,
+       so a missing profile raises instead of falling through to instance
+       metadata, an OIDC role, or a ``[default]`` profile nobody named.
     """
 
     assert_staging_target(bucket, endpoint_url)
-    missing = [name for name, value in credentials.items() if not value]
-    if missing:
-        raise ObjectStoreError(
-            "missing R2 credentials in the environment: " + ", ".join(sorted(missing))
-        )
+    supplied = {name: credentials.get(name) or "" for name in CREDENTIAL_KEYS}
+    profile = os.environ.get(PROFILE_VAR, "").strip()
+    use_profile = (
+        profile_fallback and profile and not any(supplied.values())
+    )
+
+    if not use_profile:
+        missing = [name for name, value in credentials.items() if not value]
+        if missing:
+            raise ObjectStoreError(
+                "missing R2 credentials in the environment: "
+                + ", ".join(sorted(missing))
+            )
+
     import boto3
 
-    client = boto3.client(
-        "s3",
-        endpoint_url=endpoint_url,
-        aws_access_key_id=credentials["access_key_id"],
-        aws_secret_access_key=credentials["secret_access_key"],
-        region_name=credentials.get("region") or "auto",
-    )
+    if use_profile:
+        try:
+            session = boto3.Session(profile_name=profile)
+        except Exception as exc:  # botocore.exceptions.ProfileNotFound
+            raise ObjectStoreError(
+                f"{PROFILE_VAR}={profile!r} names no usable AWS profile: {exc}. "
+                "Configure it as docs/operations/"
+                "CLOUDFLARE_STAGING_ACCESS_FOR_CLAUDE.md prescribes, or pass "
+                "the credential explicitly."
+            ) from exc
+        if session.get_credentials() is None:
+            raise ObjectStoreError(
+                f"the AWS profile {profile!r} resolved no credential, so no "
+                "object operation would be authenticated. Refusing before any "
+                "call."
+            )
+        client = session.client(
+            "s3",
+            endpoint_url=endpoint_url,
+            region_name=credentials.get("region") or "auto",
+        )
+    else:
+        client = boto3.client(
+            "s3",
+            endpoint_url=endpoint_url,
+            aws_access_key_id=credentials["access_key_id"],
+            aws_secret_access_key=credentials["secret_access_key"],
+            region_name=credentials.get("region") or "auto",
+        )
     require_conditional_write_support(client)
     return client
 

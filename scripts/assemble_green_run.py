@@ -299,6 +299,15 @@ def build_candidate_store() -> cs.ConditionalStore:
 
     ``assert_staging_target`` runs inside ``build_client`` before a credential
     is read, so ``araripe-cogs`` is refused by name rather than by permission.
+
+    An operator with no ``R2_STAGING_*`` in the environment falls back to the
+    named AWS CLI profile that
+    ``docs/operations/CLOUDFLARE_STAGING_ACCESS_FOR_CLAUDE.md`` prescribes, so
+    the secret never enters this process's environment or a transcript.  The
+    lane passes the variables explicitly and therefore never reaches that
+    branch — ``v2_operational_publish.yml`` is unchanged by this.  The fallback
+    is opt-in here and is **not** available to
+    ``scripts/publish_green_release.py``: see ``cs.build_client``.
     """
 
     bucket = os.environ.get(BUCKET_VAR, cs.STAGING_BUCKET)
@@ -311,6 +320,7 @@ def build_candidate_store() -> cs.ConditionalStore:
             "secret_access_key": os.environ.get(SECRET_KEY_VAR, ""),
             "region": os.environ.get("AWS_REGION", "auto"),
         },
+        profile_fallback=True,
     )
     return cs.ConditionalStore(client, bucket)
 
