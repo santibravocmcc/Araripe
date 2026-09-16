@@ -125,6 +125,24 @@ registrar o gate em `docs/implementation/`. Atualizá-lo é trabalho pequeno e
 **deliberado**; a sessão anterior não o fez para não mudar o documento canônico
 do plano de passagem.
 
+**i. O AZUL ESTÁ PARADO, e é achado de produção — leia antes de planejar.**
+`detect_gee.yml` falha em **toda** execução agendada desde o landing do 2A.6:
+2026-09-10 e 2026-09-14, as duas com `LegacyPersistenceStateError` e a mesma
+lista de 16 colunas faltantes. A última agendada bem-sucedida foi **2026-09-03**.
+Mecanismo lido na `main`: `load_persistence_state`
+(`src/detection/persistence.py:443`) chama `_validate_state_columns`, que
+levanta em `:375`; o landing trouxe esse loader para a `main` e o workflow faz
+checkout da `main`, então a produção lê o estado vivo — de geração anterior —
+com um loader que o recusa por contrato. A recusa é o desenho; a consequência
+operacional não estava registrada em lugar nenhum. Detalhe completo na §11 de
+`PHASE_4C_2026-09-16.md`.
+
+**Não dispare `detect_gee.yml` nem `update_data.yml` para investigar** — os dois
+escrevem em produção e não são idempotentes. E **não tente consertar**: o
+rebuild que a exceção pede é o estado de geração nova que a Phase 4 já
+depositou em staging, e ligá-lo à produção é o cutover, que é Phase 6 e exige a
+revisão do dono.
+
 ## 3. A tarefa
 
 > **NEXT SESSION MODEL: Opus 5 — EFFORT: max**
@@ -302,7 +320,13 @@ nenhuma versão dos dados pode ser apagada, nunca. E isso está certo assim.
 1. **Mesclar as duas pull requests desta sessão** (backend). Uma é a correção
    de credencial com os testes, a outra é o registro do fechamento da Fase 4.
    Não é urgente, mas a próxima sessão trabalha a partir delas.
-2. **Decidir qual é a próxima frente.** São três caminhos e a escolha é sua:
+2. **Decidir o que fazer com a detecção parada** (veja a seção seguinte). São
+   duas saídas, e as duas são suas: antecipar a virada para a Fase 6, que é o
+   conserto de verdade e exige a sua revisão pré-virada; ou aceitar
+   explicitamente que o sistema no ar fica parado até lá, e registrar isso.
+   **Qualquer conserto passa por mexer na produção, então eu não mexo sem você.**
+   É a coisa mais urgente desta lista.
+3. **Decidir qual é a próxima frente.** São três caminhos e a escolha é sua:
    - **o registro permanente de versões** — é a recomendação, porque não
      depende de nenhuma revisão sua e porque ela destrava a limpeza do
      depósito mais tarde;
@@ -311,23 +335,52 @@ nenhuma versão dos dados pode ser apagada, nunca. E isso está certo assim.
      drone, e autoria/anonimato dos revisores);
    - **a Fase 6**, a virada para o público, que espera a sua revisão
      pré-virada nos quatro pontos que restam.
-3. **Quando puder, olhar o número que vai para a publicação.** Cerca de **3,5%**
+4. **Quando puder, olhar o número que vai para a publicação.** Cerca de **3,5%**
    das detecções de 2026 tiveram origem impossível de determinar e foram
    registradas como eventos novos, seguindo a sua regra de 16/09. É um número
    honesto e defensável, mas é seu para conhecer antes de alguém perguntar.
-4. **Autorizar, ou não, uma correção pequena no documento do plano.** O bloco
+5. **Autorizar, ou não, uma correção pequena no documento do plano.** O bloco
    no topo dele ainda diz que a próxima frente é a Fase 3, e as Fases 3 e 4 já
    fecharam. É meia hora de trabalho e nenhum risco, mas é o documento que
    governa tudo o mais, então eu não o mudo de passagem. Pode esperar.
 
 ### Tem algo preocupante?
 
-**Não.** A produção não foi tocada, nada foi apagado, e as três tentativas do
-recálculo continuam guardadas lado a lado.
+**Sim, uma coisa — e ela não é desta tarefa. O sistema que está no ar parou de
+detectar desmatamento novo.**
 
-Uma coisa merece atenção sem ser alarme: o **token da NASA expira em 6 de
-novembro de 2026**. Quando expirar, a atualização de chuva do site falha e
-aparece vermelha. Ainda há tempo, e é uma troca simples.
+A última vez que a detecção automática rodou com sucesso no horário dela foi
+**3 de setembro**. Depois disso, as duas execuções agendadas (10 e 14 de
+setembro) falharam, as duas pelo mesmo motivo. O dado mais recente que o site
+mostra é de **30 de agosto**.
+
+O motivo, em uma frase: em 8 de setembro a ciência nova entrou no ramo
+principal, e ela **se recusa a trabalhar com o arquivo de memória antigo** do
+sistema — de propósito, porque aquele arquivo não tem as informações que a
+ciência nova precisa e usá-lo produziria números em que não se pode confiar.
+Ela para em vez de fingir.
+
+**A recusa está certa. O que ninguém escreveu é que isso pararia a detecção.**
+Estava registrado que o arquivo antigo teria de ser reconstruído, e que
+reconstruí-lo era trabalho da Fase 4 — mas não que, enquanto isso não
+acontecesse, o sistema no ar ficaria parado. Já são duas semanas sem registro
+de incidente.
+
+**E a notícia boa é que a peça que falta é justamente o que esta sessão
+acabou de construir.** O recálculo de 2026 produziu exatamente o arquivo de
+memória novo que a detecção pede, e ele está guardado no depósito de testes,
+conferido. Ligar os dois é a virada, a Fase 6 — que espera a sua revisão. Eu
+**não** fiz isso, e não devo fazer sem ela.
+
+Duas coisas que **não** são alarme, para você não se preocupar com elas:
+
+- o site **não** está mentindo sobre o frescor do dado. Existe um arquivo
+  interno que diz "atualizado em 15 de setembro", mas ele é de monitoramento e
+  nenhuma página o lê — conferido. O site mostra dado cuja observação mais
+  recente é 30 de agosto;
+- o **token da NASA expira em 6 de novembro de 2026**. Quando expirar, a
+  atualização de chuva falha e aparece vermelha. Ainda há tempo, e é uma troca
+  simples.
 
 ### O que ainda falta no caminho
 
@@ -339,6 +392,7 @@ aparece vermelha. Ainda há tempo, e é uma troca simples.
   **não** trava as fases seguintes; foi decisão sua.
 - **Fase 6 — a virada.** Ligar o site ao caminho novo, desligar o robô antigo,
   mover o endereço público. Espera a sua revisão pré-virada, e é a fase em que
-  algo pode de fato quebrar para quem visita o site.
+  algo pode de fato quebrar para quem visita o site. **Passou a ser também o
+  conserto da detecção parada**, o que muda a urgência dela.
 - **Fase 7 — acabamento.** Rodar os testes automaticamente a cada mudança,
   acessibilidade, e transformar o que aprendemos em ferramentas reutilizáveis.
