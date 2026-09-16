@@ -32,16 +32,20 @@ aditivo cujo default do azul continua `raise`.
 **O bloqueio acabou: zero recusas em 17 datas**, contra 3 datas no ano inteiro
 da tentativa anterior.
 
-**O PRIMEIRO PASSO DESTA SESSÃO, e não é começar nada novo:**
+**A EXECUÇÃO TERMINOU E O CANDIDATO ESTÁ MONTADO.** 107/107 terminais,
+`reconciles: True`, **zero `failed_processing`**, **36 datas com alertas** e
+**67 068 feições fortes**. Contra o azul: 36 aceitas pelas duas, 8 só pelo
+azul (5 do portão de anomalia da estação chuvosa, 3 de cobertura), 0 só pelo
+replay. Candidato: 72 objetos, 1 785 931 509 bytes, corte `2026-08-30`.
 
-1. conferir `ALL BATCHES DONE` em `run4.log` no diretório isolado — a execução
-   rodava destacada da sessão e termina sozinha; estava em **69 de 107**;
-2. se faltar aquisição, rodar os lotes restantes (os 48 compostos estão em
-   disco, não há download);
-3. rodar `scripts/finalize_replay_candidate.py` e
-   `scripts/compare_replay_to_blue.py`;
-4. atualizar a §17 do registro com os números finais e fechar o gate P4
-   cláusula por cláusula.
+**O PRIMEIRO PASSO DESTA SESSÃO** é portanto o depósito, que é o obstáculo 2
+(§2h) — e ele continua sem lane. Leia a §5 e a §17.4 do registro antes de
+propor qualquer coisa, e o checkpoint em `docs/handoffs/`.
+
+**A FRAÇÃO FINAL É 3,49%, e não os 0,13-0,39% que o corpo abaixo cita.** 13 480
+de 386 760 detecções. A estimativa antiga foi medida com o estado congelado em
+04-04 — o estado de histórico mais curto e portanto de menor ambiguidade
+possível. **Onde este documento disser 0,13-0,39%, o valor é 3,49%.**
 
 **ATENÇÃO a um número que mudou e que o dono já sabe:** a minha estimativa de
 0,13-0,39% de detecções afetadas **estava baixa**. Ela foi medida com o estado
