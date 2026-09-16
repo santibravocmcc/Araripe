@@ -47,6 +47,27 @@ de 386 760 detecções. A estimativa antiga foi medida com o estado congelado em
 04-04 — o estado de histórico mais curto e portanto de menor ambiguidade
 possível. **Onde este documento disser 0,13-0,39%, o valor é 3,49%.**
 
+**E A CREDENCIAL DE STAGING EXISTE — o corpo abaixo diz que não, e está
+errado.** Eu procurei `R2_STAGING_ACCESS_KEY_ID` no ambiente e no `.env` e
+concluí ausência. `docs/operations/CLOUDFLARE_STAGING_ACCESS_FOR_CLAUDE.md`,
+de 2026-08-11, diz **"do not use a repository `.env`"** e manda um profile
+nomeado do AWS CLI. Medido em 16/09: profile `araripe-r2-staging` configurado,
+`~/.aws/credentials` em modo 600, e o teste de aceitação do documento passa —
+`araripe-v2-staging` lista, `araripe-cogs` dá `AccessDenied`.
+**Leia aquele documento antes de tocar em credencial.** Ver §18 do registro.
+
+**O que falta é pequeno e está na §18.1:** `build_candidate_store()` lê as
+variáveis do ambiente e as passa explícitas ao boto3, então **não usa o
+profile**. A correção é aditiva — quando as variáveis faltarem, deixar o boto3
+resolver pela cadeia padrão, que honra `AWS_PROFILE`. Assim o segredo nunca
+entra no ambiente nem numa transcrição.
+
+**E NÃO traga a identidade de promoção para cá** (§18.2). Deposite com a sua
+credencial de staging e mande o passo de publicar pela lane que já existe,
+`v2_operational_publish.yml`, que recebe o `run_id` e usa as duas identidades
+em Environments separados. Ter as duas localmente destruiria a separação de
+autoridade que a arquitetura existe para manter.
+
 **ATENÇÃO a um número que mudou e que o dono já sabe:** a minha estimativa de
 0,13-0,39% de detecções afetadas **estava baixa**. Ela foi medida com o estado
 congelado em 04-04; com a regra ativa as datas encadeiam, o estado cresce, e a
