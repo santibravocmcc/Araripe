@@ -64,10 +64,37 @@ SHA40 = re.compile(r"\b[0-9a-f]{40}\b")
 #: Um briefing pode e deve EXPLICAR os dois; o que ele não pode é pedi-los na
 #: seção "O que você precisa fazer", porque ali o dono lê como decisão aberta e
 #: pergunta de novo — o que aconteceu.
+#:
+#: **Por pares de palavra-chave, e não por frase exata (2026-09-17).** A versão
+#: anterior casava duas strings literais — `"endereço temporário ao servidor de
+#: teste"` e `'ambiente" protegido no repositório do site'` — e foi **medida a
+#: falhar**: `PACKAGE_P6_PROMPT.md` pede exatamente os dois conceitos, com as
+#: palavras "Abrir um endereço de teste para o servidor novo" e "Criar um lugar
+#: protegido para credenciais no repositório do site", e o teste **passou**.
+#: Qualquer paráfrase derrotava o guarda. Um par de grupos exige que os dois
+#: lados do conceito apareçam, o que uma reformulação honesta não evita.
 PHASE_6_NOT_OWNER_ACTIONS = (
-    "endereço temporário ao servidor de teste",
-    'ambiente" protegido no repositório do site',
+    (
+        "hostname do Worker de staging",
+        ("endereço", "hostname", "subdomínio", "subdominio", "workers.dev", "rota"),
+        ("servidor de teste", "servidor novo", "worker", "staging"),
+    ),
+    (
+        "Environment protegido no repositório do site",
+        ("ambiente", "environment", "lugar protegido"),
+        ("repositório do site", "repositorio do site", "repo do site"),
+    ),
 )
+
+#: O briefing em que os dois DEIXAM de ser pré-requisito inerte e passam a ser
+#: ação do dono, porque a fase que depende deles é a fase em execução. A razão
+#: do guarda é a sua própria: *"nenhum bullet das Phases 3, 4 e 5 depende
+#: dele"*. Quando a Phase 6 É a tarefa, a premissa se inverte, e calar os dois
+#: seria pior do que pedi-los — o cutover para sem eles.
+#:
+#: Esta lista não pode crescer em silêncio, pelo mesmo motivo das outras: um
+#: briefing de outra fase que precise pedir os dois tem de justificar por quê.
+PHASE_6_IS_THE_ACTIVE_PHASE = frozenset({"PACKAGE_P6_PROMPT.md"})
 
 #: Briefings escritos ANTES de isto ser medido (2026-09-08). Não retrofitados
 #: pelo mesmo motivo de `PREDATES_THE_METHOD`: eles descrevem o presente deles.
@@ -187,9 +214,63 @@ def test_each_question_is_actually_answered(path):
         )
 
 
+#: Um item da lista de ações começa com "N." — o método exige "cada item
+#: numerado, começando com o verbo".
+ASK_ITEM = re.compile(r"^\s{0,3}\d+\.\s")
+
+
+def owner_asks(path: Path) -> str:
+    """Só os ITENS NUMERADOS de "O que você precisa fazer".
+
+    Não a seção inteira, e a diferença foi medida: ``PACKAGE_2A6_LANDING_PROMPT.md``
+    fecha essa seção com um bloco ``#### dois itens saíram desta lista, e não
+    devem voltar`` que **nomeia** os dois pré-requisitos justamente para dizer
+    que não se pede nenhum deles. Varrendo a seção inteira, o guarda acusava
+    aquele briefing de pedir exatamente o que ele proíbe — um falso positivo, e
+    o pior tipo, porque o texto acusado é o que documenta a regra.
+
+    Um casador de palavras não distingue pedido de proibição. Quem distingue é
+    a estrutura: o pedido vive num item numerado, o comentário não. Então o
+    corte é estrutural e a sub-seção ``####`` encerra a lista.
+    """
+
+    section = owner_section(path.read_text(encoding="utf-8"))
+    assert section is not None
+    marker = "### O que você precisa fazer"
+    assert marker in section
+    rest = section[section.index(marker) + len(marker):]
+    following = [rest.index(q) for q in REQUIRED_QUESTIONS if q in rest]
+    body = rest[: min(following)] if following else rest
+
+    kept, inside = [], False
+    for line in body.splitlines():
+        if line.startswith("####"):
+            break
+        if ASK_ITEM.match(line):
+            inside = True
+        elif inside and not line.strip():
+            inside = False
+        elif inside and not line.startswith((" ", "\t")):
+            inside = False
+        if inside:
+            kept.append(line)
+    return "\n".join(kept).lower()
+
+
+def concept_is_asked(asks: str, groups) -> bool:
+    """True when both halves of a concept appear, however it is worded."""
+
+    return all(any(word in asks for word in group) for group in groups)
+
+
 @pytest.mark.parametrize(
     "path",
-    [p for p in governed() if p.name not in PREDATES_THE_PHASE_6_FINDING],
+    [
+        p
+        for p in governed()
+        if p.name not in PREDATES_THE_PHASE_6_FINDING
+        and p.name not in PHASE_6_IS_THE_ACTIVE_PHASE
+    ],
     ids=lambda p: p.name,
 )
 def test_phase_6_prerequisites_are_not_asked_of_the_owner(path):
@@ -198,22 +279,37 @@ def test_phase_6_prerequisites_are_not_asked_of_the_owner(path):
     Estes dois viajaram por quatro briefings como pedido, e o dono voltou a
     perguntar se eram pendências reais — o custo de um item que parece decisão
     e não é. Explicar, sim; pedir, não.
+
+    **Enquanto a Phase 6 não é a fase em execução.** Quando ela é, os dois
+    deixam de ser inertes e o briefing dela tem de pedi-los — ver
+    ``PHASE_6_IS_THE_ACTIVE_PHASE`` e o teste seguinte, que exige o oposto.
     """
 
-    section = owner_section(path.read_text(encoding="utf-8"))
-    assert section is not None
-    marker = "### O que você precisa fazer"
-    assert marker in section
-    start = section.index(marker)
-    rest = section[start + len(marker):]
-    following = [
-        rest.index(q) for q in REQUIRED_QUESTIONS if q in rest
-    ]
-    asks = rest[: min(following)] if following else rest
-    for item in PHASE_6_NOT_OWNER_ACTIONS:
-        assert item not in asks, (
-            f"{path.name} pede '{item}' na lista de ações do dono. É "
+    asks = owner_asks(path)
+    for label, *groups in PHASE_6_NOT_OWNER_ACTIONS:
+        assert not concept_is_asked(asks, groups), (
+            f"{path.name} pede '{label}' na lista de ações do dono. É "
             "pré-requisito da Phase 6, não decisão de hoje: exige "
             "Workers-Edit de conta, e nenhum bullet das Phases 3, 4 e 5 "
             "depende dele. Explique-o fora da lista."
+        )
+
+
+@pytest.mark.parametrize("name", sorted(PHASE_6_IS_THE_ACTIVE_PHASE))
+def test_the_phase_6_briefing_DOES_ask_for_its_own_prerequisites(name):
+    """O espelho do teste acima, e ele existe para que a isenção não vire silêncio.
+
+    Isentar o briefing da Phase 6 do guarda abre a porta para o defeito
+    oposto: os dois pré-requisitos simplesmente sumirem da lista do dono, e o
+    cutover parar por falta de um pedido que ninguém fez. A isenção só é
+    defensável junto com esta exigência.
+    """
+
+    path = OPERATIONS / name
+    assert path.exists(), f"{name} não existe; PHASE_6_IS_THE_ACTIVE_PHASE está stale"
+    asks = owner_asks(path)
+    for label, *groups in PHASE_6_NOT_OWNER_ACTIONS:
+        assert concept_is_asked(asks, groups), (
+            f"{name} NÃO pede '{label}' na lista de ações do dono. Na Phase 6 "
+            "os dois são ação do dono e o cutover para sem eles."
         )
