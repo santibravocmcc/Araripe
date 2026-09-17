@@ -159,15 +159,65 @@ rastreados**. Medido em 2026-09-17: **2,4 GB** no total, 196 MB o piloto e
 disso** — a §1 chama esses pacotes de "o ponto de partida", e eles
 simplesmente não estariam lá.
 
-Então, em ordem de preferência:
+**E `data/validation` é só o começo — isto foi EXECUTADO em 2026-09-17 e a
+receita abaixo é a medida, não a plausível.** Um worktree com apenas
+`data/validation` ligada roda a suíte com **3 falhas e 14 erros**; o primeiro
+diagnóstico aponta para `data/landcover/updated/Legenda-Colecao-10-Legend-Code.pdf`
+ausente. O inventário completo do que é ignorado e presente, por
+`git status --ignored --porcelain data/`:
 
-1. **worktree separado, com `data/validation` ligada por symlink** ao da árvore
-   principal. O caminho é gitignored, então o symlink é invisível ao git e não
-   custa cópia nenhuma. Ciente de que um pacote **novo** escrito através dele
-   nasce na árvore principal — o que é onde ele deve nascer de todo modo, e
-   continua gitignored;
-2. **worktree separado com os dois pacotes copiados** (805 MB), se preferir
-   isolamento total;
+| caminho | tamanho |
+| --- | --- |
+| `data/baselines_v2/` | **13 G** |
+| `data/landcover/updated/` | **7,1 G** |
+| `data/validation/` | **2,4 G** |
+| `data/landcover/mapbiomas_col3_beta_10m_2024.tif` | 10 M |
+| `data/landcover/mapbiomas_col10_1_gee_30m_2024.tif` | 3,3 M |
+| `data/landcover/mapbiomas_col10_1_30m_2024.tif` | 2,7 M |
+
+**~22,5 GB.** Copiar está fora de questão; ligar por symlink custa zero.
+
+**E há uma segunda armadilha, medida no mesmo passo.** Os padrões do
+`.gitignore` terminam em barra — `data/validation/`, linha 277 — e uma barra
+final casa **diretório**. Um **symlink não é diretório**, então ele aparece
+como `?? data/validation` em `git status`, **não ignorado**. Um `git add -A`
+comitaria um symlink com caminho absoluto desta máquina, que é justamente o que
+o `AGENTS.md` proíbe. A correção é `.git/info/exclude`, que nunca é rastreado e
+é compartilhado pelos worktrees.
+
+**A receita completa, executada e verificada — 1877 passando nos dois:**
+
+```bash
+git -C <repo> worktree add /Users/sbravo/araripe-phase5 \
+    -b claude/phase5-validation-protocol origin/main
+
+# os cinco caminhos ignorados, ligados sem cópia
+for rel in data/baselines_v2 data/landcover/updated \
+           data/landcover/mapbiomas_col10_1_30m_2024.tif \
+           data/landcover/mapbiomas_col10_1_gee_30m_2024.tif \
+           data/landcover/mapbiomas_col3_beta_10m_2024.tif \
+           data/validation; do
+  mkdir -p "$(dirname /Users/sbravo/araripe-phase5/$rel)"
+  ln -s "<repo>/$rel" "/Users/sbravo/araripe-phase5/$rel"
+done
+
+# os symlinks de diretório não casam os padrões com barra final
+printf '%s\n' data/validation data/baselines_v2 data/landcover/updated \
+  >> <repo>/.git/info/exclude
+```
+
+Verifique com `git status --short` **vazio** nos dois worktrees e com a suíte em
+**1877** no novo. `core.hooksPath` é config compartilhada e `.githooks` é
+rastreado, então o hook `commit-msg` funciona no worktree sem nenhum passo
+extra — conferido.
+
+Em ordem de preferência, então:
+
+1. **worktree separado com os cinco caminhos ligados**, como acima. Ciente de
+   que um pacote **novo** escrito através do link nasce na árvore principal — o
+   que é onde ele deve nascer de todo modo, e continua gitignored;
+2. **worktree separado com os pacotes copiados**, se preferir isolamento total
+   — mas orce os 22,5 GB;
 3. **a mesma árvore**, e então a disciplina abaixo deixa de ser recomendação e
    passa a ser obrigatória.
 
