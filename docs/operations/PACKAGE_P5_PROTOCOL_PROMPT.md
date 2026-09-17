@@ -26,6 +26,199 @@ versão 2: o corpo é para o agente executor, e a **seção final é para o dono
 
 ---
 
+## Bloco datado de 2026-09-17 — LEIA ISTO ANTES DO RESTO DO DOCUMENTO
+
+O corpo abaixo foi escrito em **2026-09-08**, quando a Phase 4 não havia
+rodado. Ele continua válido no desenho e **stale nos fatos**. Este bloco
+corrige o que envelheceu; onde os dois discordarem, **vale este bloco**.
+
+Escrito a pedido do dono, que vai rodar a Phase 5 **em paralelo** à Phase 6.
+
+### 1. O portão continua FECHADO, e nada nele mudou
+
+As **três decisões** da §0-bis seguem pendentes: o quadro amostral de
+referência, o papel do drone, e autoria vs. anonimato dos revisores. As
+recomendações do corpo continuam de pé. **Sem elas, a maior parte do desenho
+não pode ser feita** — ver o **item 7** deste bloco, que separa o que anda do
+que não anda.
+
+### 2. O maior item "fora de escopo" DEIXOU de ser fora de escopo
+
+A §3 diz *"fora de escopo: rodar a amostragem sobre o candidato (ele não existe
+até a Phase 4)"*. **Ele existe.** A Phase 4 fechou em 2026-09-16
+([`../implementation/PHASE_4C_2026-09-16.md`](../implementation/PHASE_4C_2026-09-16.md)):
+
+| | |
+| --- | --- |
+| prefixo da rodada | `runs/rep-2026-08-30-v3/`, **74 objetos**, **1 785 931 509 bytes** |
+| release | `rel-g1-fb722b2d1786075b1a6b4d10b1d49db31bb1b3f4e4be74f9621f21b9358ea8bb` |
+| ponteiro verde | **sequence 10** |
+| aquisições | **107/107** terminais: 66 `rejected_low_coverage` + 5 `rejected_quality` + 36 `complete_with_alerts`; `failed_processing` em **nenhuma** linha |
+| conteúdo | **36** datas com alertas de 90, **67 068** feições fortes |
+| corte | literal `2026-08-30`; fila pós-corte de **3** datas |
+
+**Consequências para o escopo do corpo:**
+
+- a §2 (*"redesenhar a amostragem sobre o candidato da Phase 4"*) passa de plano
+  a tarefa executável;
+- a §3.1 (*"medir a raridade do evento … não depende da Phase 4"*) deve agora
+  ser medida **no candidato**, não num proxy. A raridade medida no produto azul
+  seria a raridade de outro produto;
+- a população a amostrar é a do candidato, e ela é **legível sem credencial de
+  produção**: `scripts/stage_green_run.py --run rep-2026-08-30-v3` é read-only e
+  resolve a credencial pelo profile `araripe-r2-staging`. **Não deposite, não
+  publique, não mova ponteiro.**
+
+### 3. A §8 ("Estado que este package herda") está stale em quatro pontos
+
+| o corpo diz | o fato hoje |
+| --- | --- |
+| "falta o **exit gate** da Phase 2B" | **FECHADO** 2026-09-08 |
+| "Package 2A.6 … **não mesclado**; `ledger_v3.py` existe só lá" | **MESCLADO** (`#54`); está na `main` |
+| "cota de GEE … falta o dono abrir a página" | **medida**: 0,17% de 3 600 000 EECU-s/mês; o replay consumiu ~3% de um mês |
+| "corte **recomendado** `2026-08-30`, com regra de re-resolução" | **resolvido** e fixado como literal `2026-08-30` |
+
+E a §9 (*"O que ainda falta no caminho"*) lista as Fases 3 e 4 como futuras.
+**As duas fecharam.** A lista corrigida está na própria §9, ao fim.
+
+### 4. Três achados da Phase 4 que são INSUMO METODOLÓGICO desta fase
+
+Nenhum existia quando o corpo foi escrito, e os três mudam o que o relatório
+tem de tratar.
+
+**a. 3,49% das detecções têm linhagem indeterminável.** Pela regra do dono
+`ambiguous-lineage-as-origin-v1` (2026-09-16), uma detecção cuja linhagem não
+pode ser determinada é registrada como **evento novo**, e a ambiguidade é
+registrada com ela: **13 480 de 386 760** detecções, distribuídas por data em
+`lineage_ambiguity.json` do candidato. **A fração cresce com o tamanho do
+histórico**, e 2026 é o primeiro ano — a **trajetória** dela ao longo do ano é
+insumo que esta fase precisa medir, e o número que vai para a publicação é
+*"cerca de 3,5%"*. A estimativa anterior de 0,13-0,39% errou por uma ordem de
+magnitude porque foi medida no estado congelado em 04-04, o de histórico mais
+curto e portanto menor ambiguidade possível.
+
+**b. Linhagem e estação são quase colineares nestes dados — não as leia como
+efeito separável.** As **11** aquisições de processing baseline `05.11` são
+**todas** de janeiro mais 2026-02-01; as **96** de `05.12` cobrem fevereiro a
+agosto. Os dois rótulos compartilham **exatamente um mês**. Uma tabela
+"baseline de processamento × resultado do portão" **não pode** ser lida como
+efeito de linhagem, e `scripts/compare_replay_to_blue.py` imprime os meses
+compartilhados junto com a tabela para que ela nunca seja lida sozinha. Uma
+versão anterior daquele bloco afirmava o contrário porque testava se os meses
+compartilhados eram mais de **um** em vez de mais de **zero**.
+
+**c. As cinco datas do portão de anomalia da estação chuvosa.** Fração de
+alerta medida de **39,01% a 60,96%** contra o portão congelado
+`SCENE_ANOMALY_REJECT_FRAC = 0.30`. **As cinco têm um único datatake**, então a
+unidade de composição não é a variável ali. E o mês 01 da `2.1.0` tem **5,2%**
+dos pixels com desvio-padrão ≤ 0 contra **0,002%** no mês 08; o detector pisa o
+desvio em `min_std = 0.01` (`src/detection/baseline.py:253`), então nada divide
+por zero, mas com a mediana do mês 01 em 0,074 esses pixels são comparados com
+um desvio 7,4x menor que o típico e tendem a marcar. **É insumo real e não é
+para consertar aqui** — o arquivo de decisão declara
+`quality_gate_change_permitted: false`.
+
+**O veredito contra o azul, no candidato FINAL:** **36** datas aceitas pelas
+duas, **8** só pelo azul (as 5 do portão de anomalia mais 3 de cobertura),
+**0** só pelo replay, 46 por nenhuma. **A tabela 2/42/0/46 da §7 do registro da
+Phase 4B é da tentativa 1 e não vale mais.**
+
+**d. E um default que a Phase 5 é dona de validar, sem registro de derivação:**
+`CONFIRMED_MIN = 15`. `PENDING_CAPABILITIES.md` registra que *"no record of its
+derivation was found"* e que a Phase 5 é dona de validar os defaults aceitos.
+Registra também que a **magnitude** da inflação de `n_sightings` no azul **não
+foi medida** — o sintoma visível é `first_seen > last_seen` em **123 de
+119 394** tracks (0,10%), e o estado não guarda histórico por data de onde ela
+pudesse ser recuperada.
+
+### 5. A base mudou, e a suíte com ela
+
+| | |
+| --- | --- |
+| backend `origin/main` | **`21372506db8e510e8c840718f1617abeb36c9630`** |
+| site `origin/main` | `6f11076` (forma curta: o hook recusa SHA de outro repo) |
+| suíte do backend | **1877** |
+| suíte do site / worker | **203** / **44 de 44** |
+
+O nome de branch que a §3 pede, `claude/phase5-validation-protocol`, **está
+livre** — conferido com `git ls-remote`. A branch `claude/phase5-publication-scope`
+já foi mesclada e é história; não construa sobre ela.
+
+### 6. DUAS SESSÕES, UMA ÁRVORE DE TRABALHO — e isto é operacional, não teórico
+
+O dono vai rodar **a Phase 6 e esta em paralelo**, e `git worktree list` mostra
+**um único** worktree. Um `git checkout -b` de uma sessão troca a branch
+**debaixo** da outra, no meio do trabalho dela.
+
+**E a saída óbvia tem uma armadilha medida.** O ponto de partida desta fase —
+`data/validation/phase2a3-pilot-v1/` e
+`data/validation/phase2a5-method-comparison-v2/` — é **untracked**:
+`data/validation/` está no `.gitignore` (linha 277) e tem **0 arquivos
+rastreados**. Medido em 2026-09-17: **2,4 GB** no total, 196 MB o piloto e
+609 MB a comparação de métodos. **Um `git worktree add` novo não teria nada
+disso** — a §1 chama esses pacotes de "o ponto de partida", e eles
+simplesmente não estariam lá.
+
+Então, em ordem de preferência:
+
+1. **worktree separado, com `data/validation` ligada por symlink** ao da árvore
+   principal. O caminho é gitignored, então o symlink é invisível ao git e não
+   custa cópia nenhuma. Ciente de que um pacote **novo** escrito através dele
+   nasce na árvore principal — o que é onde ele deve nascer de todo modo, e
+   continua gitignored;
+2. **worktree separado com os dois pacotes copiados** (805 MB), se preferir
+   isolamento total;
+3. **a mesma árvore**, e então a disciplina abaixo deixa de ser recomendação e
+   passa a ser obrigatória.
+
+**Disciplina obrigatória em qualquer dos três:**
+
+- confira `git status --short --branch` **antes de todo** checkout; se a branch
+  não for a sua, **pare e avise o dono** em vez de trocar;
+- commite **por caminho explícito**. Nunca `git add -A`, nunca `git add .` — a
+  outra sessão pode ter arquivos em voo;
+- **nunca rode `git stash`**. Existe um `stash@{0}` de outra sessão neste
+  clone, intocado desde então;
+- não mexa em `docs/operations/PACKAGE_P6_PROMPT.md` nem em nada que a sessão
+  da Phase 6 esteja editando.
+
+### 7. O que anda com o portão fechado, e o que não anda
+
+O dono pediu para **adiantar** esta fase em paralelo. Isto é o que isso pode
+significar hoje, e é uma divisão de verdade, não uma formalidade.
+
+**ANDA sem nenhuma das três decisões:**
+
+1. **medir a raridade do evento no candidato** (§3.1, agora possível) — é o
+   insumo do tamanho amostral e não depende de qual quadro amostral vence;
+2. **localizar e citar a referência canônica** de boas práticas de avaliação de
+   acurácia de mudança de cobertura (§0-bis 1). O corpo manda explicitamente
+   **não** confiar na frase dele e registrar qual referência foi seguida;
+3. **o estimador ponderado por área, como código testado** (§3.5) — a
+   aritmética de inferência baseada em desenho não muda com a escolha do
+   quadro; só os pesos mudam, e eles são entrada;
+4. **a declaração de não-afirmação e a redação do aviso do site** (§3.6) —
+   independente das três, e é o que a Phase 6 precisa colar;
+5. **herdar o gerador do pacote de rotulagem** do 2A.3 (§3.7), na parte que não
+   depende do quadro;
+6. **medir a trajetória da fração de linhagem indeterminável** ao longo de 2026
+   (item 4a deste bloco);
+7. **o levantamento dos defaults aceitos** e do que existe de registro de
+   derivação de cada um (item 4d), sem mudar nenhum.
+
+**NÃO ANDA:**
+
+- o **quadro amostral** e portanto o **tamanho** da amostra (decisão a);
+- o **estrato de drone** e a regra de voo (decisão b);
+- o **tratamento de identidade dos revisores** no pacote (decisão c);
+- qualquer coisa que instrua revisores ou mova um drone.
+
+**Ordem recomendada:** faça 1, 2, 6 e 7 primeiro — eles produzem exatamente os
+números que tornam a revisão do dono mais fácil de fazer, em vez de mais uma
+coisa à espera dela.
+
+---
+
 ## 0. A decisão de sequenciamento, e o que ela custa
 
 O dono decidiu: **a Phase 5 não trava as Fases 6 e 7.** O protocolo é desenhado
@@ -413,6 +606,14 @@ Uma coisa, e ela é sua: **a revisão do portão no topo deste documento.** O
 resto do insumo está pronto — a sessão da Fase 5 pode começar assim que a
 revisão acontecer, e não depende de nenhuma outra fase.
 
+*Nota de 2026-09-17: isto continua verdade, e ganhou uma precisão. **Parte do
+desenho já anda sem a sua revisão** — o item 7 do bloco datado separa o que
+anda do que não anda, e recomenda começar justamente pelos itens que produzem
+os números que tornam a sua revisão mais fácil. O que não anda é a decisão da
+amostra, e é a que decide o resto. As respostas abaixo são as de 2026-09-08 e
+foram mantidas como o registro daquela sessão; os fatos atualizados estão no
+bloco datado.*
+
 Por que o portão passou a existir: você disse que quer que a Fase 5 termine
 **válida para uma publicação científica**, que **já tem as pessoas** que vão
 rotular, e que **tem drone** que poderia servir de verdade de campo. Isso muda
@@ -450,8 +651,17 @@ e o sistema já sabe voltar atrás numa publicação.
      pseudônimo, e uma publicação normalmente credita quem trabalhou. Minha
      recomendação: pseudônimo no dado, nome no artigo — preserva o cegamento e
      credita as pessoas.
-2. **Anotar 6 de novembro:** a chave da NASA expira e a chuva do site para.
-3. **Depois, não agora:** se houver vínculo institucional, perguntar se a
+2. **Escolher como as duas sessões convivem, antes de abrir a segunda.**
+   *(acrescentado em 2026-09-17.)* Você vai rodar a Fase 6 e esta em paralelo,
+   e hoje as duas usariam **a mesma pasta de trabalho** — uma trocaria a branch
+   debaixo da outra no meio do trabalho. A saída natural, uma pasta separada,
+   tem uma armadilha medida: o ponto de partida desta fase são pacotes de
+   validação que **não estão no git** (2,4 GB, ignorados de propósito), e uma
+   pasta nova não teria nenhum deles. A recomendação está na §6 do bloco datado
+   — pasta separada com um atalho para esses pacotes — e é uma escolha sua
+   porque afeta as duas sessões. **É o único item urgente desta lista.**
+3. **Anotar 6 de novembro:** a chave da NASA expira e a chuva do site para.
+4. **Depois, não agora:** se houver vínculo institucional, perguntar se a
    instituição exige alguma aprovação ética para trabalho com intérpretes
    humanos. Não é pesquisa com sujeitos humanos, mas a resposta tem de ficar
    registrada em vez de presumida.
@@ -489,17 +699,20 @@ desmatamento precisa saber sobre si mesmo.
 
 ### O que ainda falta no caminho
 
-- **O fechamento da Fase 2B:** o montador da rodada, que é a próxima etapa e não
-  depende de nada seu.
-- **Fase 3 — congelar e ensaiar:** decidir a data de corte (recomendação:
-  30/08/2026) e fotografar tudo antes de começar.
-- **Fase 4 — reprocessar 2026 inteiro** num candidato guardado, sem publicar.
-  É tempo de máquina, e a cota não deve limitar.
-- **Fase 5 — esta:** a sua revisão, depois o protocolo, depois a rotulagem — as
-  pessoas já existem — e o relatório quando ela terminar. **Em paralelo, sem
-  travar as Fases 6 e 7.** O portão trava só a Fase 5.
-- **Fase 6 — a troca final:** o novo substitui o antigo, a página passa a ler
-  pela rota nova, o robô antigo é desligado, e a publicação passa a acontecer
-  sozinha num horário. É aqui que entra a proposta guardada dos arquivos grandes.
+*Atualizado em 2026-09-17 — a lista de 2026-09-08 listava as Fases 3 e 4 como
+futuras, e as duas fecharam.*
+
+- **Fase 2B — fechada** em 08/09. **Fase 3 — fechada.** **Fase 4 — fechada** em
+  16/09: 2026 inteiro recalculado, depositado e publicado no depósito de
+  testes, conferido.
+- **Fase 5 — esta:** a sua revisão das três decisões, depois o protocolo,
+  depois a rotulagem — as pessoas já existem — e o relatório. **Em paralelo,
+  sem travar as Fases 6 e 7.** Parte do desenho **já anda** sem a revisão; a
+  parte que decide a amostra, não.
+- **Fase 6 — a virada, rodando em paralelo a esta.** Tem quatro portões, três
+  seus, e passou a ser também o conserto da detecção parada. Briefing em
+  `PACKAGE_P6_PROMPT.md`.
+- **Registro permanente de versões** — trabalho do agente, não toca produção; a
+  decisão é se ele vem antes ou depois da virada.
 - **Fase 7 — endurecimento:** CI completo, proteção de branch, acessibilidade e
   as skills reusáveis.
