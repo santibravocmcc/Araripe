@@ -151,9 +151,23 @@ Não rode nada disto na Phase 3.
    `assemble_green_run.py` → `stage_green_run.py` → `publish_green_release.py`.
 7. **Reconciliar** e deixar o candidato em staging. **Não promover.**
 
-**A produção azul continua rodando durante tudo isso.** O roadmap é explícito:
-*"do not pause current automation for the long rebuild"*. Um freeze curto de
-escrita azul só é permitido na janela de cutover da Phase 6.
+**A instrução do roadmap é não pausar a automação azul pelo rebuild** — *"do
+not pause current automation for the long rebuild"* — e ela foi cumprida: nada
+deste procedimento pausou o azul, e um freeze curto de escrita azul só é
+permitido na janela de cutover da Phase 6.
+
+> **Correção de 2026-09-17: a produção azul NÃO está rodando, e não foi este
+> procedimento que a parou.** Este parágrafo dizia *"a produção azul continua
+> rodando durante tudo isso"*, e isso deixou de ser verdade. `detect_gee.yml`
+> falha em **quatro** execuções agendadas consecutivas — 2026-09-10, 2026-09-14
+> e 2026-09-17, com `LegacyPersistenceStateError`, mais 2026-09-07 por outra
+> causa. A última escrita em produção foi a execução **manual** de 2026-09-07
+> 15:15 UTC. A causa é o landing do Package 2A.6 (`#54`): a `main` passou a
+> trazer um loader que recusa por contrato o estado vivo, que é de geração
+> anterior. Medido e explicado em
+> [`PHASE_4C_2026-09-16.md`](../implementation/PHASE_4C_2026-09-16.md) §11.
+> **O conserto é o cutover, não um patch** — o estado de geração nova que a
+> exceção exige é o que a Phase 4 depositou em staging.
 
 ## 4. Recuperação de falha
 
@@ -198,33 +212,132 @@ Ensaiado e provado em `tests/test_replay_rehearsal.py`; o comportamento é do
 série temporal É a data provisória do corte. Ela cresce enquanto as Fases 4 e 5
 correm, a ~2 datas observadas por semana.
 
+> **Atualização de 2026-09-17.** A Phase 4 re-enumerou do GEE e a fila **não é
+> vazia**: **3** datas — `2026-09-02`, `2026-09-04`, `2026-09-07`
+> ([`PHASE_4B_2026-09-09.md`](../implementation/PHASE_4B_2026-09-09.md) §9). O
+> 0 da Phase 3 não estava errado, estava medido na fonte errada: o banco azul só
+> conhece as datas que o azul processou. **E o 3 também já envelheceu** — foi
+> enumerado sobre `2026-08-31..2026-09-10`, e essa janela fechou. Re-enumere no
+> passo 1 em vez de reusar o número.
+
 **Atenção ao ler o lado do lote da fila.** Ele diz
 `is_authoritative_for_phase_4: false` de propósito: a fonte de observação sem
 credencial é o banco de série temporal, que é o produto **azul** e só conhece as
 datas que o azul processou. A Phase 4 enumera do GEE e verá mais.
 
-## 7. A revisão do dono — um item fechado, o resto pré-cutover
+## 7. A revisão do dono — reescrita contra o presente em 2026-09-17
 
 O bullet do roadmap pede *"an explicit **pre-cutover** review of the runbook and
-resolved targets"*. Pré-cutover: a revisão é portão da **Phase 6**, não da
-Phase 4. O que a Phase 4 precisava era a decisão da baseline, e ela está feita.
+resolved targets"*. Pré-cutover: a revisão é portão da **Phase 6**.
+
+> ### Por que esta lista foi reescrita antes de ser submetida
+>
+> Ela foi escrita em **2026-09-08**, e o mundo andou. Das quatro cláusulas que
+> estavam abertas, **três deixaram de descrever o presente**: uma afirma um fato
+> que hoje é **falso**, outra pergunta algo que a Phase 4 **já respondeu**, e uma
+> terceira pede aceitação de uma **regra hipotética** que já virou **fato
+> literal**. Pedir concordância com as frases antigas seria colher consentimento
+> sobre um mundo que não existe — e uma checklist cujas cláusulas mudaram de
+> verdade não é uma checklist, é uma armadilha de consentimento.
+>
+> O que mudou em cada uma, e a medição, está na tabela depois da lista.
+
+### Fechados
 
 - [x] **qual baseline o replay usa** (§2.1) — **`2.1.0`, decidida em
       2026-09-09**, com o custo aceito e registrado;
 - [x] **a cota de `ee-araripe` está medida** — 3.600.000 EECU-s/mês, 0,17%
       usados; o replay é ~3% de um mês
       ([`PHASE_3_INPUTS_2026-09-08.md`](PHASE_3_INPUTS_2026-09-08.md) §3);
-- [ ] os alvos resolvidos da §1 estão certos;
-- [ ] a regra do corte da §2.2, e a aceitação de que a data resolve na hora;
-- [ ] o procedimento da §3, incluindo que a produção azul continua rodando;
-- [ ] a divergência de unidade de composição da §8 é da Phase 4 e não bloqueia
-      a Phase 3.
+- [x] **a divergência de unidade de composição da §8** — **respondida pela
+      Phase 4 em 2026-09-09**, não mais uma pergunta em aberto:
+      `physical_datatake` / `datatake_mosaic-v1`, registrado em
+      [`../../config/phase4_composition_unit_decision_v1.json`](../../config/phase4_composition_unit_decision_v1.json)
+      sob delegação explícita (`PACKAGE_P4_REPLAY_PROMPT.md` §9). A segunda
+      metade da §8 — se a transform da grade devia ser fixada — foi **medida em
+      vez de suposta**: as grades **já alinham** (deslocamento de exatamente 42 e
+      39 pixels de 20 m, todas as 10 719 × 4 909 coordenadas com correspondência
+      exata), então a decisão é `do_not_pin_crs_transform`. Fixá-la é que mudaria
+      pixels.
+
+### Abertos — a revisão é sobre estes, e só sobre estes
+
+- [ ] **os alvos resolvidos da §1 continuam certos.** Reconferidos no código em
+      2026-09-17, não herdados: `tests/test_replay_freeze.py` passa **55/55**, e
+      é ele que cai se um nome mudar no código e não aqui. Os Environments foram
+      relidos do GitHub na mesma data — backend tem três
+      (`cloudflare-green-control` **com revisor**, `v2-promotion` e `v2-staging`
+      **sem**), e o repositório do site continua com **`[]`**, nenhum.
+- [ ] **o corte é o literal `2026-08-30`, e o senhor revisa um fato, não uma
+      regra.** Quando esta linha foi escrita, a §2.2 descrevia uma regra e a data
+      era *provisória*. A Phase 4 **exerceu** a regra: `resolve_recorded_cutoff`
+      tomou as datas terminais do ledger
+      `pl-v3-af8d6c78fb2ad7fa15e40a47e631fd9596ece4b519c22b5fd6e6dccf731b4442` e
+      fixou `2026-08-30` com `date_is_provisional: false`
+      ([`PHASE_4B_2026-09-09.md`](../implementation/PHASE_4B_2026-09-09.md) §9).
+      Resolveu para o mesmo valor que a Phase 3 tinha como provisório, e isso é
+      coincidência de valor e não de método.
+      **Ressalva medida em 2026-09-17:** a fila pós-corte de **3** datas foi
+      enumerada sobre a janela `2026-08-31..2026-09-10`. Essa janela fechou há
+      uma semana; a fila real de hoje é maior e **não está medida**. Ela é
+      re-enumerada na drenagem (§6), não agora.
+- [ ] **o procedimento da §3 — e a premissa de que "a produção azul continua
+      rodando" é FALSA.** Esta é a cláusula que mais mudou, e ela não pode ser
+      aceita como estava escrita. Medido com `gh run list` em 2026-09-17:
+      `detect_gee.yml` falha em **quatro** execuções agendadas consecutivas —
+      2026-09-10, 2026-09-14 e **2026-09-17 (hoje)** com
+      `LegacyPersistenceStateError`, além de 2026-09-07 por outra causa. A
+      última escrita em produção foi a execução **manual** de 2026-09-07 15:15
+      UTC (run `34137318406`), que publicou `latest_observation: 2026-08-30`.
+      O procedimento da §3 em si continua correto — ele foi executado e fechou.
+      O que caiu foi a sua última frase. Ver §3 e
+      [`PHASE_4C_2026-09-16.md`](../implementation/PHASE_4C_2026-09-16.md) §11.
+- [ ] **(acrescentado em 2026-09-17) o ponteiro verde vira público sem revisor e
+      sem histórico durável.** Não estava na lista porque, quando ela foi
+      escrita, isto era problema de sandbox. O cutover o transforma: o ponteiro
+      passa a ser o que o site público segue.
+      [`PROMOTION_IDENTITY_SETUP.md`](PROMOTION_IDENTITY_SETUP.md) já mandava
+      revisitar — *"no cutover … a conta de um erro deixa de ser um sandbox"*.
+      Medido no bucket em 2026-09-17: existem **7** releases e o ponteiro nomeia
+      **2** (a atual `rel-g1-fb722b2d…` e `supersedes` → `rel-g1-24db9555…`,
+      sequence 9). As outras **5** não são alcançáveis pelo store. Aceitar o
+      risco por escrito ou construir o histórico antes é decisão sua.
+- [ ] **(acrescentado em 2026-09-17) onde os dados da versão nova vivem depois
+      do cutover.** Não estava na lista porque a pergunta não existia: a §1 já
+      nomeia `araripe-v2-staging` como o bucket verde, mas
+      [`CLOUDFLARE_STAGING_ACCESS_FOR_CLAUDE.md`](CLOUDFLARE_STAGING_ACCESS_FOR_CLAUDE.md)
+      o governa como *"an object-level development sandbox … **not** a canonical
+      release bucket, public bucket, or promotion target"* e manda revogar a
+      credencial *"before repurposing the bucket"*. O cutover faria dele
+      exatamente um bucket público. As opções e o custo medido de cada uma estão
+      no dossiê de decisão desta fase.
+
+### O diff desta reescrita, para o senhor ver o que mudou
+
+| cláusula de 2026-09-08 | o que aconteceu com ela | evidência |
+| --- | --- | --- |
+| os alvos resolvidos da §1 estão certos | **mantida, e reconferida** | `pytest tests/test_replay_freeze.py` → 55/55, 2026-09-17; `gh api …/environments` nos dois repositórios |
+| a regra do corte da §2.2, e a aceitação de que a data resolve na hora | **reescrita**: a regra virou fato literal `2026-08-30` | `PHASE_4B_2026-09-09.md` §9; ressalva nova sobre a fila de 3 estar medida numa janela vencida |
+| o procedimento da §3, **incluindo que a produção azul continua rodando** | **reescrita — a premissa é falsa** | 4 falhas agendadas medidas com `gh run list`, a última hoje; `PHASE_4C_2026-09-16.md` §11 |
+| a divergência de unidade de composição da §8 é da Phase 4 e não bloqueia a Phase 3 | **fechada** — a Phase 4 respondeu as duas metades | `config/phase4_composition_unit_decision_v1.json` |
+| — | **acrescentada**: ponteiro público sem revisor nem histórico | 7 releases no bucket, 2 nomeáveis; `PROMOTION_IDENTITY_SETUP.md` §"quando isso deve ser revisto" |
+| — | **acrescentada**: onde a versão nova mora de vez | `CLOUDFLARE_STAGING_ACCESS_FOR_CLAUDE.md` §Boundary e §Revocation |
 
 Registre a revisão como um bloco datado neste arquivo, ou num
 `docs/implementation/PHASE_3_REVIEW_<data>.md`. **Sem ela o cutover não
-começa** — a Phase 4 pode começar.
+começa.** Ela nunca bloqueou o reprocessamento: *"a Phase 4 pode começar"* foi o
+registro de 2026-09-08, e a Phase 4 começou e fechou em 2026-09-16.
 
-## 8. Uma divergência medida, e ela é da Phase 4
+## 8. Uma divergência medida — DECIDIDA pela Phase 4 em 2026-09-09
+
+> **Esta seção descreve uma pergunta que já foi respondida.** Ela é mantida
+> porque é o enunciado do problema, e a decisão se lê contra ele. As duas
+> metades foram decididas em
+> [`../../config/phase4_composition_unit_decision_v1.json`](../../config/phase4_composition_unit_decision_v1.json):
+> a unidade de composição do replay é o **datatake físico**
+> (`datatake_mosaic-v1`), porque o ledger v3 não tem linha honesta para a
+> segunda aquisição de uma data; e a transform da grade **não** é fixada, porque
+> as grades foram medidas e **já alinham**. Nada disso muda o runtime azul.
 
 `CompositionRunV3` amarra `composite_method_id` a
 `coverage-ranked-first-valid-v1` — composição escopada por **datatake**
