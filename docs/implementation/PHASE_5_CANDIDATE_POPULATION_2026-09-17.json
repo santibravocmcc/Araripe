@@ -1,0 +1,409 @@
+{
+  "claims": {
+    "area_of_change_estimate": false,
+    "omission_estimate": false,
+    "precision_estimate": false,
+    "recall_estimate": false,
+    "scientific_accuracy_claim": false
+  },
+  "monitoring_extent": {
+    "area_method": "pyproj.Geod(ellps='WGS84').geometry_area_perimeter",
+    "bounds": [
+      -40.89236812577142,
+      -7.840780758480428,
+      -38.95208146319247,
+      -6.957104781339829
+    ],
+    "geodesic_area_ha": 2093557.693,
+    "id": "araripe-implementation-rectangle-v1"
+  },
+  "products": {
+    "full": {
+      "area": {
+        "W_change": 0.35014588,
+        "W_nochange": 0.64985412,
+        "overlap_discarded_ha": 1245090.907,
+        "overlap_share_of_sum": 0.629425,
+        "summed_ha": 1978141.51,
+        "union_ha": 733050.603
+      },
+      "by": {
+        "confidence": {
+          "high": 237147,
+          "low": 23749,
+          "medium": 125864
+        },
+        "lc_group": {
+          "farming": 133373,
+          "natural": 249884,
+          "other": 223,
+          "urban": 855,
+          "water": 2425
+        },
+        "lineage_ambiguity_resolved": {
+          "False": 373280,
+          "True": 13480
+        },
+        "persistence": {
+          "candidate": 147945,
+          "confirmed": 2256,
+          "first_observation": 236559
+        },
+        "season": {
+          "dry_may_oct": 314562,
+          "wet_nov_apr": 72198
+        },
+        "size_band": {
+          "large_5ha_plus": 75545,
+          "medium_2_5ha": 127018,
+          "small_1_2ha": 184197
+        }
+      },
+      "confidence_by_persistence": {
+        "high|candidate": 110488,
+        "high|confirmed": 1409,
+        "high|first_observation": 125250,
+        "low|candidate": 3294,
+        "low|confirmed": 63,
+        "low|first_observation": 20392,
+        "medium|candidate": 34163,
+        "medium|confirmed": 784,
+        "medium|first_observation": 90917
+      },
+      "counts": {
+        "features": 386760
+      },
+      "per_date": {
+        "2026-02-11": {
+          "features": 17704
+        },
+        "2026-03-13": {
+          "features": 6839
+        },
+        "2026-04-04": {
+          "features": 7726
+        },
+        "2026-04-07": {
+          "features": 8566,
+          "lineage_ambiguity_resolved": 15
+        },
+        "2026-04-17": {
+          "features": 10299,
+          "lineage_ambiguity_resolved": 20
+        },
+        "2026-04-27": {
+          "features": 21064,
+          "lineage_ambiguity_resolved": 140
+        },
+        "2026-05-02": {
+          "features": 15313,
+          "lineage_ambiguity_resolved": 325
+        },
+        "2026-05-04": {
+          "features": 6379,
+          "lineage_ambiguity_resolved": 147
+        },
+        "2026-05-07": {
+          "features": 18541,
+          "lineage_ambiguity_resolved": 337
+        },
+        "2026-05-12": {
+          "features": 10279,
+          "lineage_ambiguity_resolved": 259
+        },
+        "2026-05-17": {
+          "features": 20799,
+          "lineage_ambiguity_resolved": 375
+        },
+        "2026-05-24": {
+          "features": 20150,
+          "lineage_ambiguity_resolved": 513
+        },
+        "2026-06-01": {
+          "features": 12084,
+          "lineage_ambiguity_resolved": 733
+        },
+        "2026-06-03": {
+          "features": 14387,
+          "lineage_ambiguity_resolved": 490
+        },
+        "2026-06-06": {
+          "features": 5137,
+          "lineage_ambiguity_resolved": 142
+        },
+        "2026-06-13": {
+          "features": 4420,
+          "lineage_ambiguity_resolved": 134
+        },
+        "2026-06-21": {
+          "features": 19086,
+          "lineage_ambiguity_resolved": 362
+        },
+        "2026-06-23": {
+          "features": 22123,
+          "lineage_ambiguity_resolved": 406
+        },
+        "2026-06-26": {
+          "features": 20487,
+          "lineage_ambiguity_resolved": 430
+        },
+        "2026-07-01": {
+          "features": 7785,
+          "lineage_ambiguity_resolved": 978
+        },
+        "2026-07-03": {
+          "features": 8484,
+          "lineage_ambiguity_resolved": 714
+        },
+        "2026-07-06": {
+          "features": 9714,
+          "lineage_ambiguity_resolved": 628
+        },
+        "2026-07-11": {
+          "features": 10304,
+          "lineage_ambiguity_resolved": 934
+        },
+        "2026-07-13": {
+          "features": 9481,
+          "lineage_ambiguity_resolved": 481
+        },
+        "2026-07-16": {
+          "features": 8985,
+          "lineage_ambiguity_resolved": 322
+        },
+        "2026-07-21": {
+          "features": 1035,
+          "lineage_ambiguity_resolved": 53
+        },
+        "2026-07-26": {
+          "features": 13903,
+          "lineage_ambiguity_resolved": 398
+        },
+        "2026-07-31": {
+          "features": 12447,
+          "lineage_ambiguity_resolved": 1234
+        },
+        "2026-08-02": {
+          "features": 3143,
+          "lineage_ambiguity_resolved": 591
+        },
+        "2026-08-05": {
+          "features": 5666,
+          "lineage_ambiguity_resolved": 233
+        },
+        "2026-08-10": {
+          "features": 4064,
+          "lineage_ambiguity_resolved": 218
+        },
+        "2026-08-15": {
+          "features": 5049,
+          "lineage_ambiguity_resolved": 363
+        },
+        "2026-08-20": {
+          "features": 7262,
+          "lineage_ambiguity_resolved": 297
+        },
+        "2026-08-22": {
+          "features": 4898,
+          "lineage_ambiguity_resolved": 370
+        },
+        "2026-08-25": {
+          "features": 6136,
+          "lineage_ambiguity_resolved": 228
+        },
+        "2026-08-30": {
+          "features": 7021,
+          "lineage_ambiguity_resolved": 610
+        }
+      },
+      "union_ha_by_lc_group": {
+        "farming": {
+          "share_of_extent": 0.10968746,
+          "union_ha": 229637.028
+        },
+        "natural": {
+          "share_of_extent": 0.2694662,
+          "union_ha": 564143.035
+        },
+        "other": {
+          "share_of_extent": 0.00015188,
+          "union_ha": 317.978
+        },
+        "urban": {
+          "share_of_extent": 0.00046607,
+          "union_ha": 975.735
+        },
+        "water": {
+          "share_of_extent": 0.00124861,
+          "union_ha": 2614.042
+        }
+      }
+    },
+    "strong": {
+      "area": {
+        "W_change": 0.05893812,
+        "W_nochange": 0.94106188,
+        "overlap_discarded_ha": 207193.912,
+        "overlap_share_of_sum": 0.626751,
+        "summed_ha": 330584.259,
+        "union_ha": 123390.347
+      },
+      "by": {
+        "confidence": {
+          "high": 67068
+        },
+        "lc_group": {
+          "farming": 245,
+          "natural": 66819,
+          "water": 4
+        },
+        "lineage_ambiguity_resolved": {
+          "False": 67068
+        },
+        "persistence": {
+          "candidate": 65937,
+          "confirmed": 1131
+        },
+        "season": {
+          "dry_may_oct": 62316,
+          "wet_nov_apr": 4752
+        },
+        "size_band": {
+          "large_5ha_plus": 13561,
+          "medium_2_5ha": 23571,
+          "small_1_2ha": 29936
+        }
+      },
+      "confidence_by_persistence": {
+        "high|candidate": 65937,
+        "high|confirmed": 1131
+      },
+      "counts": {
+        "features": 67068
+      },
+      "per_date": {
+        "2026-03-13": {
+          "features": 229
+        },
+        "2026-04-04": {
+          "features": 487
+        },
+        "2026-04-07": {
+          "features": 774
+        },
+        "2026-04-17": {
+          "features": 641
+        },
+        "2026-04-27": {
+          "features": 2621
+        },
+        "2026-05-02": {
+          "features": 2028
+        },
+        "2026-05-04": {
+          "features": 1420
+        },
+        "2026-05-07": {
+          "features": 3728
+        },
+        "2026-05-12": {
+          "features": 1929
+        },
+        "2026-05-17": {
+          "features": 4154
+        },
+        "2026-05-24": {
+          "features": 4318
+        },
+        "2026-06-01": {
+          "features": 2001
+        },
+        "2026-06-03": {
+          "features": 2808
+        },
+        "2026-06-06": {
+          "features": 414
+        },
+        "2026-06-13": {
+          "features": 612
+        },
+        "2026-06-21": {
+          "features": 3327
+        },
+        "2026-06-23": {
+          "features": 6093
+        },
+        "2026-06-26": {
+          "features": 3631
+        },
+        "2026-07-01": {
+          "features": 949
+        },
+        "2026-07-03": {
+          "features": 2011
+        },
+        "2026-07-06": {
+          "features": 2422
+        },
+        "2026-07-11": {
+          "features": 2725
+        },
+        "2026-07-13": {
+          "features": 2332
+        },
+        "2026-07-16": {
+          "features": 796
+        },
+        "2026-07-21": {
+          "features": 141
+        },
+        "2026-07-26": {
+          "features": 2294
+        },
+        "2026-07-31": {
+          "features": 4128
+        },
+        "2026-08-02": {
+          "features": 634
+        },
+        "2026-08-05": {
+          "features": 585
+        },
+        "2026-08-10": {
+          "features": 544
+        },
+        "2026-08-15": {
+          "features": 1035
+        },
+        "2026-08-20": {
+          "features": 933
+        },
+        "2026-08-22": {
+          "features": 1248
+        },
+        "2026-08-25": {
+          "features": 1565
+        },
+        "2026-08-30": {
+          "features": 1511
+        }
+      },
+      "union_ha_by_lc_group": {
+        "farming": {
+          "share_of_extent": 0.00037767,
+          "union_ha": 790.679
+        },
+        "natural": {
+          "share_of_extent": 0.05882319,
+          "union_ha": 123149.739
+        },
+        "water": {
+          "share_of_extent": 7.27e-06,
+          "union_ha": 15.212
+        }
+      }
+    }
+  },
+  "schema": "araripe-phase5-candidate-population-v1",
+  "scientific_status": "population_description_only"
+}
