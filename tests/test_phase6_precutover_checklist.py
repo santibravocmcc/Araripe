@@ -30,6 +30,19 @@ def _runbook() -> str:
     return RUNBOOK.read_text(encoding="utf-8")
 
 
+def _flat(text: str) -> str:
+    """Colapsa todo espaço em branco num espaço só.
+
+    Sem isto, um guarda por frase literal é derrotado por uma **quebra de
+    linha**, e derrotado em silêncio: o texto continua lá, a asserção não casa
+    mais, e o teste vira verde por reformatação. Aconteceu na primeira escrita
+    deste arquivo — `Não é\nemergência de horas` não casava `não é emergência
+    de horas`. Toda comparação de frase aqui passa por esta função.
+    """
+
+    return " ".join(text.split())
+
+
 def _section(text: str, start: str, end: str) -> str:
     return text[text.index(start) : text.index(end)]
 
@@ -47,13 +60,18 @@ def test_o_runbook_nao_afirma_que_a_producao_azul_continua_rodando():
     """
 
     text = _runbook()
-    # A tabela do diff (§7) cita a frase falsa como o que ela *era*, e o teste
-    # `test_a_checklist_mostra_o_diff_do_que_mudou` exige essa citação. Os dois
-    # guardas juntos dizem uma coisa só: a frase pode existir citada como
-    # história, e em lugar nenhum mais. Escopar é a diferença entre proibir a
-    # afirmação e proibir a palavra — e proibir a palavra apagaria o registro.
-    citacao = _section(text, "### O diff desta reescrita", "Registre a revisão")
-    corpo = text.replace(citacao, "")
+    # O corte é pela ESTRUTURA, e não pela vizinhança do texto. A frase aparece
+    # legitimamente três vezes dentro da §7 — na cláusula que a declara falsa e
+    # na tabela do diff que a cita como a redação antiga — e um casador de
+    # string não distingue "X" de "X é falso". Tentar distinguir por proximidade
+    # de uma negação é frágil; o que é robusto é o limite da seção: a §7 é a
+    # seção cujo trabalho inteiro é registrar o que mudou, e em todo o resto do
+    # documento a frase só poderia ser uma afirmação.
+    #
+    # Escopar é a diferença entre proibir a AFIRMAÇÃO e proibir a PALAVRA —
+    # proibir a palavra apagaria o registro do que mudou.
+    revisao = _section(text, "## 7. A revisão do dono", "## 8.")
+    corpo = text.replace(revisao, "")
 
     proibidas = (
         "produção azul continua rodando",
@@ -62,7 +80,7 @@ def test_o_runbook_nao_afirma_que_a_producao_azul_continua_rodando():
         "o azul continua rodando",
     )
     for frase in proibidas:
-        assert frase not in corpo, (
+        assert frase not in _flat(corpo), (
             f"o runbook volta a afirmar {frase!r} no presente; a produção está "
             "parada desde o landing do 2A.6 — ver PHASE_4C_2026-09-16.md §11"
         )
@@ -80,7 +98,7 @@ def test_o_runbook_registra_a_parada_da_producao_com_data_e_causa():
     assert "LegacyPersistenceStateError" in text
     assert "PHASE_4C_2026-09-16.md" in text
     assert re.search(r"2026-09-1[047]", text), "a parada é datada"
-    assert "conserto é o cutover" in text, (
+    assert "conserto é o cutover" in _flat(text), (
         "o runbook tem de dizer que o conserto é o cutover, e não um patch: "
         "um patch no loader reabriria o contrato que o 2A.6 fechou"
     )
@@ -94,8 +112,8 @@ def test_a_checklist_pre_cutover_declara_quando_foi_reescrita():
     """
 
     secao = _section(_runbook(), "## 7. A revisão do dono", "## 8.")
-    assert re.search(r"reescrita contra o presente em \d{4}-\d{2}-\d{2}", secao)
-    assert "armadilha de consentimento" in secao
+    assert re.search(r"reescrita contra o presente em \d{4}-\d{2}-\d{2}", _flat(secao))
+    assert "armadilha de consentimento" in _flat(secao)
 
 
 def test_todo_item_da_checklist_carrega_evidencia_ou_data():
@@ -122,10 +140,10 @@ def test_a_checklist_mostra_o_diff_do_que_mudou():
     """
 
     secao = _section(_runbook(), "### O diff desta reescrita", "Registre a revisão")
-    assert "cláusula de 2026-09-08" in secao
+    assert "cláusula de 2026-09-08" in _flat(secao)
     for veredito in ("**reescrita", "**fechada", "**acrescentada", "**mantida"):
-        assert veredito in secao, veredito
-    assert "produção azul continua rodando" in secao, (
+        assert veredito in _flat(secao), veredito
+    assert "produção azul continua rodando" in _flat(secao), (
         "a frase falsa tem de aparecer na tabela do diff, citada como o que ela "
         "era — é o único lugar do documento onde ela pode aparecer"
     )
@@ -161,6 +179,84 @@ def test_a_fila_pos_corte_nao_e_mais_declarada_vazia_sem_ressalva():
     """
 
     secao = _section(_runbook(), "## 6. Drenagem da fila", "## 7.")
-    assert "3** datas" in secao or "**3** datas" in secao
-    assert "envelhecido" in secao or "envelheceu" in secao
-    assert "Re-enumere" in secao or "re-enumere" in secao
+    assert "3** datas" in _flat(secao) or "**3** datas" in _flat(secao)
+    assert "envelhecido" in _flat(secao) or "envelheceu" in _flat(secao)
+    assert "Re-enumere" in _flat(secao) or "re-enumere" in _flat(secao)
+
+
+# ── o dossiê de decisão do dono ─────────────────────────────────────────────
+
+DOSSIE = ROOT / "docs" / "operations" / "PHASE_6_OWNER_DECISIONS_2026-09-17.md"
+
+
+def _decisoes() -> list[tuple[str, str]]:
+    """Devolve (título, corpo) de cada bloco `## Dn — …` do dossiê."""
+
+    text = DOSSIE.read_text(encoding="utf-8")
+    partes = re.split(r"^## (D\d — .+)$", text, flags=re.M)
+    return list(zip(partes[1::2], partes[2::2]))
+
+
+def test_toda_decisao_do_dossie_carrega_os_cinco_elementos():
+    """O contrato pedido: em jogo, opções, custo medido, recomendação, e o que
+    acontece se esperar.
+
+    Um dossiê a que falta o "se esperar" transforma seis decisões numa lista de
+    tarefas sem prioridade — que é a forma mais fácil de o dono adiar a errada.
+    E um a que falta "custo medido" é uma opinião com aparência de análise.
+
+    A mutação que isto derruba: acrescentar uma sétima decisão em prosa, ou
+    apagar a seção de custo de uma existente.
+    """
+
+    decisoes = _decisoes()
+    assert len(decisoes) >= 6, f"esperava ao menos 6 decisões, li {len(decisoes)}"
+    for titulo, corpo in decisoes:
+        for elemento in ("**Em jogo:**", "### As opções", "### Recomendação", "### Se esperar"):
+            assert elemento in _flat(corpo), f"{titulo}: falta {elemento}"
+        assert re.search(r"### Custo", _flat(corpo)), f"{titulo}: falta a seção de custo"
+
+
+def test_o_dossie_nao_recomenda_sem_dizer_o_porque():
+    """Uma recomendação sem razão é uma ordem, e o dono não delegou isso."""
+
+    for titulo, corpo in _decisoes():
+        rec = corpo[corpo.index("### Recomendação") :]
+        rec = rec[: rec.index("### Se esperar")]
+        assert len(rec.split()) >= 25, (
+            f"{titulo}: a recomendação tem {len(rec.split())} palavras — "
+            "curta demais para carregar o porquê"
+        )
+
+
+def test_o_dossie_registra_o_que_eu_retirei_depois_de_medir():
+    """Duas linhas de raciocínio foram escritas e retiradas por medição.
+
+    Registrá-las é o que impede a próxima sessão de as redescobrir e as tratar
+    como novas — e é o que permite ao dono ver que a recomendação mudou por
+    evidência, e não por preferência.
+    """
+
+    text = DOSSIE.read_text(encoding="utf-8")
+    assert "retirei" in text or "retirado" in text or "retirada" in text
+    assert "inalcançáveis" in _flat(text), (
+        "a medição que derrubou o argumento do `runs/` exposto tem de estar no "
+        "documento, não só na minha cabeça"
+    )
+    assert "anula o próprio pacote" in _flat(text), (
+        "a razão de o revisor em v2-promotion não servir como mitigação"
+    )
+
+
+def test_o_dossie_nao_inventa_urgencia_sem_medicao():
+    """A urgência declarada é a produção parada, e ela tem de vir com a medição
+    que a sustenta — data, exceção e o que conserta.
+    """
+
+    text = DOSSIE.read_text(encoding="utf-8")
+    assert "LegacyPersistenceStateError" in text
+    assert "2026-09-17" in text
+    assert "gh run list" in text
+    assert "não é emergência de horas" in _flat(text).lower(), (
+        "a urgência tem de vir calibrada: exagerá-la é tão ruim quanto omiti-la"
+    )

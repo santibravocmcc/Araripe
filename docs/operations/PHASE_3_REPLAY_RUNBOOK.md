@@ -157,8 +157,10 @@ deste procedimento pausou o azul, e um freeze curto de escrita azul só é
 permitido na janela de cutover da Phase 6.
 
 > **Correção de 2026-09-17: a produção azul NÃO está rodando, e não foi este
-> procedimento que a parou.** Este parágrafo dizia *"a produção azul continua
-> rodando durante tudo isso"*, e isso deixou de ser verdade. `detect_gee.yml`
+> procedimento que a parou.** Este parágrafo abria com uma afirmação no
+> presente sobre a automação azul estar ativa — citada na íntegra na tabela do
+> diff da §7, que é o único lugar deste documento onde ela pode aparecer — e
+> ela deixou de ser verdade. `detect_gee.yml`
 > falha em **quatro** execuções agendadas consecutivas — 2026-09-10, 2026-09-14
 > e 2026-09-17, com `LegacyPersistenceStateError`, mais 2026-09-07 por outra
 > causa. A última escrita em produção foi a execução **manual** de 2026-09-07
