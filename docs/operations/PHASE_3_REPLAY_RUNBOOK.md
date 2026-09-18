@@ -6,7 +6,10 @@
 **Baseline do replay:** **DECIDIDA em 2026-09-09 — `2.1.0`**, registrada em
 [`../../config/phase3_replay_baseline_decision_v1.json`](../../config/phase3_replay_baseline_decision_v1.json).
 Ver §2.1.
-**Revisão pré-cutover do dono:** **PENDENTE** para os itens restantes — ver §7.
+**Revisão pré-cutover do dono:** **FEITA em 2026-09-18** — ver §7 e
+[`../implementation/PHASE_3_REVIEW_2026-09-18.md`](../implementation/PHASE_3_REVIEW_2026-09-18.md).
+Nenhum item PENDENTE aqui; os portões 2 e 3 da Phase 6 seguem fechados e são
+capacidades, não revisões.
 O bullet do roadmap pede a revisão *antes do cutover*, então ela **não** bloqueia
 a Phase 4; bloqueia a Phase 6.
 
@@ -277,15 +280,19 @@ lista, e as outras quatro abrem portões sem mudar cláusula nenhuma daqui.
 > "sim" sobre outra pergunta. A revisão entra aqui quando o dono declarar a
 > aceitação dos três itens abaixo.
 
-### Abertos — a revisão é sobre estes três, e só sobre eles
+### Confirmados pelo dono em 2026-09-18 — o portão 1 está FECHADO
 
-- [ ] **os alvos resolvidos da §1 continuam certos.** Reconferidos no código em
+Registro em
+[`../implementation/PHASE_3_REVIEW_2026-09-18.md`](../implementation/PHASE_3_REVIEW_2026-09-18.md),
+com a resposta literal *"3 itens confirmados"* sobre a lista **reescrita**.
+
+- [x] **os alvos resolvidos da §1 continuam certos.** Reconferidos no código em
       2026-09-17, não herdados: `tests/test_replay_freeze.py` passa **55/55**, e
       é ele que cai se um nome mudar no código e não aqui. Os Environments foram
       relidos do GitHub na mesma data — backend tem três
       (`cloudflare-green-control` **com revisor**, `v2-promotion` e `v2-staging`
       **sem**), e o repositório do site continua com **`[]`**, nenhum.
-- [ ] **o corte é o literal `2026-08-30`, e o senhor revisa um fato, não uma
+- [x] **o corte é o literal `2026-08-30`, e o senhor revisa um fato, não uma
       regra.** Quando esta linha foi escrita, a §2.2 descrevia uma regra e a data
       era *provisória*. A Phase 4 **exerceu** a regra: `resolve_recorded_cutoff`
       tomou as datas terminais do ledger
@@ -298,7 +305,7 @@ lista, e as outras quatro abrem portões sem mudar cláusula nenhuma daqui.
       enumerada sobre a janela `2026-08-31..2026-09-10`. Essa janela fechou há
       uma semana; a fila real de hoje é maior e **não está medida**. Ela é
       re-enumerada na drenagem (§6), não agora.
-- [ ] **o procedimento da §3 — e a premissa de que "a produção azul continua
+- [x] **o procedimento da §3 — e a premissa de que "a produção azul continua
       rodando" é FALSA.** Esta é a cláusula que mais mudou, e ela não pode ser
       aceita como estava escrita. Medido com `gh run list` em 2026-09-17:
       `detect_gee.yml` falha em **quatro** execuções agendadas consecutivas —
@@ -350,9 +357,11 @@ lista, e as outras quatro abrem portões sem mudar cláusula nenhuma daqui.
 pelas decisões D1 e D5 do dono. Restam **três**, e são as três originais que
 foram mantidas ou reescritas.
 
-Registre a revisão como um bloco datado neste arquivo, ou num
-`docs/implementation/PHASE_3_REVIEW_<data>.md`. **Sem ela o cutover não
-começa.** Ela nunca bloqueou o reprocessamento: *"a Phase 4 pode começar"* foi o
+A revisão está registrada em
+[`../implementation/PHASE_3_REVIEW_2026-09-18.md`](../implementation/PHASE_3_REVIEW_2026-09-18.md).
+**Sem ela o cutover não começa** — e ela está feita, o que fecha **um** dos
+quatro portões. Os portões 2 (hostname do Worker verde) e 3 (Environment
+protegido no site) continuam **fechados**, e a revisão não os abre. Ela nunca bloqueou o reprocessamento: *"a Phase 4 pode começar"* foi o
 registro de 2026-09-08, e a Phase 4 começou e fechou em 2026-09-16.
 
 ## 8. Uma divergência medida — DECIDIDA pela Phase 4 em 2026-09-09
