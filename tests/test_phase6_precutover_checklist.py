@@ -260,3 +260,112 @@ def test_o_dossie_nao_inventa_urgencia_sem_medicao():
     assert "não é emergência de horas" in _flat(text).lower(), (
         "a urgência tem de vir calibrada: exagerá-la é tão ruim quanto omiti-la"
     )
+
+
+# ── as decisões do dono, e o que elas NÃO autorizam ─────────────────────────
+
+DECISOES = ROOT / "config" / "phase6_owner_decisions_v1.json"
+
+
+def _decisoes_json() -> dict:
+    return json.loads(DECISOES.read_text(encoding="utf-8"))
+
+
+def test_a_revisao_pre_cutover_nao_e_declarada_feita_por_uma_resposta_de_cronograma():
+    """A D2 escolheu QUANDO revisar. Isso não é a revisão.
+
+    Esta é a mutação que importa mais deste arquivo, e ela é atraente: fechar a
+    revisão porque o dono respondeu "(i) revisar agora" pareceria progresso, e
+    abriria o cutover sem que ninguém tivesse aceitado as cláusulas. É a imagem
+    espelhada da armadilha que a reescrita da §7 existe para evitar — ali o erro
+    era pedir concordância com frases velhas, aqui seria fabricá-la a partir de
+    um "sim" sobre outra pergunta.
+
+    O guarda é duplo de propósito: o arquivo de decisão tem de dizer
+    `review_performed: false`, **e** o runbook tem de continuar com item aberto.
+    Fechar um sem o outro deixa os dois documentos discordando sobre se o portão
+    caiu.
+    """
+
+    d = _decisoes_json()["d2_pre_cutover_review"]
+    assert d["decided"] == "review_now"
+    assert d["review_performed"] is False, (
+        "a revisão pré-cutover foi marcada como feita. Uma resposta de "
+        "cronograma não é a revisão — ver o campo why_false"
+    )
+    assert d["items_still_awaiting_the_owner"], "e ela tem de nomear o que falta"
+    assert "- [ ]" in _runbook(), "o runbook tem de continuar com item aberto"
+
+
+def test_as_decisoes_nao_autorizam_o_cutover():
+    """Seis respostas abrem portões. Nenhuma autoriza executar a virada.
+
+    Sem isto, uma sessão futura leria "o dono decidiu tudo" e trataria os passos
+    do §4.4 como aprovados — quando cada passo que afeta produção espera
+    aprovação explícita no momento em que é executado.
+    """
+
+    a = _decisoes_json()["authorization"]
+    assert a["production_mutation_permitted"] is False
+    assert a["cutover_execution_authorized_by_this_decision"] is False
+    assert a["why_the_cutover_is_not_authorized_here"]
+
+
+def test_a_revogacao_da_credencial_e_o_ultimo_passo_e_nao_o_primeiro():
+    """A condição de ordem que eu escrevi errado, agora em teste.
+
+    Eu recomendei revogar `claude-araripe-v2-staging-rw` depois de os produtos
+    do site estarem gerados. Medido depois: os produtos nunca precisaram dela
+    (`RouteReader` é um GET sem credencial), e quem precisa é a reprova da D5,
+    que roda numa branch — e os três Environments só aceitam `main`.
+
+    A mutação que isto derruba: alguém "simplificar" a condição de volta para a
+    versão antiga, que autoriza revogar cedo e torna a D5 improvável.
+    """
+
+    d = _decisoes_json()["d1_where_the_new_version_lives"]
+    ordering = d["revocation_ordering"]
+    assert "D5" in ordering["condition"]
+    assert ordering["corrected_on"] == "2026-09-18"
+    assert ordering["the_condition_as_first_written"], (
+        "a condição errada tem de ficar registrada; apagá-la deixa a próxima "
+        "sessão sem saber que esta já foi pensada de outro jeito"
+    )
+    assert ordering["why_that_was_too_early"]
+    d5 = _decisoes_json()["d5_durable_promotion_history"]
+    assert d5["blocks_revocation"] is True, (
+        "o campo é booleano de propósito: uma string como 'yes — ver X' passa "
+        "por um `== 'yes'` errado e falha por prosa, não por conteúdo"
+    )
+
+
+def test_toda_acao_do_dono_diz_por_que_o_agente_nao_pode_faze_la():
+    """Uma lista de ações do dono sem o porquê convida a tentativa.
+
+    Este projeto já pagou por isso: um pré-requisito da Phase 6 viajou como
+    pedido ao dono por quatro briefings sem ninguém dizer que era ação dele.
+    Aqui o inverso também tem de valer — se um item é ação do dono, o arquivo
+    diz qual capacidade falta ao agente.
+    """
+
+    acoes = _decisoes_json()["owner_actions_outstanding"]
+    assert len(acoes) >= 4
+    for acao in acoes:
+        assert acao["agent_can_do_it"] is False, acao["action"]
+        assert acao.get("why") or acao.get("do_not_do_it_before"), acao["action"]
+        assert acao["blocks"], acao["action"]
+
+
+def test_o_runbook_e_o_arquivo_de_decisao_concordam_sobre_o_bucket():
+    """Duas metades que discordassem fariam a virada ler a errada."""
+
+    d = _decisoes_json()["d1_where_the_new_version_lives"]
+    assert d["bucket"] == "araripe-v2-staging"
+    from src.publication import conditional_store as cs
+
+    assert d["bucket"] == cs.STAGING_BUCKET, (
+        "a decisão nomeia um bucket que o código não é o que escreve"
+    )
+    secao = _section(_runbook(), "## 7. A revisão do dono", "## 8.")
+    assert "phase6_owner_decisions_v1.json" in _flat(secao)
+    assert "promover" in _flat(secao) and d["bucket"] in secao

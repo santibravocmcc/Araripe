@@ -262,7 +262,22 @@ resolved targets"*. Pré-cutover: a revisão é portão da **Phase 6**.
       exata), então a decisão é `do_not_pin_crs_transform`. Fixá-la é que mudaria
       pixels.
 
-### Abertos — a revisão é sobre estes, e só sobre estes
+### Duas decisões do dono, tomadas em 2026-09-18, fecham dois destes
+
+Registradas em
+[`../../config/phase6_owner_decisions_v1.json`](../../config/phase6_owner_decisions_v1.json).
+As seis do dossiê foram respondidas; **D1** e **D5** são as que tocam esta
+lista, e as outras quatro abrem portões sem mudar cláusula nenhuma daqui.
+
+> **A revisão em si continua PENDENTE, e isto não é formalidade.** O dono
+> escolheu **quando** revisar — *"revisar agora"* — e isso não é uma afirmação
+> de que as cláusulas abertas estão aceitas. Registrar uma resposta de
+> **cronograma** como se fosse a revisão seria a imagem espelhada da armadilha
+> que esta reescrita existe para evitar: fabricar consentimento a partir de um
+> "sim" sobre outra pergunta. A revisão entra aqui quando o dono declarar a
+> aceitação dos três itens abaixo.
+
+### Abertos — a revisão é sobre estes três, e só sobre eles
 
 - [ ] **os alvos resolvidos da §1 continuam certos.** Reconferidos no código em
       2026-09-17, não herdados: `tests/test_replay_freeze.py` passa **55/55**, e
@@ -294,18 +309,24 @@ resolved targets"*. Pré-cutover: a revisão é portão da **Phase 6**.
       O procedimento da §3 em si continua correto — ele foi executado e fechou.
       O que caiu foi a sua última frase. Ver §3 e
       [`PHASE_4C_2026-09-16.md`](../implementation/PHASE_4C_2026-09-16.md) §11.
-- [ ] **(acrescentado em 2026-09-17) o ponteiro verde vira público sem revisor e
-      sem histórico durável.** Não estava na lista porque, quando ela foi
-      escrita, isto era problema de sandbox. O cutover o transforma: o ponteiro
-      passa a ser o que o site público segue.
+- [x] **(acrescentado em 2026-09-17, FECHADO em 2026-09-18 pela D5) o ponteiro
+      verde vira público sem revisor e sem histórico durável.** Não estava na
+      lista porque, quando ela foi escrita, isto era problema de sandbox. O
+      cutover o transforma: o ponteiro passa a ser o que o site público segue.
+      **Decidido: construir o histórico durável ANTES da virada** — o dono
+      escolheu (i), e não a aceitação do risco por escrito.
       [`PROMOTION_IDENTITY_SETUP.md`](PROMOTION_IDENTITY_SETUP.md) já mandava
       revisitar — *"no cutover … a conta de um erro deixa de ser um sandbox"*.
       Medido no bucket em 2026-09-17: existem **7** releases e o ponteiro nomeia
       **2** (a atual `rel-g1-fb722b2d…` e `supersedes` → `rel-g1-24db9555…`,
       sequence 9). As outras **5** não são alcançáveis pelo store. Aceitar o
       risco por escrito ou construir o histórico antes é decisão sua.
-- [ ] **(acrescentado em 2026-09-17) onde os dados da versão nova vivem depois
-      do cutover.** Não estava na lista porque a pergunta não existia: a §1 já
+- [x] **(acrescentado em 2026-09-17, FECHADO em 2026-09-18 pela D1) onde os
+      dados da versão nova vivem depois do cutover.** **Decidido: promover
+      `araripe-v2-staging`** a depósito canônico verde — zero bytes copiados,
+      zero mudança de código — com a revogação de `claude-araripe-v2-staging-rw`
+      como **último** passo, depois de a D5 estar construída e reprovada (a
+      condição foi corrigida em 2026-09-18; ver o arquivo de decisão). Não estava na lista porque a pergunta não existia: a §1 já
       nomeia `araripe-v2-staging` como o bucket verde, mas
       [`CLOUDFLARE_STAGING_ACCESS_FOR_CLAUDE.md`](CLOUDFLARE_STAGING_ACCESS_FOR_CLAUDE.md)
       o governa como *"an object-level development sandbox … **not** a canonical
@@ -324,6 +345,10 @@ resolved targets"*. Pré-cutover: a revisão é portão da **Phase 6**.
 | a divergência de unidade de composição da §8 é da Phase 4 e não bloqueia a Phase 3 | **fechada** — a Phase 4 respondeu as duas metades | `config/phase4_composition_unit_decision_v1.json` |
 | — | **acrescentada**: ponteiro público sem revisor nem histórico | 7 releases no bucket, 2 nomeáveis; `PROMOTION_IDENTITY_SETUP.md` §"quando isso deve ser revisto" |
 | — | **acrescentada**: onde a versão nova mora de vez | `CLOUDFLARE_STAGING_ACCESS_FOR_CLAUDE.md` §Boundary e §Revocation |
+
+**Atualização de 2026-09-18:** as duas cláusulas *acrescentadas* já fecharam,
+pelas decisões D1 e D5 do dono. Restam **três**, e são as três originais que
+foram mantidas ou reescritas.
 
 Registre a revisão como um bloco datado neste arquivo, ou num
 `docs/implementation/PHASE_3_REVIEW_<data>.md`. **Sem ela o cutover não

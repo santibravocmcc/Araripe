@@ -18,6 +18,40 @@ disparado.
 
 ---
 
+> ## ✅ RESPONDIDO em 2026-09-18 — as seis, e todas seguindo a recomendação
+>
+> Registrado em
+> [`../../config/phase6_owner_decisions_v1.json`](../../config/phase6_owner_decisions_v1.json).
+>
+> | | decisão | resposta |
+> | --- | --- | --- |
+> | D1 | onde a versão nova mora | **(a) promover `araripe-v2-staging`** |
+> | D2 | a revisão pré-virada | **(i) revisar agora** |
+> | D3 | endereço de teste | **(i) subdomínio `workers.dev` temporário** |
+> | D4 | Environment do site | **(i) criar com revisor obrigatório** |
+> | D5 | registro de versões | **(i) construir antes da virada** |
+> | D6 | corrigir o plano | **(i) autorizar** |
+>
+> **Duas ressalvas que o leitor precisa levar daqui:**
+>
+> 1. **A D2 escolheu o cronograma, não o resultado.** *"Revisar agora"* não é
+>    *"revisei e aceito"*. A revisão continua **pendente** e é sobre os **três**
+>    itens que restaram na §7 do runbook — a D1 e a D5 fecharam dois.
+> 2. **A condição de ordem da D1 estava CEDO DEMAIS e foi corrigida.** Eu
+>    escrevi *"revogar depois de os produtos do site estarem gerados"*. Medido
+>    em 2026-09-18, isso é a restrição errada duas vezes: os produtos do site
+>    **nunca** precisaram desta credencial — `site_artifact.py` lê a release por
+>    `RouteReader`, um GET sem credencial, e `green_site_publish.yml` não
+>    referencia segredo de R2 nenhum. Quem precisa dela é a **D5**: reprovar a
+>    mudança de `promote`/`rollback` exige escrever no R2, a mudança vive numa
+>    branch até mesclar, e os **três** Environments do backend têm política de
+>    branch `main` **só** (conferido por `gh api`). **Revogar é o último passo,
+>    depois da D5 reprovada** — antes disso, a reprova só seria possível
+>    mesclando código não provado na `main`, o que inverte a ordem de segurança
+>    que o pacote existe para proteger.
+
+---
+
 ## Sumário — o que eu recomendo, em uma linha cada
 
 | | decisão | recomendação | urgência |
