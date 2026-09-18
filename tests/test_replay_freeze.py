@@ -711,10 +711,16 @@ def test_o_runbook_declara_a_revisao_pre_cutover_ainda_aberta():
     """O bullet pede revisão explícita do dono **antes do cutover**, e o runbook
     não pode declarar-se revisado por conta própria.
 
-    Em 2026-09-09 dois itens fecharam — a baseline e a cota — e os outros
-    quatro continuam abertos. O teste exige que ainda haja item aberto e que o
-    documento diga que o cutover não começa sem ela; se algum dia todos
-    fecharem, este teste cai e a linha tem de mudar deliberadamente.
+    Em 2026-09-09 dois itens fecharam — a baseline e a cota. Em 2026-09-17 a
+    lista foi reescrita contra o presente: a divergência de composição fechou
+    (a Phase 4 respondeu), três cláusulas foram reescritas porque a premissa
+    delas mudou, e duas foram acrescentadas pelo que o cutover passa a expor.
+    Contagem de hoje: **3 fechados, 5 abertos** — ver
+    `tests/test_phase6_precutover_checklist.py`, que é quem guarda o conteúdo.
+
+    O teste exige que ainda haja item aberto e que o documento diga que o
+    cutover não começa sem ela; se algum dia todos fecharem, este teste cai e a
+    linha tem de mudar deliberadamente.
     """
 
     text = RUNBOOK.read_text(encoding="utf-8")

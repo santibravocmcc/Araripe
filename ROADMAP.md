@@ -5,7 +5,7 @@
 **Planning branch:** `codex/technical-review-roadmap`
 **Primary evidence:** `TECHNICAL_REVIEW.md` and `TECHNICAL_REVIEW_SUMMARY.md`
 
-> ## Estado em 2026-09-08 — leia antes das linhas de status abaixo
+> ## Estado em 2026-09-18 — leia antes das linhas de status abaixo
 >
 > **Este arquivo passou a viver na `main` em 2026-09-08**, quando o Package
 > 2A.6 chegou. Antes disso ele existia só na branch de planejamento, e a `main`
@@ -27,10 +27,27 @@
 > | Packages 2B.4A/4B | fechados 2026-09-08 | `docs/implementation/PHASE_2B4B_2026-09-08.md` |
 > | **Exit gate P2B** | **FECHADO 2026-09-08** | `docs/implementation/PHASE_2B_GATE_2026-09-08.md` |
 > | **Phase 2B inteira** | **encerrada** — não há 2B.5 | idem |
-> | Package 2A.6 | fechado; **este landing** | `docs/implementation/` desta data |
+> | Package 2A.6 | fechado 2026-09-08 | `docs/implementation/PHASE_2A6_LANDING_2026-09-08.md` |
+> | **Phase 3** | **fechada 2026-09-09** | baseline do replay decidida: `2.1.0`, `config/phase3_replay_baseline_decision_v1.json` |
+> | **Phase 4** | **fechada 2026-09-16** | candidato 2026 depositado e publicado em staging; `docs/implementation/PHASE_4C_2026-09-16.md` |
 >
-> **Próxima frente: Phase 3.** O Package 2A.6 era a pré-condição dela, e é o
-> que este landing entrega.
+> **Próxima frente: Phase 6 — o cutover.** As Fases 3 e 4 fecharam, e nenhum
+> dos dois fechamentos atualizou esta linha; a correção foi autorizada pelo
+> dono em 2026-09-18 (decisão D6,
+> [`config/phase6_owner_decisions_v1.json`](config/phase6_owner_decisions_v1.json)).
+>
+> **A Phase 5 não é portão das Fases 6 e 7** — decisão do dono —, mas até o
+> relatório dela sair **nada pode ser publicado como afirmação de acurácia**.
+>
+> **E um fato de produção que esta linha não diz e deveria:** a detecção
+> agendada está **parada** desde o landing do 2A.6. `detect_gee.yml` falha em
+> toda execução agendada desde então com `LegacyPersistenceStateError`, e o
+> conserto é o cutover, não um patch — ver
+> [`docs/implementation/PHASE_4C_2026-09-16.md`](docs/implementation/PHASE_4C_2026-09-16.md) §11.
+>
+> **As quatro decisões científicas da Phase 4 estão tomadas e não reabrem:**
+> baseline `2.1.0`, unidade `physical_datatake`/`datatake_mosaic-v1`,
+> sobreposição `0.55`, linhagem `ambiguous-lineage-as-origin-v1`.
 >
 > Duas decisões do §8 deixaram de estar abertas, e uma ganhou portão:
 > a **data de corte do replay** tem recomendação medida em

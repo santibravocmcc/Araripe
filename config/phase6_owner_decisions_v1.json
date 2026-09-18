@@ -1,0 +1,143 @@
+{
+  "decision_id": "araripe-phase6-owner-decisions-v1",
+  "schema_version": "1.0.0",
+  "decision_date": "2026-09-18",
+  "scope": "the six Phase 6 decisions the owner was asked for in docs/operations/PHASE_6_OWNER_DECISIONS_2026-09-17.md",
+
+  "authorization": {
+    "authorized_by": "project_owner",
+    "authorized_on": "2026-09-18",
+    "asked_as": "docs/operations/PHASE_6_OWNER_DECISIONS_2026-09-17.md, six decisions D1-D6 each with options and measured cost",
+    "answered": "D1 opcao A (sua recomendacao); D2 (i); D3 recomendacao (i); D4 (i); D5 (i); D6 (i)",
+    "recommendation_followed": true,
+    "production_mutation_permitted": false,
+    "cutover_execution_authorized_by_this_decision": false,
+    "why_the_cutover_is_not_authorized_here": "these six answers open gates. They do not authorize the cutover steps themselves: §4.4 of the phase briefing orders the consumer swap and the blue shutdown, and each production-affecting step still waits for explicit approval at the time it is executed. Three of the six also require a physical action by the owner that no agent can perform."
+  },
+
+  "d1_where_the_new_version_lives": {
+    "decided": "promote_araripe_v2_staging",
+    "option": "(a)",
+    "bucket": "araripe-v2-staging",
+    "means": "araripe-v2-staging stops being a disposable sandbox and becomes the canonical green release bucket that the public site reads through the green route.",
+    "requires": [
+      "rewriting docs/operations/CLOUDFLARE_STAGING_ACCESS_FOR_CLAUDE.md, which currently governs the bucket as 'not a canonical release bucket, public bucket, or promotion target'",
+      "revoking the Cloudflare R2 token claude-araripe-v2-staging-rw — an owner action in the dashboard, which no agent can perform or verify"
+    ],
+    "does_not_require": [
+      "any data movement: zero bytes are copied",
+      "any change to assert_staging_target(), which already names this bucket",
+      "any change to site/wrangler.green.jsonc, whose STAGING_BUCKET binding already points here",
+      "any change to araripe-cogs content"
+    ],
+
+    "revocation_ordering": {
+      "condition": "revoke claude-araripe-v2-staging-rw only AFTER the D5 durable promotion history is built and re-proven against real R2",
+      "corrected_on": "2026-09-18",
+      "the_condition_as_first_written": "revoke after the site products are generated (docs/operations/PHASE_6_OWNER_DECISIONS_2026-09-17.md §D1)",
+      "why_that_was_too_early": "measured 2026-09-18. Two separate findings. First, the site products do NOT need this credential at cutover: site/scripts/site_artifact.py reads the release through RouteReader, an HTTP GET with no credential, and site/.github/workflows/green_site_publish.yml references no R2 secret at all — so generating them was never the binding constraint. Second, D5 IS the binding constraint: the durable-history package adds a write to atomic_publish.promote and rollback, re-proving it end to end requires writing to araripe-v2-staging, the change lives on a feature branch until it merges, and all three backend Environments (v2-staging, v2-promotion, cloudflare-green-control) have a deployment branch policy of main only — confirmed by gh api on 2026-09-18. There is also no green deposit lane at all; GREEN_PROOFS_2026-09-07.md §(run assembly) records that the proof run was assembled and deposited with the LOCAL staging identity. So revoking before D5 would leave the re-proof executable only by merging unproven code to main first, which inverts the safety order the package exists to protect.",
+      "what_is_safe_to_revoke_before": "nothing that this phase needs. Revocation is the last step of D1, not the first."
+    },
+
+    "why_not_option_b": "measured 2026-09-17. Creating a final bucket and copying the release costs far more than the 1 778 202 736 bytes of the current release: the local staging credential is refused on every other bucket (AccessDenied against araripe-cogs and against a new name), no copy tooling exists (grep for copy_object|CopySource|copy_from in src/ and scripts/ returns nothing), and assert_staging_target() would have to be edited — the fail-closed guard that keeps green publication off production, asserted in five places — in the same package that makes the green lane public.",
+    "the_argument_for_b_that_was_measured_false": "that a public bucket would expose the runs/ prefixes and the probe residue. site/worker/data_route.js never assembles the key from the request: the path after the mount is looked up in an allowlist built from the LIVE release manifest, and the key is release_prefix plus that declared path. runs/, probe prefixes and any non-live release are unreachable by construction, not by filtering."
+  },
+
+  "d2_pre_cutover_review": {
+    "decided": "review_now",
+    "option": "(i)",
+    "review_performed": false,
+    "why_false": "the owner chose WHEN to review, not the review's outcome. Selecting 'review now' is not a statement that the checklist items are accepted, and recording it as one would be the mirror image of the trap this rewrite existed to avoid — manufacturing consent from a timing answer. The review is recorded only when the owner states acceptance of the open items, as a dated block in docs/operations/PHASE_3_REPLAY_RUNBOOK.md §7 or in docs/implementation/PHASE_3_REVIEW_<date>.md.",
+    "items_closed_by_these_decisions": [
+      "onde os dados da versao nova vivem depois do cutover — closed by D1",
+      "o ponteiro verde vira publico sem revisor e sem historico duravel — closed by D5, which builds the history before the cutover"
+    ],
+    "items_still_awaiting_the_owner": [
+      "os alvos resolvidos da §1 continuam certos",
+      "o corte e o literal 2026-08-30, e a fila pos-corte de 3 foi medida numa janela que fechou",
+      "o procedimento da §3, e a producao azul esta PARADA — a premissa original era falsa"
+    ]
+  },
+
+  "d3_green_worker_hostname": {
+    "decided": "temporary_workers_dev_subdomain",
+    "option": "(i)",
+    "capability_named": "a reachable hostname for observatorio-chapada-v2-staging via a workers.dev subdomain, opened only for the duration of the live verification and closed afterwards with the already-allowlisted enforce-worker-isolation operation",
+    "not_chosen": {
+      "zone_route_on_a_non_final_hostname": "more surface — it touches the zone configuration — for the same verification",
+      "skip_live_verification": "wrangler dev already verifies the route with no credential (29/29 conformance checks, R2 simulated locally), but it cannot prove byte identity against the real release, the real Cache-Control on the pointer, the real absence of Access-Control-Allow-Origin, the real ~13.8 MiB full-alert view, or ?download=1 naming through a real edge"
+    },
+    "execution_constraints": [
+      "the operation is NOT in the broker allowlist, which is exactly audit, enforce-worker-isolation, disable-site-branch-deploy",
+      "a broker change and a mutation dispatch may not be authored in the same task",
+      "the audit assertions (public_subdomain_enabled false, custom_domain_count 0, route_count 0) must be updated while the hostname is open, or a green deploy breaks the very audit that proves isolation",
+      "the Environment cloudflare-green-control has a required human reviewer and that does not change",
+      "no agent approves its own Environment run"
+    ],
+    "already_measured_and_discarded": "a wrangler remote binding. The field is `remote`; `experimental_remote` only warns and reads local. A remote binding creates a proxy Worker in the account and therefore requires Workers-Edit, the credential Claude may not receive."
+  },
+
+  "d4_site_protected_environment": {
+    "decided": "create_with_required_reviewer",
+    "option": "(i)",
+    "repository": "santibravocmcc/observatorio-site",
+    "measured_state_before": "gh api repos/santibravocmcc/observatorio-site/environments returned [] on 2026-09-17 and again on 2026-09-18",
+    "why_the_reviewer_is_not_optional": "Cloudflare Workers permission is account-scoped, not per-Worker. Whoever can deploy the green Worker can deploy the production one. Measured in Package 2B.4A.",
+    "agent_constraint": "no agent may add `environment:` to a workflow before the Environment exists. GitHub creates whatever is named, with no protection and no branch policy, which is a repository configuration change and the wrong one.",
+    "lane_already_waiting": "site/.github/workflows/green_site_publish.yml has a publish job that refuses and names this Environment and the D3 hostname as the two missing capabilities. It is workflow_dispatch only and names no Environment."
+  },
+
+  "d5_durable_promotion_history": {
+    "decided": "build_before_the_cutover",
+    "option": "(i)",
+    "specification_source": "docs/implementation/PHASE_2B3_2026-09-07.md §'The prerequisite, specified and deliberately not built'",
+    "what_it_is": "a durable write-once promotion history — one immutable object per pointer write",
+    "measured_gap": {
+      "releases_in_the_bucket": 7,
+      "releases_the_pointer_can_name": 2,
+      "how": "the current release rel-g1-fb722b2d… plus supersedes → rel-g1-24db9555… at sequence 9",
+      "orphaned_from_the_store": 5,
+      "one_of_them_was_live": "rel-g1-2ddb10c7… served as sequence 8 and survives only because it was copied into a record by hand"
+    },
+    "why_it_is_a_package": "it adds a write to atomic_publish.promote and rollback, and that path was proven end to end against real R2 five times on 2026-09-07. Changing it means those proofs no longer cover the code that runs, so it must be built, re-proven, and only then may the retention policy be extended.",
+    "why_before_and_not_after": "it blocks nothing and nothing blocks it: the cutover is waiting on three owner actions regardless, and this is the only substantial work that needs none of them. Building it now costs no cutover delay.",
+    "mitigation_considered_and_rejected": "requiring a reviewer on the v2-promotion Environment. The stated goal of Package 2B.2C is to keep operational data publication automatic without PRs or manual merges, and a required reviewer on every scheduled publication annuls the package. The mitigation is the history, not the reviewer.",
+    "blocks_revocation": true,
+    "blocks_revocation_detail": "see d1_where_the_new_version_lives.revocation_ordering"
+  },
+
+  "d6_roadmap_dated_block": {
+    "decided": "authorize_the_correction",
+    "option": "(i)",
+    "what_is_stale": "the dated block at the top of ROADMAP.md still ends with 'Próxima frente: Phase 3', and Phases 3 and 4 both closed. Neither closure updated it.",
+    "why_it_matters_despite_being_small": "this project already lost work planning against the wrong document — the two-ROADMAP.md incident. A stale 'next front' line is the same class of error and cheaper to fix than to discover.",
+    "risk": "none: it is a documentation edit with no runtime reader"
+  },
+
+  "owner_actions_outstanding": [
+    {
+      "action": "perform the pre-cutover review of the three remaining open items in PHASE_3_REPLAY_RUNBOOK.md §7",
+      "blocks": "the cutover",
+      "agent_can_do_it": false,
+      "why": "it is the owner's review by the roadmap's own wording"
+    },
+    {
+      "action": "open a temporary workers.dev subdomain for observatorio-chapada-v2-staging, and approve the cloudflare-green-control Environment run that does it",
+      "blocks": "migration steps 4, 5 and 6",
+      "agent_can_do_it": false,
+      "why": "it needs a broker change reviewed and merged by a human, then a dispatch in a separate task, then the owner's Environment approval"
+    },
+    {
+      "action": "create a protected Environment with a required reviewer in santibravocmcc/observatorio-site",
+      "blocks": "deploying the green Worker from CI, and therefore the consumer swap",
+      "agent_can_do_it": false,
+      "why": "repository configuration, and naming a non-existent Environment would create an unprotected one"
+    },
+    {
+      "action": "revoke claude-araripe-v2-staging-rw",
+      "blocks": "nothing — it is the LAST step of D1",
+      "agent_can_do_it": false,
+      "do_not_do_it_before": "the D5 durable promotion history is built and re-proven"
+    }
+  ]
+}
