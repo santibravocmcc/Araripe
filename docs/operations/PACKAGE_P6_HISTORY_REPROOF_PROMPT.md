@@ -36,7 +36,7 @@ Medido em 2026-09-27, na branch da PR:
 
 | repositório | comando | resultado |
 | --- | --- | --- |
-| backend | `/opt/anaconda3/envs/araripe/bin/python -m pytest -q` | **2003** (1932 na base + 71) |
+| backend | `/opt/anaconda3/envs/araripe/bin/python -m pytest -q` | **2008** — 1932 na base, + 71 do histórico, + 5 que o guarda do método de handoff roda **por briefing**, e este é um briefing novo |
 | site | `ARARIPE_DIR=… python -m pytest -q` na branch da `site#26` | **207** |
 | site | `npm run test:worker` | **44/44** |
 
