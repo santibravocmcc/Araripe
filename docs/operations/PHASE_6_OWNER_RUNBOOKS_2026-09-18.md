@@ -87,6 +87,16 @@ No repositório `santibravocmcc/observatorio-site`:
 3. Em **Deployment protection rules**:
    - marcar **Required reviewers** e adicionar **você mesmo**;
    - deixar **Wait timer** em 0.
+
+   > **Atualização de 2026-09-27 — este passo não é executável neste repositório.**
+   > O repo do site é **privado**, e o plano grátis do GitHub não oferece revisor
+   > de Environment em repo privado. A evidência estava medida desde 2026-09-07
+   > (a API de rulesets respondeu 403 pedindo Pro ou repo público) e este roteiro
+   > não a consultou. A conferência do passo A.3 é que pegou: o Environment saiu
+   > só com `branch_policy`. **Decisão do dono:** o token de Workers **não** fica
+   > no GitHub — foi tirado do Environment — e o Worker verde é implantado da
+   > máquina do dono. Isso não trava nenhum passo recorrente: ver
+   > `../implementation/PHASE_6B_2026-09-27.md` §5.
 4. Em **Deployment branches and tags**: **Selected branches and tags** → regra
    **`main`**.
    - Igual aos três do backend, que têm todos política `main` só — conferido por
@@ -164,6 +174,11 @@ desperdiça o passo.
 4. Em `workers.dev`, clique **Enable** e confirme.
 5. **Deixe Preview URLs desligado.** Eles são um endereço separado
    (`<preview>-<worker>.<subdominio>.workers.dev`) e não precisamos deles.
+   **E não clique em "Enable Access"**, que aparece logo abaixo da URL: ele leva à
+   criação de uma organização Zero Trust e poria uma tela de login na frente da
+   rota — a verificação mediria o Access, não o Worker. O dado atrás da URL já é
+   público hoje pelo `pub-…r2.dev`, e a janela é curta. *(Acrescentado em
+   2026-09-27, depois de o dono chegar a essa tela.)*
 6. Copie o hostname que aparecer —
    `observatorio-chapada-v2-staging.<seu-subdominio>.workers.dev` — e me mande.
 
