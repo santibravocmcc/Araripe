@@ -49,6 +49,15 @@ disparado.
 >    depois da D5 reprovada** — antes disso, a reprova só seria possível
 >    mesclando código não provado na `main`, o que inverte a ordem de segurança
 >    que o pacote existe para proteger.
+>
+>    **E esta correção também estava errada — corrigida de novo em 2026-09-27.**
+>    Medido no código: a chave local é *opt-in* por ponto de entrada, e só os
+>    dois scripts de depósito (`assemble_green_run.py`, `stage_green_run.py`)
+>    optam; a CLI de promoção a **recusa**, com teste. Então a D5 nunca poderia
+>    ser reprovada com a chave local — ela é reprovada em CI a partir da `main`,
+>    como as provas de 2026-09-07. **O que depende da chave local é o depósito
+>    de rodadas**, que não tem lane em CI. A revogação espera essa lane, não a
+>    D5.
 
 ---
 

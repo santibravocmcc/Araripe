@@ -707,28 +707,48 @@ def test_a_geracao_2_1_0_esta_presente_e_verificada_byte_a_byte():
 RUNBOOK = ROOT / "docs" / "operations" / "PHASE_3_REPLAY_RUNBOOK.md"
 
 
-def test_o_runbook_declara_a_revisao_pre_cutover_ainda_aberta():
+def test_o_runbook_declara_a_revisao_pre_cutover_feita_com_registro():
     """O bullet pede revisão explícita do dono **antes do cutover**, e o runbook
     não pode declarar-se revisado por conta própria.
 
-    Em 2026-09-09 dois itens fecharam — a baseline e a cota. Em 2026-09-17 a
-    lista foi reescrita contra o presente: a divergência de composição fechou
-    (a Phase 4 respondeu), três cláusulas foram reescritas porque a premissa
-    delas mudou, e duas foram acrescentadas pelo que o cutover passa a expor.
-    Contagem de hoje: **3 fechados, 5 abertos** — ver
-    `tests/test_phase6_precutover_checklist.py`, que é quem guarda o conteúdo.
+    **Mudança deliberada de 2026-09-18, e a docstring antiga a previu.** Ela
+    dizia: *"se algum dia todos fecharem, este teste cai e a linha tem de mudar
+    deliberadamente"*. Esse dia chegou. A trajetória, porque ela é o registro:
+    em 2026-09-09 dois itens fecharam (a baseline e a cota); em 2026-09-17 a
+    lista foi reescrita contra o presente — a divergência de composição fechou
+    porque a Phase 4 respondeu, três cláusulas foram reescritas porque a
+    premissa mudou, e duas foram acrescentadas pelo que o cutover expõe; em
+    2026-09-18 as decisões D1 e D5 fecharam as duas acrescentadas e o dono
+    confirmou as três restantes.
 
-    O teste exige que ainda haja item aberto e que o documento diga que o
-    cutover não começa sem ela; se algum dia todos fecharem, este teste cai e a
-    linha tem de mudar deliberadamente.
+    A proteção **não** foi removida, foi invertida: o runbook não pode dizer que
+    a revisão está feita sem que o arquivo de registro exista. Antes o risco era
+    declarar-se revisado sem revisão; agora é declarar-se revisado sem o
+    documento que prova qual texto foi revisado e quando.
+
+    O conteúdo dos itens é guardado por
+    `tests/test_phase6_precutover_checklist.py`, que também exige a resposta
+    literal do dono e a distinção de que a lista revisada era a reescrita.
     """
 
     text = RUNBOOK.read_text(encoding="utf-8")
+    flat = " ".join(text.split())
     assert "Revisão pré-cutover do dono" in text
-    assert "PENDENTE" in text
-    assert "- [ ]" in text, "a revisão pré-cutover ainda tem item aberto"
-    assert "- [x]" in text, "e tem item já fechado, que é o estado real"
-    assert "cutover não" in text and "começa" in text
+    assert "FEITA em 2026-09-18" in flat, (
+        "o runbook tem de datar a revisão; sem data ela não é auditável"
+    )
+    assert "- [x]" in text, "e os itens revisados ficam marcados"
+    assert "cutover não" in flat and "começa" in flat, (
+        "a frase que diz que o cutover não começa sem ela continua valendo — "
+        "ela agora está satisfeita, não revogada"
+    )
+
+    registro = ROOT / "docs" / "implementation" / "PHASE_3_REVIEW_2026-09-18.md"
+    assert registro.is_file(), (
+        "o runbook declara a revisão feita e o registro não existe. Um dos dois "
+        "está errado, e o documento que se autodeclara revisado é o suspeito"
+    )
+    assert registro.name in flat, "e o runbook tem de apontar para ele"
 
 
 def test_o_runbook_registra_a_decisao_da_baseline_que_o_congelamento_le():
