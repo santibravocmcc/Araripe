@@ -357,30 +357,65 @@ def test_as_decisoes_nao_autorizam_o_cutover():
 
 
 def test_a_revogacao_da_credencial_e_o_ultimo_passo_e_nao_o_primeiro():
-    """A condição de ordem que eu escrevi errado, agora em teste.
+    """A condição de ordem que eu escrevi errado DUAS vezes, agora ancorada no código.
 
-    Eu recomendei revogar `claude-araripe-v2-staging-rw` depois de os produtos
-    do site estarem gerados. Medido depois: os produtos nunca precisaram dela
-    (`RouteReader` é um GET sem credencial), e quem precisa é a reprova da D5,
-    que roda numa branch — e os três Environments só aceitam `main`.
+    1ª versão (2026-09-17): revogar depois dos produtos do site. Errada — os
+    produtos nunca precisaram da chave (`RouteReader` é um GET sem credencial).
+    2ª versão (2026-09-18): revogar depois da D5 reprovada. Também errada, e
+    medido em 2026-09-27: a chave local é opt-in por ponto de entrada, só os
+    dois scripts de depósito optam, e a CLI de promoção a RECUSA — então a D5
+    nunca poderia ser reprovada com ela; é reprovada em CI a partir da `main`.
 
-    A mutação que isto derruba: alguém "simplificar" a condição de volta para a
-    versão antiga, que autoriza revogar cedo e torna a D5 improvável.
+    O que de fato depende da chave local é o DEPÓSITO: `assemble_green_run.py
+    apply` escreve `runs/<run-id>/` e nenhum workflow o roda.
+
+    A lição das duas correções é que a condição era prosa sobre o comportamento
+    de outro componente, e prosa não quebra quando o componente muda. Então este
+    teste lê o componente: as três afirmações de que a condição depende são
+    verificadas no código, e qualquer uma que deixe de valer derruba o teste.
     """
 
     d = _decisoes_json()["d1_where_the_new_version_lives"]
     ordering = d["revocation_ordering"]
-    assert "D5" in ordering["condition"]
-    assert ordering["corrected_on"] == "2026-09-18"
-    assert ordering["the_condition_as_first_written"], (
-        "a condição errada tem de ficar registrada; apagá-la deixa a próxima "
-        "sessão sem saber que esta já foi pensada de outro jeito"
+    assert "assemble_green_run" in ordering["condition"], (
+        "a condição tem de nomear o que depende da chave: o depósito"
     )
-    assert ordering["why_that_was_too_early"]
+    assert "D5" not in ordering["condition"]
+    assert ordering["corrected_on"] == "2026-09-27"
+    # as duas versões erradas ficam registradas; apagá-las deixa a próxima
+    # sessão sem saber que isto já foi pensado de dois outros jeitos
+    assert ordering["the_condition_as_first_written"]
+    assert "D5" in ordering["the_condition_as_corrected_on_2026_09_18"]
+    assert ordering["why_the_2026_09_18_correction_was_also_wrong"]
     d5 = _decisoes_json()["d5_durable_promotion_history"]
-    assert d5["blocks_revocation"] is True, (
-        "o campo é booleano de propósito: uma string como 'yes — ver X' passa "
-        "por um `== 'yes'` errado e falha por prosa, não por conteúdo"
+    assert d5["blocks_revocation"] is False, (
+        "a D5 é reprovada em CI com a identidade de promoção; ela não depende "
+        "da chave local"
+    )
+
+    # ── as três afirmações, lidas do código ──────────────────────────────────
+    from tests import test_profile_credential_fallback as pf
+
+    optam = {
+        s.name for s in sorted(pf.SCRIPTS.glob("*.py")) if any(pf.opt_in_flags(s))
+    }
+    assert optam == {"assemble_green_run.py", "stage_green_run.py"}, (
+        f"os scripts que aceitam a chave local agora são {sorted(optam)}. A "
+        "condição de revogação foi derivada de serem exatamente os dois de "
+        "depósito — revise-a antes de mudar este teste"
+    )
+    promo = pf.opt_in_flags(pf.SCRIPTS / "publish_green_release.py")
+    assert promo and not any(promo), (
+        "a CLI de promoção passou a aceitar a chave local. Então a D5 PASSA a "
+        "depender dela, e a condição de revogação está errada de novo"
+    )
+    workflows = ROOT / ".github" / "workflows"
+    deposito = [w.name for w in workflows.glob("*.yml")
+                if "assemble_green_run" in w.read_text(encoding="utf-8")]
+    assert deposito == [], (
+        f"{deposito} roda o depósito em CI. A PRÉ-CONDIÇÃO DE REVOGAR A CHAVE "
+        "LOCAL ESTÁ CUMPRIDA — avise o dono, e só então atualize este teste e "
+        "a condição em config/phase6_owner_decisions_v1.json"
     )
 
 

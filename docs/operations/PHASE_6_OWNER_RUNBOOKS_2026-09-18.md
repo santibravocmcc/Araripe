@@ -241,7 +241,7 @@ fechamento não pegou — me diga antes de qualquer outra coisa.
 - **não dispare `detect_gee.yml` nem `update_data.yml`.** Não são idempotentes e
   escrevem em produção;
 - **não revogue `claude-araripe-v2-staging-rw` ainda.** É o último passo da D1,
-  depois de a D5 estar construída e reprovada;
+  depois de a D5 estar construída e reprovada; **Corrigido em 2026-09-27:** a revogação não espera a D5 — a D5 é reprovada em CI a partir da `main`, com a identidade de promoção, que a chave local não substitui. O que depende da chave local é o **depósito** de rodadas (`assemble_green_run.py`), que não tem lane em CI. Revogar só depois que existir essa lane.
 - **não mescle a PR draft `#21` do site** antes da troca do consumidor.
 
 ## A ordem completa, numa linha

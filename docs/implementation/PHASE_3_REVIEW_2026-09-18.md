@@ -58,6 +58,7 @@ decisões D1 e D5 do dono, registradas em
   explícita no momento em que for executado;
 - **não autoriza revogar `claude-araripe-v2-staging-rw`.** A revogação é o
   **último** passo da D1, depois de a D5 estar construída e reprovada;
+  **Corrigido em 2026-09-27:** a revogação não espera a D5 — a D5 é reprovada em CI a partir da `main`, com a identidade de promoção, que a chave local não substitui. O que depende da chave local é o **depósito** de rodadas (`assemble_green_run.py`), que não tem lane em CI. Revogar só depois que existir essa lane.
 - **não muda nenhuma das quatro decisões científicas da Phase 4**, que não
   reabrem;
 - **não permite afirmação de acurácia** em nada publicado. Isso é Phase 5.

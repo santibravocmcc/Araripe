@@ -332,8 +332,9 @@ com a resposta literal *"3 itens confirmados"* sobre a lista **reescrita**.
       dados da versão nova vivem depois do cutover.** **Decidido: promover
       `araripe-v2-staging`** a depósito canônico verde — zero bytes copiados,
       zero mudança de código — com a revogação de `claude-araripe-v2-staging-rw`
-      como **último** passo, depois de a D5 estar construída e reprovada (a
-      condição foi corrigida em 2026-09-18; ver o arquivo de decisão). Não estava na lista porque a pergunta não existia: a §1 já
+      como **último** passo — depois de existir uma lane de depósito em CI.
+      (A condição foi corrigida duas vezes, em 2026-09-18 e em 2026-09-27; as
+      duas versões anteriores estão no arquivo de decisão.) Não estava na lista porque a pergunta não existia: a §1 já
       nomeia `araripe-v2-staging` como o bucket verde, mas
       [`CLOUDFLARE_STAGING_ACCESS_FOR_CLAUDE.md`](CLOUDFLARE_STAGING_ACCESS_FOR_CLAUDE.md)
       o governa como *"an object-level development sandbox … **not** a canonical
