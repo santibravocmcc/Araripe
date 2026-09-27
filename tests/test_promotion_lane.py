@@ -182,12 +182,12 @@ def test_no_credential_free_mode_performs_an_object_operation(lane):
     )
     for forbidden in ("aws s3", "boto3", "r2_state.py", "upload_to_r2", "put_object"):
         assert forbidden not in scripts
-    for mutating in ("apply", "rollback", "status"):
+    for mutating in ("apply", "rollback", "status", "history"):
         assert f"publish_green_release.py {mutating}" not in scripts
 
 
 def test_the_lane_never_publishes_and_never_promotes(lane):
-    """Rollback and status, and nothing else that writes a release.
+    """Rollback, status and history, and nothing else that writes a release.
 
     `promote` is deliberately absent: operational promotion belongs to
     `v2_operational_publish.yml`, which validates the run with the candidate
@@ -198,7 +198,7 @@ def test_the_lane_never_publishes_and_never_promotes(lane):
     invocations = set(
         re.findall(r"publish_green_release\.py\s+(\w+)", all_executed(lane))
     )
-    assert invocations == {"plan", "rollback", "status"}
+    assert invocations == {"plan", "rollback", "status", "history"}
     assert "apply" not in invocations
     assert "publish" not in invocations
 
@@ -267,7 +267,7 @@ def test_every_declared_mode_is_handled(lane):
     modes = set(declared.group(1).split("|"))
     handled = {
         "contract-check": False, "plan": False, "promote": False,
-        "rollback": False, "status": False, "lane-proof": False,
+        "rollback": False, "status": False, "history": False, "lane-proof": False,
     }
     conditions = [step.get("if") or "" for step in lane_steps(lane)]
     conditions += [job.get("if") or "" for job in lane["jobs"].values()]

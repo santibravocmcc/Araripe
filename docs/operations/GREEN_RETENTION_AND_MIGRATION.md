@@ -132,6 +132,28 @@ extending the policy is the right order, and it is a package of its own.
 Until it exists, no release is deletable. That is the correct answer, not a
 gap.
 
+### Update, 2026-09-27 — built; not yet re-proven; the policy is unchanged
+
+The history is built (Phase 6, decision D5):
+`src/publication/promotion_history.py`, with `promote` and `rollback` now
+moving the pointer in three writes — record the version being replaced, the
+compare-and-swap, record the new one. The key is the one specified above,
+zero-padded; the design, answered in writing before the code, is
+[`../implementation/PHASE_6C_2026-09-27.md`](../implementation/PHASE_6C_2026-09-27.md).
+
+The order this section set is kept: **the policy above is deliberately
+unchanged** until the history is re-proven against real R2 from `main`, as the
+five 2026-09-07 proofs were. Until then `promotion_history_not_recorded` is
+still the planner's answer for a release the pointer does not name, and the
+history's own objects are kept as an unclassified prefix — `review`, never
+removed. And whatever the extension says, **nothing is deleted, in any bucket,
+ever** — the hard boundary every package briefing has carried since 2B.3, made
+a requirement when Phase 5 became a scientific publication: an article cites
+*one* release, and it has to keep existing
+([`../implementation/PHASE_4C_2026-09-16.md`](../implementation/PHASE_4C_2026-09-16.md)
+§10). The history makes retention *decidable*; it does not make anything
+deletable.
+
 ## 4. The reviewed dry-run of 2026-09-07
 
     R2_STAGING_BUCKET=araripe-v2-staging \

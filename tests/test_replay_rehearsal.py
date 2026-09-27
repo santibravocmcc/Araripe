@@ -345,16 +345,24 @@ def test_uma_chave_que_parece_de_producao_derruba_a_validacao():
 
 
 def test_a_release_viva_do_azul_nao_participa_do_ensaio():
-    """O ponteiro verde é `pointers/green/current.json`, e é a única chave de
-    ponteiro que o ensaio escreve. O `/data/…` estático do site — o rollback
-    do azul — não é alcançável por este store nem por este bucket.
+    """O ponteiro verde é `pointers/green/current.json`, e ele e o seu
+    histórico são as únicas chaves de ponteiro que o ensaio escreve. O
+    `/data/…` estático do site — o rollback do azul — não é alcançável por este
+    store nem por este bucket.
+
+    Desde a D5 (Phase 6), cada escrita aceita do ponteiro deixa um registro:
+    o ensaio move o ponteiro quatro vezes, e o histórico tem exatamente as
+    sequences 1 a 4 — nem mais (um registro de escrita que não aconteceu),
+    nem menos (uma versão substituída sem registro).
     """
 
-    record, store, *_ = _run()
-    pointer_writes = [
-        key for key, _ in store._client.writes if key.startswith("pointers/")
-    ]
-    assert set(pointer_writes) <= {POINTER_KEY}
+    from src.publication import promotion_history as history
+
+    record, *_ = _run()
+    pointer_writes = {key for key in record.writes if key.startswith("pointers/")}
+    records = {key for key in pointer_writes if key != POINTER_KEY}
+    assert POINTER_KEY in pointer_writes
+    assert records == {history.history_key(sequence) for sequence in (1, 2, 3, 4)}
     assert POINTER_KEY == "pointers/green/current.json"
 
 

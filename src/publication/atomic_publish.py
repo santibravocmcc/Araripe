@@ -42,16 +42,38 @@ longer live.
 
 Nothing is ever deleted here.  A superseded object is recorded as a tombstone
 on the pointer; retention and lifecycle are Package 2B.3.
+
+Every accepted pointer write leaves a record (Phase 6, decision D5)
+-------------------------------------------------------------------
+The pointer keeps one step of context, so one write after a release stops
+being live the store can no longer say it ever was.  ``promotion_history``
+keeps an immutable, byte-exact copy of every accepted pointer version, and the
+move is three writes rather than one:
+
+1. record the version about to be replaced, from the bytes read;
+2. the compare-and-swap, unchanged;
+3. record the new version, from the bytes the swap accepted.
+
+Pointer first, because the other order leaves a record of a promotion that
+never happened whenever the swap loses — and occupies that sequence's key for
+good.  Step 1 is what makes pointer-first safe: a version is never replaced
+before its record exists, so the only record that can be missing is the live
+version's own, whose bytes the live pointer still holds.  Every refusal happens
+before step 1, so a refused promotion still writes nothing at all.  The
+reasoning, written before this code, is
+``docs/implementation/PHASE_6C_2026-09-27.md`` §2.
 """
 
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, Iterable, Mapping
 
+from src.publication import promotion_history as history
 from src.publication.conditional_store import (
     ConditionalStore,
+    ImmutableObjectConflict,
     ObjectStoreError,
     PutOutcome,
     StoredObject,
@@ -87,6 +109,30 @@ class PromotionRefused(Rejected):
     subject = "green pointer promotion"
 
 
+class HistoryNotRecorded(ObjectStoreError):
+    """The pointer MOVED, and the record of the new version is still pending.
+
+    Raised only after the compare-and-swap was accepted, so it must never read
+    as "the promotion failed": an operator who believed that could roll back a
+    promotion that succeeded.  Nothing is lost — the live pointer holds exactly
+    the bytes the record would hold, and the next pointer write records it
+    before replacing it — and re-running the same promotion completes it now,
+    through the ``unchanged`` path.  ``promotion`` is what actually happened.
+    """
+
+    def __init__(self, promotion: "Promotion", cause: Exception) -> None:
+        self.promotion = promotion
+        super().__init__(
+            f"the pointer MOVED — {promotion.action} to {promotion.release_id} at "
+            f"sequence {promotion.sequence} — but its history record "
+            f"{history.history_key(promotion.sequence)} could not be written "
+            f"({cause}). Nothing is lost: the live pointer holds the same bytes, "
+            "and the next pointer write records it before replacing it. Re-run "
+            "this same promotion to complete the record now. The promotion "
+            "itself succeeded: this error is no reason to roll it back."
+        )
+
+
 @dataclass(frozen=True)
 class PublishReport:
     release_id: str
@@ -109,6 +155,13 @@ class Promotion:
     previous_release_id: str | None
     tombstone_count: int
     pointer: dict[str, Any]
+    #: The history record of the version this call found live: step 1 of a
+    #: move, or the completion of a pending record on ``unchanged``.  ``None``
+    #: only for the first write into an empty pointer.
+    live_record: PutOutcome | None = None
+    #: The history record of the version this call wrote (step 3).  ``None``
+    #: on ``unchanged``, which writes no pointer.
+    new_record: PutOutcome | None = None
 
 
 # ── publish ──────────────────────────────────────────────────────────────────
@@ -257,6 +310,23 @@ def read_pointer(store: ConditionalStore) -> tuple[dict[str, Any] | None, str | 
     version of this contract.
     """
 
+    document, stored = read_live_pointer(store)
+    return document, (stored.etag if stored is not None else None)
+
+
+def read_live_pointer(
+    store: ConditionalStore,
+) -> tuple[dict[str, Any] | None, StoredObject | None]:
+    """The live pointer and the stored object it was parsed from.
+
+    ``read_pointer`` with the bytes kept.  The history records a version from
+    **the bytes read**, never from a re-encoding of the parsed document: a
+    record is a copy of what was live, and a copy must not depend on this
+    code's serializer agreeing with whatever wrote the pointer.  Body and ETag
+    come from one ``GET``, so the bytes recorded are exactly the version the
+    compare-and-swap will name.
+    """
+
     stored = store.get(POINTER_KEY)
     if stored is None:
         return None, None
@@ -285,7 +355,7 @@ def read_pointer(store: ConditionalStore) -> tuple[dict[str, Any] | None, str | 
                 for e in errors[:4]
             )
         )
-    return document, stored.etag
+    return document, stored
 
 
 def load_published_release(
@@ -448,9 +518,49 @@ def _pointer_document(
     return pointer
 
 
-def _write_pointer(
-    store: ConditionalStore, pointer: Mapping[str, Any], etag: str | None
-) -> None:
+def _record_live(
+    store: ConditionalStore, live: Mapping[str, Any], stored: StoredObject
+) -> PutOutcome:
+    """Make sure the version found live has its record — from the bytes read.
+
+    ``unchanged`` is the normal outcome: whoever wrote this version recorded
+    it.  ``created`` happens when its record was left pending, or — once in the
+    life of a bucket — for the version that was live before the history
+    existed.  Different bytes under its key mean something wrote outside the
+    protocol, and the pointer is not moved on top of a history that
+    contradicts it.
+    """
+
+    try:
+        return history.record(store, live["sequence"], stored.body)
+    except ImmutableObjectConflict as exc:
+        raise PromotionRefused(
+            [
+                Finding(
+                    "history_contradicts_the_pointer",
+                    f"the history already records sequence {live['sequence']} "
+                    "with bytes that are not the live pointer's. One of the two "
+                    "was written outside the protocol, and moving the pointer "
+                    "would bury the evidence; refusing without writing",
+                    history.history_key(live["sequence"]),
+                )
+            ]
+        ) from exc
+
+
+def _move_pointer(
+    store: ConditionalStore,
+    pointer: Mapping[str, Any],
+    live: Mapping[str, Any] | None,
+    stored: StoredObject | None,
+) -> tuple[PutOutcome | None, bytes]:
+    """Steps 1 and 2: record the version being replaced, then swap.
+
+    Returns the outcome of step 1 and the exact bytes step 2 wrote, which are
+    the bytes step 3 must record.  The schema is checked before step 1, so an
+    invalid pointer is refused before anything is written.
+    """
+
     errors = list(schema_validator("green-pointer-v1").iter_errors(pointer))
     if errors:
         raise PromotionRefused(
@@ -462,10 +572,29 @@ def _write_pointer(
             for error in errors
         )
     body = release_bytes(dict(pointer))
-    if etag is None:
+    if live is None or stored is None:
         store.put_if_pointer_absent(POINTER_KEY, body, POINTER_CONTENT_TYPE)
-    else:
-        store.put_if_match(POINTER_KEY, body, POINTER_CONTENT_TYPE, etag)
+        return None, body
+    live_record = _record_live(store, live, stored)
+    store.put_if_match(POINTER_KEY, body, POINTER_CONTENT_TYPE, stored.etag)
+    return live_record, body
+
+
+def _record_new(
+    store: ConditionalStore, promotion: Promotion, body: bytes
+) -> Promotion:
+    """Step 3: record the version the swap just accepted.
+
+    A failure here happens after the pointer moved, so it is reported as
+    exactly that (``HistoryNotRecorded``) rather than as a store error that
+    would read as "the promotion failed".
+    """
+
+    try:
+        outcome = history.record(store, promotion.sequence, body)
+    except ObjectStoreError as exc:
+        raise HistoryNotRecorded(promotion, exc) from exc
+    return replace(promotion, new_record=outcome)
 
 
 def _supersedes(live: Mapping[str, Any] | None) -> dict[str, Any] | None:
@@ -497,12 +626,16 @@ def promote(
     Going backwards deliberately is ``rollback``.  There is no override flag
     here, so a regression is always a named, separate operation in the log
     rather than a parameter someone passed.
+
+    ``unchanged`` moves nothing, and completes the live version's history
+    record if an earlier call left it pending — so re-running a promotion
+    whose record failed is also how that record gets written.
     """
 
     check_green_release(document, ledger_document)
     verify_release(store, document)
 
-    live, etag = read_pointer(store)
+    live, stored = read_live_pointer(store)
     if live is not None and live["release_id"] == document["release_id"]:
         return Promotion(
             "unchanged",
@@ -513,6 +646,7 @@ def promote(
             else None,
             len(live["tombstones"]),
             live,
+            live_record=_record_live(store, live, stored),
         )
 
     stones: list[dict[str, Any]] = []
@@ -559,14 +693,19 @@ def promote(
         supersedes=_supersedes(live),
         stones=stones,
     )
-    _write_pointer(store, pointer, etag)
-    return Promotion(
-        "promote",
-        document["release_id"],
-        sequence,
-        None if live is None else live["release_id"],
-        len(stones),
-        pointer,
+    live_record, body = _move_pointer(store, pointer, live, stored)
+    return _record_new(
+        store,
+        Promotion(
+            "promote",
+            document["release_id"],
+            sequence,
+            None if live is None else live["release_id"],
+            len(stones),
+            pointer,
+            live_record=live_record,
+        ),
+        body,
     )
 
 
@@ -589,7 +728,7 @@ def rollback(
     document, ledger_document = load_published_release(store, release_id)
     verify_release(store, document)
 
-    live, etag = read_pointer(store)
+    live, stored = read_live_pointer(store)
     if live is None:
         raise PromotionRefused(
             [
@@ -609,6 +748,7 @@ def rollback(
             None,
             len(live["tombstones"]),
             live,
+            live_record=_record_live(store, live, stored),
         )
 
     previous, _ = load_published_release(store, live["release_id"])
@@ -639,7 +779,17 @@ def rollback(
             "sequence": live["sequence"],
         },
     )
-    _write_pointer(store, pointer, etag)
-    return Promotion(
-        "rollback", release_id, sequence, live["release_id"], len(stones), pointer
+    live_record, body = _move_pointer(store, pointer, live, stored)
+    return _record_new(
+        store,
+        Promotion(
+            "rollback",
+            release_id,
+            sequence,
+            live["release_id"],
+            len(stones),
+            pointer,
+            live_record=live_record,
+        ),
+        body,
     )

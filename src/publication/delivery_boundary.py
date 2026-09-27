@@ -63,6 +63,15 @@ BOUNDARY_SCHEMA = "araripe.green.delivery/1"
 #: release without it, and never cached — see ``CACHE_POINTER``.
 POINTER_KEY = "pointers/green/current.json"
 
+#: The durable promotion history (Phase 6, D5): one immutable copy of every
+#: accepted pointer version.  Private.  It names releases that are no longer
+#: live — including ones rolled back away from — and serving it would publish
+#: exactly the non-live state this boundary exists to keep out of reach.  It
+#: was already private as "unclassified"; naming it keeps "unclassified"
+#: meaning "a prefix nobody has thought about".  Making it public is a
+#: decision for the cutover, not a default.
+HISTORY_ROOT = "pointers/green/history/"
+
 #: Roots, with the exposure each carries.  Every key in the bucket is matched
 #: against these in order, and anything unmatched is private: the policy fails
 #: closed on a prefix nobody has classified yet.
@@ -185,6 +194,8 @@ def classify_key(key: str, *, live_release_id: str | None) -> Exposure:
 
     if key == POINTER_KEY:
         return Exposure(key, PUBLIC, "pointer")
+    if key.startswith(HISTORY_ROOT):
+        return Exposure(key, PRIVATE, "promotion_history")
     if key.startswith(RUNS_ROOT):
         return Exposure(key, PRIVATE, "processing_input")
     for root in VERIFICATION_ROOTS:
