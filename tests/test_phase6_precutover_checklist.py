@@ -441,7 +441,21 @@ def test_a_revogacao_da_credencial_e_o_ultimo_passo_e_nao_o_primeiro():
         assert "986744489" in semente["what"] and "ONE copy" in semente["what"]
         revogar = [a for a in _decisoes_json()["owner_actions_outstanding"]
                    if a["action"] == "revoke claude-araripe-v2-staging-rw"]
-        assert len(revogar) == 1 and "persistence state" in revogar[0]["do_not_do_it_before"]
+        assert len(revogar) == 1
+        if semente.get("resolved"):
+            # 2026-09-28 (PHASE_6G): resolvida só com a evidência — a chave, o
+            # digest que a volta pelo consumidor conferiu, e o resultado do
+            # put_if_absent. "resolved: true" sem isso é afirmar sem prova.
+            assert "runs/rep-2026-08-30-v3/persistence_state.geojson" in semente["resolution"]
+            assert "5eb17f838b35251b3748dbc26310918a8fa7a00ce99b4f3c501dd5887ac987ce" in semente["resolution"]
+            assert "`created`" in semente["resolution"]
+            assert "nothing remains" in revogar[0]["do_not_do_it_before"]
+            assert revogar[0]["what_revoking_costs"]
+            # e o passo da lane que lê a semente não pode depender da chave local
+            fetch = pf.opt_in_flags(pf.SCRIPTS / "fetch_green_state.py")
+            assert fetch and not any(fetch)
+        else:
+            assert "persistence state" in revogar[0]["do_not_do_it_before"]
     else:
         assert lane["proven_by_run"] is None
 
