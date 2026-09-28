@@ -435,6 +435,13 @@ def test_a_revogacao_da_credencial_e_o_ultimo_passo_e_nao_o_primeiro():
         assert terceiro["upload_complete"] is True, (
             "a lane baixa a baseline do bucket; sem os 72 objetos ela não roda"
         )
+        # 2026-09-28: cumprir a condição do depósito não libera a revogação
+        # sozinho — a semente da detecção agendada só existe na máquina do dono.
+        semente = ordering["before_revoking_also"]
+        assert "986744489" in semente["what"] and "ONE copy" in semente["what"]
+        revogar = [a for a in _decisoes_json()["owner_actions_outstanding"]
+                   if a["action"] == "revoke claude-araripe-v2-staging-rw"]
+        assert len(revogar) == 1 and "persistence state" in revogar[0]["do_not_do_it_before"]
     else:
         assert lane["proven_by_run"] is None
 

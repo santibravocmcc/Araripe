@@ -41,9 +41,10 @@
         "workflow": ".github/workflows/v2_green_deposit_lane.yml",
         "built_on": "2026-09-28",
         "record": "docs/implementation/PHASE_6F_2026-09-28.md",
-        "condition_met": false,
+        "condition_met": true,
         "met_when": "a dispatch of v2_green_deposit_lane.yml from main deposits a runs/ci-<run_id>/ prefix and its own stage_green_run.py step validates it; the run id is then recorded here as proven_by_run and condition_met becomes true",
-        "proven_by_run": null
+        "proven_by_run": "36432616599",
+        "proof": "2026-09-28, dispatched from main at the merge of #74: window 2026-08-25..2026-08-31 as araripe-green-detect; 4/4 terminal, ledger pl-v3-a54399279c38f3f194bfda10f865520ca5dfe226628719d1f57a71e65ea6358b; runs/ci-36432616599/ created 6 objects, run.json last; stage_green_run.py validated it read-only; the green pointer stayed at sequence 14. An earlier dispatch, 36432410617, failed at dependency install and wrote nothing."
       },
       "the_third_local_caller": {
         "script": "scripts/baseline_v2_staging.py",
@@ -52,6 +53,13 @@
         "why_it_does_not_move_the_condition": "the upload is ONE-TIME: after 72/72 objects exist the lane only fetches, with the v2-staging Environment identity. The local key is needed for nothing the lane does. If the upload were ever repeated it would be all `unchanged` (put_if_absent), and a different local copy is refused before any write",
         "upload_complete": true,
         "upload_evidence": "2026-09-28: created 72, unchanged 0, conflict 0; the bucket lists 72 objects and 13626201392 bytes under baselines_v2/2.1.0/, equal to the manifest's byte sum (docs/implementation/PHASE_6F_2026-09-28.md §2)"
+      },
+      "before_revoking_also": {
+        "found_on": "2026-09-28",
+        "what": "the 2026 replay's final persistence state — 986744489 bytes, sha256 5eb17f838b35251b3748dbc26310918a8fa7a00ce99b4f3c501dd5887ac987ce, the value runs/rep-2026-08-30-v3/run.json declares — exists in ONE copy, in the replay's isolated directory on the owner's machine, and in no bucket",
+        "why_it_matters": "Phase 6 §4.5 seeds the scheduled process from the rebuilt watermark, and this file IS that state. Putting it in araripe-v2-staging is a one-time local upload, like the baseline was; after revocation it would need a new credential",
+        "the_alternative": "re-running the whole 2026 replay in CI would regenerate an equivalent state without the local key (detections were measured identical in count on 2026-09-28), but not byte-identical to the one the promoted release declares",
+        "owner_guidance": "do not revoke until the next package places the seed, or until the owner decides the seed will be regenerated in CI instead"
       }
     },
     "why_not_option_b": "measured 2026-09-17. Creating a final bucket and copying the release costs far more than the 1 778 202 736 bytes of the current release: the local staging credential is refused on every other bucket (AccessDenied against araripe-cogs and against a new name), no copy tooling exists (grep for copy_object|CopySource|copy_from in src/ and scripts/ returns nothing), and assert_staging_target() would have to be edited — the fail-closed guard that keeps green publication off production, asserted in five places — in the same package that makes the green lane public.",
@@ -157,7 +165,8 @@
       "action": "revoke claude-araripe-v2-staging-rw",
       "blocks": "nothing — it is the LAST step of D1",
       "agent_can_do_it": false,
-      "do_not_do_it_before": "the D5 durable promotion history is built and re-proven"
+      "do_not_do_it_before": "the replay's final persistence state is placed in araripe-v2-staging (revocation_ordering.before_revoking_also). The CI deposit precondition is met: run 36432616599",
+      "was_before_2026_09_28": "the D5 durable promotion history is built and re-proven — stale since the 2026-09-27 correction"
     }
   ]
 }
