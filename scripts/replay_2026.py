@@ -72,6 +72,46 @@ def _utc_now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+#: The green Earth Engine identity (``docs/operations/GEE_GREEN_IDENTITY_SETUP.md``).
+#: A constant and not a flag value on purpose: a configurable name could be
+#: pointed at ``GEE_SA_KEY``, the blue production account, and the run would
+#: work and prove nothing about which identity computed it.
+GREEN_EE_KEY_VAR = "GEE_GREEN_SA_KEY"
+
+
+def initialize_earth_engine(ee, *, project, service_account):
+    """Initialise Earth Engine, and say which principal answered.
+
+    Without ``--service-account`` this is the call the replay always made:
+    ``ee.Initialize(project=…)``, which reads the operator's own
+    ``earthengine authenticate`` credential — how the 2026 replay ran.
+
+    With it, the key comes from ``GEE_GREEN_SA_KEY`` and nowhere else.  On a
+    runner the bare call fails with a misleading "run earthengine
+    authenticate" (measured on the ESA watch, 2026-09-06), and
+    ``src.acquisition.gee_download.ee_initialize`` is not used because it
+    reads ``GEE_SA_KEY`` first — the blue key.  An empty or unparsable value
+    is a refusal: falling back to an interactive credential would make the
+    lane's identity depend on which machine it ran on.
+    """
+    if not service_account:
+        ee.Initialize(project=project)
+        print("earth engine  : interactive credential on %s" % project)
+        return
+    raw = os.environ.get(GREEN_EE_KEY_VAR, "")
+    if not raw.strip():
+        raise SystemExit("--service-account: %s is not set; refusing to fall "
+                         "back to an interactive credential" % GREEN_EE_KEY_VAR)
+    try:
+        email = json.loads(raw)["client_email"]
+    except (ValueError, KeyError, TypeError):
+        raise SystemExit("--service-account: %s is not a service-account JSON "
+                         "key" % GREEN_EE_KEY_VAR) from None
+    credentials = ee.ServiceAccountCredentials(email=email, key_data=raw)
+    ee.Initialize(credentials, project=project)
+    print("earth engine  : service account %s on %s" % (email, project))
+
+
 # ── Earth Engine side ────────────────────────────────────────────────────────
 
 
@@ -302,7 +342,8 @@ def command_plan(args):
              lineage.decision_date))
     print()
 
-    ee.Initialize(project=args.project)
+    initialize_earth_engine(ee, project=args.project,
+                            service_account=args.service_account)
     records, datatakes, coverage = enumerate_window(
         ee, export, start=args.start, end=args.end, max_cloud=args.max_cloud
     )
@@ -464,7 +505,8 @@ def command_run(args):
           % (regime_record["pending_on_esa_reprocessing"]["months"],
              len(regime_record["months"])))
 
-    ee.Initialize(project=args.project)
+    initialize_earth_engine(ee, project=args.project,
+                            service_account=args.service_account)
 
     rows_path = out / "terminal_rows.json"
     rows_by_id = _read_rows(rows_path)
@@ -823,6 +865,9 @@ def main(argv=None):
         p.add_argument("--min-clear", type=float, default=20.0)
         p.add_argument("--out-dir", required=True)
         p.add_argument("--workers", type=int, default=DEFAULT_WORKERS)
+        p.add_argument("--service-account", action="store_true",
+                       help="authenticate as the green service account in "
+                       "%s instead of the operator's credential" % GREEN_EE_KEY_VAR)
         if name == "run":
             p.add_argument("--state-path", required=True,
                            help="isolated persistence state; rebuild mode requires it")
