@@ -65,6 +65,7 @@ from src.publication.green_release import (
 )
 from src.publication.ledger_gate import LedgerAcceptance, check_processing_ledger
 from src.publication.run_inputs import RUN_MANIFEST_PATH, RUN_SCHEMA, validate_run_id
+from src.publication import state_chain
 
 #: Where per-date alert objects live inside a release.  A prefix and not a full
 #: path, because the site contract requires only a *suffix* — it deliberately
@@ -182,6 +183,8 @@ def assemble_run(
     *,
     persistence_state_sha256: str,
     persistence_state_bytes: int,
+    predecessor: Mapping[str, str] | None = None,
+    persistence_state_body: bytes | None = None,
 ) -> AssembledRun:
     """Build one run prefix, or refuse.
 
@@ -193,9 +196,16 @@ def assemble_run(
     Every finding is collected before anything is raised — an operator whose
     detection output is half-there needs to learn that in one run, not one date
     per attempt (``findings.py``).
+
+    ``predecessor`` is the run whose state this one started from, ``None`` for
+    an empty start; it is written into ``run.json`` either way, because the
+    field is required (PHASE_6G §2).  ``persistence_state_body``, when given,
+    is deposited at ``state_chain.STATE_PATH`` so the next run can continue
+    from it (PHASE_6G §1) — and must be the bytes the digest and length name.
     """
 
     validate_run_id(run_id)
+    link = state_chain.check_link(predecessor)
 
     # The Package 2B.2A gate first, on the producer's own bytes, before a single
     # object is composed. A ledger that would be rejected at publication time
@@ -298,6 +308,23 @@ def assemble_run(
                 }
             )
 
+    if persistence_state_body is not None:
+        if (
+            len(persistence_state_body) != persistence_state_bytes
+            or sha256_bytes(persistence_state_body) != persistence_state_sha256
+        ):
+            findings.append(
+                Finding(
+                    "persistence_state_body_mismatch",
+                    "the state bytes offered for deposit are not the ones the "
+                    "digest and length in run.json name",
+                    "persistence_state",
+                )
+            )
+        else:
+            state_chain.check_single_put(len(persistence_state_body), "persistence_state")
+            bodies[state_chain.STATE_PATH] = persistence_state_body
+
     if findings:
         raise RunAssemblyRejected(findings)
 
@@ -309,6 +336,7 @@ def assemble_run(
             "sha256": persistence_state_sha256,
             "bytes": persistence_state_bytes,
         },
+        "predecessor": link,
         "objects": objects,
     }
 
@@ -338,9 +366,22 @@ def describe(run: AssembledRun) -> str:
     for item in run.document["objects"]:
         dates.setdefault(item["observed_on"], []).append(item["path"])
 
+    link = run.document.get("predecessor")
     lines = [
         f"run        : {run.run_id}  ({run.prefix})",
         f"ledger     : {run.acceptance.ledger_id}",
+        "continues  : "
+        + (
+            f"{link['run_id']} (state {link['persistence_state_sha256'][:12]}…)"
+            if link
+            else "nothing — an empty persistence state"
+        ),
+        "state      : "
+        + (
+            f"deposited, {len(run.bodies[state_chain.STATE_PATH])} bytes"
+            if state_chain.STATE_PATH in run.bodies
+            else "declared by digest only, not deposited"
+        ),
         f"dates      : {len(dates)} publishing, "
         f"{len(run.acceptance.dates)} reconciled",
         f"objects    : {len(run.document['objects'])}",

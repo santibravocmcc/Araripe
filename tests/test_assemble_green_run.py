@@ -71,6 +71,7 @@ GREEN_SCRIPTS = (
     "plan_retention.py",
     "baseline_v2_staging.py",
     "probe_gee_green_identity.py",
+    "fetch_green_state.py",
 )
 
 
@@ -104,9 +105,10 @@ def write_run(tmp_path, features_by_date, *, state=b'{"type":"FeatureCollection"
 
 
 class Args:
-    def __init__(self, run, ledger, alerts_dir, state):
+    def __init__(self, run, ledger, alerts_dir, state, predecessor=None):
         self.run, self.ledger = run, ledger
         self.alerts_dir, self.state = alerts_dir, state
+        self.predecessor = predecessor
 
 
 def args_for(tmp_path, spec, features_by_date, *, run="entry-1", state=None):

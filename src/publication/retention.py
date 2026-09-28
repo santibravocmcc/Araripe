@@ -72,6 +72,7 @@ from typing import Any, Iterable, Mapping
 
 from src.publication import delivery_boundary as db
 from src.publication import promotion_history as ph
+from src.publication.state_chain import STATE_PATH
 
 #: Contract version of a retention plan document.
 PLAN_SCHEMA = "araripe.green.retention-plan/1"
@@ -505,6 +506,16 @@ def classify(
 
     if key.startswith(db.RUNS_ROOT):
         run_id = _run_id_of(key)
+        if run_id and key == f"{db.RUNS_ROOT}{run_id}/{STATE_PATH}":
+            # PHASE_6G §1: the run prefix is the state's only home. A release
+            # carries its digest, never its bytes, so "the release is
+            # published" says nothing about whether the state survives — and
+            # the next chained run starts from it.
+            return Disposition(
+                key, item.size, "run_input", RETAIN, "persistence_state_is_the_chain",
+                "the persistence state is in no release, only here; a chained "
+                "run continues from it",
+            )
         link = runs.get(run_id) if run_id else None
         if link is None or link.release_id is None:
             return Disposition(

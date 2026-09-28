@@ -1071,3 +1071,25 @@ def test_the_planner_script_reads_the_history_and_the_real_reconstruction(
         "promotion_history_is_the_record"
     }
     assert document["eligible_bytes"] == 0
+
+
+@pytest.mark.parametrize("accept", [False, True])
+def test_a_runs_persistence_state_is_retained_even_once_its_release_is_published(accept):
+    """PHASE_6G §1: the state lives only in its run prefix.
+
+    A release carries the state's digest and never its bytes, so the rule that
+    makes a ripe run ``ELIGIBLE`` once its release is published would lose the
+    one object a chained run continues from.
+    """
+
+    key = "runs/proof-a/persistence_state.geojson"
+    entry = decide(key, age_days=999, runs=LINKED, accept_run_manifest_loss=accept)
+    assert (entry.action, entry.reason) == (rt.RETAIN, "persistence_state_is_the_chain")
+    # the rest of the same prefix is still decided by the run rule
+    other = decide("runs/proof-a/run.json", age_days=999, runs=LINKED,
+                   accept_run_manifest_loss=True)
+    assert other.action == rt.ELIGIBLE
+    # and a lookalike deeper in the prefix is not the state
+    deeper = decide("runs/proof-a/alerts/persistence_state.geojson", age_days=999,
+                    runs=LINKED, accept_run_manifest_loss=True)
+    assert deeper.action == rt.ELIGIBLE

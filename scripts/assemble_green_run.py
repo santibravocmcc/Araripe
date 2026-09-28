@@ -9,6 +9,15 @@
     python scripts/assemble_green_run.py apply \
         --run <run-id> --ledger data/ledger.json
 
+    # a run that continued another run's state names it (PHASE_6G §2):
+    python scripts/assemble_green_run.py apply --run <run-id> \
+        --ledger data/ledger.json --predecessor <dir>/predecessor.json
+
+    # ONE-TIME, local: put the state of a run deposited before states were
+    # into that run's own prefix, if and only if its run.json binds these bytes:
+    python scripts/assemble_green_run.py seed-state \
+        --run rep-2026-08-30-v3 --state <path>/persistence_state.geojson
+
 Exit gate P2B.  ``src/publication/run_assembler.py`` (``bf2c2cf``) knows how to
 turn a ledger and a date's features into a run prefix, and
 ``scripts/stage_green_run.py`` and ``scripts/publish_green_release.py`` know how
@@ -75,6 +84,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.publication import conditional_store as cs  # noqa: E402
 from src.publication import run_assembler as ra  # noqa: E402
 from src.publication import run_inputs as ri  # noqa: E402
+from src.publication import state_chain as sc  # noqa: E402
 from src.publication.findings import Finding, Rejected  # noqa: E402
 from src.publication.green_release import ReleaseBuildError, sha256_bytes  # noqa: E402
 from src.publication.ledger_binding import ContractBindingError  # noqa: E402
@@ -272,12 +282,14 @@ def ignored_dates(alerts_dir: Path, states: dict[str, str]) -> list[str]:
     return sorted(found - set(states))
 
 
-def read_persistence_state(path: Path) -> tuple[str, int]:
-    """``(sha256, bytes)`` of the run's persistence state, from the file.
+def read_persistence_state(path: Path) -> bytes:
+    """The run's persistence state, as the detection wrote it.
 
-    Computed, never asserted.  The release manifest carries this pair as the
-    state watermark's evidence, and a hand-typed digest is a claim about bytes
-    nobody read.
+    Its digest and length are computed from these bytes, never asserted.  The
+    release manifest carries that pair as the state watermark's evidence, and
+    a hand-typed digest is a claim about bytes nobody read.  The bytes
+    themselves are deposited too (PHASE_6G §1), so the next run can continue
+    from them instead of from a digest.
     """
 
     try:
@@ -294,7 +306,25 @@ def read_persistence_state(path: Path) -> tuple[str, int]:
                 )
             ]
         ) from exc
-    return sha256_bytes(body), len(body)
+    return body
+
+
+def read_predecessor_link(path: Path | None) -> dict | None:
+    """The ``predecessor`` this run declares, from the file the fetch wrote.
+
+    ``None`` without ``--predecessor``: the run started from an empty state,
+    and ``run.json`` says so with an explicit ``null``.
+    """
+
+    if path is None:
+        return None
+    try:
+        link = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise DetectionOutputRejected(
+            [Finding("predecessor_file_unreadable", f"{path}: {exc}", str(path))]
+        ) from exc
+    return sc.check_link(link)
 
 
 def build_candidate_store() -> cs.ConditionalStore:
@@ -351,15 +381,35 @@ def assemble(args) -> ra.AssembledRun:
     states = ra.dates_by_state(acceptance)
 
     features = collect_features(args.alerts_dir, states)
-    state_sha, state_bytes = read_persistence_state(args.state)
+    state = read_persistence_state(args.state)
 
     return ra.assemble_run(
         args.run,
         ledger_document,
         features,
-        persistence_state_sha256=state_sha,
-        persistence_state_bytes=state_bytes,
+        persistence_state_sha256=sha256_bytes(state),
+        persistence_state_bytes=len(state),
+        predecessor=read_predecessor_link(args.predecessor),
+        persistence_state_body=state,
     )
+
+
+def seed(args) -> int:
+    """PHASE_6G §1: one run's state into its own prefix, bound by its run.json."""
+
+    try:
+        ri.validate_run_id(args.run)
+        body = read_persistence_state(args.state)
+        store = build_candidate_store()
+        outcome = sc.seed_state(store, args.run, body)
+    except (Rejected, cs.ObjectStoreError, RuntimeError, ValueError) as exc:
+        print(_annotate(f"{type(exc).__name__}: {exc}"), file=sys.stderr)
+        for finding in getattr(exc, "findings", ()):
+            print(f"  {finding}", file=sys.stderr)
+        return 1
+    print(f"{outcome.result} {outcome.key}  ({outcome.size} bytes)")
+    print("the run.json of this run already declared these bytes; nothing else was written")
+    return 0
 
 
 def main(argv=None) -> int:
@@ -392,9 +442,25 @@ def main(argv=None) -> int:
             help=f"the persistence state (default: <alerts-dir>/../{PERSISTENCE_STATE_NAME})",
         )
         part.add_argument(
+            "--predecessor",
+            type=Path,
+            default=None,
+            help="the {run_id, persistence_state_sha256} this run started from, "
+            "as scripts/fetch_green_state.py wrote it; omit for an empty start",
+        )
+        part.add_argument(
             "--json", action="store_true", help="print the run manifest instead"
         )
+    part = sub.add_parser(
+        "seed-state",
+        help="ONE-TIME: deposit a run's state into its own prefix, if its "
+        "run.json declares exactly these bytes",
+    )
+    part.add_argument("--run", required=True, help="a run already in the bucket")
+    part.add_argument("--state", required=True, type=Path)
     args = parser.parse_args(argv)
+    if args.mode == "seed-state":
+        return seed(args)
     if args.state is None:
         args.state = args.alerts_dir.parent / PERSISTENCE_STATE_NAME
 
@@ -423,8 +489,13 @@ def main(argv=None) -> int:
 
     try:
         store = build_candidate_store()
+        link = run.document["predecessor"]
+        if link is not None:
+            # Re-read with this job's own identity: the detection job's
+            # artifact must not be the only witness to the chain (PHASE_6G §2).
+            sc.confirm_link(store, link)
         written = ra.upload(store, run)
-    except (cs.ObjectStoreError, RuntimeError) as exc:
+    except (Rejected, cs.ObjectStoreError, RuntimeError) as exc:
         print(_annotate(f"{type(exc).__name__}: {exc}"), file=sys.stderr)
         return 1
 

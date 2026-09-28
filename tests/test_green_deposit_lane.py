@@ -101,16 +101,40 @@ def test_the_deposit_job_never_holds_earth_engine():
         assert step_secrets(step) <= R2_STAGING, step["name"]
 
 
-def test_in_the_detect_job_r2_is_held_only_to_fetch_the_baseline():
-    """PHASE_6F §3: the only R2 step downloads, and runs no config importer."""
+def test_in_the_detect_job_r2_is_held_only_to_fetch():
+    """PHASE_6F §3 and PHASE_6G: the R2 steps download, and run no config importer.
+
+    Two of them now — the predecessor's state and the baseline — each running
+    exactly one read-only script, the state first so a refused window costs
+    nothing.
+    """
 
     holders = [s for s in steps("detect") if step_secrets(s) & R2_STAGING]
     assert [s["name"] for s in holders] == [
-        "Fetch and verify the baseline months the window needs"
+        "Fetch and verify the predecessor's persistence state",
+        "Fetch and verify the baseline months the window needs",
     ]
-    (fetch,) = holders
-    assert step_scripts(fetch) == {"scripts/baseline_v2_staging.py"}
-    assert " fetch " in fetch["run"] and " upload" not in fetch["run"]
+    state, baseline = holders
+    assert step_scripts(state) == {"scripts/fetch_green_state.py"}
+    assert step_scripts(baseline) == {"scripts/baseline_v2_staging.py"}
+    assert " fetch " in baseline["run"] and " upload" not in baseline["run"]
+    assert state["if"] == "steps.window.outputs.from_run != ''"
+
+
+def test_the_state_fetch_opens_the_store_read_only_and_without_the_profile():
+    """A lane step: no local key (the revocation condition), no write path."""
+
+    import ast
+
+    source = (ROOT / "scripts" / "fetch_green_state.py").read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    calls = [n for n in ast.walk(tree) if isinstance(n, ast.Call)]
+    names = {getattr(c.func, "attr", getattr(c.func, "id", "")) for c in calls}
+    assert "ReadOnlyStore" in names and "ConditionalStore" not in names
+    assert "put_if_absent" not in names and "seed_state" not in names
+    for call in calls:
+        if getattr(call.func, "attr", "") == "build_client":
+            assert not any(k.arg == "profile_fallback" for k in call.keywords)
 
 
 def test_every_step_holding_r2_runs_only_scripts_clear_of_the_dotenv():
@@ -160,9 +184,38 @@ def test_the_run_id_names_one_execution_and_not_one_attempt():
     assert "run_attempt" not in text and "RUN_ATTEMPT" not in text
 
 
-def test_the_detection_starts_from_an_empty_state():
+def test_the_detection_starts_from_the_fetched_state_or_from_nothing():
+    """Without from_run the state must be absent; with it, fetched and linked."""
+
     (run,) = [s for s in steps("detect") if "replay_2026.py run" in (s.get("run") or "")]
-    assert 'test ! -e "$REPLAY_DIR/persistence_state.geojson"' in run["run"]
+    body = run["run"]
+    chained, empty = body.split("else", 1)
+    assert 'if [ -n "$FROM_RUN" ]' in chained
+    assert 'test -s "$REPLAY_DIR/persistence_state.geojson"' in chained
+    assert 'test -s "$REPLAY_DIR/predecessor.json"' in chained
+    assert 'test ! -e "$REPLAY_DIR/persistence_state.geojson"' in empty
+    assert 'test ! -e "$REPLAY_DIR/predecessor.json"' in empty
+    assert '--state-path "$REPLAY_DIR/persistence_state.geojson"' in body
+
+
+def test_from_run_is_one_path_segment_checked_before_anything_is_spent():
+    window = steps("detect")[1]
+    assert window["name"] == "Accept only a bounded window of real dates, and name the run"
+    assert "[A-Za-z0-9][A-Za-z0-9._-]{0,127}" in window["run"]
+    assert 'out.write("from_run=%s\\n" % from_run)' in window["run"]
+    assert doc()["jobs"]["detect"]["outputs"]["from_run"] == "${{ steps.window.outputs.from_run }}"
+    assert doc()["jobs"]["deposit"]["env"]["FROM_RUN"] == "${{ needs.detect.outputs.from_run }}"
+    assert doc()[True]["workflow_dispatch"]["inputs"]["from_run"]["required"] is False
+
+
+def test_the_link_travels_to_the_deposit_and_is_used_only_with_from_run():
+    upload = [s for s in steps("detect") if s["name"] == "Hand the detection's outputs to the deposit job"]
+    assert "replay/predecessor.json" in upload[0]["with"]["path"]
+    for job, name in (("detect", "Assemble the run prefix locally, with no credential"),
+                      ("deposit", "Deposit runs/<run-id>/ with the candidate identity")):
+        (step,) = [s for s in steps(job) if s["name"] == name]
+        assert 'if [ -n "$FROM_RUN" ]; then LINK=(--predecessor' in step["run"]
+        assert '${LINK[@]+"${LINK[@]}"}' in step["run"]
 
 
 def test_the_window_is_bounded_before_anything_is_spent():
