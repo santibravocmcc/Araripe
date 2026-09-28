@@ -28,6 +28,7 @@ import pytest
 
 from src.publication import conditional_store as cs
 from src.publication import delivery_boundary as db
+from src.publication import promotion_history as ph
 from src.publication import retention as rt
 from src.publication.conditional_store import ConditionalStore
 from src.publication.green_release import LEDGER_PATH, MANIFEST_PATH, object_key
@@ -241,27 +242,48 @@ def test_an_unclassified_key_is_kept_and_reported(name):
     assert (entry.action, entry.reason) == (rt.REVIEW, "unclassified_prefix")
 
 
-@pytest.mark.parametrize("age_days", [0, 400])
-def test_until_the_policy_is_extended_a_history_record_is_kept_unclassified(age_days):
-    """Phase 6, D5: the promotion history exists before the policy knows it.
+@pytest.mark.parametrize("age_days", [0, 400, 10_000])
+def test_a_history_record_is_retained_as_the_record_now_that_the_policy_knows_it(age_days):
+    """Phase 6, D5: this is the test that marks the extension.
 
-    The order is the one ``GREEN_RETENTION_AND_MIGRATION.md`` §3 set — build
-    the history, re-prove it against real R2, and only then extend the policy.
-    Until that extension, a history record falls to the fail-closed rule: kept,
-    reported, never eligible.  When the policy learns the prefix, this test is
-    the one that has to change, on purpose.
+    Until the history was re-proven against real R2 from ``main``
+    (``docs/implementation/PHASE_6D_2026-09-27.md``), a record fell to the
+    fail-closed rule — ``review``, ``unclassified_prefix``.  It is now named:
+    the one evidence the store keeps that a release was live, retained at any
+    age with every knob turned on.
     """
 
-    from src.publication import promotion_history as history
-
     entry = decide(
-        history.history_key(10),
+        ph.history_key(10),
         age_days=age_days,
         phase_open=False,
         accept_run_manifest_loss=True,
         run_horizon_days=0,
         verification_horizon_days=0,
     )
+    assert (entry.category, entry.action, entry.reason) == (
+        "promotion_history", rt.RETAIN, "promotion_history_is_the_record",
+    )
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "pointers/green/history/10.json",
+        "pointers/green/history/0000000000.json",
+        "pointers/green/history/notes.txt",
+        "pointers/green/history/0000000010.json.bak",
+    ],
+)
+def test_a_stray_key_under_the_history_is_reviewed_not_taken_for_a_record(name):
+    entry = decide(name, age_days=10_000, phase_open=False)
+    assert (entry.action, entry.reason) == (rt.REVIEW, "history_key_malformed")
+
+
+def test_another_pointer_key_is_still_unclassified():
+    """Only the history prefix was learnt; the rest of ``pointers/`` was not."""
+
+    entry = decide("pointers/green/current.json.bak", age_days=10_000)
     assert (entry.action, entry.reason) == (rt.REVIEW, "unclassified_prefix")
 
 
@@ -498,3 +520,554 @@ def test_a_plan_over_the_shape_the_real_bucket_had_on_2026_09_07():
         "promotion_history_not_recorded": 3,
         "within_run_horizon": 6,
     }
+
+
+# ── Phase 6, D5: the policy reads the promotion history ──────────────────────
+#
+# ``docs/implementation/PHASE_6C_2026-09-27.md`` §7 is the design, and the order
+# was the briefing's: build the history, re-prove it against real R2 from
+# ``main``, and only then teach the policy.  The re-proof ran on 2026-09-27
+# (``docs/implementation/PHASE_6D_2026-09-27.md``).  What the history makes
+# decidable is *why* a release is kept — was it ever live? — never whether it
+# may go.
+
+
+def _entry(sequence, release_id, action="promote", recorded=True):
+    return ph.Entry(sequence, action, release_id, "2026-09-27T00:00:00Z", recorded)
+
+
+def _history(entries, *, predecessor=None, findings=()):
+    entries = tuple(entries)
+    recorded = [e.sequence for e in entries if e.recorded]
+    return ph.History(
+        live_sequence=entries[-1].sequence if entries else None,
+        first_recorded=min(recorded) if recorded else None,
+        entries=entries,
+        predecessor=predecessor,
+        findings=tuple(findings),
+    )
+
+
+def _rebuilt(*release_ids, actions=None, last_observed_on="2026-04-10"):
+    actions = actions or ["promote"] * len(release_ids)
+    return tuple(
+        rt.ReconstructedEntry(n, action, release_id, last_observed_on, ("doc §1",))
+        for n, (release_id, action) in enumerate(zip(release_ids, actions), start=1)
+    )
+
+
+A = "rel-g1-" + "aa" * 32
+B = "rel-g1-" + "bb" * 32
+C = "rel-g1-" + "cc" * 32
+D = "rel-g1-" + "dd" * 32
+NEVER = "rel-g1-" + "ee" * 32
+
+#: Pre-history 1-2 (A then B), records 3-4 (C, then back to A): the shape of
+#: the real bucket in miniature, where the history begins above sequence 1.
+PRE = _rebuilt(A, B)
+JOIN = {"release_id": B, "sequence": 2, "last_observed_on": "2026-04-10"}
+RECORDED = _history([_entry(3, C), _entry(4, A, "rollback")], predecessor=JOIN)
+LIVE_AT_4 = {
+    "schema": "araripe.green.pointer/1", "sequence": 4, "action": "rollback",
+    "release_id": A,
+    "supersedes": {"release_id": C, "sequence": 3, "last_observed_on": "2026-04-13"},
+    "rolled_back_from": {"release_id": C, "sequence": 3},
+}
+
+
+def classify_with(release_id, lineage, pointer=LIVE_AT_4, **options):
+    return rt.classify(
+        key(f"releases/{release_id}/release.json", age_days=options.pop("age_days", 0)),
+        pointer=pointer, runs={}, as_of=NOW, lineage=lineage, **options,
+    )
+
+
+def test_a_continuous_account_decides_every_release():
+    lineage = rt.build_lineage(RECORDED, PRE)
+    assert lineage.continuous, lineage.detail
+    assert lineage.history_begins == 3
+    got = {r: classify_with(r, lineage).reason for r in (A, B, C, D, NEVER)}
+    assert got == {
+        A: "release_is_live",
+        C: "release_is_referenced",
+        B: "release_was_live_per_reconstruction",
+        D: "release_never_live",
+        NEVER: "release_never_live",
+    }
+    assert all(classify_with(r, lineage).action == rt.RETAIN for r in got)
+
+
+def test_a_record_outranks_the_reconstruction_and_names_every_sequence():
+    """A release both reconstructed and recorded is reported by the record —
+    the store's byte-exact copy — with every sequence it was live at."""
+
+    found = _history(
+        [_entry(3, B), _entry(4, C), _entry(5, B, "rollback")], predecessor=JOIN
+    )
+    lineage = rt.build_lineage(found, PRE)
+    pointer = dict(LIVE_AT_4, sequence=5, release_id=D)
+    entry = classify_with(B, lineage, pointer=pointer)
+    assert (entry.action, entry.reason) == (rt.RETAIN, "release_was_live")
+    assert "sequence(s) 3, 5" in entry.detail
+
+
+def test_a_reconstructed_release_cites_its_sources():
+    lineage = rt.build_lineage(RECORDED, PRE)
+    entry = classify_with(B, lineage)
+    assert "sequence 2 (promote, per doc §1)" in entry.detail
+    assert rt.RECONSTRUCTION_PATH in entry.detail
+
+
+def test_the_releases_that_were_live_stay_decidable_after_any_number_of_moves():
+    """The counterpart of ``test_a_release_that_was_live_becomes_undecidable_after_one_more_move``.
+
+    That test is still true of the pointer alone.  With the history, a release
+    that drops out of the pointer keeps its reason, however far it drops.
+    """
+
+    moves = [_entry(3, C), _entry(4, A, "rollback")]
+    for sequence in range(5, 40):
+        moves.append(_entry(sequence, D if sequence % 2 else C))
+    lineage = rt.build_lineage(_history(moves, predecessor=JOIN), PRE)
+    pointer = dict(LIVE_AT_4, sequence=39, release_id=D)
+    assert classify_with(A, lineage, pointer=pointer).reason == "release_was_live"
+    assert classify_with(B, lineage, pointer=pointer).reason == (
+        "release_was_live_per_reconstruction"
+    )
+    assert classify_with(NEVER, lineage, pointer=pointer).reason == "release_never_live"
+
+
+# ── the join fails closed ────────────────────────────────────────────────────
+
+
+@pytest.mark.parametrize(
+    "found, reconstruction, reason",
+    [
+        pytest.param(None, PRE, rt.NOT_RECORDED, id="no-history-read"),
+        pytest.param(_history([]), PRE, rt.NOT_RECORDED, id="no-pointer-no-record"),
+        pytest.param(
+            _history(RECORDED.entries, predecessor=JOIN,
+                     findings=[ph.Finding("history_gap", "x", "k")]),
+            PRE, rt.INCONSISTENT, id="inconsistent-history",
+        ),
+        pytest.param(RECORDED, None, rt.NOT_CONTINUOUS, id="no-reconstruction"),
+        pytest.param(RECORDED, PRE[:1], rt.NOT_CONTINUOUS, id="reconstruction-too-short"),
+        pytest.param(RECORDED, _rebuilt(A, B, C), rt.NOT_CONTINUOUS,
+                     id="reconstruction-overlaps-the-records"),
+        pytest.param(RECORDED, _rebuilt(A, D), rt.NOT_CONTINUOUS,
+                     id="reconstruction-ends-at-another-release"),
+        pytest.param(RECORDED, _rebuilt(A, B, last_observed_on="2026-04-13"),
+                     rt.NOT_CONTINUOUS, id="reconstruction-ends-at-another-coverage"),
+        pytest.param(_history(RECORDED.entries, predecessor=dict(JOIN, sequence=1)),
+                     PRE, rt.NOT_CONTINUOUS, id="first-record-names-another-sequence"),
+        pytest.param(_history(RECORDED.entries, predecessor=None), PRE,
+                     rt.NOT_CONTINUOUS, id="first-record-names-nothing"),
+        pytest.param(_history([_entry(1, A)]), PRE, rt.NOT_CONTINUOUS,
+                     id="history-from-1-yet-a-reconstruction"),
+    ],
+)
+def test_a_release_nothing_names_is_never_called_never_live_on_a_broken_account(
+    found, reconstruction, reason
+):
+    lineage = rt.build_lineage(found, reconstruction)
+    assert not lineage.continuous
+    assert lineage.reason == reason
+    entry = classify_with(NEVER, lineage)
+    assert (entry.action, entry.reason) == (rt.REVIEW, reason)
+    assert lineage.detail and lineage.detail in entry.detail
+
+
+def test_an_unjoined_reconstruction_is_not_evidence_even_for_what_it_names():
+    """A reconstruction the store contradicts vouches for nothing — B stays in
+    review rather than being retained on the reconstruction's word."""
+
+    lineage = rt.build_lineage(RECORDED, _rebuilt(A, D))
+    entry = classify_with(B, lineage)
+    assert (entry.action, entry.reason) == (rt.REVIEW, rt.NOT_CONTINUOUS)
+    assert lineage.reconstructed == {}
+
+
+def test_a_record_still_retains_its_release_on_an_inconsistent_account():
+    """Retaining is the safe direction, and a record is a byte-exact copy the
+    reader accepted; what an inconsistent account loses is only the right to
+    say *never*."""
+
+    found = _history(
+        RECORDED.entries, predecessor=JOIN,
+        findings=[ph.Finding("history_gap", "x", "k")],
+    )
+    lineage = rt.build_lineage(found, PRE)
+    assert classify_with(C, lineage, pointer=dict(LIVE_AT_4, supersedes=None,
+                                                  rolled_back_from=None)).reason == (
+        "release_was_live"
+    )
+    assert classify_with(B, lineage).action == rt.REVIEW
+
+
+def test_a_history_that_begins_at_1_needs_no_reconstruction():
+    lineage = rt.build_lineage(_history([_entry(1, A), _entry(2, C)]), None)
+    assert lineage.continuous
+    pointer = dict(LIVE_AT_4, sequence=2, release_id=C, action="promote",
+                   supersedes={"release_id": A, "sequence": 1,
+                               "last_observed_on": "2026-04-10"},
+                   rolled_back_from=None)
+    assert classify_with(NEVER, lineage, pointer=pointer).reason == "release_never_live"
+
+
+def test_a_pending_live_record_still_starts_a_continuous_account():
+    """The one record the protocol allows to be missing is the live one; its
+    bytes are the live pointer, and the reader returns it as an entry."""
+
+    found = _history([_entry(3, C, recorded=False)], predecessor=JOIN)
+    assert found.first_recorded is None
+    lineage = rt.build_lineage(found, PRE)
+    assert lineage.continuous and lineage.history_begins == 3
+    assert classify_with(NEVER, lineage).reason == "release_never_live"
+    assert "reconstruction 1-2, records 3-" in classify_with(NEVER, lineage).detail
+
+
+# ── nothing is eligible, with any lineage ────────────────────────────────────
+
+
+LINEAGES = {
+    "none": None,
+    "continuous": rt.build_lineage(RECORDED, PRE),
+    "inconsistent": rt.build_lineage(
+        _history(RECORDED.entries, predecessor=JOIN,
+                 findings=[ph.Finding("history_gap", "x", "k")]), PRE),
+    "not-continuous": rt.build_lineage(RECORDED, None),
+}
+
+
+@pytest.mark.parametrize("lineage", LINEAGES.values(), ids=LINEAGES.keys())
+@pytest.mark.parametrize("age_days", [0, 400, 10_000])
+@pytest.mark.parametrize("release_id", [A, B, C, D, NEVER])
+def test_no_release_is_ever_eligible_with_any_lineage(lineage, age_days, release_id):
+    """Classifying is not deleting.  The property of 2B.3, extended to every
+    state the account can be in, every knob on at once."""
+
+    entry = classify_with(
+        release_id, lineage, age_days=age_days, phase_open=False,
+        accept_run_manifest_loss=True, run_horizon_days=0, verification_horizon_days=0,
+    )
+    assert entry.action != rt.ELIGIBLE
+
+
+# ── the reconstruction document ──────────────────────────────────────────────
+
+
+def _reconstruction_document(**changes):
+    document = {
+        "schema": rt.RECONSTRUCTION_SCHEMA,
+        "reconstructed": True,
+        "entries": [
+            {"sequence": 1, "action": "promote", "release_id": A,
+             "last_observed_on": "2026-04-10",
+             "sources": [{"document": "d.md", "section": "1"}]},
+            {"sequence": 2, "action": "rollback", "release_id": B,
+             "last_observed_on": "2026-04-10",
+             "sources": [{"document": "d.md", "section": "2"}]},
+        ],
+    }
+    for path, value in changes.items():
+        if "__" in path:
+            index, leaf = path.split("__")
+            document["entries"][int(index)][leaf] = value
+        else:
+            document[path] = value
+    return document
+
+
+def test_a_well_formed_reconstruction_loads():
+    entries = rt.load_reconstruction(_reconstruction_document())
+    assert [(e.sequence, e.action, e.release_id) for e in entries] == [
+        (1, "promote", A), (2, "rollback", B),
+    ]
+    assert entries[1].sources == ("d.md §2",)
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        pytest.param({"schema": "araripe.green.pointer/1"}, id="other-schema"),
+        pytest.param({"reconstructed": False}, id="not-declared-reconstructed"),
+        pytest.param({"reconstructed": "yes"}, id="declared-loosely"),
+        pytest.param({"entries": []}, id="no-entries"),
+        pytest.param({"1__sequence": 3}, id="gap"),
+        pytest.param({"0__sequence": True}, id="boolean-sequence"),
+        pytest.param({"0__action": "rollback"}, id="first-write-a-rollback"),
+        pytest.param({"1__action": "delete"}, id="unknown-action"),
+        pytest.param({"1__release_id": "rel-g1-24db9555…"}, id="abbreviated-id"),
+        pytest.param({"1__last_observed_on": "08-25"}, id="partial-date"),
+        pytest.param({"1__sources": []}, id="no-source"),
+        pytest.param({"1__sources": [{"document": "d.md"}]}, id="source-without-section"),
+    ],
+)
+def test_a_malformed_reconstruction_is_refused(changes):
+    with pytest.raises(ValueError):
+        rt.load_reconstruction(_reconstruction_document(**changes))
+
+
+# ── the real reconstruction, against the documents it cites ─────────────────
+
+REAL_RECONSTRUCTION = Path(rt.RECONSTRUCTION_PATH)
+
+#: Read from ``pointers/green/history/0000000010.json`` in ``araripe-v2-staging``
+#: on 2026-09-27, after the re-proof wrote it (sha256 ``5c016cd4…``, byte-identical
+#: to the pointer measured before it; ``PHASE_6D_2026-09-27.md`` §3).
+MEASURED_RECORD_10_SUPERSEDES = {
+    "release_id": "rel-g1-24db9555c8b2c3569418d953194622e02ebff2eae51b97d294014b3f777a6e36",
+    "sequence": 9,
+    "last_observed_on": "2026-08-25",
+}
+
+#: Refused for ``coverage_regression`` and never live — ``PHASE_2B3_2026-09-07.md`` §1.
+REFUSED_RELEASE = "rel-g1-9f1ed3441310bd632caba3e5354cb20707669b433bf3a75e42db4a1bc245f54e"
+
+
+def _real_entries():
+    return rt.load_reconstruction(json.loads(REAL_RECONSTRUCTION.read_text(encoding="utf-8")))
+
+
+def _section(document: Path, section: str) -> str:
+    import re
+
+    lines = document.read_text(encoding="utf-8").splitlines()
+    heading = re.compile(r"^(#+)\s+" + re.escape(section) + r"\.?\s")
+    for start, line in enumerate(lines):
+        match = heading.match(line)
+        if match:
+            level = len(match.group(1))
+            body = []
+            for later in lines[start + 1:]:
+                if re.match(r"^#{1,%d}\s" % level, later):
+                    break
+                body.append(later)
+            return "\n".join(body)
+    raise AssertionError(f"{document} has no section {section}")
+
+
+def test_the_real_reconstruction_covers_sequences_1_to_9():
+    entries = _real_entries()
+    assert [e.sequence for e in entries] == list(range(1, 10))
+
+
+def test_the_real_reconstruction_joins_the_store_at_record_10():
+    last = _real_entries()[-1]
+    assert {
+        "release_id": last.release_id,
+        "sequence": last.sequence,
+        "last_observed_on": last.last_observed_on,
+    } == MEASURED_RECORD_10_SUPERSEDES
+
+
+def test_every_entry_is_in_the_sections_it_cites():
+    """Each entry's full release id and its sequence must appear in the text of
+    the sections it cites — read here, not trusted.  A mistyped id, a wrong
+    section or a document that moved its numbering fails this test."""
+
+    import re
+
+    document = json.loads(REAL_RECONSTRUCTION.read_text(encoding="utf-8"))
+    for item in document["entries"]:
+        text = "\n".join(
+            _section(Path(source["document"]), source["section"])
+            for source in item["sources"]
+        )
+        assert item["release_id"] in text, (item["sequence"], item["sources"])
+        n = item["sequence"]
+        assert re.search(rf"(sequence\W{{0,4}}{n}\b|\|\s*{n}\s*\|)", text), (
+            n, item["sources"],
+        )
+
+
+def test_the_refused_release_is_not_in_the_reconstruction():
+    assert REFUSED_RELEASE not in {e.release_id for e in _real_entries()}
+
+
+def test_the_reconstruction_declares_itself_and_is_never_a_store_key():
+    """It lives in the repository, never under ``pointers/green/history/`` —
+    ``PHASE_6C_2026-09-27.md`` §2.4: no backfill in the store."""
+
+    document = json.loads(REAL_RECONSTRUCTION.read_text(encoding="utf-8"))
+    assert document["reconstructed"] is True
+    assert not rt.RECONSTRUCTION_PATH.startswith(ph.HISTORY_ROOT)
+    source = Path("src/publication/retention.py").read_text(encoding="utf-8")
+    assert "put_if_absent" not in source
+
+
+# ── the bucket as it stands after the re-proof ───────────────────────────────
+
+#: The seven releases in ``araripe-v2-staging`` on 2026-09-27 and the history
+#: the promotion lane's ``history`` mode read back (run ``36365859406``).
+AE3F = "rel-g1-ae3f6e1db152ac608f5e63d2fe2d6f4357f0f311ad5582070dfabf9e91828827"
+FFAD = "rel-g1-5ffad23ad2b4072fa63f01b86fdab4f3f34627fddd0f877f910e7a4544d77d37"
+FB34 = "rel-g1-1fb345489260784289532351887aef039345964518c981556b4a02048d16e14d"
+DB95 = MEASURED_RECORD_10_SUPERSEDES["release_id"]
+DDB1 = "rel-g1-2ddb10c795deb75f0b2f61a4ae349fda192baf31a2cbd310723b0c362a6670d3"
+FB72 = "rel-g1-fb722b2d1786075b1a6b4d10b1d49db31bb1b3f4e4be74f9621f21b9358ea8bb"
+
+AFTER_REPROOF = _history(
+    [
+        _entry(10, FB72), _entry(11, DDB1), _entry(12, DB95, "rollback"),
+        _entry(13, DDB1), _entry(14, FB72),
+    ],
+    predecessor=MEASURED_RECORD_10_SUPERSEDES,
+)
+POINTER_14 = {
+    "schema": "araripe.green.pointer/1", "sequence": 14, "action": "promote",
+    "release_id": FB72,
+    "supersedes": {"release_id": DDB1, "sequence": 13, "last_observed_on": "2026-08-30"},
+}
+
+
+def test_a_plan_over_the_bucket_after_the_re_proof():
+    """Every one of the seven releases gets its own, true reason — and the one
+    that was never live is told apart from the six that were."""
+
+    inventory = [
+        key(db.POINTER_KEY),
+        *[key(ph.history_key(n)) for n in range(10, 15)],
+        *[key(f"releases/{r}/release.json") for r in
+          (AE3F, FFAD, FB34, DB95, DDB1, FB72, REFUSED_RELEASE)],
+    ]
+    lineage = rt.build_lineage(AFTER_REPROOF, _real_entries())
+    assert lineage.continuous, lineage.detail
+    plan = rt.build_plan(inventory, pointer=POINTER_14, as_of=NOW, lineage=lineage)
+    reasons = {d.key.split("/")[1]: d.reason for d in plan.dispositions
+               if d.category == "release"}
+    assert reasons == {
+        FB72: "release_is_live",
+        DDB1: "release_is_referenced",
+        DB95: "release_was_live",
+        AE3F: "release_was_live_per_reconstruction",
+        FFAD: "release_was_live_per_reconstruction",
+        FB34: "release_was_live_per_reconstruction",
+        REFUSED_RELEASE: "release_never_live",
+    }
+    assert plan.eligible == ()
+    assert plan.counts() == {rt.RETAIN: 13}
+    document = rt.plan_document(plan)
+    assert document["lineage"]["continuous"] is True
+    assert document["lineage"]["history_begins"] == 10
+    assert document["lineage"]["recorded"][DB95] == [12]
+    text = rt.describe(plan)
+    assert "continuous from sequence 1 (reconstruction 1-9 + records 10-14)" in text
+    assert "NOTHING WAS DELETED" in text
+
+
+# ── end to end: the real protocol writes the history the planner reads ───────
+
+
+def test_the_planner_reads_the_history_the_protocol_wrote():
+    """No hand-built ``History`` here: the re-proof sequence runs through the
+    real ``promote``/``rollback`` on the fake store, from a sequence-10 pointer
+    with no history, and the planner reads what they wrote with the same reader
+    the lane uses."""
+
+    from src.publication.atomic_publish import (
+        PromotionRefused, promote, read_live_pointer, rollback,
+    )
+    from tests.test_atomic_publish import LATER
+    from tests.test_atomic_publish import NOW as T0
+    from tests.test_promotion_history import _publish, _seed_prehistory_pointer, _store
+
+    store, fake = _store()
+    (before, _), (candidate, doc_candidate), _ = _seed_prehistory_pointer(store, fake)
+    gate_c, doc_c = _publish(store, {"2026-04-10": [ALERTS]})
+    gate_a, doc_a = _publish(store, {"2026-04-01": [ALERTS]})
+    promote(store, gate_c, doc_c, now=T0)
+    rollback(store, before["release_id"], now=T0)
+    promote(store, gate_c, doc_c, now=LATER)
+    with pytest.raises(PromotionRefused):
+        promote(store, gate_a, doc_a, now=LATER)
+    promote(store, candidate, doc_candidate, now=LATER)
+
+    live, stored = read_live_pointer(store)
+    inventory = rt.list_inventory(fake, cs.STAGING_BUCKET)
+    found = ph.read_history(
+        ReadOnlyStore(fake, cs.STAGING_BUCKET), live, stored.body,
+        keys=[i.key for i in inventory if i.key.startswith(ph.HISTORY_ROOT)],
+    )
+    # Sequences 1-9 as a reconstruction would state them, ending at the release
+    # the seeded pointer superseded.
+    pre = _rebuilt(
+        *([before["release_id"]] * 9),
+        last_observed_on=found.predecessor["last_observed_on"],
+    )
+    lineage = rt.build_lineage(found, pre)
+    assert lineage.continuous, lineage.detail
+    plan = rt.build_plan(inventory, pointer=live, as_of=NOW, lineage=lineage)
+
+    by_release = {}
+    for d in plan.dispositions:
+        if d.category == "release":
+            by_release.setdefault(d.key.split("/")[1], set()).add(d.reason)
+    assert by_release == {
+        candidate["release_id"]: {"release_is_live"},
+        gate_c["release_id"]: {"release_is_referenced"},
+        before["release_id"]: {"release_was_live"},
+        gate_a["release_id"]: {"release_never_live"},
+    }
+    assert {d.reason for d in plan.dispositions if d.category == "promotion_history"} == {
+        "promotion_history_is_the_record"
+    }
+    assert plan.eligible == ()
+
+
+def test_the_planner_script_reads_the_history_and_the_real_reconstruction(
+    monkeypatch, capsys
+):
+    """The wiring, not just the policy: ``scripts/plan_retention.py`` lists the
+    bucket, reads the history with the lane's reader, loads the reconstruction
+    from the repository and passes the lineage on.  Run over a fake bucket
+    shaped like the real one — history from sequence 10, joined at the release
+    the real reconstruction ends at."""
+
+    import importlib.util
+
+    from src.publication.atomic_publish import promote
+    from tests.test_atomic_publish import NOW as T0
+    from tests.test_promotion_history import _publish, _seed_prehistory_pointer, _store
+
+    store, fake = _store()
+    (before, _), _live_release, _ = _seed_prehistory_pointer(store, fake)
+    newer, doc_newer = _publish(store, {"2026-04-13": [ALERTS]})
+    refused_like, _ = _publish(store, {"2026-04-01": [ALERTS]})
+    promote(store, newer, doc_newer, now=T0)
+    # Make the seeded pre-history name the release the real reconstruction ends
+    # at, so the script's own reconstruction file joins it.
+    record_10 = json.loads(fake.body(ph.history_key(10)))
+    record_10["supersedes"] = dict(MEASURED_RECORD_10_SUPERSEDES)
+    from src.publication.green_release import release_bytes
+
+    fake.objects[ph.history_key(10)] = (release_bytes(record_10), "application/json")
+
+    spec = importlib.util.spec_from_file_location("plan_retention_cli", "scripts/plan_retention.py")
+    cli = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cli)
+    monkeypatch.setattr(
+        cli, "build_read_only_store",
+        lambda: (fake, ReadOnlyStore(fake, cs.STAGING_BUCKET)),
+    )
+    assert cli.main(["--json", "--as-of", "2026-09-27T23:00:00Z"]) == 0
+    document = json.loads(capsys.readouterr().out)
+    lineage = document["lineage"]
+    assert lineage == {
+        "continuous": True, "reason": None, "detail": "", "findings": [],
+        "live_sequence": 11, "history_begins": 10,
+        "recorded": {_live_release[0]["release_id"]: [10], newer["release_id"]: [11]},
+        "reconstructed": {
+            e.release_id: [x.sequence for x in _real_entries() if x.release_id == e.release_id]
+            for e in _real_entries()
+        },
+    }
+    reasons = {o["key"]: o["reason"] for o in document["objects"]}
+    assert reasons[f"releases/{refused_like['release_id']}/release.json"] == (
+        "release_never_live"
+    )
+    assert reasons[f"releases/{newer['release_id']}/release.json"] == "release_is_live"
+    assert {reasons[ph.history_key(n)] for n in (10, 11)} == {
+        "promotion_history_is_the_record"
+    }
+    assert document["eligible_bytes"] == 0

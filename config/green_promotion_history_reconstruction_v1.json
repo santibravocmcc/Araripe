@@ -1,0 +1,103 @@
+{
+  "schema": "araripe.green.promotion-history-reconstruction/1",
+  "reconstructed": true,
+  "reconstructed_on": "2026-09-27",
+  "what_this_is": "The green pointer versions at sequences 1-9, reconstructed from the operations records that registered each move by hand. It is NOT a copy of any stored object: those versions were overwritten before the durable promotion history existed, and their bytes are gone from araripe-v2-staging.",
+  "never_written_to_the_store": "By design (docs/implementation/PHASE_6C_2026-09-27.md §2.4). The store's history means one thing only - a byte-exact copy of an accepted pointer write - and its keys are write-once, so a reconstruction placed there would occupy the original's key forever and could never be corrected. A reconstruction is a claim derived from documents, and claims live where they are reviewed: here, by pull request.",
+  "how_it_is_checked": "Against the store at the one point where the two speak: the supersedes of the first stored record (sequence 10) names the release, sequence and coverage of the last entry here. src/publication/retention.py build_lineage refuses the reconstruction otherwise. And tests/test_retention.py reads every document and section cited below and requires the full release id and the sequence to appear there.",
+  "used_by": "the green retention planner only (scripts/plan_retention.py). Never by publication, never by the delivery route.",
+  "entries": [
+    {
+      "sequence": 1,
+      "action": "promote",
+      "release_id": "rel-g1-ae3f6e1db152ac608f5e63d2fe2d6f4357f0f311ad5582070dfabf9e91828827",
+      "last_observed_on": "2026-04-10",
+      "sources": [
+        {"document": "docs/operations/GREEN_PROOFS_2026-09-07.md", "section": "6"}
+      ]
+    },
+    {
+      "sequence": 2,
+      "action": "promote",
+      "release_id": "rel-g1-5ffad23ad2b4072fa63f01b86fdab4f3f34627fddd0f877f910e7a4544d77d37",
+      "last_observed_on": "2026-04-13",
+      "sources": [
+        {"document": "docs/operations/GREEN_PROOFS_2026-09-07.md", "section": "6"},
+        {"document": "docs/implementation/PHASE_2B3_2026-09-07.md", "section": "1"}
+      ]
+    },
+    {
+      "sequence": 3,
+      "action": "rollback",
+      "release_id": "rel-g1-ae3f6e1db152ac608f5e63d2fe2d6f4357f0f311ad5582070dfabf9e91828827",
+      "last_observed_on": "2026-04-10",
+      "sources": [
+        {"document": "docs/operations/GREEN_PROOFS_2026-09-07.md", "section": "7"},
+        {"document": "docs/implementation/PHASE_2B_GATE_2026-09-08.md", "section": "4.3"}
+      ]
+    },
+    {
+      "sequence": 4,
+      "action": "promote",
+      "release_id": "rel-g1-1fb345489260784289532351887aef039345964518c981556b4a02048d16e14d",
+      "last_observed_on": "2026-08-22",
+      "sources": [
+        {"document": "docs/implementation/PHASE_2B_GATE_2026-09-08.md", "section": "4.2"},
+        {"document": "docs/implementation/PHASE_2B_GATE_2026-09-08.md", "section": "4.3"}
+      ]
+    },
+    {
+      "sequence": 5,
+      "action": "promote",
+      "release_id": "rel-g1-24db9555c8b2c3569418d953194622e02ebff2eae51b97d294014b3f777a6e36",
+      "last_observed_on": "2026-08-25",
+      "sources": [
+        {"document": "docs/implementation/PHASE_2B_GATE_2026-09-08.md", "section": "4.2"},
+        {"document": "docs/implementation/PHASE_2B_GATE_2026-09-08.md", "section": "4.3"}
+      ]
+    },
+    {
+      "sequence": 6,
+      "action": "rollback",
+      "release_id": "rel-g1-1fb345489260784289532351887aef039345964518c981556b4a02048d16e14d",
+      "last_observed_on": "2026-08-22",
+      "sources": [
+        {"document": "docs/implementation/PHASE_2B_GATE_2026-09-08.md", "section": "4.2"},
+        {"document": "docs/implementation/PHASE_2B_GATE_2026-09-08.md", "section": "4.3"}
+      ]
+    },
+    {
+      "sequence": 7,
+      "action": "promote",
+      "release_id": "rel-g1-24db9555c8b2c3569418d953194622e02ebff2eae51b97d294014b3f777a6e36",
+      "last_observed_on": "2026-08-25",
+      "sources": [
+        {"document": "docs/implementation/PHASE_2B_GATE_2026-09-08.md", "section": "4.2"},
+        {"document": "docs/implementation/PHASE_2B_GATE_2026-09-08.md", "section": "4.3"},
+        {"document": "docs/implementation/PHASE_2B_GATE_2026-09-08.md", "section": "5.5"}
+      ]
+    },
+    {
+      "sequence": 8,
+      "action": "promote",
+      "release_id": "rel-g1-2ddb10c795deb75f0b2f61a4ae349fda192baf31a2cbd310723b0c362a6670d3",
+      "last_observed_on": "2026-08-30",
+      "sources": [
+        {"document": "docs/implementation/PHASE_2B_GATE_2026-09-08.md", "section": "4.2"},
+        {"document": "docs/implementation/PHASE_2B_GATE_2026-09-08.md", "section": "4.3"},
+        {"document": "docs/implementation/PHASE_4C_2026-09-16.md", "section": "6.1"}
+      ]
+    },
+    {
+      "sequence": 9,
+      "action": "rollback",
+      "release_id": "rel-g1-24db9555c8b2c3569418d953194622e02ebff2eae51b97d294014b3f777a6e36",
+      "last_observed_on": "2026-08-25",
+      "sources": [
+        {"document": "docs/implementation/PHASE_2B_GATE_2026-09-08.md", "section": "4.2"},
+        {"document": "docs/implementation/PHASE_2B_GATE_2026-09-08.md", "section": "4.3"},
+        {"document": "docs/implementation/PHASE_4C_2026-09-16.md", "section": "6.1"}
+      ]
+    }
+  ]
+}

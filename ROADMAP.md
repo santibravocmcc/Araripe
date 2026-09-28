@@ -30,6 +30,14 @@
 > | Package 2A.6 | fechado 2026-09-08 | `docs/implementation/PHASE_2A6_LANDING_2026-09-08.md` |
 > | **Phase 3** | **fechada 2026-09-09** | baseline do replay decidida: `2.1.0`, `config/phase3_replay_baseline_decision_v1.json` |
 > | **Phase 4** | **fechada 2026-09-16** | candidato 2026 depositado e publicado em staging; `docs/implementation/PHASE_4C_2026-09-16.md` |
+> | Phase 6 — checklist e dossiê | 2026-09-17 | `docs/implementation/PHASE_6A_2026-09-17.md` |
+> | Phase 6 — Worker verde verificado ao vivo, janela fechada | 2026-09-27 | `docs/implementation/PHASE_6B_2026-09-27.md` |
+> | Phase 6 — decisão D5, histórico durável de promoção | **fechada 2026-09-27**: construído (`#70`), reprovado no R2 real a partir da `main`, e a política de retenção passou a lê-lo | `docs/implementation/PHASE_6C_2026-09-27.md`, `docs/implementation/PHASE_6D_2026-09-27.md` |
+>
+> *Linhas da Phase 6 acrescentadas em 2026-09-27.* A Phase 6 está em
+> execução e **não** fechou: falta a lane de depósito em CI, o processo
+> agendado verde, as páginas do site e a virada. Nenhuma release pode ser
+> apagada — a D5 tornou a retenção **decidível**, não a exclusão possível.
 >
 > **Próxima frente: Phase 6 — o cutover.** As Fases 3 e 4 fecharam, e nenhum
 > dos dois fechamentos atualizou esta linha; a correção foi autorizada pelo

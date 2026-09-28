@@ -44,16 +44,34 @@ decidable needs a durable, write-once promotion history — specified in
 ``docs/operations/GREEN_RETENTION_AND_MIGRATION.md`` and deliberately not built
 by this package, because it would change a publication path that was proven
 end to end against real R2 five times on 2026-09-07.
+
+Phase 6, decision D5 — the history exists, and the policy reads it
+------------------------------------------------------------------
+Built in ``promotion_history.py``, re-proven against real R2 from ``main`` on
+2026-09-27 (``docs/implementation/PHASE_6D_2026-09-27.md``).  The planner now
+takes a ``Lineage``: the store's records, plus a *reconstruction* of the
+versions overwritten before the history began, kept in the repository
+(``config/green_promotion_history_reconstruction_v1.json``) and never in the
+store.  The two are joined at the one point where they speak — the
+``supersedes`` of the first record — and only when that join holds, and the
+history is consistent, is the account **continuous from sequence 1**.
+
+What that makes decidable is *why* a release is kept, not whether it may go:
+a release the account shows was live, and a release it shows was **never**
+live, are both ``retain`` with different reasons.  Classifying is not
+deleting, and no release is ``eligible`` — at any age, with any lineage.
 """
 
 from __future__ import annotations
 
+import re
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Any, Iterable, Mapping
 
 from src.publication import delivery_boundary as db
+from src.publication import promotion_history as ph
 
 #: Contract version of a retention plan document.
 PLAN_SCHEMA = "araripe.green.retention-plan/1"
@@ -98,6 +116,218 @@ class RunLink:
     published_complete: bool
 
 
+# ── the lineage: who was live, and whether the account reaches sequence 1 ────
+
+#: Contract of the reconstruction of the versions the store lost.
+RECONSTRUCTION_SCHEMA = "araripe.green.promotion-history-reconstruction/1"
+
+#: Where the reconstruction lives: in the repository, reviewed by pull request.
+RECONSTRUCTION_PATH = "config/green_promotion_history_reconstruction_v1.json"
+
+_RELEASE_ID = re.compile(r"^rel-g1-[0-9a-f]{64}$")
+_DATE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
+
+#: Why a lineage cannot vouch for the whole account.  The first is the state
+#: before this package; the other two are what the join can find wrong.
+NOT_RECORDED = "promotion_history_not_recorded"
+INCONSISTENT = "promotion_history_inconsistent"
+NOT_CONTINUOUS = "promotion_history_not_continuous"
+
+
+@dataclass(frozen=True)
+class ReconstructedEntry:
+    """One pointer version rebuilt from documents, with where each claim is."""
+
+    sequence: int
+    action: str
+    release_id: str
+    last_observed_on: str
+    #: ``document §section`` for every source the entry cites.
+    sources: tuple[str, ...]
+
+
+def load_reconstruction(document: Mapping[str, Any]) -> tuple[ReconstructedEntry, ...]:
+    """Parse the reconstruction, refusing anything that is not one.
+
+    Only what makes the entries usable is checked here: that the document says
+    it is a reconstruction, and that it is a contiguous run of versions from
+    sequence 1 whose first write replaced nothing.  Whether it agrees with the
+    store is ``build_lineage``'s question, and whether it agrees with the
+    documents it cites is the test suite's.
+    """
+
+    if document.get("schema") != RECONSTRUCTION_SCHEMA:
+        raise ValueError(f"the reconstruction must declare {RECONSTRUCTION_SCHEMA!r}")
+    if document.get("reconstructed") is not True:
+        raise ValueError(
+            "the document must declare itself reconstructed: it is a claim "
+            "derived from records, not a copy of a stored pointer"
+        )
+    raw = document.get("entries")
+    if not isinstance(raw, list) or not raw:
+        raise ValueError("the reconstruction has no entries")
+    entries = []
+    for position, item in enumerate(raw, start=1):
+        where = f"entry {position}"
+        if item.get("sequence") != position or isinstance(item.get("sequence"), bool):
+            raise ValueError(
+                f"{where}: sequences run from 1 without a gap, and this one is "
+                f"{item.get('sequence')!r}"
+            )
+        if item.get("action") not in ("promote", "rollback"):
+            raise ValueError(f"{where}: action {item.get('action')!r}")
+        if position == 1 and item["action"] != "promote":
+            raise ValueError(
+                "sequence 1 is the first write into an empty pointer: a promotion"
+            )
+        if not isinstance(item.get("release_id"), str) or not _RELEASE_ID.match(
+            item["release_id"]
+        ):
+            raise ValueError(f"{where}: release id {item.get('release_id')!r}")
+        if not isinstance(item.get("last_observed_on"), str) or not _DATE.match(
+            item["last_observed_on"]
+        ):
+            raise ValueError(f"{where}: last_observed_on {item.get('last_observed_on')!r}")
+        sources = item.get("sources")
+        if not isinstance(sources, list) or not sources or not all(
+            isinstance(s, Mapping) and s.get("document") and s.get("section")
+            for s in sources
+        ):
+            raise ValueError(f"{where}: every entry cites a document and a section")
+        entries.append(
+            ReconstructedEntry(
+                sequence=position,
+                action=item["action"],
+                release_id=item["release_id"],
+                last_observed_on=item["last_observed_on"],
+                sources=tuple(f"{s['document']} §{s['section']}" for s in sources),
+            )
+        )
+    return tuple(entries)
+
+
+@dataclass(frozen=True)
+class Lineage:
+    """What the planner may say about which releases were ever live.
+
+    ``recorded`` comes from the store's history — byte-exact copies of accepted
+    writes — and is trusted on its own.  ``reconstructed`` is used only once it
+    has been joined to the store.  ``continuous`` is the claim that every
+    pointer version from sequence 1 to the live one is accounted for, and it is
+    the only thing that lets the planner call a release *never* live.
+    """
+
+    recorded: Mapping[str, tuple[int, ...]]
+    reconstructed: Mapping[str, tuple[ReconstructedEntry, ...]]
+    continuous: bool
+    #: When not continuous: one of the three codes above, and what is missing.
+    reason: str | None = None
+    detail: str = ""
+    live_sequence: int | None = None
+    #: The first sequence the store vouches for: its first record, or the live
+    #: pointer when that is the only version and its record is pending.
+    history_begins: int | None = None
+    findings: tuple[str, ...] = field(default_factory=tuple)
+
+
+def _broken(reason: str, detail: str, found: ph.History | None, recorded) -> Lineage:
+    return Lineage(
+        recorded=recorded,
+        reconstructed={},
+        continuous=False,
+        reason=reason,
+        detail=detail,
+        live_sequence=found.live_sequence if found else None,
+        history_begins=found.entries[0].sequence if found and found.entries else None,
+        findings=tuple(str(f) for f in found.findings) if found else (),
+    )
+
+
+def build_lineage(
+    found: ph.History | None,
+    reconstruction: Iterable[ReconstructedEntry] | None,
+) -> Lineage:
+    """Join the store's history to the reconstruction, failing closed.
+
+    The account is continuous only when all of these hold:
+
+    * the history is consistent (``read_history`` found nothing);
+    * it has an entry — a record, or the live pointer as its pending record;
+    * the versions below its first entry are exactly the reconstruction's,
+      sequences 1 to one below it;
+    * the first entry's ``supersedes`` names the reconstruction's last version
+      — release, sequence and coverage — which is the one fact about the
+      pre-history the store still holds.
+    """
+
+    recorded: dict[str, tuple[int, ...]] = {}
+    if found is not None:
+        for entry in found.entries:
+            recorded[entry.release_id] = recorded.get(entry.release_id, ()) + (
+                entry.sequence,
+            )
+
+    if found is None or not found.entries:
+        return _broken(
+            NOT_RECORDED,
+            "the store holds no promotion history and no live pointer to start "
+            "one from, so it cannot say which releases were ever live",
+            found,
+            recorded,
+        )
+    if not found.consistent:
+        return _broken(
+            INCONSISTENT,
+            f"the promotion history has {len(found.findings)} finding(s): "
+            + "; ".join(sorted({f.code for f in found.findings}))
+            + ". Nothing it cannot vouch for is called never-live",
+            found,
+            recorded,
+        )
+
+    first = found.entries[0].sequence
+    rebuilt = tuple(reconstruction or ())
+    if [e.sequence for e in rebuilt] != list(range(1, first)):
+        return _broken(
+            NOT_CONTINUOUS,
+            f"the history begins at sequence {first}, so sequences 1 to "
+            f"{first - 1} must come from the reconstruction, and it holds "
+            f"{[e.sequence for e in rebuilt] or 'nothing'}",
+            found,
+            recorded,
+        )
+    if rebuilt:
+        last = rebuilt[-1]
+        claimed = dict(found.predecessor or {})
+        expected = {
+            "release_id": last.release_id,
+            "sequence": last.sequence,
+            "last_observed_on": last.last_observed_on,
+        }
+        if claimed != expected:
+            return _broken(
+                NOT_CONTINUOUS,
+                f"sequence {first} says it replaced {claimed!r}, and the "
+                f"reconstruction ends at {expected!r}. A reconstruction the "
+                "store contradicts is not evidence",
+                found,
+                recorded,
+            )
+
+    reconstructed: dict[str, tuple[ReconstructedEntry, ...]] = {}
+    for entry in rebuilt:
+        reconstructed[entry.release_id] = reconstructed.get(entry.release_id, ()) + (
+            entry,
+        )
+    return Lineage(
+        recorded=recorded,
+        reconstructed=reconstructed,
+        continuous=True,
+        live_sequence=found.live_sequence,
+        history_begins=first,
+    )
+
+
 @dataclass(frozen=True)
 class Disposition:
     key: str
@@ -114,6 +344,7 @@ class RetentionPlan:
     dispositions: tuple[Disposition, ...]
     live_release_id: str | None
     referenced_release_ids: tuple[str, ...]
+    lineage: Lineage | None = None
 
     @property
     def eligible(self) -> tuple[Disposition, ...]:
@@ -186,6 +417,7 @@ def classify(
     verification_horizon_days: int = DEFAULT_VERIFICATION_HORIZON_DAYS,
     phase_open: bool = True,
     accept_run_manifest_loss: bool = False,
+    lineage: Lineage | None = None,
 ) -> Disposition:
     """Decide one object, failing closed on anything unrecognised."""
 
@@ -219,14 +451,56 @@ def classify(
                 "the pointer still names this release in supersedes or "
                 "rolled_back_from, so it is the immediate rollback context",
             )
+        if lineage is None:
+            return Disposition(
+                key, item.size, "release", REVIEW, NOT_RECORDED,
+                "the store cannot say whether this release was ever live. The "
+                "pointer is overwritten on every move and keeps one step of "
+                "context, so a release that was live three promotions ago looks "
+                "exactly like one whose promotion was refused. Deleting it could "
+                "destroy a rollback target; a durable promotion history is the "
+                "prerequisite for ever deciding this.",
+            )
+        sequences = lineage.recorded.get(release_id)
+        if sequences:
+            return Disposition(
+                key, item.size, "release", RETAIN, "release_was_live",
+                "the store's promotion history records this release as live at "
+                f"sequence(s) {', '.join(str(s) for s in sequences)}; a release "
+                "that was served is a rollback target and may be cited",
+            )
+        rebuilt = lineage.reconstructed.get(release_id)
+        if rebuilt:
+            return Disposition(
+                key, item.size, "release", RETAIN,
+                "release_was_live_per_reconstruction",
+                "live before the store kept a history, at "
+                + "; ".join(
+                    f"sequence {e.sequence} ({e.action}, per {', '.join(e.sources)})"
+                    for e in rebuilt
+                )
+                + f". Reconstructed in {RECONSTRUCTION_PATH}, joined to the "
+                "store at the supersedes of its first record",
+            )
+        if lineage.continuous:
+            return Disposition(
+                key, item.size, "release", RETAIN, "release_never_live",
+                "no record and no reconstructed version names this release, and "
+                f"the account is continuous from sequence 1 to {lineage.live_sequence}"
+                + (
+                    f" (reconstruction 1-{lineage.history_begins - 1}, records "
+                    f"{lineage.history_begins}-{lineage.live_sequence})"
+                    if lineage.history_begins and lineage.history_begins > 1
+                    else ""
+                )
+                + ": it was published and never served. Classified, not "
+                "removed — deleting anything is a separate, approved capability "
+                "that does not exist",
+            )
         return Disposition(
-            key, item.size, "release", REVIEW, "promotion_history_not_recorded",
-            "the store cannot say whether this release was ever live. The "
-            "pointer is overwritten on every move and keeps one step of "
-            "context, so a release that was live three promotions ago looks "
-            "exactly like one whose promotion was refused. Deleting it could "
-            "destroy a rollback target; a durable promotion history is the "
-            "prerequisite for ever deciding this.",
+            key, item.size, "release", REVIEW, lineage.reason or NOT_RECORDED,
+            "this release is named by no record and no reconstructed version, "
+            "and the account cannot say it was never live: " + lineage.detail,
         )
 
     if key.startswith(db.RUNS_ROOT):
@@ -267,6 +541,20 @@ def classify(
             "the loss of run.json was accepted explicitly",
         )
 
+    if key.startswith(ph.HISTORY_ROOT):
+        if ph.sequence_of(key) is None:
+            return Disposition(
+                key, item.size, "promotion_history", REVIEW, "history_key_malformed",
+                f"this key is under {ph.HISTORY_ROOT} and names no sequence; the "
+                "history's records live only at zero-padded sequence keys",
+            )
+        return Disposition(
+            key, item.size, "promotion_history", RETAIN,
+            "promotion_history_is_the_record",
+            "a byte-exact copy of an accepted pointer write: the only evidence "
+            "the store keeps that a release was live",
+        )
+
     for root in db.VERIFICATION_ROOTS:
         if key.startswith(root):
             if phase_open:
@@ -302,13 +590,17 @@ def build_plan(
     pointer: Mapping[str, Any] | None,
     runs: Mapping[str, RunLink] | None = None,
     as_of: datetime | None = None,
+    lineage: Lineage | None = None,
     **options: Any,
 ) -> RetentionPlan:
     """Classify a whole inventory.  Reads nothing and deletes nothing."""
 
     moment = as_of or datetime.now(timezone.utc)
     dispositions = tuple(
-        classify(item, pointer=pointer, runs=runs or {}, as_of=moment, **options)
+        classify(
+            item, pointer=pointer, runs=runs or {}, as_of=moment, lineage=lineage,
+            **options,
+        )
         for item in sorted(inventory, key=lambda item: item.key)
     )
     return RetentionPlan(
@@ -316,7 +608,25 @@ def build_plan(
         dispositions=dispositions,
         live_release_id=pointer["release_id"] if pointer else None,
         referenced_release_ids=referenced_release_ids(pointer),
+        lineage=lineage,
     )
+
+
+def _lineage_document(lineage: Lineage | None) -> dict[str, Any] | None:
+    if lineage is None:
+        return None
+    return {
+        "continuous": lineage.continuous,
+        "reason": lineage.reason,
+        "detail": lineage.detail,
+        "live_sequence": lineage.live_sequence,
+        "history_begins": lineage.history_begins,
+        "recorded": {k: list(v) for k, v in sorted(lineage.recorded.items())},
+        "reconstructed": {
+            k: [e.sequence for e in v] for k, v in sorted(lineage.reconstructed.items())
+        },
+        "findings": list(lineage.findings),
+    }
 
 
 def plan_document(plan: RetentionPlan) -> dict[str, Any]:
@@ -327,6 +637,7 @@ def plan_document(plan: RetentionPlan) -> dict[str, Any]:
         "as_of": plan.as_of.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "live_release_id": plan.live_release_id,
         "referenced_release_ids": list(plan.referenced_release_ids),
+        "lineage": _lineage_document(plan.lineage),
         "counts": plan.counts(),
         "reasons": plan.by_reason(),
         "eligible_bytes": plan.eligible_bytes,
@@ -343,6 +654,20 @@ def plan_document(plan: RetentionPlan) -> dict[str, Any]:
     }
 
 
+def _lineage_line(lineage: Lineage | None) -> str:
+    if lineage is None:
+        return "not read — no release can be called never-live"
+    if lineage.continuous:
+        start = (
+            f"reconstruction 1-{lineage.history_begins - 1} + records "
+            f"{lineage.history_begins}-{lineage.live_sequence}"
+            if lineage.history_begins and lineage.history_begins > 1
+            else f"records 1-{lineage.live_sequence}"
+        )
+        return f"continuous from sequence 1 ({start})"
+    return f"NOT continuous — {lineage.reason}: {lineage.detail}"
+
+
 def describe(plan: RetentionPlan) -> str:
     """The operator-readable dry-run, leading with the number that matters."""
 
@@ -352,6 +677,7 @@ def describe(plan: RetentionPlan) -> str:
         f"as of {plan.as_of.strftime('%Y-%m-%dT%H:%M:%SZ')}",
         f"  live release   : {plan.live_release_id or '(none)'}",
         f"  referenced     : {', '.join(plan.referenced_release_ids) or '(none)'}",
+        f"  lineage        : {_lineage_line(plan.lineage)}",
         "",
         f"  retain   {counts.get(RETAIN, 0):>4}",
         f"  review   {counts.get(REVIEW, 0):>4}   (kept; the store cannot decide)",
