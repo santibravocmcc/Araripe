@@ -57,7 +57,12 @@ outcome instead of a silent `eligible`.
 | `pointers/green/current.json` | `retain`, always |
 | the live release | `retain` |
 | a release named in `supersedes` / `rolled_back_from` | `retain` — the immediate rollback context |
-| any other release | **`review`** — see §3 |
+| a record under `pointers/green/history/` | `retain` — `promotion_history_is_the_record` (since 2026-09-27, §3) |
+| another key under `pointers/green/history/` | `review` — `history_key_malformed` |
+| a release a history record names | `retain` — `release_was_live`, with its sequences |
+| a release only the reconstruction of sequences 1–9 names | `retain` — `release_was_live_per_reconstruction`, citing sources |
+| a release nothing names, **with the account continuous from sequence 1** | `retain` — `release_never_live` |
+| any other release | **`review`** — the lineage's exact reason; see §3 |
 | a run prefix whose release cannot be resolved | `review` |
 | a run prefix whose release is not published-and-complete | `retain` — it is the only copy |
 | a run prefix inside the horizon (30 days) | `retain` |
@@ -153,6 +158,38 @@ a requirement when Phase 5 became a scientific publication: an article cites
 ([`../implementation/PHASE_4C_2026-09-16.md`](../implementation/PHASE_4C_2026-09-16.md)
 §10). The history makes retention *decidable*; it does not make anything
 deletable.
+
+### Update, 2026-09-27 (later) — re-proven against real R2; the policy reads it
+
+**D5 is closed.** The re-proof ran from `main` at
+`89b8d9ec6f5b49be6cc8927b62ce5081a29e402c`, seven dispatches, one at a time,
+each matching `PHASE_6C_2026-09-27.md` §6: the promotion lane's `history` mode
+read `verdict: consistent` over sequences 10–14, record 10 is byte for byte the
+pointer measured before the first dispatch (sha256 `5c016cd4…`), the no-op
+and the refusal wrote nothing, and the pointer ends on the scientific candidate
+again. Run ids and hashes:
+[`../implementation/PHASE_6D_2026-09-27.md`](../implementation/PHASE_6D_2026-09-27.md) §3.
+
+Only then was the policy extended, as this section ordered. The planner reads
+the history with the lane's own reader and joins it to a **reconstruction** of
+the sequences the store lost (1–9), kept in the repository —
+`config/green_promotion_history_reconstruction_v1.json`, never in the store —
+at the one point where they meet: the `supersedes` of record 10. When the join
+holds and the history is consistent, the account is **continuous from
+sequence 1**, and a release nothing names is `release_never_live`. Otherwise it
+stays `review`, with the reason.
+
+The real dry-run after the re-proof (§4's command, `--as-of
+2026-09-28T02:00:00Z`): 215 objects, **213 retain, 2 review, 0 eligible**.
+The five releases the pointer does not name, which the 2026-09-07 policy could
+only put in `review` together, now split: four `was live` (one by record,
+three by reconstruction) and **one `never live` — `rel-g1-9f1ed344…`**, the
+release refused for coverage regression. The two `review` objects are
+`runs/gate-p2b-real-fail/`, the run cut before its ledger on purpose.
+
+**Still true, and not weakened:** no release is ever `eligible`, at any age,
+with any lineage (`test_no_release_is_ever_eligible_with_any_lineage`), and no
+code path in this repository can carry out a plan.
 
 ## 4. The reviewed dry-run of 2026-09-07
 

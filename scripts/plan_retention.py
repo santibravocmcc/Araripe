@@ -15,6 +15,13 @@ else; this script is handed a ``ReadOnlyStore`` whose write methods raise.
 Removing an object is a separate, approved change that does not exist yet —
 see ``docs/operations/GREEN_RETENTION_AND_MIGRATION.md``.
 
+Since Phase 6 (decision D5) it also reads the durable promotion history under
+``pointers/green/history/`` — with the same reader the promotion lane's
+``history`` mode uses — and joins it to the reconstruction of the versions the
+store lost, ``config/green_promotion_history_reconstruction_v1.json``.  That
+join is what lets a release be classified as *never live*; it does not make
+anything removable.
+
 It uses the **candidate** identity (``R2_STAGING_*``), which is the smaller of
 the two, because planning is a read.  The promotion identity is deliberately
 not readable from this file.
@@ -32,6 +39,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.publication import conditional_store as cs  # noqa: E402
 from src.publication import delivery_boundary as db  # noqa: E402
+from src.publication import promotion_history as ph  # noqa: E402
 from src.publication import retention  # noqa: E402
 from src.publication import run_inputs as ri  # noqa: E402
 
@@ -91,15 +99,28 @@ def main(argv=None) -> int:
         stored_pointer = store.get(db.POINTER_KEY)
         pointer = json.loads(stored_pointer.body) if stored_pointer else None
         runs = retention.resolve_run_links(store, inventory)
+        found = ph.read_history(
+            store,
+            pointer,
+            stored_pointer.body if stored_pointer else None,
+            keys=[item.key for item in inventory if item.key.startswith(ph.HISTORY_ROOT)],
+        )
     except cs.ObjectStoreError as exc:
         print(f"erro: {exc}", file=sys.stderr)
         return 1
+
+    reconstruction_path = Path(__file__).resolve().parents[1] / retention.RECONSTRUCTION_PATH
+    reconstruction = retention.load_reconstruction(
+        json.loads(reconstruction_path.read_text(encoding="utf-8"))
+    )
+    lineage = retention.build_lineage(found, reconstruction)
 
     plan = retention.build_plan(
         inventory,
         pointer=pointer,
         runs=runs,
         as_of=as_of,
+        lineage=lineage,
         run_horizon_days=args.run_horizon_days,
         verification_horizon_days=args.verification_horizon_days,
         phase_open=not args.phase_closed,
