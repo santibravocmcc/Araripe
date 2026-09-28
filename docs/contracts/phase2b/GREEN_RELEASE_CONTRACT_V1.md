@@ -322,3 +322,49 @@ pointer write now also leaves a record.
 The design, the reader's contract, and what the history cannot know about the
 sequences written before it existed (1 to 9 in `araripe-v2-staging`) are in
 [`../../implementation/PHASE_6C_2026-09-27.md`](../../implementation/PHASE_6C_2026-09-27.md).
+
+## 12. Version 2: the release of a state chain (added 2026-09-28, Phase 6)
+
+A chained run's own release covers only its window, so promoting the head of
+the state chain would retire every earlier date. `araripe.green.release/2` is
+the release of a **whole chain**: composed of the version-1 releases of every
+run from `state_chain.CHAIN_ROOT` to the head, under the identity
+
+    release_id = "rel-g2-" + SHA256_US(
+        "araripe.green.release/2",
+        for each member, root first:
+            ledger_id, run_manifest_id, run_manifest_sha256, document_sha256)
+
+Machine-readable forms:
+[`schemas/green-release-v2.schema.json`](schemas/green-release-v2.schema.json),
+[`schemas/green-ledger-chain-v1.schema.json`](schemas/green-ledger-chain-v1.schema.json)
+and [`schemas/green-pointer-v2.schema.json`](schemas/green-pointer-v2.schema.json);
+the relations are `src/publication/chain_release.py`.
+
+* **The layout is §1's, unchanged.** `release.json`, `ledger.json` and every
+  member's objects, **copied** under the release's own prefix, so the route,
+  the site composer, the exposure policy and retention need no change.
+  `ledger.json` holds every member ledger in one `araripe.green.ledger-chain/1`
+  document; the manifest's `ledgers.chain` carries, per member, the digest of
+  that ledger's own canonical encoding — what its version-1 release stores.
+* **Every §3 rule applies member by member**, each date and object against the
+  ledger of the member that reconciles its date, and every date names that
+  ledger (`ledger_id`). Across members: the dates must not touch and must be in
+  chain order (`chain_dates_overlap`), and the extent, algorithm and ledger
+  contract must be one generation (`chain_mixes_generations`).
+* **Version 1 is not retired.** Every run still mints its version-1 release,
+  and `RELEASE_SCHEMA` / `POINTER_SCHEMA` keep their values: the Phase 3 freeze
+  pins them.
+
+**§6 gains a second guard, for either version:** `promote` refuses a candidate
+that does not cover every date the live pointer covers
+(`coverage_dates_dropped`). `coverage_regression` still comes first; it cannot
+see this case, because the head's own release *advances* the last date.
+
+**The pointer is written as `araripe.green.pointer/2`**, which names a
+`rel-g1-` or `rel-g2-` release and lists `ledgers` in chain order instead of one
+`ledger_id`. Readers accept `/1` and `/2`; the records written before it stay
+`/1` forever.
+
+The decision, the options it ruled out and the measured cost are
+[`../../implementation/PHASE_6I_2026-09-28.md`](../../implementation/PHASE_6I_2026-09-28.md).

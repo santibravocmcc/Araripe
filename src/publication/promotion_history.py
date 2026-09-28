@@ -58,7 +58,7 @@ from typing import Any, Iterable, Mapping
 
 from src.publication.conditional_store import ConditionalStore, PutOutcome
 from src.publication.findings import Finding
-from src.publication.green_release import POINTER_SCHEMA, schema_validator
+from src.publication.green_release import POINTER_SCHEMAS, schema_validator
 
 HISTORY_ROOT = "pointers/green/history/"
 HISTORY_CONTENT_TYPE = "application/json"
@@ -168,12 +168,20 @@ def _parse(body: bytes) -> Any:
 
 
 def _pointer_errors(document: Any) -> list[str]:
-    if not isinstance(document, dict) or document.get("schema") != POINTER_SCHEMA:
-        return [f"it does not declare {POINTER_SCHEMA!r}"]
+    """Why ``document`` is not a pointer of a version this code reads.
+
+    Both versions: a record is a byte-exact copy of a version that was live, so
+    records 10 to 14 stay ``/1`` forever while later ones are ``/2``
+    (``docs/implementation/PHASE_6I_2026-09-28.md`` §4).
+    """
+
+    declared = document.get("schema") if isinstance(document, dict) else None
+    if declared not in POINTER_SCHEMAS:
+        return [f"it declares none of {sorted(POINTER_SCHEMAS)}"]
     return [
         f"{'/'.join(str(p) for p in e.absolute_path) or '<root>'}: {e.message}"
         for e in sorted(
-            schema_validator("green-pointer-v1").iter_errors(document),
+            schema_validator(POINTER_SCHEMAS[declared]).iter_errors(document),
             key=lambda error: list(error.absolute_path),
         )
     ]
@@ -312,7 +320,7 @@ def read_history(
             findings.append(
                 Finding(
                     "history_record_not_a_pointer",
-                    f"{key} is not a {POINTER_SCHEMA} document: " + "; ".join(errors[:3]),
+                    f"{key} is not a green pointer document: " + "; ".join(errors[:3]),
                     key,
                 )
             )

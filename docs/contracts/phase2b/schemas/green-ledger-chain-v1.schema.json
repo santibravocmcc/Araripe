@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/santibravocmcc/Araripe/docs/contracts/phase2b/schemas/green-ledger-chain-v1.schema.json",
+  "title": "Araripe green ledger chain, version 1",
+  "description": "The ledger.json of a version-2 chain release: the processing ledger of every run of the chain, root first. Each item is a processing-ledger-v3 document, validated by the Package 2B.2A gate against its own pinned schema; this schema owns only the envelope.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "ledgers"
+  ],
+  "properties": {
+    "schema": {
+      "const": "araripe.green.ledger-chain/1"
+    },
+    "ledgers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object"
+      }
+    }
+  }
+}

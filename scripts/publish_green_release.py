@@ -20,6 +20,10 @@ represent zero-alert dates and stale objects explicitly.
     # than from local files — the operational path, with no git in it:
     python scripts/publish_green_release.py publish --run <run-id>
 
+    # the chain's public release — every run from the root to the head —
+    # only if it composes to the release the candidate identity accepted:
+    python scripts/publish_green_release.py publish-chain --expect rel-g2-…
+
     # deliberate backwards move, to a release that is still complete:
     python scripts/publish_green_release.py rollback --to rel-g1-…
 
@@ -58,7 +62,15 @@ without PRs or manual merges*).  Whether a run prefix is publishable at all is
 answered first, with the smaller lane-2 identity, by
 ``scripts/stage_green_run.py``.
 
-``apply``, ``publish``, ``rollback`` and ``status`` need the **promotion** identity, which
+``publish-chain`` is the Phase 6 entry point
+(``docs/implementation/PHASE_6I_2026-09-28.md``): a chained run's own release
+covers only its window, so promoting it would retire every earlier date.  The
+chain's release is composed of every run from the root to the head, derived
+from the bucket as the deposit lane derives it, and published only if it is
+the release ``scripts/stage_chain_release.py`` accepted with the lane-2
+identity (``--expect``).
+
+``apply``, ``publish``, ``publish-chain``, ``rollback`` and ``status`` need the **promotion** identity, which
 is deliberately not the green candidate identity and is not provisioned yet.
 Without it they stop and name the missing capability instead of substituting a
 broader credential.
@@ -75,9 +87,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.publication import atomic_publish as ap  # noqa: E402
+from src.publication import chain_release as cr  # noqa: E402
 from src.publication import conditional_store as cs  # noqa: E402
 from src.publication import promotion_history as history  # noqa: E402
-from src.publication.findings import Rejected  # noqa: E402
+from src.publication.findings import Finding, Rejected  # noqa: E402
 from src.publication.green_release import (  # noqa: E402
     POINTER_KEY,
     ProductObject,
@@ -89,6 +102,7 @@ from src.publication.green_release import (  # noqa: E402
 from src.publication.ledger_binding import ContractBindingError  # noqa: E402
 from src.publication.ledger_gate import check_processing_ledger  # noqa: E402
 from src.publication import run_inputs as ri  # noqa: E402
+from src.publication import state_chain as sc  # noqa: E402
 
 #: The promotion identity is separate from the candidate identity by design
 #: (``docs/operations/GREEN_CONCURRENCY_LANES.md`` lane 3).
@@ -407,6 +421,38 @@ def cmd_publish(args) -> int:
     )
 
 
+def cmd_publish_chain(args) -> int:
+    """Publish the chain's version-2 release, if it is the one that was staged.
+
+    The chain is derived again here, with the store that publishes, so the
+    bytes validated are the bytes written.  Between the staging job and this
+    one a run may have been deposited; the chain would then compose to another
+    release, which the candidate identity never checked — refused, and the
+    lane is simply dispatched again.
+    """
+
+    store = build_store()
+    head = sc.resolve_head(store)
+    staged = cr.load_chain(store, head.path)
+    print(cr.describe(staged))
+    if staged.release_id != args.expect:
+        raise ap.PromotionRefused(
+            [
+                Finding(
+                    "chain_moved_since_staging",
+                    f"the chain now composes to {staged.release_id}, and the "
+                    f"candidate identity accepted {args.expect}. A run was "
+                    "deposited in between; nothing is published that was not "
+                    "staged. Dispatch the lane again.",
+                    "release_id",
+                )
+            ]
+        )
+    return _publish_verify_promote(
+        staged.release, staged.ledger_chain, staged.bodies, store
+    )
+
+
 def cmd_rollback(args) -> int:
     store = build_store()
     try:
@@ -489,6 +535,17 @@ def main(argv=None) -> int:
     )
     published.add_argument("--run", required=True, help="the run id to publish")
     published.set_defaults(handler=cmd_publish)
+
+    chained = sub.add_parser(
+        "publish-chain",
+        help="publish, verify and promote the chain's release — every run from "
+             "the root to the head — if it is the release that was staged",
+    )
+    chained.add_argument(
+        "--expect", required=True,
+        help="the release id scripts/stage_chain_release.py accepted",
+    )
+    chained.set_defaults(handler=cmd_publish_chain)
 
     back = sub.add_parser("rollback", help="point at an already published release")
     back.add_argument("--to", required=True, help="release id to point at")

@@ -54,12 +54,14 @@ from tests.fake_object_store import FakeS3
 from tests.green_release_fixtures import ALERTS, ZERO
 from tests.test_atomic_publish import CI, LATER, NOW, make_release, pointer_of
 
-#: Three releases with rising coverage, and a fourth covering as far as the
-#: third — so a promotion between those two is allowed in either order.
+#: Three releases with rising coverage, and a fourth covering the same dates
+#: as the third — so a promotion between those two is allowed in either order.
+#: Each covers every date of the one before: a promotion that retires a
+#: published date is refused (``coverage_dates_dropped``, PHASE_6I §3).
 OLD = {"2026-04-07": [ALERTS]}
 MID = {"2026-04-07": [ALERTS], "2026-04-10": [ZERO]}
-NEW = {"2026-04-13": [ALERTS]}
-NEW_TOO = {"2026-04-13": [ALERTS, ALERTS]}
+NEW = {"2026-04-07": [ALERTS], "2026-04-10": [ZERO], "2026-04-13": [ALERTS]}
+NEW_TOO = {"2026-04-07": [ALERTS], "2026-04-10": [ZERO], "2026-04-13": [ALERTS, ALERTS]}
 
 
 def _store(**kwargs):
@@ -188,7 +190,7 @@ def test_the_record_is_the_pointer_itself_not_an_envelope():
     promote(store, old, doc_old, now=NOW)
     document = json.loads(_record(fake, 1))
     assert document == pointer_of(fake)
-    assert document["schema"] == "araripe.green.pointer/1"
+    assert document["schema"] == "araripe.green.pointer/2"
 
 
 # ── step 1: no version is replaced before its record exists ──────────────────
@@ -869,7 +871,7 @@ def test_a_record_that_is_not_a_pointer_is_a_finding():
     "change",
     [
         {"note": "a field the pointer schema does not allow"},
-        {"schema": "araripe.green.pointer/2"},
+        {"schema": "araripe.green.pointer/3"},
         {"release_id": "rel-g1-not-a-digest"},
     ],
     ids=["extra-field", "other-contract", "malformed-release-id"],
@@ -938,10 +940,12 @@ def test_the_re_proof_plan_rehearsed_against_the_fake_store():
 
     store, fake = _store()
     (gate_b, _), (candidate, doc_candidate), seeded = _seed_prehistory_pointer(store, fake)
-    # Gate C covers exactly as far as the candidate (2026-04-10), as
-    # rel-g1-2ddb10c7… and rel-g1-fb722b2d… both cover through 2026-08-30 —
-    # which is what lets each be promoted over the other without a rollback.
-    gate_c, doc_gate_c = _publish(store, {"2026-04-10": [ALERTS]})
+    # Gate C covers exactly the candidate's dates (2026-04-07 and 2026-04-10)
+    # with other content, as rel-g1-2ddb10c7… and rel-g1-fb722b2d… both cover
+    # through 2026-08-30 — which is what lets each be promoted over the other
+    # without a rollback. Covering only the candidate's LAST date is no longer
+    # enough: that would retire 2026-04-07 (coverage_dates_dropped, PHASE_6I §3).
+    gate_c, doc_gate_c = _publish(store, {"2026-04-07": [ALERTS], "2026-04-10": [ALERTS]})
     gate_a, doc_gate_a = _publish(store, {"2026-04-01": [ALERTS]})
     plan = []
 

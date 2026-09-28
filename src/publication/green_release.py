@@ -66,6 +66,20 @@ from src.publication.ledger_gate import (
 RELEASE_SCHEMA = "araripe.green.release/1"
 POINTER_SCHEMA = "araripe.green.pointer/1"
 
+#: The pointer version written from Phase 6 on: it can name a version-2 chain
+#: release and lists every ledger that accounts for the release
+#: (``docs/implementation/PHASE_6I_2026-09-28.md`` §4).  ``POINTER_SCHEMA`` keeps
+#: its value because the Phase 3 freeze pins it (``src/replay/freeze.py``) and
+#: every pointer written through sequence 14 carries it.
+POINTER_SCHEMA_V2 = "araripe.green.pointer/2"
+
+#: Every pointer version a reader accepts, and the schema file that validates
+#: it.  Stored pointers and history records are immutable, so both stay readable.
+POINTER_SCHEMAS = {
+    POINTER_SCHEMA: "green-pointer-v1",
+    POINTER_SCHEMA_V2: "green-pointer-v2",
+}
+
 #: Domain separation for the publication-side identity.  The inputs are the
 #: ledger's own seals; the domain string only stops a release identity from
 #: ever colliding with an acquisition or ledger identity, which share the
@@ -578,17 +592,25 @@ def _check_ledger_block(
 
 
 def _check_dates(
-    document: dict[str, Any], acceptance: LedgerAcceptance
+    document: dict[str, Any],
+    acceptance: LedgerAcceptance,
+    positions: Sequence[int] | None = None,
 ) -> list[Finding]:
     """Every reconciled date appears exactly once, correctly classified.
 
     This is the "cannot expose a partial release" clause at the date level: a
     date the ledger reconciled may not be silently missing from the manifest,
     and a date the ledger does not reconcile may not appear in it.
+
+    ``positions`` maps each entry to its index in the whole document when the
+    caller hands over one member's slice of a chain release
+    (``chain_release``), so a finding still names the entry an operator has to
+    open.
     """
 
     findings: list[Finding] = []
     entries = document["dates"]
+    where_of = positions if positions is not None else range(len(entries))
     listed = [entry["observed_on"] for entry in entries]
     expected_dates = list(acceptance.observed_dates)
 
@@ -618,7 +640,7 @@ def _check_dates(
 
     by_date = {date.observed_on: date for date in acceptance.dates}
     for index, entry in enumerate(entries):
-        where = f"dates/{index}"
+        where = f"dates/{where_of[index]}"
         date = by_date.get(entry["observed_on"])
         if date is None:
             continue
@@ -655,9 +677,16 @@ def _check_objects(
     document: dict[str, Any],
     acceptance: LedgerAcceptance,
     ledger_document: dict[str, Any],
+    positions: Sequence[int] | None = None,
 ) -> list[Finding]:
+    """Objects against the dates that claim them and the ledger rows they cite.
+
+    ``positions`` as in ``_check_dates``.
+    """
+
     findings: list[Finding] = []
     objects = document["objects"]
+    where_of = positions if positions is not None else range(len(objects))
     rows = _rows_by_acquisition(ledger_document)
     sealing = ledger_binding.pinned_status_semantics()["artifact_sealing"]
     by_date = {date.observed_on: date for date in acceptance.dates}
@@ -669,7 +698,7 @@ def _check_objects(
 
     by_path: dict[str, dict[str, Any]] = {}
     for index, item in enumerate(objects):
-        where = f"objects/{index}"
+        where = f"objects/{where_of[index]}"
         path = item["path"]
         if path in by_path:
             findings.append(

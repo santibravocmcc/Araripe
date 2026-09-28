@@ -974,7 +974,9 @@ def test_the_planner_reads_the_history_the_protocol_wrote():
 
     store, fake = _store()
     (before, _), (candidate, doc_candidate), _ = _seed_prehistory_pointer(store, fake)
-    gate_c, doc_c = _publish(store, {"2026-04-10": [ALERTS]})
+    # The candidate's dates with other content (PHASE_6I §3: a promotion may
+    # not retire a published date), as in the rehearsal it mirrors.
+    gate_c, doc_c = _publish(store, {"2026-04-07": [ALERTS], "2026-04-10": [ALERTS]})
     gate_a, doc_a = _publish(store, {"2026-04-01": [ALERTS]})
     promote(store, gate_c, doc_c, now=T0)
     rollback(store, before["release_id"], now=T0)
@@ -1032,7 +1034,9 @@ def test_the_planner_script_reads_the_history_and_the_real_reconstruction(
 
     store, fake = _store()
     (before, _), _live_release, _ = _seed_prehistory_pointer(store, fake)
-    newer, doc_newer = _publish(store, {"2026-04-13": [ALERTS]})
+    newer, doc_newer = _publish(
+        store, {"2026-04-07": [ALERTS], "2026-04-10": [ZERO], "2026-04-13": [ALERTS]}
+    )
     refused_like, _ = _publish(store, {"2026-04-01": [ALERTS]})
     promote(store, newer, doc_newer, now=T0)
     # Make the seeded pre-history name the release the real reconstruction ends
