@@ -286,12 +286,14 @@ def test_a_pointer_write_that_loses_the_race_does_not_clobber():
     store, fake, first, doc_a, bodies_a = published({"2026-04-07": [ALERTS]})
     promote(store, first, doc_a, now=NOW)
 
-    second, doc_b, bodies_b = make_release({"2026-04-10": [ALERTS]})
+    second, doc_b, bodies_b = make_release({"2026-04-07": [ALERTS], "2026-04-10": [ALERTS]})
     publish_release(store, second, doc_b, bodies_b)
 
     # A racing writer replaces the pointer between our read and our write.
     real_get = fake.get_object
-    third, doc_c, bodies_c = make_release({"2026-04-12": [ALERTS]})
+    third, doc_c, bodies_c = make_release(
+        {"2026-04-07": [ALERTS], "2026-04-10": [ALERTS], "2026-04-12": [ALERTS]}
+    )
     publish_release(store, third, doc_c, bodies_c)
 
     def racing_get(Bucket, Key):
@@ -360,7 +362,7 @@ def test_an_unparseable_pointer_is_never_treated_as_absent():
 def test_a_pointer_from_a_later_contract_is_not_overwritten():
     store, fake, release, document, bodies = published({"2026-04-07": [ALERTS]})
     fake.objects[POINTER_KEY] = (
-        json.dumps({"schema": "araripe.green.pointer/2"}).encode(),
+        json.dumps({"schema": "araripe.green.pointer/3"}).encode(),
         "application/json",
     )
     with pytest.raises(ObjectStoreError, match="does not understand"):
@@ -382,7 +384,7 @@ def test_a_live_release_whose_manifest_moved_stops_the_promotion():
 
     store, fake, first, doc_a, bodies_a = published({"2026-04-07": [ALERTS]})
     promote(store, first, doc_a, now=NOW)
-    second, doc_b, bodies_b = make_release({"2026-04-10": [ALERTS]})
+    second, doc_b, bodies_b = make_release({"2026-04-07": [ALERTS], "2026-04-10": [ALERTS]})
     publish_release(store, second, doc_b, bodies_b)
 
     live = pointer_of(fake)
@@ -534,7 +536,7 @@ def test_the_pointer_can_roll_back_to_the_previous_release():
 
     store, fake, first, doc_a, bodies_a = published({"2026-04-07": [ALERTS]})
     promote(store, first, doc_a, now=NOW)
-    second, doc_b, bodies_b = make_release({"2026-04-10": [ALERTS]})
+    second, doc_b, bodies_b = make_release({"2026-04-07": [ALERTS], "2026-04-10": [ALERTS]})
     publish_release(store, second, doc_b, bodies_b)
     promote(store, second, doc_b, now=LATER)
 
@@ -554,7 +556,7 @@ def test_the_sequence_only_ever_increases_including_on_rollback():
 
     store, fake, first, doc_a, bodies_a = published({"2026-04-07": [ALERTS]})
     promote(store, first, doc_a, now=NOW)
-    second, doc_b, bodies_b = make_release({"2026-04-10": [ALERTS]})
+    second, doc_b, bodies_b = make_release({"2026-04-07": [ALERTS], "2026-04-10": [ALERTS]})
     publish_release(store, second, doc_b, bodies_b)
     promote(store, second, doc_b, now=LATER)
     rollback(store, first["release_id"], now=LATER)
@@ -566,7 +568,7 @@ def test_the_sequence_only_ever_increases_including_on_rollback():
 def test_rollback_refuses_a_release_that_is_no_longer_complete():
     store, fake, first, doc_a, bodies_a = published({"2026-04-07": [ALERTS]})
     promote(store, first, doc_a, now=NOW)
-    second, doc_b, bodies_b = make_release({"2026-04-10": [ALERTS]})
+    second, doc_b, bodies_b = make_release({"2026-04-07": [ALERTS], "2026-04-10": [ALERTS]})
     publish_release(store, second, doc_b, bodies_b)
     promote(store, second, doc_b, now=LATER)
 
@@ -605,7 +607,7 @@ def test_rollback_revalidates_the_target_against_its_stored_ledger():
 
     store, fake, first, doc_a, bodies_a = published({"2026-04-07": [ALERTS]})
     promote(store, first, doc_a, now=NOW)
-    second, doc_b, bodies_b = make_release({"2026-04-10": [ALERTS]})
+    second, doc_b, bodies_b = make_release({"2026-04-07": [ALERTS], "2026-04-10": [ALERTS]})
     publish_release(store, second, doc_b, bodies_b)
     promote(store, second, doc_b, now=LATER)
 
@@ -627,7 +629,9 @@ def test_a_staged_release_moves_and_rolls_back_without_touching_anything_else():
         {"2026-04-07": [ALERTS], "2026-04-10": [ZERO]}
     )
     promote(store, first, doc_a, now=NOW, promoted_by=CI)
-    second, doc_b, bodies_b = make_release({"2026-04-13": [ALERTS]})
+    second, doc_b, bodies_b = make_release(
+        {"2026-04-07": [ALERTS], "2026-04-10": [ZERO], "2026-04-13": [ALERTS]}
+    )
     publish_release(store, second, doc_b, bodies_b)
     promote(store, second, doc_b, now=LATER, promoted_by=CI)
     rollback(store, first["release_id"], now=LATER, promoted_by=CI)

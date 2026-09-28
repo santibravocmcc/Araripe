@@ -73,6 +73,7 @@ GREEN_SCRIPTS = (
     "probe_gee_green_identity.py",
     "fetch_green_state.py",
     "resolve_chain_head.py",
+    "stage_chain_release.py",
 )
 
 

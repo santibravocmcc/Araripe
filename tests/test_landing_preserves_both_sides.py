@@ -36,6 +36,9 @@ MODULOS_DE_PUBLICACAO = (
     "__init__",
     "atomic_publish",
     "canonical_json",
+    # Phase 6: the public release of a state chain, every run from the root to
+    # the head (docs/implementation/PHASE_6I_2026-09-28.md).
+    "chain_release",
     "conditional_store",
     "delivery_boundary",
     "findings",

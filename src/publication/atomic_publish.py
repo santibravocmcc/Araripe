@@ -79,14 +79,15 @@ from src.publication.conditional_store import (
     StoredObject,
 )
 from src.publication.findings import Finding, Rejected
+from src.publication.chain_release import check_release, ledger_file, ledger_references
 from src.publication.green_release import (
     LEDGER_CONTENT_TYPE,
     LEDGER_PATH,
     MANIFEST_PATH,
     POINTER_KEY,
-    POINTER_SCHEMA,
+    POINTER_SCHEMA_V2,
+    POINTER_SCHEMAS,
     RELEASE_CONTENT_TYPE,
-    check_green_release,
     ledger_bytes,
     object_key,
     release_bytes,
@@ -257,9 +258,7 @@ def verify_release(
     checks: list[tuple[str, int, str]] = [
         (item["path"], item["bytes"], item["sha256"]) for item in document["objects"]
     ]
-    checks.append(
-        (LEDGER_PATH, document["ledger"]["bytes"], document["ledger"]["file_sha256"])
-    )
+    checks.append((LEDGER_PATH, *ledger_file(document)))
     manifest = release_bytes(dict(document))
     checks.append((MANIFEST_PATH, len(manifest), sha256_bytes(manifest)))
 
@@ -337,19 +336,20 @@ def read_live_pointer(
             f"the live pointer {POINTER_KEY} is not valid JSON ({exc}); refusing "
             "to treat an unreadable pointer as an absent one"
         ) from exc
-    if not isinstance(document, dict) or document.get("schema") != POINTER_SCHEMA:
+    declared = document.get("schema") if isinstance(document, dict) else None
+    if declared not in POINTER_SCHEMAS:
         raise ObjectStoreError(
-            f"the live pointer declares {document.get('schema')!r} rather than "
-            f"{POINTER_SCHEMA!r}; refusing to overwrite a pointer this code does "
-            "not understand"
+            f"the live pointer declares {declared!r} rather than one of "
+            f"{sorted(POINTER_SCHEMAS)}; refusing to overwrite a pointer this code "
+            "does not understand"
         )
     errors = sorted(
-        schema_validator("green-pointer-v1").iter_errors(document),
+        schema_validator(POINTER_SCHEMAS[declared]).iter_errors(document),
         key=lambda error: list(error.absolute_path),
     )
     if errors:
         raise ObjectStoreError(
-            f"the live pointer does not satisfy {POINTER_SCHEMA}: "
+            f"the live pointer does not satisfy {declared}: "
             + "; ".join(
                 f"{'/'.join(str(p) for p in e.absolute_path) or '<root>'}: {e.message}"
                 for e in errors[:4]
@@ -390,7 +390,7 @@ def load_published_release(
     except (ValueError, UnicodeDecodeError) as exc:
         raise ObjectStoreError(f"{ledger_key} is not valid JSON: {exc}") from exc
 
-    check_green_release(document, ledger_document)
+    check_release(document, ledger_document)
     if document["release_id"] != release_id:
         raise ObjectStoreError(
             f"{manifest_key} declares {document['release_id']}, which is not the "
@@ -491,14 +491,13 @@ def _pointer_document(
 ) -> dict[str, Any]:
     provenance = dict(promoted_by or {})
     pointer = {
-        "schema": POINTER_SCHEMA,
+        "schema": POINTER_SCHEMA_V2,
         "sequence": sequence,
         "action": action,
         "release_id": document["release_id"],
         "release_path": object_key(document["release_id"], MANIFEST_PATH),
         "release_document_sha256": sha256_bytes(release_bytes(dict(document))),
-        "ledger_id": document["ledger"]["ledger_id"],
-        "run_manifest_id": document["ledger"]["run_manifest_id"],
+        "ledgers": ledger_references(document),
         "coverage": dict(document["coverage"]),
         "state_watermark": {
             "finalized_through": document["state_watermark"]["finalized_through"]
@@ -561,7 +560,7 @@ def _move_pointer(
     invalid pointer is refused before anything is written.
     """
 
-    errors = list(schema_validator("green-pointer-v1").iter_errors(pointer))
+    errors = list(schema_validator(POINTER_SCHEMAS[pointer["schema"]]).iter_errors(pointer))
     if errors:
         raise PromotionRefused(
             Finding(
@@ -632,7 +631,7 @@ def promote(
     whose record failed is also how that record gets written.
     """
 
-    check_green_release(document, ledger_document)
+    check_release(document, ledger_document)
     verify_release(store, document)
 
     live, stored = read_live_pointer(store)
@@ -664,6 +663,26 @@ def promote(
                         "release; use rollback to move the pointer backwards "
                         "deliberately.",
                         "coverage/last_observed_on",
+                    )
+                ]
+            )
+        live_dates = set(live["coverage"]["observed_dates"])
+        dropped = sorted(live_dates - set(document["coverage"]["observed_dates"]))
+        if dropped:
+            raise PromotionRefused(
+                [
+                    Finding(
+                        "coverage_dates_dropped",
+                        f"the live release {live['release_id']} covers "
+                        f"{len(dropped)} date(s) the candidate does not: "
+                        f"{', '.join(dropped[:6])}"
+                        + (f" and {len(dropped) - 6} more" if len(dropped) > 6 else "")
+                        + ". A promotion may not retire a published date; the last "
+                        "covered date alone cannot see this, because the release of "
+                        "one chained run advances it while dropping every earlier "
+                        "date (PHASE_6I §3). Use rollback to shrink the published "
+                        "set deliberately.",
+                        "coverage/observed_dates",
                     )
                 ]
             )

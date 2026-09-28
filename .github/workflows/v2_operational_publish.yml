@@ -70,12 +70,37 @@ name: v2 green operational publication (candidate then promotion)
 # twice a week onto an empty prefix. What this package removes from the data
 # path is the pull request and the merge, not the operator's decision to run.
 
+#
+# Two sources (Phase 6, docs/implementation/PHASE_6I_2026-09-28.md)
+# -----------------------------------------------------------------
+#   run   — one run prefix, its own version-1 release. What this lane did
+#           before; unchanged.
+#   chain — the chain's version-2 release: every run from the root to the
+#           head, derived from the bucket as the deposit lane derives it. A
+#           chained run's own release covers only its window, so promoting it
+#           would retire every earlier date — which promote() now refuses
+#           (coverage_dates_dropped). No run_id: naming one would let an
+#           operator pick a member, and the chain is not a choice.
+#
+# The chain release copies every member's objects into its own prefix (~1.8 GB
+# on 2026-09-28). The promotion job reads them, writes them and re-reads them,
+# so its timeout is larger than the per-run one.
+
 on:
   workflow_dispatch:
     inputs:
-      run_id:
-        description: "run id whose prefix runs/<run-id>/ holds run.json, ledger.json and the bodies"
+      source:
+        description: "run: one run prefix's own release. chain: the release of the whole chain, root to head"
         required: true
+        default: run
+        type: choice
+        options:
+          - run
+          - chain
+      run_id:
+        description: "source=run only: run id whose prefix runs/<run-id>/ holds run.json, ledger.json and the bodies. Empty for source=chain"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -85,7 +110,7 @@ jobs:
   stage:
     if: github.event_name == 'workflow_dispatch' && github.repository == 'santibravocmcc/Araripe'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     environment: v2-staging
     concurrency:
       group: araripe-green-candidate
@@ -113,16 +138,29 @@ jobs:
         # key, and a value carrying `/` or `..` would read another run's
         # prefix — or walk out of runs/ entirely. src/publication/run_inputs.py
         # refuses the same shapes; this stops it before Python starts.
+        # A chain takes none: its members are derived, never named.
         env:
+          SOURCE: ${{ github.event.inputs.source }}
           RUN_ID: ${{ github.event.inputs.run_id }}
         run: |
           set -euo pipefail
-          case "${RUN_ID}" in
-            ''|*[!A-Za-z0-9._-]*)
-              echo "::error::run_id must be one path segment of [A-Za-z0-9._-]" >&2
+          case "${SOURCE}" in
+            run)
+              case "${RUN_ID}" in
+                ''|*[!A-Za-z0-9._-]*)
+                  echo "::error::run_id must be one path segment of [A-Za-z0-9._-]" >&2
+                  exit 1 ;;
+              esac
+              echo "run prefix: runs/${RUN_ID}/" ;;
+            chain)
+              test -z "${RUN_ID}" || {
+                echo "::error::source=chain takes no run_id: the chain is derived from the bucket" >&2
+                exit 1; }
+              echo "source: the chain, root to head" ;;
+            *)
+              echo "::error::source must be run or chain" >&2
               exit 1 ;;
           esac
-          echo "run prefix: runs/${RUN_ID}/"
 
       - name: Check out the publication code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -170,17 +208,22 @@ jobs:
           R2_STAGING_ACCESS_KEY_ID: ${{ secrets.R2_STAGING_ACCESS_KEY_ID }}
           R2_STAGING_SECRET_ACCESS_KEY: ${{ secrets.R2_STAGING_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ vars.AWS_REGION }}
+          SOURCE: ${{ github.event.inputs.source }}
           RUN_ID: ${{ github.event.inputs.run_id }}
         run: |
           set -euo pipefail
-          python3 scripts/stage_green_run.py --run "${RUN_ID}"
+          case "${SOURCE}" in
+            run)   python3 scripts/stage_green_run.py --run "${RUN_ID}" ;;
+            chain) python3 scripts/stage_chain_release.py ;;
+            *)     echo "::error::source must be run or chain" >&2; exit 1 ;;
+          esac
 
   # ── lane 3: the promotion identity, serialized ────────────────────────────
   promote:
     needs: stage
     if: github.event_name == 'workflow_dispatch' && github.repository == 'santibravocmcc/Araripe'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     environment: v2-promotion
     concurrency:
       group: araripe-green-promotion
@@ -200,12 +243,23 @@ jobs:
 
       - name: Accept only a run id that addresses one prefix
         env:
+          SOURCE: ${{ github.event.inputs.source }}
           RUN_ID: ${{ github.event.inputs.run_id }}
         run: |
           set -euo pipefail
-          case "${RUN_ID}" in
-            ''|*[!A-Za-z0-9._-]*)
-              echo "::error::run_id must be one path segment of [A-Za-z0-9._-]" >&2
+          case "${SOURCE}" in
+            run)
+              case "${RUN_ID}" in
+                ''|*[!A-Za-z0-9._-]*)
+                  echo "::error::run_id must be one path segment of [A-Za-z0-9._-]" >&2
+                  exit 1 ;;
+              esac ;;
+            chain)
+              test -z "${RUN_ID}" || {
+                echo "::error::source=chain takes no run_id: the chain is derived from the bucket" >&2
+                exit 1; } ;;
+            *)
+              echo "::error::source must be run or chain" >&2
               exit 1 ;;
           esac
 
@@ -235,10 +289,18 @@ jobs:
           R2_PROMOTION_ACCESS_KEY_ID: ${{ secrets.R2_PROMOTION_ACCESS_KEY_ID }}
           R2_PROMOTION_SECRET_ACCESS_KEY: ${{ secrets.R2_PROMOTION_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ vars.AWS_REGION }}
+          SOURCE: ${{ github.event.inputs.source }}
           RUN_ID: ${{ github.event.inputs.run_id }}
           RELEASE_ID: ${{ needs.stage.outputs.release_id }}
         run: |
           set -euo pipefail
           echo "lane: araripe-green-promotion (serialized, cancel-in-progress: false)"
-          echo "the candidate identity accepted this run as release ${RELEASE_ID}"
-          python3 scripts/publish_green_release.py publish --run "${RUN_ID}"
+          echo "the candidate identity accepted release ${RELEASE_ID}"
+          # A chain is published only if it still composes to the release the
+          # candidate identity accepted: a run deposited between the two jobs
+          # would change it, and nothing unstaged is published.
+          case "${SOURCE}" in
+            run)   python3 scripts/publish_green_release.py publish --run "${RUN_ID}" ;;
+            chain) python3 scripts/publish_green_release.py publish-chain --expect "${RELEASE_ID}" ;;
+            *)     echo "::error::source must be run or chain" >&2; exit 1 ;;
+          esac

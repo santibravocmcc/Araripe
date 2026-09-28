@@ -206,13 +206,90 @@ def test_both_jobs_allowlist_the_run_id_before_it_becomes_a_key(lane):
         assert "*[!A-Za-z0-9._-]*" in executed(step["run"]), name
 
 
-def test_the_staging_job_runs_only_the_read_only_gate(lane):
+def test_the_staging_job_runs_only_the_read_only_gates(lane):
+    """One per source: a run prefix, or the chain (PHASE_6I)."""
+
     invocations = re.findall(
         r"scripts/(\w+)\.py", "\n".join(
             executed(step.get("run", "")) for step in steps(jobs(lane)["stage"])
         )
     )
-    assert set(invocations) == {"stage_green_run"}
+    assert set(invocations) == {"stage_green_run", "stage_chain_release"}
+
+
+def _step(lane, job, words):
+    return next(step for step in steps(jobs(lane)[job]) if words in step["name"])
+
+
+def _bash(script, **env):
+    import subprocess
+
+    return subprocess.run(
+        ["bash", "-c", script], env={"PATH": "/usr/bin:/bin", **env},
+        capture_output=True, text=True,
+    )
+
+
+@pytest.mark.parametrize("job", ["stage", "promote"])
+@pytest.mark.parametrize(
+    "source,run_id,accepted",
+    [
+        ("run", "ci-36465147834", True),
+        ("run", "", False),
+        ("run", "../releases", False),
+        ("chain", "", True),
+        # A chain is derived, never named: a run id would let an operator pick
+        # a member, so it is refused rather than ignored.
+        ("chain", "ci-36465147834", False),
+        ("", "", False),
+        ("chains", "", False),
+    ],
+)
+def test_each_source_accepts_exactly_its_own_run_id_shape(lane, job, source, run_id, accepted):
+    """Executed, not read: the allowlist is a shell case statement."""
+
+    step = _step(lane, job, "run id")
+    result = _bash(step["run"], SOURCE=source, RUN_ID=run_id)
+    assert (result.returncode == 0) is accepted, result.stderr
+
+
+@pytest.mark.parametrize(
+    "source,expected",
+    [
+        ("run", 'python3 scripts/stage_green_run.py --run "${RUN_ID}"'),
+        ("chain", "python3 scripts/stage_chain_release.py"),
+    ],
+)
+def test_the_staging_step_runs_the_gate_of_its_source(lane, source, expected):
+    step = _step(lane, "stage", "Validate")
+    assert expected in step["run"]
+    assert step["env"]["SOURCE"] == "${{ github.event.inputs.source }}"
+    shim = step["run"].replace("python3 ", "echo ")
+    result = _bash(shim, SOURCE=source, RUN_ID="ci-1")
+    assert result.returncode == 0 and "scripts/" in result.stdout
+    assert ("stage_chain_release" in result.stdout) is (source == "chain")
+    assert _bash(shim, SOURCE="other", RUN_ID="ci-1").returncode == 1
+
+
+def test_the_promotion_step_publishes_only_the_staged_chain_release(lane):
+    """``--expect`` is the stage job's output: nothing unstaged is published."""
+
+    step = _step(lane, "promote", "Publish")
+    assert step["env"]["RELEASE_ID"] == "${{ needs.stage.outputs.release_id }}"
+    shim = step["run"].replace("python3 ", "echo ")
+    chain = _bash(shim, SOURCE="chain", RUN_ID="", RELEASE_ID="rel-g2-x")
+    assert chain.returncode == 0
+    assert "publish-chain --expect rel-g2-x" in chain.stdout
+    run = _bash(shim, SOURCE="run", RUN_ID="ci-1", RELEASE_ID="rel-g1-x")
+    assert "publish --run ci-1" in run.stdout and "publish-chain" not in run.stdout
+
+
+def test_the_source_input_is_a_choice_that_defaults_to_the_old_behaviour(lane):
+    inputs = lane[True]["workflow_dispatch"]["inputs"]
+    assert inputs["source"]["type"] == "choice"
+    assert inputs["source"]["options"] == ["run", "chain"]
+    assert inputs["source"]["default"] == "run"
+    assert inputs["run_id"]["required"] is False
 
 
 # ── two lanes, two identities ────────────────────────────────────────────────
