@@ -34,6 +34,7 @@
 > | Phase 6 — Worker verde verificado ao vivo, janela fechada | 2026-09-27 | `docs/implementation/PHASE_6B_2026-09-27.md` |
 > | Phase 6 — decisão D5, histórico durável de promoção | **fechada 2026-09-27**: construído (`#70`), reprovado no R2 real a partir da `main`, e a política de retenção passou a lê-lo | `docs/implementation/PHASE_6C_2026-09-27.md`, `docs/implementation/PHASE_6D_2026-09-27.md` |
 > | Phase 6 — lane de depósito verde | **construída e provada 2026-09-28**: identidade verde de Earth Engine só de computação (9/9), baseline `2.1.0` no staging, depósito real `runs/ci-36432616599/` a partir da `main`; a semente do estado ainda só existe localmente | `docs/implementation/PHASE_6E_2026-09-28.md`, `docs/implementation/PHASE_6F_2026-09-28.md` |
+> | Phase 6 — a cadeia de estado | **andando sozinha 2026-09-28**: o estado vive no prefixo da rodada (`#76`), a semente está no bucket (`#77`), a cabeça é derivada do bucket e a segunda filha é recusada no depósito (`#78`); a cadeia cobre até 2026-09-24; nada promovido — promover uma rodada encadeada publicaria só a janela dela, ver PHASE_6H §9 | `docs/implementation/PHASE_6G_2026-09-28.md`, `docs/implementation/PHASE_6H_2026-09-28.md` |
 >
 > *Linhas da Phase 6 acrescentadas em 2026-09-27 e 2026-09-28.* A Phase 6 está em
 > execução e **não** fechou: falta a lane de depósito em CI, o processo
