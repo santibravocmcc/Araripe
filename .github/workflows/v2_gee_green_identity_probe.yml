@@ -1,0 +1,82 @@
+name: v2 green Earth Engine identity probe (verification)
+
+# Why this exists.
+#
+# docs/implementation/PHASE_6E_2026-09-28.md §1 decided that the green deposit
+# lane gets its OWN Earth Engine identity. The repository secret GEE_SA_KEY is
+# the blue production service account: readable by any workflow on any
+# branch, and declared Earth Engine Resource Writer, which deletes assets and
+# creates exports. The owner created the green one following
+# docs/operations/GEE_GREEN_IDENTITY_SETUP.md -- a custom role with three
+# permissions -- and stored it as GEE_GREEN_SA_KEY in the v2-staging
+# Environment, which admits only `main`.
+#
+# The role is a design; this is the measurement. Credential scope is proven
+# only by a call that must be refused, so the probe checks both polarities:
+# computing, reducing and downloading must WORK; creating an asset and
+# starting an export must be REFUSED for a permission reason.
+#
+# Isolation and inertness:
+#   - trigger: workflow_dispatch ONLY, guarded on the repository name;
+#   - permissions: contents read-only -- no commit or push path exists;
+#   - authority: GEE_GREEN_SA_KEY only, exposed to the one step that runs the
+#     probe. No R2 secret and no blue secret name appears in this file, and the
+#     probe refuses to run if GEE_SA_KEY is present in its environment;
+#   - it writes nothing anywhere unless the identity is over-scoped, and then
+#     it fails and names what was created;
+#   - concurrency: its own group; it touches no shared object and must not
+#     queue behind, or delay, a candidate deposit.
+#
+# It also records the runner's CPU, memory and disk, because PHASE_6E §2.1
+# sized the deposit lane from GitHub's documentation, not from a runner.
+
+on:
+  workflow_dispatch:
+    inputs:
+      note:
+        description: "Optional operator note (recorded in the log only)"
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: araripe-green-gee-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    if: github.event_name == 'workflow_dispatch' && github.repository == 'santibravocmcc/Araripe'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: v2-staging
+
+    steps:
+      - name: Record the runner's capacity
+        run: |
+          set -euo pipefail
+          echo "cpus: $(nproc)"
+          free -g
+          df -h /
+
+      - name: Check out the probe
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Install the Earth Engine client
+        # The runner's own Python, deliberately: installing the blue
+        # environment.yml here would couple a green verification to the file
+        # the blue workflows solve. The version is printed, not assumed.
+        run: |
+          set -euo pipefail
+          python3 --version
+          python3 -m pip install --quiet --disable-pip-version-check earthengine-api requests
+          python3 -c "import ee; print('earthengine-api', ee.__version__)"
+
+      - name: Probe the green identity
+        env:
+          GEE_GREEN_SA_KEY: ${{ secrets.GEE_GREEN_SA_KEY }}
+          NOTE: ${{ github.event.inputs.note }}
+        run: |
+          set -euo pipefail
+          echo "note: ${NOTE:-(none)}"
+          python3 scripts/probe_gee_green_identity.py

@@ -33,6 +33,9 @@ GREEN_GROUPS = {
     # object -- it never writes the real pointer -- so it gets its own group
     # rather than queueing behind, or delaying, a real promotion.
     "v2_promotion_identity_probe.yml": "araripe-green-promotion-probe",
+    # The Earth Engine identity probe touches no shared object either, and
+    # must not queue behind a candidate deposit (PHASE_6E_2026-09-28.md).
+    "v2_gee_green_identity_probe.yml": "araripe-green-gee-probe",
     "cloudflare_green_control.yml": "araripe-cloudflare-green-control",
 }
 # The blue detection cadence is load-bearing (ROADMAP.md §6); pin it so a
