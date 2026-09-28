@@ -59,7 +59,13 @@
         "what": "the 2026 replay's final persistence state — 986744489 bytes, sha256 5eb17f838b35251b3748dbc26310918a8fa7a00ce99b4f3c501dd5887ac987ce, the value runs/rep-2026-08-30-v3/run.json declares — exists in ONE copy, in the replay's isolated directory on the owner's machine, and in no bucket",
         "why_it_matters": "Phase 6 §4.5 seeds the scheduled process from the rebuilt watermark, and this file IS that state. Putting it in araripe-v2-staging is a one-time local upload, like the baseline was; after revocation it would need a new credential",
         "the_alternative": "re-running the whole 2026 replay in CI would regenerate an equivalent state without the local key (detections were measured identical in count on 2026-09-28), but not byte-identical to the one the promoted release declares",
-        "owner_guidance": "do not revoke until the next package places the seed, or until the owner decides the seed will be regenerated in CI instead"
+        "owner_guidance": "do not revoke until the next package places the seed, or until the owner decides the seed will be regenerated in CI instead",
+        "resolved": true,
+        "resolved_on": "2026-09-28",
+        "resolution": "the seed is at runs/rep-2026-08-30-v3/persistence_state.geojson in araripe-v2-staging — the run prefix whose run.json already declared it (docs/implementation/PHASE_6G_2026-09-28.md §1). Uploaded once, locally, with the AWS profile, by scripts/assemble_green_run.py seed-state, which read that run.json from the bucket and compared length and sha256 BEFORE writing: result `created`, 986744489 bytes, 2026-09-28T17:11:08Z. Read back through the consumer's own path (state_chain.read_predecessor + fetch_state) with sha256 5eb17f838b35251b3748dbc26310918a8fa7a00ce99b4f3c501dd5887ac987ce, and the single-PUT ETag equals the local file's MD5.",
+        "what_this_does_not_change": "the local copy in the replay directory is still the only OTHER copy; the bucket copy is now the one the lane reads. Nothing that the lane or any chained run does needs the local key: fetch_green_state.py uses the v2-staging Environment identity and refuses the profile fallback",
+        "consumed_by_run": "36456671793",
+        "consumption": "2026-09-28, dispatched from main at the merge of #76 with from_run=rep-2026-08-30-v3, window 2026-08-31..2026-09-08: the lane fetched the seed with the v2-staging identity, verified 986744489 bytes and its sha256 against the run.json, and deposited runs/ci-36456671793/ whose run.json (araripe.green.run/2) names rep-2026-08-30-v3 as predecessor (docs/implementation/PHASE_6G_2026-09-28.md §8)"
       }
     },
     "why_not_option_b": "measured 2026-09-17. Creating a final bucket and copying the release costs far more than the 1 778 202 736 bytes of the current release: the local staging credential is refused on every other bucket (AccessDenied against araripe-cogs and against a new name), no copy tooling exists (grep for copy_object|CopySource|copy_from in src/ and scripts/ returns nothing), and assert_staging_target() would have to be edited — the fail-closed guard that keeps green publication off production, asserted in five places — in the same package that makes the green lane public.",
@@ -165,8 +171,10 @@
       "action": "revoke claude-araripe-v2-staging-rw",
       "blocks": "nothing — it is the LAST step of D1",
       "agent_can_do_it": false,
-      "do_not_do_it_before": "the replay's final persistence state is placed in araripe-v2-staging (revocation_ordering.before_revoking_also). The CI deposit precondition is met: run 36432616599",
-      "was_before_2026_09_28": "the D5 durable promotion history is built and re-proven — stale since the 2026-09-27 correction"
+      "do_not_do_it_before": "nothing remains: the CI deposit is proven (run 36432616599) and the replay's persistence state is in araripe-v2-staging (revocation_ordering.before_revoking_also.resolved, 2026-09-28)",
+      "was_before_2026_09_28": "the D5 durable promotion history is built and re-proven — stale since the 2026-09-27 correction",
+      "was_before_2026_09_28_seed": "the replay's final persistence state is placed in araripe-v2-staging (revocation_ordering.before_revoking_also). The CI deposit precondition is met: run 36432616599",
+      "what_revoking_costs": "local read-only checks of araripe-v2-staging with the araripe-r2-staging profile stop working too; after revocation an agent verifies staging only through the lanes (or through a read-only token the owner may choose to create)"
     }
   ]
 }
