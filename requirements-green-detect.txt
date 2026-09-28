@@ -1,0 +1,38 @@
+# The green deposit lane's detection environment (.github/workflows/v2_green_deposit_lane.yml).
+#
+# Exact pins, and each one is the version in the local `araripe` conda
+# environment that ran the 2026 replay (measured 2026-09-28 with
+# importlib.metadata, Python 3.11.14). Pinned so a runner and the replay machine
+# compute on the same numerical stack; a floor would let pip resolve whatever
+# is newest on the day and the drift would be invisible.
+#
+# Not environment.yml: green lanes may only use actions published by GitHub
+# itself (tests/test_action_pinning.py), so conda-incubator/setup-miniconda is
+# unavailable, and environment.yml pins botocore <1.36, which cannot express
+# If-Match (docs in v2_operational_publish.yml). The wheels bring their own
+# GDAL/PROJ/GEOS; conda does not.
+#
+# The list is the third-party import closure of the detection path, measured by
+# importing every module scripts/replay_2026.py `run` imports and diffing
+# sys.modules — not guessed from requirements.txt.
+earthengine-api==1.7.42
+requests==2.34.2
+numpy==2.4.2
+scipy==1.17.0
+pandas==2.3.3
+numexpr==2.14.1
+pyarrow==23.0.0
+shapely==2.1.2
+pyproj==3.7.2
+rasterio==1.4.4
+geopandas==1.1.2
+xarray==2026.1.0
+rioxarray==0.19.0
+dask==2026.1.2
+loguru==0.7.3
+python-dotenv==1.2.1
+click==8.3.1
+jsonschema==4.26.0
+PyYAML==6.0.3
+boto3==1.42.44
+botocore==1.42.42

@@ -62,13 +62,15 @@ from tests.test_run_assembler import ALERTING_FEATURES, areal
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "assemble_green_run.py"
 
-#: The four green scripts that must stay clear of the repository `.env`.
+#: The green scripts that must stay clear of the repository `.env`.
 GREEN_SCRIPTS = (
     "assemble_green_run.py",
     "stage_green_run.py",
     "publish_green_release.py",
     "check_site_artifact.py",
     "plan_retention.py",
+    "baseline_v2_staging.py",
+    "probe_gee_green_identity.py",
 )
 
 

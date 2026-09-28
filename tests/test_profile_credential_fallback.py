@@ -34,7 +34,11 @@ SCRIPTS = ROOT / "scripts"
 
 #: Exactly the two lane-2 entry points.  A third name appearing here is a
 #: decision, not a refactor.
-OPTED_IN = {"assemble_green_run.py", "stage_green_run.py"}
+#: ``baseline_v2_staging.py`` joined on 2026-09-28: it is lane 2 too (candidate
+#: identity, ``put_if_absent`` only, under ``baselines_v2/2.1.0/`` only), and its
+#: one-time upload is an operator run that must not export the secret
+#: (``docs/implementation/PHASE_6F_2026-09-28.md``). The promotion CLI stays out.
+OPTED_IN = {"assemble_green_run.py", "stage_green_run.py", "baseline_v2_staging.py"}
 
 PROFILE = "araripe-r2-staging-test-double"
 

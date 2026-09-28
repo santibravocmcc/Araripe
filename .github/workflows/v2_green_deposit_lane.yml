@@ -1,0 +1,245 @@
+name: v2 green deposit lane (detect a window, deposit runs/<run-id>/)
+
+# The lane Package 2B.2C left missing and PHASE_6E_2026-09-28.md designed:
+# run the green detection on a runner and deposit its outputs as an immutable
+# run prefix in araripe-v2-staging -- the step that until now only the owner's
+# machine could do, with the local staging key.
+#
+# Two jobs, one authority each (PHASE_6E §3, refined in PHASE_6F §3):
+#
+#   detect   Earth Engine as the GREEN account (GEE_GREEN_SA_KEY, proven
+#            compute-only by v2_gee_green_identity_probe.yml: assets.create and
+#            exports.create are refused). The detection is blue science code
+#            and imports config.settings; the runner has no .env, and no step
+#            that imports it holds an R2 identity. The one step that holds
+#            R2_STAGING_* only DOWNLOADS the baseline months the window needs,
+#            with scripts/baseline_v2_staging.py, which never imports config.
+#   deposit  R2_STAGING_* only: assemble_green_run.py apply writes
+#            runs/<run-id>/ with put_if_absent, run.json last, then
+#            stage_green_run.py re-reads the prefix and writes nothing.
+#
+# The detection's outputs cross between the jobs as a workflow artifact.
+#
+# What it never does: move a pointer (no pointer is read or written by either
+# script), promote (that is v2_operational_publish.yml), delete anything, touch
+# araripe-cogs, reference a blue secret, or run on a schedule -- scheduling is
+# Phase 6 §4.5 and comes with the cutover.
+#
+# run_id is ci-<github.run_id> WITHOUT the attempt (PHASE_6E §4): re-running
+# only the deposit job reuses the same artifact, so every object is `unchanged`
+# and the deposit completes; re-running the whole workflow re-runs the
+# detection, whose rows carry wall-clock timestamps, so the first differing
+# key is a `conflict` and the lane fails closed instead of overwriting.
+#
+# A run started from this lane begins from an EMPTY persistence state: the
+# state a scheduled run would chain on is not in any bucket (PHASE_6E §2.3).
+# Its alerts are a valid candidate deposit and are NOT comparable with the
+# release built from the 2026 replay.
+
+on:
+  workflow_dispatch:
+    inputs:
+      start:
+        description: "First UTC date of the window, YYYY-MM-DD (inclusive)"
+        required: true
+      end:
+        description: "One past the last UTC date, YYYY-MM-DD (exclusive); at most 16 days after start"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  detect:
+    if: github.event_name == 'workflow_dispatch' && github.repository == 'santibravocmcc/Araripe'
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    environment: v2-staging
+    outputs:
+      run_id: ${{ steps.window.outputs.run_id }}
+    env:
+      R2_STAGING_BUCKET: ${{ vars.R2_STAGING_BUCKET }}
+      R2_ENDPOINT_URL: ${{ vars.R2_ENDPOINT_URL }}
+
+    steps:
+      - name: Fail closed unless the target is exactly the approved staging bucket
+        run: |
+          set -euo pipefail
+          test "$R2_STAGING_BUCKET" = "araripe-v2-staging" || {
+            echo "::error::refusing: R2_STAGING_BUCKET is not araripe-v2-staging" >&2; exit 1; }
+          test "$R2_ENDPOINT_URL" = "https://9416750169311ee4afc18a8ff3c771d4.r2.cloudflarestorage.com" || {
+            echo "::error::refusing: R2_ENDPOINT_URL is not the approved account endpoint" >&2; exit 1; }
+
+      - name: Accept only a bounded window of real dates, and name the run
+        id: window
+        env:
+          START: ${{ github.event.inputs.start }}
+          END: ${{ github.event.inputs.end }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os, datetime as dt
+          start, end = os.environ["START"], os.environ["END"]
+          try:
+              a, b = dt.date.fromisoformat(start), dt.date.fromisoformat(end)
+          except ValueError:
+              raise SystemExit("::error::start and end must be YYYY-MM-DD")
+          if not (a < b and (b - a).days <= 16):
+              raise SystemExit("::error::the window must be 1 to 16 days, end exclusive")
+          months, day = [], a
+          while day < b:
+              if day.month not in months:
+                  months.append(day.month)
+              day += dt.timedelta(days=1)
+          with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+              out.write("months=%s\n" % " ".join("--month %d" % m for m in months))
+              out.write("run_id=ci-%s\n" % os.environ["GITHUB_RUN_ID"])
+          print("window %s..%s, baseline months %s" % (start, end, months))
+          PY
+
+      - name: Check out the lane code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Set up the replay's Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.11"
+
+      - name: Install the pinned detection environment
+        run: |
+          set -euo pipefail
+          python -m pip install --quiet --disable-pip-version-check -r requirements-green-detect.txt
+          python -m pip freeze | grep -iE '^(earthengine-api|numpy|scipy|rasterio|geopandas|shapely|pyproj|boto3|botocore)=='
+
+      - name: Fetch and verify the baseline months the window needs
+        # The only step in this job that holds an R2 identity. It downloads,
+        # checks every object's length and SHA-256 against
+        # config/baseline_manifest_v2_1.json, and imports no config module.
+        env:
+          R2_STAGING_ACCESS_KEY_ID: ${{ secrets.R2_STAGING_ACCESS_KEY_ID }}
+          R2_STAGING_SECRET_ACCESS_KEY: ${{ secrets.R2_STAGING_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          MONTHS: ${{ steps.window.outputs.months }}
+        run: |
+          set -euo pipefail
+          # MONTHS is "--month N [--month M]", produced above from validated dates
+          python scripts/baseline_v2_staging.py fetch $MONTHS --out data/baselines_v2/2.1.0
+
+      - name: Enumerate and screen the window as the green account
+        env:
+          GEE_GREEN_SA_KEY: ${{ secrets.GEE_GREEN_SA_KEY }}
+          START: ${{ github.event.inputs.start }}
+          END: ${{ github.event.inputs.end }}
+        run: |
+          set -euo pipefail
+          REPLAY_DIR="$RUNNER_TEMP/replay"
+          python scripts/replay_2026.py plan --service-account \
+            --start "$START" --end "$END" --out-dir "$REPLAY_DIR"
+
+      - name: Detect, from an empty persistence state, as the green account
+        env:
+          GEE_GREEN_SA_KEY: ${{ secrets.GEE_GREEN_SA_KEY }}
+          START: ${{ github.event.inputs.start }}
+          END: ${{ github.event.inputs.end }}
+        run: |
+          set -euo pipefail
+          REPLAY_DIR="$RUNNER_TEMP/replay"
+          test ! -e "$REPLAY_DIR/persistence_state.geojson"
+          python scripts/replay_2026.py run --service-account \
+            --start "$START" --end "$END" --out-dir "$REPLAY_DIR" \
+            --state-path "$REPLAY_DIR/persistence_state.geojson" \
+            --batch-start "$START" --batch-end "$END"
+
+      - name: Assemble the run prefix locally, with no credential
+        env:
+          RUN_ID: ${{ steps.window.outputs.run_id }}
+        run: |
+          set -euo pipefail
+          REPLAY_DIR="$RUNNER_TEMP/replay"
+          python scripts/assemble_green_run.py plan --run "$RUN_ID" \
+            --ledger "$REPLAY_DIR/ledger.json" --alerts-dir "$REPLAY_DIR/alerts" \
+            --state "$REPLAY_DIR/persistence_state.geojson"
+
+      - name: Hand the detection's outputs to the deposit job
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: detection-${{ steps.window.outputs.run_id }}
+          path: |
+            ${{ runner.temp }}/replay/ledger.json
+            ${{ runner.temp }}/replay/persistence_state.geojson
+            ${{ runner.temp }}/replay/alerts/
+          if-no-files-found: error
+          retention-days: 7
+
+  deposit:
+    needs: detect
+    if: github.event_name == 'workflow_dispatch' && github.repository == 'santibravocmcc/Araripe'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: v2-staging
+    # The candidate lane's group, as v2_operational_publish.yml's stage job
+    # holds it: deposits and validations of runs/ serialize. Detection writes
+    # nothing to the bucket and does not hold it.
+    concurrency:
+      group: araripe-green-candidate
+      cancel-in-progress: false
+    env:
+      R2_STAGING_BUCKET: ${{ vars.R2_STAGING_BUCKET }}
+      R2_ENDPOINT_URL: ${{ vars.R2_ENDPOINT_URL }}
+      RUN_ID: ${{ needs.detect.outputs.run_id }}
+
+    steps:
+      - name: Fail closed unless the target is exactly the approved staging bucket
+        run: |
+          set -euo pipefail
+          test "$R2_STAGING_BUCKET" = "araripe-v2-staging" || {
+            echo "::error::refusing: R2_STAGING_BUCKET is not araripe-v2-staging" >&2; exit 1; }
+          test "$R2_ENDPOINT_URL" = "https://9416750169311ee4afc18a8ff3c771d4.r2.cloudflarestorage.com" || {
+            echo "::error::refusing: R2_ENDPOINT_URL is not the approved account endpoint" >&2; exit 1; }
+          case "${RUN_ID}" in
+            ci-[0-9]*) ;;
+            *) echo "::error::run_id must be ci-<github.run_id>" >&2; exit 1 ;;
+          esac
+          case "${RUN_ID}" in
+            *[!A-Za-z0-9._-]*) echo "::error::run_id must be one path segment" >&2; exit 1 ;;
+          esac
+
+      - name: Check out the lane code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Install the dependencies the assembler and the gate need
+        # The runner's own Python, as v2_operational_publish.yml does, and with
+        # the same measured floor: botocore <1.36 cannot express If-Match.
+        run: |
+          set -euo pipefail
+          python3 --version
+          python3 -m pip install --quiet --disable-pip-version-check \
+            'jsonschema>=4.23.0' 'boto3>=1.36.0' 'botocore>=1.36.0'
+          python3 -c "import botocore, boto3; print('botocore', botocore.__version__, '/ boto3', boto3.__version__)"
+
+      - name: Receive the detection's outputs
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: detection-${{ needs.detect.outputs.run_id }}
+          path: ${{ runner.temp }}/detection
+
+      - name: Deposit runs/<run-id>/ with the candidate identity
+        env:
+          R2_STAGING_ACCESS_KEY_ID: ${{ secrets.R2_STAGING_ACCESS_KEY_ID }}
+          R2_STAGING_SECRET_ACCESS_KEY: ${{ secrets.R2_STAGING_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          DETECTION: ${{ runner.temp }}/detection
+        run: |
+          set -euo pipefail
+          python3 scripts/assemble_green_run.py apply --run "$RUN_ID" \
+            --ledger "$DETECTION/ledger.json" --alerts-dir "$DETECTION/alerts" \
+            --state "$DETECTION/persistence_state.geojson"
+
+      - name: Re-read the prefix and validate it, writing nothing
+        env:
+          R2_STAGING_ACCESS_KEY_ID: ${{ secrets.R2_STAGING_ACCESS_KEY_ID }}
+          R2_STAGING_SECRET_ACCESS_KEY: ${{ secrets.R2_STAGING_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+        run: |
+          set -euo pipefail
+          python3 scripts/stage_green_run.py --run "$RUN_ID"

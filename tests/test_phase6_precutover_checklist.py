@@ -399,24 +399,44 @@ def test_a_revogacao_da_credencial_e_o_ultimo_passo_e_nao_o_primeiro():
     optam = {
         s.name for s in sorted(pf.SCRIPTS.glob("*.py")) if any(pf.opt_in_flags(s))
     }
-    assert optam == {"assemble_green_run.py", "stage_green_run.py"}, (
+    assert optam == {"assemble_green_run.py", "stage_green_run.py",
+                     "baseline_v2_staging.py"}, (
         f"os scripts que aceitam a chave local agora são {sorted(optam)}. A "
         "condição de revogação foi derivada de serem exatamente os dois de "
-        "depósito — revise-a antes de mudar este teste"
+        "depósito mais o upload ÚNICO da baseline — revise-a antes de mudar "
+        "este teste"
     )
+    terceiro = ordering["the_third_local_caller"]
+    assert terceiro["script"] == "scripts/baseline_v2_staging.py"
+    assert "ONE-TIME" in terceiro["why_it_does_not_move_the_condition"]
     promo = pf.opt_in_flags(pf.SCRIPTS / "publish_green_release.py")
     assert promo and not any(promo), (
         "a CLI de promoção passou a aceitar a chave local. Então a D5 PASSA a "
         "depender dela, e a condição de revogação está errada de novo"
     )
     workflows = ROOT / ".github" / "workflows"
-    deposito = [w.name for w in workflows.glob("*.yml")
-                if "assemble_green_run" in w.read_text(encoding="utf-8")]
-    assert deposito == [], (
-        f"{deposito} roda o depósito em CI. A PRÉ-CONDIÇÃO DE REVOGAR A CHAVE "
-        "LOCAL ESTÁ CUMPRIDA — avise o dono, e só então atualize este teste e "
-        "a condição em config/phase6_owner_decisions_v1.json"
+    deposito = sorted(w.name for w in workflows.glob("*.yml")
+                      if "assemble_green_run" in w.read_text(encoding="utf-8"))
+    # 2026-09-28: a lane de depósito existe (PHASE_6F). Um workflow a MAIS
+    # rodando o depósito é outra coisa, e tem de ser pensado — por isso a
+    # igualdade exata, e não "não vazio".
+    assert deposito == ["v2_green_deposit_lane.yml"], (
+        f"{deposito} roda o depósito em CI; a condição de revogação foi "
+        "escrita para exatamente uma lane"
     )
+    lane = ordering["ci_lane"]
+    assert lane["workflow"] == ".github/workflows/v2_green_deposit_lane.yml"
+    # Existir não é cumprir: a condição é um depósito REAL, e cumpri-la sem
+    # nomear a execução que o provou seria afirmar sem evidência.
+    if lane["condition_met"]:
+        assert re.fullmatch(r"\d{8,}", str(lane["proven_by_run"])), (
+            "condition_met sem o id da execução que depositou e validou"
+        )
+        assert terceiro["upload_complete"] is True, (
+            "a lane baixa a baseline do bucket; sem os 72 objetos ela não roda"
+        )
+    else:
+        assert lane["proven_by_run"] is None
 
 
 def test_toda_acao_do_dono_diz_por_que_o_agente_nao_pode_faze_la():

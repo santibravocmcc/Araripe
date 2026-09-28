@@ -36,7 +36,23 @@
       "what_is_safe_to_revoke_before": "nothing this phase needs until a CI deposit lane exists. Revocation stays the last step of D1; what changed is which step it waits for.",
       "the_condition_as_corrected_on_2026_09_18": "revoke claude-araripe-v2-staging-rw only AFTER the D5 durable promotion history is built and re-proven against real R2",
       "why_the_2026_09_18_correction_was_also_wrong": "measured 2026-09-27 in the code, not inferred. The local profile credential is opt-in per call site, and exactly two scripts opt in: scripts/assemble_green_run.py and scripts/stage_green_run.py — pinned by tests/test_profile_credential_fallback.py::test_only_the_two_lane_two_entry_points_opt_in. The promotion CLI, scripts/publish_green_release.py, which is what runs promote and rollback, REFUSES the fallback — test_every_build_client_call_in_the_promotion_cli_refuses_the_fallback. So the D5 change to promote/rollback can never be re-proven with the local credential: it is re-proven from main through the v2-promotion lanes (v2_operational_publish.yml, v2_promotion_lane.yml), exactly as the five proofs of 2026-09-07 were. D5 does not depend on the credential at all. My memory index already said 'credencial por profile é opt-in por call site' and I did not consult it.",
-      "what_actually_depends_on_the_local_credential": "the DEPOSIT of a run prefix. scripts/assemble_green_run.py apply writes runs/<run-id>/ into araripe-v2-staging, and no workflow runs it — `git grep assemble_green_run .github/workflows/` on origin/main returns nothing. stage_green_run.py does run in CI (v2_operational_publish.yml, with R2_STAGING_*), but it is read-only validation. Revoking today would remove the only way to put a new run into the bucket, and the post-cutover scheduled process needs deposits twice a week."
+      "what_actually_depends_on_the_local_credential": "the DEPOSIT of a run prefix. scripts/assemble_green_run.py apply writes runs/<run-id>/ into araripe-v2-staging, and no workflow runs it — `git grep assemble_green_run .github/workflows/` on origin/main returns nothing. stage_green_run.py does run in CI (v2_operational_publish.yml, with R2_STAGING_*), but it is read-only validation. Revoking today would remove the only way to put a new run into the bucket, and the post-cutover scheduled process needs deposits twice a week.",
+      "ci_lane": {
+        "workflow": ".github/workflows/v2_green_deposit_lane.yml",
+        "built_on": "2026-09-28",
+        "record": "docs/implementation/PHASE_6F_2026-09-28.md",
+        "condition_met": false,
+        "met_when": "a dispatch of v2_green_deposit_lane.yml from main deposits a runs/ci-<run_id>/ prefix and its own stage_green_run.py step validates it; the run id is then recorded here as proven_by_run and condition_met becomes true",
+        "proven_by_run": null
+      },
+      "the_third_local_caller": {
+        "script": "scripts/baseline_v2_staging.py",
+        "added_on": "2026-09-28",
+        "why_it_accepts_the_local_key": "its upload subcommand puts baseline 2.1.0 (72 rasters, 13 GB, only ever on the owner's machine) into araripe-v2-staging once, and an operator must not export the secret to do it",
+        "why_it_does_not_move_the_condition": "the upload is ONE-TIME: after 72/72 objects exist the lane only fetches, with the v2-staging Environment identity. The local key is needed for nothing the lane does. If the upload were ever repeated it would be all `unchanged` (put_if_absent), and a different local copy is refused before any write",
+        "upload_complete": true,
+        "upload_evidence": "2026-09-28: created 72, unchanged 0, conflict 0; the bucket lists 72 objects and 13626201392 bytes under baselines_v2/2.1.0/, equal to the manifest's byte sum (docs/implementation/PHASE_6F_2026-09-28.md §2)"
+      }
     },
     "why_not_option_b": "measured 2026-09-17. Creating a final bucket and copying the release costs far more than the 1 778 202 736 bytes of the current release: the local staging credential is refused on every other bucket (AccessDenied against araripe-cogs and against a new name), no copy tooling exists (grep for copy_object|CopySource|copy_from in src/ and scripts/ returns nothing), and assert_staging_target() would have to be edited — the fail-closed guard that keeps green publication off production, asserted in five places — in the same package that makes the green lane public.",
     "the_argument_for_b_that_was_measured_false": "that a public bucket would expose the runs/ prefixes and the probe residue. site/worker/data_route.js never assembles the key from the request: the path after the mount is looked up in an allowlist built from the LIVE release manifest, and the key is release_prefix plus that declared path. runs/, probe prefixes and any non-live release are unreachable by construction, not by filtering."
