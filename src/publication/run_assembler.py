@@ -53,7 +53,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
+from typing import Any, Callable, Mapping, Sequence
 
 from src.publication import site_artifact
 from src.publication.findings import Finding, Rejected
@@ -401,7 +401,9 @@ def describe(run: AssembledRun) -> str:
     return "\n".join(lines)
 
 
-def upload(store: Any, run: AssembledRun) -> list[str]:
+def upload(
+    store: Any, run: AssembledRun, before_manifest: Callable[[], None] | None = None
+) -> list[str]:
     """Write every body under the run prefix, write-once.
 
     ``put_if_absent`` throughout: a run prefix is immutable, so re-uploading
@@ -412,12 +414,18 @@ def upload(store: Any, run: AssembledRun) -> list[str]:
     The manifest goes **last**, mirroring the release layout: a partially
     uploaded run has no ``run.json``, and ``load_run`` refuses a prefix whose
     manifest is absent instead of publishing half a run.
+
+    ``before_manifest`` runs after every other body and before ``run.json``,
+    the write that makes the prefix a run; raising there leaves a prefix that
+    is not one (PHASE_6H §2).
     """
 
     written: list[str] = []
     ordered = [path for path in sorted(run.bodies) if path != RUN_MANIFEST_PATH]
     ordered.append(RUN_MANIFEST_PATH)
     for path in ordered:
+        if path == RUN_MANIFEST_PATH and before_manifest is not None:
+            before_manifest()
         content_type = (
             "application/json"
             if path in (RUN_MANIFEST_PATH, LEDGER_PATH)

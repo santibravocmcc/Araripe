@@ -69,6 +69,13 @@ release signal (`data/timeseries/RELEASE.json`) — see `ROADMAP.md` §6.
   production secret name is referenced in this lane.
 - Writes: immutable per-run prefixes only (`green-isolation-proof/run-<id>/`,
   later `runs/<run-id>/…`); no deletes, no overwrites, no pointers.
+- **The chain head is derived, not a pointer** (`docs/implementation/PHASE_6H_2026-09-28.md`
+  §1): the one leaf the `predecessor` fields of `runs/*/run.json` draw from
+  `rep-2026-08-30-v3`. So "no pointers" still holds. What holds the chain to
+  one head is this lane's serialization: the `deposit` job of
+  `v2_green_deposit_lane.yml` refuses a predecessor another run already
+  continues, and that check is only decisive because two `deposit` jobs of
+  this group never run at once. Keep the group on that job.
 
 ## Lane 3 — serialized green staging-pointer promotion
 

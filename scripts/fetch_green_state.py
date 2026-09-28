@@ -13,9 +13,12 @@ writes ``<out-dir>/persistence_state.geojson`` and ``<out-dir>/predecessor.json`
    documents; the ledger through the Package 2B.2A gate);
 2. refuse any ``--start`` but the day after the last date that ledger covers
    (§4) — before a byte of the state is downloaded;
-3. read ``runs/<from-run>/persistence_state.geojson`` and refuse it if it is
+3. refuse a predecessor another run already continues
+   (``PHASE_6H_2026-09-28.md`` §2) — the deposit asks again and decides; asking
+   here only keeps an hour of detection from being spent on a refused run;
+4. read ``runs/<from-run>/persistence_state.geojson`` and refuse it if it is
    absent, or its length or sha256 differ from what the ``run.json`` declares;
-4. only then write both files, the state under a temporary name first.
+5. only then write both files, the state under a temporary name first.
 
 The identity, and what it can do from here
 ------------------------------------------
@@ -71,9 +74,10 @@ def build_reader() -> ReadOnlyStore:
     return ReadOnlyStore(client, bucket)
 
 
-def fetch(store, from_run: str, start: str, out_dir: Path) -> sc.Predecessor:
+def fetch(store, from_run: str, start: str, out_dir: Path, run_id: str | None = None) -> sc.Predecessor:
     predecessor = sc.read_predecessor(store, from_run)
     sc.check_window(predecessor, start)
+    sc.check_not_continued(store, from_run, run_id)
     body = sc.fetch_state(store, predecessor)
 
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -92,6 +96,10 @@ def main(argv=None) -> int:
     parser.add_argument("--from-run", required=True, help="the run this one continues")
     parser.add_argument("--start", required=True, help="first UTC date of the new window")
     parser.add_argument("--out-dir", required=True, type=Path)
+    parser.add_argument(
+        "--run", default=None,
+        help="this run's own id, which does not count as another continuation",
+    )
     args = parser.parse_args(argv)
 
     for name in (sc.STATE_PATH, PREDECESSOR_NAME):
@@ -101,7 +109,7 @@ def main(argv=None) -> int:
             return 1
 
     try:
-        predecessor = fetch(build_reader(), args.from_run, args.start, args.out_dir)
+        predecessor = fetch(build_reader(), args.from_run, args.start, args.out_dir, args.run)
     except (Rejected, ContractBindingError, cs.ObjectStoreError, RuntimeError, ValueError) as exc:
         print(_annotate(f"{type(exc).__name__}: {exc}"), file=sys.stderr)
         for finding in getattr(exc, "findings", ()):

@@ -72,6 +72,7 @@ GREEN_SCRIPTS = (
     "baseline_v2_staging.py",
     "probe_gee_green_identity.py",
     "fetch_green_state.py",
+    "resolve_chain_head.py",
 )
 
 

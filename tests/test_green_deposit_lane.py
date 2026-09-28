@@ -52,6 +52,46 @@ def step_scripts(step) -> set[str]:
     return set(SCRIPT.findall(step.get("run") or ""))
 
 
+INPUTS = "Accept the dispatch inputs for the chosen chain mode"
+HEAD = "Resolve the chain head and the automatic window"
+WINDOW = "Accept only a bounded window of real dates, and name the run"
+PLAN = "Enumerate and screen the window as the green account"
+ENUMERATED = "Stop here when the window holds no acquisition"
+
+
+def step_named(job: str, name: str):
+    (step,) = [s for s in steps(job) if s["name"] == name]
+    return step
+
+
+def run_inline(step, tmp=None, **env):
+    """Execute the step's embedded ``python3 - <<'PY'`` block as Actions would.
+
+    The workflow's own code, not a copy of it: the text between the heredoc
+    markers runs with the given environment and a fresh ``GITHUB_OUTPUT``,
+    and the outputs it wrote come back as a dict.
+    """
+
+    import os
+    import subprocess
+    import sys
+    import tempfile
+    import textwrap
+
+    body = step["run"]
+    code = textwrap.dedent(body.split("<<'PY'\n", 1)[1].rsplit("PY", 1)[0])
+    with tempfile.TemporaryDirectory() as scratch:
+        output = Path(scratch) / "github_output"
+        output.write_text("")
+        environment = {"PATH": os.environ["PATH"], "GITHUB_OUTPUT": str(output),
+                       "GITHUB_RUN_ID": "4242", "RUNNER_TEMP": str(tmp or scratch)}
+        environment.update(env)
+        done = subprocess.run([sys.executable, "-c", code], env=environment,
+                              capture_output=True, text=True)
+        values = dict(line.split("=", 1) for line in output.read_text().splitlines() if line)
+    return done.returncode, values
+
+
 # ─── trigger and shape ───────────────────────────────────────────────────────
 
 
@@ -101,32 +141,38 @@ def test_the_deposit_job_never_holds_earth_engine():
         assert step_secrets(step) <= R2_STAGING, step["name"]
 
 
-def test_in_the_detect_job_r2_is_held_only_to_fetch():
-    """PHASE_6F §3 and PHASE_6G: the R2 steps download, and run no config importer.
+def test_in_the_detect_job_r2_is_held_only_to_read():
+    """PHASE_6F §3, PHASE_6G, PHASE_6H: the R2 steps read, and run no config importer.
 
-    Two of them now — the predecessor's state and the baseline — each running
-    exactly one read-only script, the state first so a refused window costs
-    nothing.
+    Three of them now — the head, the predecessor's state, the baseline — each
+    running exactly one read-only script: the head only in head mode, the
+    state first of the two downloads so a refused window costs nothing.
     """
 
     holders = [s for s in steps("detect") if step_secrets(s) & R2_STAGING]
     assert [s["name"] for s in holders] == [
+        "Resolve the chain head and the automatic window",
         "Fetch and verify the predecessor's persistence state",
         "Fetch and verify the baseline months the window needs",
     ]
-    state, baseline = holders
+    head, state, baseline = holders
+    assert step_scripts(head) == {"scripts/resolve_chain_head.py"}
     assert step_scripts(state) == {"scripts/fetch_green_state.py"}
     assert step_scripts(baseline) == {"scripts/baseline_v2_staging.py"}
     assert " fetch " in baseline["run"] and " upload" not in baseline["run"]
-    assert state["if"] == "steps.window.outputs.from_run != ''"
+    assert head["if"] == "steps.inputs.outputs.chain == 'head'"
+    assert state["if"] == (
+        "steps.enumerated.outputs.deposit == 'true' && steps.window.outputs.from_run != ''"
+    )
 
 
-def test_the_state_fetch_opens_the_store_read_only_and_without_the_profile():
-    """A lane step: no local key (the revocation condition), no write path."""
+@pytest.mark.parametrize("script", ["fetch_green_state.py", "resolve_chain_head.py"])
+def test_the_chain_steps_open_the_store_read_only_and_without_the_profile(script):
+    """Lane steps: no local key (the revocation condition), no write path."""
 
     import ast
 
-    source = (ROOT / "scripts" / "fetch_green_state.py").read_text(encoding="utf-8")
+    source = (ROOT / "scripts" / script).read_text(encoding="utf-8")
     tree = ast.parse(source)
     calls = [n for n in ast.walk(tree) if isinstance(n, ast.Call)]
     names = {getattr(c.func, "attr", getattr(c.func, "id", "")) for c in calls}
@@ -180,7 +226,7 @@ def test_the_run_id_names_one_execution_and_not_one_attempt():
     """PHASE_6E §4: a whole-workflow re-run must conflict, not duplicate."""
 
     text = "\n".join(executable_lines(WORKFLOW.read_text(encoding="utf-8")))
-    assert '"run_id=ci-%s\\n" % os.environ["GITHUB_RUN_ID"]' in text
+    assert 'emit(run_id="ci-%s" % os.environ["GITHUB_RUN_ID"])' in text
     assert "run_attempt" not in text and "RUN_ATTEMPT" not in text
 
 
@@ -199,10 +245,14 @@ def test_the_detection_starts_from_the_fetched_state_or_from_nothing():
 
 
 def test_from_run_is_one_path_segment_checked_before_anything_is_spent():
-    window = steps("detect")[1]
-    assert window["name"] == "Accept only a bounded window of real dates, and name the run"
-    assert "[A-Za-z0-9][A-Za-z0-9._-]{0,127}" in window["run"]
-    assert 'out.write("from_run=%s\\n" % from_run)' in window["run"]
+    inputs = steps("detect")[1]
+    assert inputs["name"] == "Accept the dispatch inputs for the chosen chain mode"
+    assert "uses" not in inputs and not step_secrets(inputs)
+    for step in (inputs, step_named("detect", WINDOW)):
+        assert "[A-Za-z0-9][A-Za-z0-9._-]{0,127}" in step["run"]
+    code, _ = run_inline(inputs, CHAIN="from_run", FROM_RUN="../x",
+                         START="2026-09-08", END="2026-09-10")
+    assert code != 0
     assert doc()["jobs"]["detect"]["outputs"]["from_run"] == "${{ steps.window.outputs.from_run }}"
     assert doc()["jobs"]["deposit"]["env"]["FROM_RUN"] == "${{ needs.detect.outputs.from_run }}"
     assert doc()[True]["workflow_dispatch"]["inputs"]["from_run"]["required"] is False
@@ -220,9 +270,11 @@ def test_the_link_travels_to_the_deposit_and_is_used_only_with_from_run():
 
 def test_the_window_is_bounded_before_anything_is_spent():
     names = [s["name"] for s in steps("detect")]
-    window = names.index("Accept only a bounded window of real dates, and name the run")
-    assert window < names.index("Fetch and verify the baseline months the window needs")
+    window = names.index(WINDOW)
+    assert window < names.index(PLAN) < names.index(
+        "Fetch and verify the baseline months the window needs")
     assert "(b - a).days <= 16" in steps("detect")[window]["run"]
+    assert '(b - a).days == 16' in steps("detect")[window]["run"]
 
 
 def test_the_deposit_is_validated_read_only_after_it_is_written():
@@ -252,3 +304,117 @@ def test_both_jobs_refuse_any_bucket_but_staging_first(job):
     assert first["name"] == "Fail closed unless the target is exactly the approved staging bucket"
     assert "araripe-v2-staging" in first["run"]
     assert not step_secrets(first)
+
+
+# ─── the chain modes (PHASE_6H) ──────────────────────────────────────────────
+
+
+def test_head_is_the_default_mode_and_no_date_is_required():
+    inputs = doc()[True]["workflow_dispatch"]["inputs"]
+    assert inputs["chain"]["type"] == "choice"
+    assert inputs["chain"]["options"] == ["head", "from_run", "empty"]
+    assert inputs["chain"]["default"] == "head"
+    for name in ("from_run", "start", "end"):
+        assert inputs[name]["required"] is False and inputs[name]["default"] == "", name
+
+
+@pytest.mark.parametrize(
+    "env, ok",
+    [
+        ({}, True),  # a scheduled event carries no inputs: head
+        ({"CHAIN": "head"}, True),
+        ({"CHAIN": "head", "START": "2026-09-08"}, False),
+        ({"CHAIN": "head", "FROM_RUN": "ci-1"}, False),
+        ({"CHAIN": "from_run", "FROM_RUN": "ci-1", "START": "2026-09-08", "END": "2026-09-10"}, True),
+        ({"CHAIN": "from_run", "START": "2026-09-08", "END": "2026-09-10"}, False),
+        ({"CHAIN": "from_run", "FROM_RUN": "ci-1", "START": "2026-09-08"}, False),
+        ({"CHAIN": "empty", "START": "2026-09-08", "END": "2026-09-10"}, True),
+        ({"CHAIN": "empty", "FROM_RUN": "ci-1", "START": "2026-09-08", "END": "2026-09-10"}, False),
+        ({"CHAIN": "sideways"}, False),
+    ],
+)
+def test_each_mode_accepts_exactly_its_own_inputs(env, ok):
+    code, outputs = run_inline(step_named("detect", INPUTS), **env)
+    assert (code == 0) is ok, (env, code)
+    if ok:
+        assert outputs["chain"] == (env.get("CHAIN") or "head")
+
+
+def test_the_window_step_takes_the_head_or_the_inputs():
+    window = step_named("detect", WINDOW)
+    assert window["env"]["START"] == "${{ steps.head.outputs.start || steps.inputs.outputs.start }}"
+    assert window["env"]["END"] == "${{ steps.head.outputs.end || steps.inputs.outputs.end }}"
+    assert window["env"]["FROM_RUN"] == (
+        "${{ steps.head.outputs.from_run || steps.inputs.outputs.from_run }}")
+    assert window["env"]["NOTHING_TO_DO"] == "${{ steps.head.outputs.nothing_to_do }}"
+
+
+@pytest.mark.parametrize(
+    "start, end, full",
+    [("2026-09-08", "2026-09-24", "true"), ("2026-09-23", "2026-09-27", "false")],
+)
+def test_the_window_step_marks_a_full_window(start, end, full):
+    code, out = run_inline(step_named("detect", WINDOW), START=start, END=end,
+                           FROM_RUN="ci-36456671793")
+    assert code == 0
+    assert out["proceed"] == "true" and out["full"] == full
+    assert out["run_id"] == "ci-4242" and out["from_run"] == "ci-36456671793"
+    assert out["start"] == start and out["end"] == end
+
+
+def test_nothing_to_do_names_the_run_and_stops_before_earth_engine():
+    code, out = run_inline(step_named("detect", WINDOW), NOTHING_TO_DO="true",
+                           START="", END="", FROM_RUN="ci-36456671793")
+    assert code == 0
+    assert out == {"run_id": "ci-4242", "proceed": "false"}
+    assert step_named("detect", PLAN)["if"] == "steps.window.outputs.proceed == 'true'"
+    assert step_named("detect", ENUMERATED)["if"] == "steps.window.outputs.proceed == 'true'"
+
+
+def test_a_window_of_seventeen_days_is_refused():
+    code, _ = run_inline(step_named("detect", WINDOW), START="2026-09-08", END="2026-09-25")
+    assert code != 0
+
+
+def _screen(tmp_path, expected):
+    (tmp_path / "replay").mkdir()
+    (tmp_path / "replay" / "screen.json").write_text(
+        '{"summary": {"expected_acquisitions": %d}, "acquisitions": []}' % expected)
+
+
+@pytest.mark.parametrize(
+    "expected, full, code, deposit",
+    [(3, "false", 0, "true"), (3, "true", 0, "true"),
+     (0, "false", 0, "false"), (0, "true", 1, None)],
+)
+def test_an_empty_window_deposits_nothing_unless_it_is_full(tmp_path, expected, full, code, deposit):
+    _screen(tmp_path, expected)
+    got, out = run_inline(step_named("detect", ENUMERATED), tmp=tmp_path, FULL=full)
+    assert (got == 0) == (code == 0)
+    assert out.get("deposit") == deposit
+
+
+def test_every_step_after_the_screen_needs_something_to_deposit():
+    names = [s["name"] for s in steps("detect")]
+    for step in steps("detect")[names.index(ENUMERATED) + 1:]:
+        assert step["if"].startswith("steps.enumerated.outputs.deposit == 'true'"), step["name"]
+    assert doc()["jobs"]["detect"]["outputs"]["deposit"] == "${{ steps.enumerated.outputs.deposit }}"
+    assert doc()["jobs"]["deposit"]["if"].endswith("&& needs.detect.outputs.deposit == 'true'")
+
+
+def test_the_head_is_resolved_with_the_runners_utc_date():
+    run = step_named("detect", HEAD)["run"]
+    assert 'python scripts/resolve_chain_head.py --today "$(date -u +%F)"' in run
+
+
+def test_the_state_fetch_excludes_only_this_run_from_the_continuations():
+    step = step_named("detect", "Fetch and verify the predecessor's persistence state")
+    assert '--run "$RUN_ID"' in step["run"]
+    assert step["env"]["RUN_ID"] == "${{ steps.window.outputs.run_id }}"
+
+
+def test_the_lane_ceiling_is_the_chains():
+    from src.publication import state_chain as sc
+
+    assert sc.WINDOW_MAX_DAYS == 16
+    assert "(b - a).days <= %d" % sc.WINDOW_MAX_DAYS in step_named("detect", WINDOW)["run"]

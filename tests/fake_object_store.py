@@ -126,12 +126,35 @@ class FakeS3:
     # ``page_size`` forces the continuation-token path so pagination is
     # exercised rather than assumed.
 
-    def list_objects_v2(self, Bucket, ContinuationToken=None, MaxKeys=None):
-        keys = sorted(self.objects)
-        start = keys.index(ContinuationToken) if ContinuationToken else 0
+    def list_objects_v2(
+        self, Bucket, ContinuationToken=None, MaxKeys=None, Prefix="", Delimiter=None
+    ):
+        """S3's listing, including ``Prefix`` and ``Delimiter``.
+
+        With a delimiter, keys that share a segment after the prefix collapse
+        into one ``CommonPrefixes`` entry, and a page counts entries — objects
+        and prefixes together — as S3 does.  Package 6H's chain head lists
+        ``runs/`` this way.
+        """
+
+        entries: list[tuple[str, bool]] = []  # (name, is_common_prefix)
+        seen: set[str] = set()
+        for key in sorted(self.objects):
+            if not key.startswith(Prefix):
+                continue
+            rest = key[len(Prefix):]
+            if Delimiter and Delimiter in rest:
+                common = Prefix + rest.split(Delimiter, 1)[0] + Delimiter
+                if common not in seen:
+                    seen.add(common)
+                    entries.append((common, True))
+            else:
+                entries.append((key, False))
+        names = [name for name, _ in entries]
+        start = names.index(ContinuationToken) if ContinuationToken else 0
         size = MaxKeys or self.page_size
-        page = keys[start : start + size]
-        truncated = start + size < len(keys)
+        page = entries[start : start + size]
+        truncated = start + size < len(entries)
         response = {
             "Contents": [
                 {
@@ -139,12 +162,15 @@ class FakeS3:
                     "Size": len(self.objects[key][0]),
                     "LastModified": self.modified.get(key, EPOCH),
                 }
-                for key in page
+                for key, common in page
+                if not common
             ],
             "IsTruncated": truncated,
         }
+        if Delimiter:
+            response["CommonPrefixes"] = [{"Prefix": name} for name, common in page if common]
         if truncated and not self.drop_continuation_token:
-            response["NextContinuationToken"] = keys[start + size]
+            response["NextContinuationToken"] = names[start + size]
         return response
 
     # ── inspection helpers ───────────────────────────────────────────────────

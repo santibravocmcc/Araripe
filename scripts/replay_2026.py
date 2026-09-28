@@ -347,6 +347,25 @@ def command_plan(args):
     records, datatakes, coverage = enumerate_window(
         ee, export, start=args.start, end=args.end, max_cloud=args.max_cloud
     )
+    out = Path(args.out_dir)
+    if not datatakes:
+        # An automatic window can hold no acquisition: runs twice a week, and
+        # 2026 had gaps of up to 12 days between enumerable dates
+        # (docs/implementation/PHASE_6H_2026-09-28.md §3). That is an answer,
+        # not an error, so it is written down as an empty screen — and no run
+        # manifest, because there is nothing for a ledger to account.
+        out.mkdir(parents=True, exist_ok=True)
+        (out / "screen.json").write_text(
+            json.dumps({
+                "summary": screen_summary([]),
+                "min_clear_percent": args.min_clear,
+                "screen_scale_m": SCREEN_SCALE_M,
+                "acquisitions": [],
+            }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        print("scenes %d -> no datatake in %s..%s" % (len(records), args.start, args.end))
+        print("expected         : 0 — no run manifest written")
+        print("wrote            : %s" % (out / "screen.json"))
+        return 0
     manifest = export.build_run_manifest(
         start=args.start, end=args.end, max_cloud=args.max_cloud,
         datatakes=datatakes, exported_dates=export.dates_of(datatakes),
@@ -359,7 +378,6 @@ def command_plan(args):
     )
     summary = screen_summary(screened)
 
-    out = Path(args.out_dir)
     out.mkdir(parents=True, exist_ok=True)
     (out / "run_manifest_v3.json").write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")

@@ -25,6 +25,15 @@ out-of-order guard; a gap can never be backfilled in this chain, because the
 next transition moves the watermark past it.  Both are refused before a byte of
 state is downloaded.
 
+Which run is the head, and who refuses a second child (PHASE_6H §1-§3)
+-----------------------------------------------------------------------
+``docs/implementation/PHASE_6H_2026-09-28.md``.  The head is **derived**, never
+stored: the one leaf of the tree the ``predecessor`` fields draw from
+``CHAIN_ROOT``.  Two children of one run is a fork, and every read of the
+chain refuses it; the deposit refuses to *create* one.  The automatic window
+runs from the head's ``next_start`` to the day before today, at most
+``WINDOW_MAX_DAYS`` long.
+
 What this module never does
 ---------------------------
 Write anything but the one state object of a run whose ``run.json`` already
@@ -45,6 +54,8 @@ from src.publication.green_release import sha256_bytes
 from src.publication.ledger_gate import check_processing_ledger
 from src.publication.run_inputs import (
     LEDGER_PATH,
+    RUN_MANIFEST_PATH,
+    RUNS_ROOT,
     _read_json,
     load_run_manifest,
     run_key,
@@ -322,3 +333,269 @@ def confirm_link(store: ConditionalStore, link: Mapping[str, str]) -> None:
                 )
             ]
         )
+
+
+# ── the head, the fork, the automatic window (PHASE_6H) ──────────────────────
+
+#: The run the chain grows from: the 2026 replay's candidate, whose state
+#: PHASE_6G §7 put into its own prefix and verified.  It is the one fact the
+#: derivation cannot deduce — nine run.json in the bucket name no predecessor
+#: and eight of them are not this chain's start (PHASE_6H §0) — so it is
+#: declared here.  A new generation (a backfill from empty, which
+#: ``update_tracks`` requires below the watermark) is a new root, and that is
+#: a reviewed code change, not a dispatch input (PHASE_6H §1, §5).
+CHAIN_ROOT = "rep-2026-08-30-v3"
+
+#: The lane's window ceiling, the ``(b - a).days <= 16`` of
+#: ``v2_green_deposit_lane.yml``; ``tests/test_green_deposit_lane.py`` keeps
+#: the two equal.  A queue longer than this is walked in several runs.
+WINDOW_MAX_DAYS = 16
+
+#: How many days before today the automatic window stops (exclusive end =
+#: today - SETTLE_DAYS), so a run on day T enumerates at most T - 2.  Measured
+#: in PHASE_6H §0 from twelve blue runs: every date older than 21.9 h was
+#: visible, and the youngest visible was 19.6 h — T - 1 sits in that band at
+#: the cron's hour, T - 2 at twice it.  A date not yet ingested before the
+#: last enumerated one is lost to the chain for good (§3), so the band is
+#: excluded at the price of one day of latency.
+SETTLE_DAYS = 1
+
+_RUN_PREFIX = RUNS_ROOT + "/"
+
+
+def _listing_client(store: ConditionalStore) -> Any:
+    """The raw client the store reads with, for the one listing the chain needs.
+
+    ``ConditionalStore`` deliberately has no listing (``retention.list_inventory``
+    explains why), and a listing is neither a write nor a widening of it.  It
+    goes through the same client, so the list and the reads that follow see
+    one bucket through one identity — in the lane and in a test fake alike.
+    """
+
+    return store._client  # noqa: SLF001 - read-only listing, see docstring
+
+
+def list_run_ids(store: ConditionalStore) -> list[str]:
+    """Every ``runs/<id>/`` prefix, following the cursor, or a refusal.
+
+    One delimited listing — prefixes, not objects, so a run's 70 alert files
+    cost nothing.  R2 lists strongly consistently (PHASE_6H §0): a run whose
+    ``run.json`` was written before this call is in the answer.
+    """
+
+    client = _listing_client(store)
+    ids: list[str] = []
+    token: str | None = None
+    while True:
+        kwargs: dict[str, Any] = {
+            "Bucket": store.bucket,
+            "Prefix": _RUN_PREFIX,
+            "Delimiter": "/",
+        }
+        if token:
+            kwargs["ContinuationToken"] = token
+        try:
+            page = client.list_objects_v2(**kwargs)
+        except Exception as exc:  # botocore ClientError and transport errors
+            raise ChainRejected(
+                [Finding("run_listing_unreadable", str(exc), _RUN_PREFIX)]
+            ) from exc
+        for entry in page.get("CommonPrefixes") or ():
+            segment = entry["Prefix"][len(_RUN_PREFIX):].rstrip("/")
+            if segment:
+                ids.append(segment)
+        if not page.get("IsTruncated"):
+            return sorted(set(ids))
+        token = page.get("NextContinuationToken")
+        if not token:
+            # A partial listing could omit exactly the child that makes the
+            # apparent head a continued run. Refuse rather than decide on it.
+            raise ChainRejected(
+                [
+                    Finding(
+                        "run_listing_incomplete",
+                        f"listing {store.bucket}/{_RUN_PREFIX} reported more "
+                        "results and returned no continuation token",
+                        _RUN_PREFIX,
+                    )
+                ]
+            )
+
+
+@dataclass(frozen=True)
+class RunLinks:
+    """What the bucket says about every run: who continues whom.
+
+    ``manifests`` holds every run that has a ``run.json``; ``incomplete`` the
+    prefixes without one — a deposit writes ``run.json`` last, so those are
+    deposits that did not finish, and they are not runs.
+    """
+
+    manifests: dict[str, dict]
+    incomplete: tuple[str, ...]
+
+    def parent_of(self, run_id: str) -> str | None:
+        link = self.manifests[run_id].get("predecessor")
+        return link["run_id"] if link else None
+
+    def children_of(self, run_id: str) -> list[str]:
+        return sorted(rid for rid in self.manifests if self.parent_of(rid) == run_id)
+
+
+def read_run_links(store: ConditionalStore) -> RunLinks:
+    """Every ``run.json`` in the bucket, validated — any invalid one refuses.
+
+    Failing closed on one unreadable ``run.json`` is deliberate: it may be the
+    very child that makes the apparent head a continued run (PHASE_6H §1).
+    """
+
+    manifests: dict[str, dict] = {}
+    incomplete: list[str] = []
+    for run_id in list_run_ids(store):
+        try:
+            validate_run_id(run_id)
+        except Rejected:
+            incomplete.append(run_id)
+            continue
+        try:
+            manifests[run_id] = load_run_manifest(store, run_id)
+        except Rejected as exc:
+            if exc.codes != ("run_manifest_absent",):
+                raise
+            incomplete.append(run_id)
+    return RunLinks(manifests, tuple(incomplete))
+
+
+@dataclass(frozen=True)
+class ChainHead:
+    """The chain from its root to the one run nothing continues yet."""
+
+    path: tuple[str, ...]
+    incomplete: tuple[str, ...]
+    outside: tuple[str, ...]
+
+    @property
+    def run_id(self) -> str:
+        return self.path[-1]
+
+
+def resolve_head(store: ConditionalStore, root: str = CHAIN_ROOT) -> ChainHead:
+    """Walk the ``predecessor`` edges from ``root`` to the single leaf, or refuse.
+
+    Zero children: the head.  One: the next step, after its link is checked
+    against its parent's declared state.  Two or more: a fork, refused with
+    both names — a fork is never resolved here, because choosing a branch is
+    choosing which dates the chain claims (PHASE_6H §2).
+    """
+
+    links = read_run_links(store)
+    if root not in links.manifests:
+        raise ChainRejected(
+            [
+                Finding(
+                    "chain_root_absent",
+                    f"runs/{root}/run.json is absent; the chain has nothing to "
+                    "grow from",
+                    run_key(root, RUN_MANIFEST_PATH),
+                )
+            ]
+        )
+    path = [root]
+    while True:
+        current = path[-1]
+        children = links.children_of(current)
+        if not children:
+            break
+        if len(children) > 1:
+            raise ChainRejected(
+                [
+                    Finding(
+                        "chain_forked",
+                        f"{', '.join(children)} all continue {current}. A chain "
+                        "has one head; which branch holds the chain's dates is a "
+                        "recorded human decision, and nothing here deletes or "
+                        "chooses.",
+                        run_key(current, RUN_MANIFEST_PATH),
+                    )
+                ]
+            )
+        (child,) = children
+        declared = links.manifests[current]["persistence_state"]["sha256"]
+        claimed = links.manifests[child]["predecessor"]["persistence_state_sha256"]
+        if claimed != declared:
+            raise ChainRejected(
+                [
+                    Finding(
+                        "predecessor_link_mismatch",
+                        f"{child} says it started from {claimed} and "
+                        f"runs/{current}/run.json declares {declared}",
+                        run_key(child, RUN_MANIFEST_PATH),
+                    )
+                ]
+            )
+        path.append(child)
+    on_chain = set(path)
+    outside = tuple(sorted(rid for rid in links.manifests if rid not in on_chain))
+    return ChainHead(tuple(path), links.incomplete, outside)
+
+
+def check_not_continued(store: ConditionalStore, predecessor_id: str, run_id: str | None) -> None:
+    """Refuse when a run other than ``run_id`` already continues ``predecessor_id``.
+
+    The deposit asks before its first byte and again right before its
+    ``run.json`` (PHASE_6H §2).  ``run_id`` itself does not count: re-running
+    only the deposit job of the same run finds its own ``run.json`` and must
+    go on to the usual ``unchanged``.
+    """
+
+    others = [
+        rid for rid in read_run_links(store).children_of(predecessor_id) if rid != run_id
+    ]
+    if others:
+        raise ChainRejected(
+            [
+                Finding(
+                    "predecessor_already_continued",
+                    f"{', '.join(others)} already continue {predecessor_id}. A "
+                    "second continuation would make two runs claim the same "
+                    "dates; continue the head instead.",
+                    run_key(predecessor_id, RUN_MANIFEST_PATH),
+                )
+            ]
+        )
+
+
+@dataclass(frozen=True)
+class Window:
+    start: str
+    end: str
+
+    @property
+    def days(self) -> int:
+        return (date.fromisoformat(self.end) - date.fromisoformat(self.start)).days
+
+    @property
+    def full(self) -> bool:
+        """At the ceiling: an enumeration that finds nothing here is a failure."""
+
+        return self.days == WINDOW_MAX_DAYS
+
+
+def automatic_window(predecessor: Predecessor, today: str) -> Window | None:
+    """``[next_start, min(today - SETTLE_DAYS, next_start + 16))``, or nothing to do.
+
+    ``None`` when the head already covers everything the settle rule allows —
+    not an error: the scheduled run that finds it has simply come early.
+    """
+
+    try:
+        now = date.fromisoformat(today)
+    except (TypeError, ValueError):
+        raise ChainRejected(
+            [Finding("today_invalid", f"{today!r} is not YYYY-MM-DD", "today")]
+        ) from None
+    start = date.fromisoformat(predecessor.next_start)
+    end = min(now - timedelta(days=SETTLE_DAYS), start + timedelta(days=WINDOW_MAX_DAYS))
+    if end <= start:
+        return None
+    return Window(start.isoformat(), end.isoformat())
