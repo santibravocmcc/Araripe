@@ -14,7 +14,9 @@
 #
 # The list is the third-party import closure of the detection path, measured by
 # importing every module scripts/replay_2026.py `run` imports and diffing
-# sys.modules — not guessed from requirements.txt.
+# sys.modules — not guessed from requirements.txt. Resolution for Linux is
+# checked locally with `pip install --dry-run --platform manylinux… --python-version 3.11
+# --only-binary=:all:` before a runner pays for it.
 earthengine-api==1.7.42
 requests==2.34.2
 numpy==2.4.2
@@ -26,6 +28,8 @@ shapely==2.1.2
 pyproj==3.7.2
 rasterio==1.4.4
 geopandas==1.1.2
+# geopandas' file engine: pinned because it writes the alert GeoJSON bytes
+pyogrio==0.12.1
 xarray==2026.1.0
 rioxarray==0.19.0
 dask==2026.1.2
@@ -34,5 +38,8 @@ python-dotenv==1.2.1
 click==8.3.1
 jsonschema==4.26.0
 PyYAML==6.0.3
+# boto3 1.42.44 requires botocore 1.42.44 exactly. The local conda env carries
+# botocore 1.42.42 beside it -- conda tolerated the mismatch, pip refuses it
+# (run 36432410617 failed here). The S3 client is not on the numerical path.
 boto3==1.42.44
-botocore==1.42.42
+botocore==1.42.44
