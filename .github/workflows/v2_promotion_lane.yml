@@ -26,6 +26,12 @@ name: v2 green promotion lane (serialized)
 #   lane-proof — the Package 2B.0 behaviour, preserved unchanged: hold the
 #     serialized lock so the four-concurrent-run lane proof can still be run.
 #     That proof is a 2B.0 gate item and is still outstanding.
+#   history — Phase 6, decision D5: read the durable promotion history
+#     (pointers/green/history/, one byte-exact copy per accepted pointer write)
+#     and check it against the live pointer. Read-only, like `status`, and in
+#     the same job, because reading the bucket needs an identity and this job
+#     is the only one here that holds one. It exits 1 on an inconsistent
+#     history, so a broken chain fails the run instead of scrolling past.
 #
 # Inertness, unchanged from Package 2B.0:
 #   - trigger: workflow_dispatch ONLY. No schedule, no push, no inheritance of
@@ -48,7 +54,7 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "contract-check | plan | rollback | status | promote | lane-proof"
+        description: "contract-check | plan | rollback | status | history | promote | lane-proof"
         required: false
         default: "contract-check"
       release_id:
@@ -95,7 +101,7 @@ jobs:
           echo "run: ${{ github.run_id }} attempt ${{ github.run_attempt }} by ${{ github.actor }}"
           echo "mode: ${MODE}"
           case "${MODE}" in
-            contract-check|plan|rollback|status|promote|lane-proof) ;;
+            contract-check|plan|rollback|status|history|promote|lane-proof) ;;
             *) echo "::error::unknown mode ${MODE}" >&2; exit 1 ;;
           esac
 
@@ -191,7 +197,7 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch'
       && github.repository == 'santibravocmcc/Araripe'
-      && (github.event.inputs.mode == 'rollback' || github.event.inputs.mode == 'status')
+      && (github.event.inputs.mode == 'rollback' || github.event.inputs.mode == 'status' || github.event.inputs.mode == 'history')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: v2-promotion
@@ -245,6 +251,18 @@ jobs:
           R2_PROMOTION_SECRET_ACCESS_KEY: ${{ secrets.R2_PROMOTION_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ vars.AWS_REGION }}
         run: python3 scripts/publish_green_release.py status
+
+      - name: Read the durable promotion history
+        # Read-only: read_history has no write in it. Every accepted pointer
+        # write leaves a byte-exact copy under pointers/green/history/, and this
+        # checks the chain against the live pointer — the evidence the D5
+        # re-proof reads with the real code rather than with a second client.
+        if: github.event.inputs.mode == 'history'
+        env:
+          R2_PROMOTION_ACCESS_KEY_ID: ${{ secrets.R2_PROMOTION_ACCESS_KEY_ID }}
+          R2_PROMOTION_SECRET_ACCESS_KEY: ${{ secrets.R2_PROMOTION_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+        run: python3 scripts/publish_green_release.py history
 
       - name: Move the pointer back, deliberately
         # `rollback` re-reads the target release FROM THE STORE and revalidates

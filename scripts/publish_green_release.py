@@ -26,6 +26,14 @@ represent zero-alert dates and stale objects explicitly.
     # read the live pointer:
     python scripts/publish_green_release.py status
 
+    # read the durable promotion history and check it against the pointer:
+    python scripts/publish_green_release.py history
+
+Every pointer move also writes a history record — an immutable, byte-exact
+copy of each accepted pointer version under ``pointers/green/history/``
+(Phase 6, decision D5; ``docs/implementation/PHASE_6C_2026-09-27.md``).
+``history`` only reads.
+
 ``plan`` is the whole validation chain and touches no object store, so it is
 the mode that runs anywhere — including in the promotion lane on a branch,
 where no credential exists.
@@ -68,6 +76,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.publication import atomic_publish as ap  # noqa: E402
 from src.publication import conditional_store as cs  # noqa: E402
+from src.publication import promotion_history as history  # noqa: E402
 from src.publication.findings import Rejected  # noqa: E402
 from src.publication.green_release import (  # noqa: E402
     POINTER_KEY,
@@ -332,15 +341,53 @@ def _publish_verify_promote(release, ledger_document, bodies, store) -> int:
     )
     ap.verify_release(store, release)
     print("verified : every declared object re-read and matched")
-    result = ap.promote(
-        store, release, ledger_document, now=datetime.now(timezone.utc),
-        promoted_by=provenance(),
-    )
+    try:
+        result = ap.promote(
+            store, release, ledger_document, now=datetime.now(timezone.utc),
+            promoted_by=provenance(),
+        )
+    except ap.HistoryNotRecorded as exc:
+        print_promotion(exc.promotion)
+        raise
+    print_promotion(result)
+    return 0
+
+
+def print_promotion(result: ap.Promotion) -> None:
+    """What moved, and the two history records the move is responsible for.
+
+    Printed even when the record of the new version failed, before the error:
+    the log of a lane run has to show that the pointer moved, or the failure
+    that follows reads as a promotion that did not happen.
+    """
+
     print(
         f"pointer  : {result.action} -> {result.release_id} at sequence "
         f"{result.sequence}, {result.tombstone_count} tombstone(s)"
     )
-    return 0
+    if result.action == "unchanged":
+        if result.live_record is not None:
+            print(
+                f"history  : sequence {result.sequence} (live) "
+                f"{_recorded(result.live_record)}"
+            )
+        return
+    if result.live_record is not None:
+        print(
+            f"history  : sequence {result.sequence - 1} (replaced) "
+            f"{_recorded(result.live_record)}"
+        )
+    if result.new_record is not None:
+        print(
+            f"history  : sequence {result.sequence} (new) "
+            f"{_recorded(result.new_record)}"
+        )
+
+
+def _recorded(outcome: cs.PutOutcome) -> str:
+    if outcome.result == "created":
+        return f"recorded now at {outcome.key}"
+    return f"already recorded at {outcome.key}"
 
 
 def cmd_publish(args) -> int:
@@ -362,13 +409,14 @@ def cmd_publish(args) -> int:
 
 def cmd_rollback(args) -> int:
     store = build_store()
-    result = ap.rollback(
-        store, args.to, now=datetime.now(timezone.utc), promoted_by=provenance()
-    )
-    print(
-        f"pointer  : {result.action} -> {result.release_id} at sequence "
-        f"{result.sequence}, {result.tombstone_count} tombstone(s)"
-    )
+    try:
+        result = ap.rollback(
+            store, args.to, now=datetime.now(timezone.utc), promoted_by=provenance()
+        )
+    except ap.HistoryNotRecorded as exc:
+        print_promotion(exc.promotion)
+        raise
+    print_promotion(result)
     return 0
 
 
@@ -380,6 +428,23 @@ def cmd_status(args) -> int:
         return 0
     print(json.dumps(pointer, indent=2, sort_keys=True))
     return 0
+
+
+def cmd_history(args) -> int:
+    """Read every history record and check it against the live pointer.
+
+    Reads only — ``read_history`` has no write in it.  Exits 1 when the history
+    is inconsistent, so a lane run that reads a broken history fails visibly
+    instead of printing a table nobody checks.
+    """
+
+    store = build_store()
+    pointer, stored = ap.read_live_pointer(store)
+    found = history.read_history(
+        store, pointer, stored.body if stored is not None else None
+    )
+    print(history.describe(found))
+    return 0 if found.consistent else 1
 
 
 def main(argv=None) -> int:
@@ -431,6 +496,13 @@ def main(argv=None) -> int:
 
     status = sub.add_parser("status", help="print the live green pointer")
     status.set_defaults(handler=cmd_status)
+
+    recorded = sub.add_parser(
+        "history",
+        help="read the durable promotion history and check it against the "
+             "live pointer; writes nothing",
+    )
+    recorded.set_defaults(handler=cmd_history)
 
     args = parser.parse_args(argv)
     try:

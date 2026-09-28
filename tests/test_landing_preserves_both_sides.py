@@ -42,6 +42,9 @@ MODULOS_DE_PUBLICACAO = (
     "green_release",
     "ledger_binding",
     "ledger_gate",
+    # Phase 6, D5: the durable promotion history — one immutable copy per
+    # accepted pointer write (docs/implementation/PHASE_6C_2026-09-27.md).
+    "promotion_history",
     "retention",
     "run_assembler",
     "run_inputs",

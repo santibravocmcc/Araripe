@@ -241,6 +241,30 @@ def test_an_unclassified_key_is_kept_and_reported(name):
     assert (entry.action, entry.reason) == (rt.REVIEW, "unclassified_prefix")
 
 
+@pytest.mark.parametrize("age_days", [0, 400])
+def test_until_the_policy_is_extended_a_history_record_is_kept_unclassified(age_days):
+    """Phase 6, D5: the promotion history exists before the policy knows it.
+
+    The order is the one ``GREEN_RETENTION_AND_MIGRATION.md`` §3 set — build
+    the history, re-prove it against real R2, and only then extend the policy.
+    Until that extension, a history record falls to the fail-closed rule: kept,
+    reported, never eligible.  When the policy learns the prefix, this test is
+    the one that has to change, on purpose.
+    """
+
+    from src.publication import promotion_history as history
+
+    entry = decide(
+        history.history_key(10),
+        age_days=age_days,
+        phase_open=False,
+        accept_run_manifest_loss=True,
+        run_horizon_days=0,
+        verification_horizon_days=0,
+    )
+    assert (entry.action, entry.reason) == (rt.REVIEW, "unclassified_prefix")
+
+
 def test_a_key_directly_under_releases_is_reviewed_not_classified_as_a_release():
     entry = decide("releases/stray.json")
     assert (entry.action, entry.reason) == (rt.REVIEW, "release_prefix_malformed")

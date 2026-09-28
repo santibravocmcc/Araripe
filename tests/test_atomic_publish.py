@@ -18,6 +18,7 @@ import pytest
 
 from src.publication import atomic_publish as ap
 from src.publication import conditional_store as cs
+from src.publication import promotion_history as history
 from src.publication.atomic_publish import (
     PromotionRefused,
     ReleaseIncomplete,
@@ -633,7 +634,16 @@ def test_a_staged_release_moves_and_rolls_back_without_touching_anything_else():
 
     assert pointer_of(fake)["release_id"] == first["release_id"]
     assert pointer_of(fake)["sequence"] == 3
-    # Every key written lives under the green layout, and nothing else exists.
+    # Every key written lives under the green layout, and nothing else exists:
+    # the releases, the pointer, and exactly one history record per accepted
+    # pointer write (Phase 6, D5) — three writes, three records.
     for key in fake.keys():
-        assert key.startswith("releases/rel-g1-") or key == POINTER_KEY
+        assert (
+            key.startswith("releases/rel-g1-")
+            or key == POINTER_KEY
+            or key.startswith(history.HISTORY_ROOT)
+        )
+    assert [k for k in fake.keys() if k.startswith(history.HISTORY_ROOT)] == [
+        history.history_key(sequence) for sequence in (1, 2, 3)
+    ]
     assert store.bucket == cs.STAGING_BUCKET

@@ -34,6 +34,7 @@ to serve.
 | any other release | `releases/<other>/…` | private |
 | processing input | `runs/<run-id>/…` | private |
 | verification artifact | `green-isolation-proof/…`, `promotion-identity-probe/…`, `readonly-identity-probe/…` | private |
+| promotion history (added 2026-09-27, Phase 6 D5) | `pointers/green/history/<sequence>.json` | private — it names releases that are no longer live |
 | anything else | — | **private**, and reported |
 
 The last row is the policy's shape, not a footnote. A prefix nobody has

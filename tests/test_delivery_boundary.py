@@ -71,11 +71,42 @@ def refusal_code(path, method="GET", **kwargs):
         ("green-isolation-proof/run-1/probe.json", db.PRIVATE, "verification_artifact"),
         ("promotion-identity-probe/run-1/pointer.json", db.PRIVATE, "verification_artifact"),
         ("readonly-identity-probe/run-1/write-attempt.json", db.PRIVATE, "verification_artifact"),
+        ("pointers/green/history/0000000011.json", db.PRIVATE, "promotion_history"),
     ],
 )
 def test_every_known_prefix_classifies_to_its_documented_exposure(key, exposure, reason):
     entry = db.classify_key(key, live_release_id=LIVE)
     assert (entry.exposure, entry.reason) == (exposure, reason)
+
+
+def test_the_history_root_is_the_one_the_history_writes_to():
+    """Two constants for one prefix, pinned equal.
+
+    This module deliberately imports nothing from the publication path — it is
+    the one place that decides exposure — so the history root is restated here
+    rather than imported, exactly as ``POINTER_KEY`` is.  A rename on one side
+    only would make every history record "unclassified" again, silently.
+    """
+
+    from src.publication import promotion_history as history
+
+    assert db.HISTORY_ROOT == history.HISTORY_ROOT
+    assert db.classify_key(history.history_key(1), live_release_id=LIVE).reason == (
+        "promotion_history"
+    )
+
+
+def test_the_route_cannot_reach_the_history():
+    """The Worker serves only what the LIVE release declares, plus three names.
+
+    So ``/data/green/history/…`` is refused by construction — the same refusal
+    as any undeclared path — and nothing in the site needed to change for the
+    history to stay private.
+    """
+
+    assert refusal_code("/data/green/history/0000000011.json") == (
+        "not_declared_by_the_live_release"
+    )
 
 
 def test_an_unclassified_prefix_is_private_rather_than_unknown():

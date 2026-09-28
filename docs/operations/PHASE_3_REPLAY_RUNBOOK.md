@@ -202,6 +202,13 @@ Ensaiado e provado em `tests/test_replay_rehearsal.py`; o comportamento é do
 - `promote` recusa mover para cobertura estritamente mais antiga; **`rollback` é
   a única maneira de ir para trás, e é deliberada.**
 - Nada é apagado. Um objeto superado fica como tombstone no ponteiro.
+- **Desde 2026-09-27 (Phase 6, D5), toda escrita aceita — promoção ou
+  reversão — deixa uma cópia imutável, byte a byte, do ponteiro em
+  `pointers/green/history/<sequence>.json`**, e a versão substituída é
+  registrada **antes** do CAS. Se a reversão sair com `HistoryNotRecorded`, o
+  ponteiro **se moveu**: repita a mesma operação para completar o registro, e
+  não reverta por causa desse erro.
+  [`../implementation/PHASE_6C_2026-09-27.md`](../implementation/PHASE_6C_2026-09-27.md).
 
 ## 6. Drenagem da fila pós-corte (Phase 6)
 

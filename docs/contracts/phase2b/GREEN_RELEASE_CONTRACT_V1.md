@@ -26,9 +26,12 @@ looks like protection — the division Package 2B.2A reached by deleting code
     releases/<release_id>/ledger.json     the ledger it was published from
     releases/<release_id>/<logical path>  its products
     pointers/green/current.json           the ONLY mutable object
+    pointers/green/history/<sequence>.json  a byte-exact copy of every accepted
+                                          pointer version (added 2026-09-27, §11)
 
-Everything under `releases/` is write-once. `pointers/green/current.json` is
-the single mutable object, and every write to it is a compare-and-swap. All of
+Everything under `releases/` and `pointers/green/history/` is write-once.
+`pointers/green/current.json` is the single mutable object, and every write to
+it is a compare-and-swap. All of
 it lives in `araripe-v2-staging`; `assert_staging_target` refuses
 `araripe-cogs` by name and refuses any endpoint but the approved account one,
 *before* a credential is read.
@@ -287,3 +290,35 @@ Still open, by package:
   credential. Creating a GitHub Environment is a repository configuration
   change and is owner-approved work. `v2_promotion_lane.yml` therefore runs
   everything that needs no credential and stops, naming that capability.
+
+## 11. The durable promotion history (added 2026-09-27, Phase 6 decision D5)
+
+The pointer keeps one step of context, so one write after a release stops being
+live the store could no longer say it ever was. Measured on 2026-09-16:
+`rel-g1-2ddb10c7…`, live as sequence 8, dropped out of the pointer and survived
+only because a record was copied into a document by hand. Every accepted
+pointer write now also leaves a record.
+
+* **Key:** `pointers/green/history/<sequence>.json`, the sequence zero-padded to
+  ten digits. It depends on the sequence **only**: the sequence is unique per
+  accepted write (§6 — the compare-and-swap orders accepted writes, the first
+  is 1, each later one adds 1), and a key that also named the release would let
+  two bodies claim one sequence without colliding.
+* **Content:** the pointer itself, byte for byte — the same
+  `araripe.green.pointer/1` document, no envelope. A record is checked by
+  comparing bytes.
+* **The move is three writes:** record the version about to be replaced, from
+  the bytes read; the compare-and-swap; record the new version, from the bytes
+  the swap accepted. Every refusal happens before the first of them, so a
+  refused promotion still writes nothing.
+* **What that guarantees:** no record of a write that did not happen, and no
+  version replaced without its record. The one record that may be missing is
+  the live version's own — its bytes are the live pointer — and re-running the
+  same promotion, or the next move, writes it. A failure to write it after the
+  swap is reported as `HistoryNotRecorded`, which says the pointer **moved**.
+* **Private.** It names releases that are no longer live, so the delivery
+  boundary classifies it private by name, and the route cannot reach it.
+
+The design, the reader's contract, and what the history cannot know about the
+sequences written before it existed (1 to 9 in `araripe-v2-staging`) are in
+[`../../implementation/PHASE_6C_2026-09-27.md`](../../implementation/PHASE_6C_2026-09-27.md).
