@@ -44,18 +44,46 @@ name: v2 green deposit lane (detect a window, deposit runs/<run-id>/)
 # Either way the deposit now writes this run's own state into its prefix,
 # before run.json, and run.json (araripe.green.run/2) names the predecessor or
 # says null. That is what lets the next run continue from this one.
+#
+# Who picks the predecessor (PHASE_6H_2026-09-28.md) -- the `chain` input:
+#
+#   head      (the default, and what a schedule will use) no dates, no from_run.
+#             resolve_chain_head.py derives the head from the bucket -- the one
+#             leaf the run.json `predecessor` fields draw from the chain root --
+#             and the window: the day after its last covered date to today - 1,
+#             exclusive, at most 16 days. A longer queue is walked in several
+#             runs. A head already covering everything is "nothing to do".
+#   from_run  the run named by hand, over start..end, as before.
+#   empty     start..end from an empty state, as before.
+#
+# A window the enumeration finds empty deposits nothing and succeeds -- except
+# a full 16-day one, which fails: 2026 never had a gap that long. And the
+# deposit refuses a predecessor another run already continues, before its
+# first byte and again right before run.json: two children of one run is a
+# fork, and the next head resolution would refuse the whole chain.
+#
+# Still no `schedule:` -- wiring the cadence comes with the cutover. When it
+# does, a scheduled event carries no inputs and runs as `head`; the jobs'
+# `github.event_name == 'workflow_dispatch'` guard changes with it.
 
 on:
   workflow_dispatch:
     inputs:
-      start:
-        description: "First UTC date of the window, YYYY-MM-DD (inclusive)"
-        required: true
-      end:
-        description: "One past the last UTC date, YYYY-MM-DD (exclusive); at most 16 days after start"
-        required: true
+      chain:
+        description: "head: continue the derived head over the automatic window (leave the rest empty). from_run: continue the named run over start..end. empty: start..end from an empty state."
+        type: choice
+        options: [head, from_run, empty]
+        default: head
       from_run:
-        description: "Optional: the run whose persistence state this one continues (start must be the day after its last covered date). Empty starts from an empty state."
+        description: "Only with chain=from_run: the run whose persistence state this one continues (start must be the day after its last covered date)."
+        required: false
+        default: ""
+      start:
+        description: "Not with chain=head. First UTC date of the window, YYYY-MM-DD (inclusive)"
+        required: false
+        default: ""
+      end:
+        description: "Not with chain=head. One past the last UTC date, YYYY-MM-DD (exclusive); at most 16 days after start"
         required: false
         default: ""
 
@@ -71,6 +99,7 @@ jobs:
     outputs:
       run_id: ${{ steps.window.outputs.run_id }}
       from_run: ${{ steps.window.outputs.from_run }}
+      deposit: ${{ steps.enumerated.outputs.deposit }}
     env:
       R2_STAGING_BUCKET: ${{ vars.R2_STAGING_BUCKET }}
       R2_ENDPOINT_URL: ${{ vars.R2_ENDPOINT_URL }}
@@ -84,37 +113,39 @@ jobs:
           test "$R2_ENDPOINT_URL" = "https://9416750169311ee4afc18a8ff3c771d4.r2.cloudflarestorage.com" || {
             echo "::error::refusing: R2_ENDPOINT_URL is not the approved account endpoint" >&2; exit 1; }
 
-      - name: Accept only a bounded window of real dates, and name the run
-        id: window
+      - name: Accept the dispatch inputs for the chosen chain mode
+        id: inputs
         env:
+          CHAIN: ${{ github.event.inputs.chain }}
+          FROM_RUN: ${{ github.event.inputs.from_run }}
           START: ${{ github.event.inputs.start }}
           END: ${{ github.event.inputs.end }}
-          FROM_RUN: ${{ github.event.inputs.from_run }}
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import os, re, datetime as dt
-          start, end = os.environ["START"], os.environ["END"]
-          from_run = os.environ.get("FROM_RUN", "")
+          import os, re
+          # A scheduled event carries no inputs: it is `head`.
+          chain = os.environ.get("CHAIN") or "head"
+          from_run, start, end = (os.environ.get(k, "") for k in ("FROM_RUN", "START", "END"))
+          if chain not in ("head", "from_run", "empty"):
+              raise SystemExit("::error::chain must be head, from_run or empty")
+          if chain == "head" and (from_run or start or end):
+              raise SystemExit("::error::chain=head derives the predecessor and the "
+                               "window; leave from_run, start and end empty")
+          if chain == "from_run" and not from_run:
+              raise SystemExit("::error::chain=from_run needs from_run")
+          if chain == "empty" and from_run:
+              raise SystemExit("::error::chain=empty starts from nothing; from_run must be empty")
+          if chain != "head" and not (start and end):
+              raise SystemExit("::error::chain=%s needs start and end" % chain)
           if from_run and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", from_run):
               raise SystemExit("::error::from_run must be one run id, one path segment")
-          try:
-              a, b = dt.date.fromisoformat(start), dt.date.fromisoformat(end)
-          except ValueError:
-              raise SystemExit("::error::start and end must be YYYY-MM-DD")
-          if not (a < b and (b - a).days <= 16):
-              raise SystemExit("::error::the window must be 1 to 16 days, end exclusive")
-          months, day = [], a
-          while day < b:
-              if day.month not in months:
-                  months.append(day.month)
-              day += dt.timedelta(days=1)
           with open(os.environ["GITHUB_OUTPUT"], "a") as out:
-              out.write("months=%s\n" % " ".join("--month %d" % m for m in months))
-              out.write("run_id=ci-%s\n" % os.environ["GITHUB_RUN_ID"])
+              out.write("chain=%s\n" % chain)
               out.write("from_run=%s\n" % from_run)
-          print("window %s..%s, baseline months %s, continues %s"
-                % (start, end, months, from_run or "nothing (empty state)"))
+              out.write("start=%s\n" % start)
+              out.write("end=%s\n" % end)
+          print("chain mode %s" % chain)
           PY
 
       - name: Check out the lane code
@@ -131,28 +162,124 @@ jobs:
           python -m pip install --quiet --disable-pip-version-check -r requirements-green-detect.txt
           python -m pip freeze | grep -iE '^(earthengine-api|numpy|scipy|rasterio|geopandas|shapely|pyproj|boto3|botocore)=='
 
+      - name: Resolve the chain head and the automatic window
+        # Only with chain=head. Read-only: ReadOnlyStore, no profile fallback,
+        # no config import. Reads run.json documents and the head's ledger --
+        # never the state -- and refuses a fork, an invalid run.json, or a link
+        # that does not match its parent's declared state (PHASE_6H §1, §3).
+        id: head
+        if: steps.inputs.outputs.chain == 'head'
+        env:
+          R2_STAGING_ACCESS_KEY_ID: ${{ secrets.R2_STAGING_ACCESS_KEY_ID }}
+          R2_STAGING_SECRET_ACCESS_KEY: ${{ secrets.R2_STAGING_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+        run: |
+          set -euo pipefail
+          python scripts/resolve_chain_head.py --today "$(date -u +%F)"
+
+      - name: Accept only a bounded window of real dates, and name the run
+        id: window
+        env:
+          START: ${{ steps.head.outputs.start || steps.inputs.outputs.start }}
+          END: ${{ steps.head.outputs.end || steps.inputs.outputs.end }}
+          FROM_RUN: ${{ steps.head.outputs.from_run || steps.inputs.outputs.from_run }}
+          NOTHING_TO_DO: ${{ steps.head.outputs.nothing_to_do }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os, re, datetime as dt
+          def emit(**values):
+              with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+                  for name, value in values.items():
+                      out.write("%s=%s\n" % (name, value))
+          emit(run_id="ci-%s" % os.environ["GITHUB_RUN_ID"])
+          if os.environ.get("NOTHING_TO_DO") == "true":
+              emit(proceed="false")
+              print("the chain head already covers every date the settle rule allows; nothing to do")
+              raise SystemExit(0)
+          start, end = os.environ["START"], os.environ["END"]
+          from_run = os.environ.get("FROM_RUN", "")
+          if from_run and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", from_run):
+              raise SystemExit("::error::from_run must be one run id, one path segment")
+          try:
+              a, b = dt.date.fromisoformat(start), dt.date.fromisoformat(end)
+          except ValueError:
+              raise SystemExit("::error::start and end must be YYYY-MM-DD")
+          if not (a < b and (b - a).days <= 16):
+              raise SystemExit("::error::the window must be 1 to 16 days, end exclusive")
+          months, day = [], a
+          while day < b:
+              if day.month not in months:
+                  months.append(day.month)
+              day += dt.timedelta(days=1)
+          emit(months=" ".join("--month %d" % m for m in months), from_run=from_run,
+               start=start, end=end, full="true" if (b - a).days == 16 else "false",
+               proceed="true")
+          print("window %s..%s, baseline months %s, continues %s"
+                % (start, end, months, from_run or "nothing (empty state)"))
+          PY
+
+      - name: Enumerate and screen the window as the green account
+        if: steps.window.outputs.proceed == 'true'
+        env:
+          GEE_GREEN_SA_KEY: ${{ secrets.GEE_GREEN_SA_KEY }}
+          START: ${{ steps.window.outputs.start }}
+          END: ${{ steps.window.outputs.end }}
+        run: |
+          set -euo pipefail
+          REPLAY_DIR="$RUNNER_TEMP/replay"
+          python scripts/replay_2026.py plan --service-account \
+            --start "$START" --end "$END" --out-dir "$REPLAY_DIR"
+
+      - name: Stop here when the window holds no acquisition
+        # Nothing to claim, so nothing to deposit, and the head stays where it
+        # is. A full 16-day window with nothing in it fails instead: 2026's
+        # longest gap was 12 days, and without this a stalled collection would
+        # repeat the same empty window forever, green (PHASE_6H §3).
+        id: enumerated
+        if: steps.window.outputs.proceed == 'true'
+        env:
+          FULL: ${{ steps.window.outputs.full }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os
+          path = os.path.join(os.environ["RUNNER_TEMP"], "replay", "screen.json")
+          expected = json.load(open(path))["summary"]["expected_acquisitions"]
+          if not expected and os.environ["FULL"] == "true":
+              raise SystemExit("::error::a full 16-day window holds no acquisition; "
+                               "the collection may have stalled, and this window "
+                               "would repeat forever")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+              out.write("deposit=%s\n" % ("true" if expected else "false"))
+          print("%d expected acquisition(s); detecting" % expected if expected else
+                "no acquisition in the window; nothing to deposit, the head is unchanged")
+          PY
+
       - name: Fetch and verify the predecessor's persistence state
-        # Only with from_run. Read-only: ReadOnlyStore refuses every write, and
-        # fetch_green_state.py imports no config module. It refuses a window
-        # that does not start the day after the predecessor's last covered date
+        # Only with a predecessor. Read-only: ReadOnlyStore refuses every
+        # write, and fetch_green_state.py imports no config module. It refuses
+        # a window that does not start the day after the predecessor's last
+        # covered date, and a predecessor another run already continues,
         # BEFORE it downloads the state, and a state whose length or sha256 is
         # not what the predecessor's run.json declares before it writes a byte.
-        if: steps.window.outputs.from_run != ''
+        if: steps.enumerated.outputs.deposit == 'true' && steps.window.outputs.from_run != ''
         env:
           R2_STAGING_ACCESS_KEY_ID: ${{ secrets.R2_STAGING_ACCESS_KEY_ID }}
           R2_STAGING_SECRET_ACCESS_KEY: ${{ secrets.R2_STAGING_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ vars.AWS_REGION }}
           FROM_RUN: ${{ steps.window.outputs.from_run }}
-          START: ${{ github.event.inputs.start }}
+          START: ${{ steps.window.outputs.start }}
+          RUN_ID: ${{ steps.window.outputs.run_id }}
         run: |
           set -euo pipefail
           python scripts/fetch_green_state.py --from-run "$FROM_RUN" \
-            --start "$START" --out-dir "$RUNNER_TEMP/replay"
+            --start "$START" --run "$RUN_ID" --out-dir "$RUNNER_TEMP/replay"
 
       - name: Fetch and verify the baseline months the window needs
-        # The only step in this job that holds an R2 identity. It downloads,
-        # checks every object's length and SHA-256 against
+        # It downloads, checks every object's length and SHA-256 against
         # config/baseline_manifest_v2_1.json, and imports no config module.
+        if: steps.enumerated.outputs.deposit == 'true'
         env:
           R2_STAGING_ACCESS_KEY_ID: ${{ secrets.R2_STAGING_ACCESS_KEY_ID }}
           R2_STAGING_SECRET_ACCESS_KEY: ${{ secrets.R2_STAGING_SECRET_ACCESS_KEY }}
@@ -163,22 +290,12 @@ jobs:
           # MONTHS is "--month N [--month M]", produced above from validated dates
           python scripts/baseline_v2_staging.py fetch $MONTHS --out data/baselines_v2/2.1.0
 
-      - name: Enumerate and screen the window as the green account
-        env:
-          GEE_GREEN_SA_KEY: ${{ secrets.GEE_GREEN_SA_KEY }}
-          START: ${{ github.event.inputs.start }}
-          END: ${{ github.event.inputs.end }}
-        run: |
-          set -euo pipefail
-          REPLAY_DIR="$RUNNER_TEMP/replay"
-          python scripts/replay_2026.py plan --service-account \
-            --start "$START" --end "$END" --out-dir "$REPLAY_DIR"
-
       - name: Detect, from the predecessor's state or an empty one, as the green account
+        if: steps.enumerated.outputs.deposit == 'true'
         env:
           GEE_GREEN_SA_KEY: ${{ secrets.GEE_GREEN_SA_KEY }}
-          START: ${{ github.event.inputs.start }}
-          END: ${{ github.event.inputs.end }}
+          START: ${{ steps.window.outputs.start }}
+          END: ${{ steps.window.outputs.end }}
           FROM_RUN: ${{ steps.window.outputs.from_run }}
         run: |
           set -euo pipefail
@@ -196,6 +313,7 @@ jobs:
             --batch-start "$START" --batch-end "$END"
 
       - name: Assemble the run prefix locally, with no credential
+        if: steps.enumerated.outputs.deposit == 'true'
         env:
           RUN_ID: ${{ steps.window.outputs.run_id }}
           FROM_RUN: ${{ steps.window.outputs.from_run }}
@@ -209,6 +327,7 @@ jobs:
             --state "$REPLAY_DIR/persistence_state.geojson" ${LINK[@]+"${LINK[@]}"}
 
       - name: Hand the detection's outputs to the deposit job
+        if: steps.enumerated.outputs.deposit == 'true'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: detection-${{ steps.window.outputs.run_id }}
@@ -222,7 +341,8 @@ jobs:
 
   deposit:
     needs: detect
-    if: github.event_name == 'workflow_dispatch' && github.repository == 'santibravocmcc/Araripe'
+    # Only when the detection found something to deposit (PHASE_6H §3).
+    if: github.event_name == 'workflow_dispatch' && github.repository == 'santibravocmcc/Araripe' && needs.detect.outputs.deposit == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     environment: v2-staging
@@ -281,8 +401,10 @@ jobs:
           DETECTION: ${{ runner.temp }}/detection
         run: |
           set -euo pipefail
-          # With from_run, the link is re-confirmed against the predecessor's
-          # run.json with THIS job's identity before anything is written.
+          # With a predecessor, the link is re-confirmed against its run.json
+          # with THIS job's identity, and a predecessor another run already
+          # continues is refused -- before anything is written, and again
+          # right before run.json (PHASE_6H §2).
           LINK=()
           if [ -n "$FROM_RUN" ]; then LINK=(--predecessor "$DETECTION/predecessor.json"); fi
           python3 scripts/assemble_green_run.py apply --run "$RUN_ID" \

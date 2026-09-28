@@ -490,11 +490,20 @@ def main(argv=None) -> int:
     try:
         store = build_candidate_store()
         link = run.document["predecessor"]
+        guard = None
         if link is not None:
             # Re-read with this job's own identity: the detection job's
             # artifact must not be the only witness to the chain (PHASE_6G §2).
             sc.confirm_link(store, link)
-        written = ra.upload(store, run)
+            # A second child of one run is a fork (PHASE_6H §2). Asked before
+            # the first byte, and again right before run.json — the write
+            # that makes this prefix a run.
+            sc.check_not_continued(store, link["run_id"], run.run_id)
+
+            def guard() -> None:
+                sc.check_not_continued(store, link["run_id"], run.run_id)
+
+        written = ra.upload(store, run, before_manifest=guard)
     except (Rejected, cs.ObjectStoreError, RuntimeError) as exc:
         print(_annotate(f"{type(exc).__name__}: {exc}"), file=sys.stderr)
         return 1

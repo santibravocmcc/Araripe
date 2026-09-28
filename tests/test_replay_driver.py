@@ -213,3 +213,27 @@ def test_run_exige_state_path_e_os_limites_do_lote():
     with pytest.raises(SystemExit):
         driver.main(["run", "--start", "2026-01-01", "--end", "2026-01-02",
                      "--out-dir", "/tmp/nope"])
+
+
+def test_plan_numa_janela_sem_datatake_grava_a_triagem_vazia_e_sai_0(tmp_path, monkeypatch):
+    """PHASE_6H §3: uma janela automática pode não ter aquisição nenhuma.
+
+    Antes, ``expected_acquisitions`` levantava ``EnumerationError`` e a lane
+    morria; agora a triagem registra zero, e nenhum manifesto de rodada é
+    gravado — não há o que um ledger contabilize.
+    """
+
+    import json
+    import sys
+    import types
+
+    monkeypatch.setitem(sys.modules, "ee", types.ModuleType("ee"))
+    monkeypatch.setattr(driver, "initialize_earth_engine", lambda *a, **k: None)
+    monkeypatch.setattr(driver, "enumerate_window", lambda *a, **k: ([], [], {}))
+    code = driver.main(["plan", "--start", "2026-09-28", "--end", "2026-09-30",
+                        "--out-dir", str(tmp_path)])
+    assert code == 0
+    screen = json.loads((tmp_path / "screen.json").read_text())
+    assert screen["summary"]["expected_acquisitions"] == 0
+    assert screen["acquisitions"] == []
+    assert not (tmp_path / "run_manifest_v3.json").exists()
