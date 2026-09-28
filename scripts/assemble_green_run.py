@@ -38,11 +38,14 @@ It does not produce a ledger
 ----------------------------
 ``PACKAGE_2B_GATE_PROMPT.md`` §4: *"O montador da rodada usa o ledger que a
 detecção produz; ele não escreve um."*  ``--ledger`` is required and is read as
-bytes the producer sealed.  The Package 2A.6 producer that emits it is
-``src/detection/ledger_v3.py`` on ``claude/phase2a6d-mapbiomas``; **no producer
-on `main` writes one**, which is measured in
-``docs/implementation/PHASE_2B_GATE_2026-09-08.md`` §4 and is the one thing this
-entry point cannot supply for itself.
+bytes the producer sealed.  The producer that emits it is
+``src/detection/ledger_v3.py``, on ``main`` since the Package 2A.6 landing
+(PR ``#54``), and ``scripts/replay_2026.py`` is the entry point that runs it
+(``scripts/finalize_replay_candidate.py``: *"replay_2026.py produces the
+ledger"*).  It is the one thing
+this entry point cannot supply for itself.  (Until that landing no producer on
+``main`` wrote one — ``docs/implementation/PHASE_2B_GATE_2026-09-08.md`` §4
+measured it then; that record describes its own date, not today.)
 
 Why it must not import ``config.settings``
 ------------------------------------------
