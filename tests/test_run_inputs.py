@@ -78,6 +78,7 @@ def run_layout(document, bodies, *, run_id=RUN_ID, state_sha256=STATE_SHA):
         "run_id": run_id,
         "ledger": "ledger.json",
         "persistence_state": {"sha256": state_sha256, "bytes": STATE_BYTES},
+        "predecessor": None,
         "objects": objects,
     }
     # Deliberately pretty-printed, not canonical: the contract inherits
@@ -402,7 +403,9 @@ def test_a_source_cannot_escape_the_run_prefix(run, source):
 @pytest.mark.parametrize(
     "mutate, expected",
     [
-        (lambda d: d.__setitem__("schema", "araripe.green.run/2"), "run_manifest_invalid"),
+        (lambda d: d.__setitem__("schema", "araripe.green.run/3"), "run_manifest_invalid"),
+        (lambda d: d.__setitem__("schema", "araripe.green.run/1"), "run_manifest_invalid"),
+        (lambda d: d.pop("predecessor"), "run_manifest_invalid"),
         (lambda d: d.pop("persistence_state"), "run_manifest_invalid"),
         (lambda d: d.__setitem__("ledger", "other.json"), "run_manifest_invalid"),
         (lambda d: d.__setitem__("extra", 1), "run_manifest_invalid"),

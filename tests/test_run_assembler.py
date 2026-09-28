@@ -277,7 +277,7 @@ def test_todos_os_achados_sao_coletados_antes_de_levantar():
 
 def test_o_documento_valida_contra_o_schema_da_rodada():
     run, _ = assemble()
-    errors = list(schema_validator("green-run-v1").iter_errors(run.document))
+    errors = list(schema_validator("green-run-v2").iter_errors(run.document))
     assert errors == [], [error.message for error in errors]
 
 

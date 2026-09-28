@@ -55,8 +55,16 @@ from src.publication.green_release import (
 )
 from src.publication.ledger_gate import check_processing_ledger
 
-#: Contract version of the run input document.
-RUN_SCHEMA = "araripe.green.run/1"
+#: Contract version of the run input document a run deposits today.  Version 2
+#: adds ``predecessor`` (``docs/implementation/PHASE_6G_2026-09-28.md`` §2).
+RUN_SCHEMA = "araripe.green.run/2"
+
+#: Every version a reader accepts, and the schema file that validates it.  The
+#: two version-1 documents in the bucket are immutable and stay readable.
+RUN_SCHEMAS = {
+    "araripe.green.run/1": "green-run-v1",
+    "araripe.green.run/2": "green-run-v2",
+}
 
 #: The lane-2 root.  Every run writes under its own immutable prefix here and
 #: nothing is ever rewritten, so a publication reads a fixed set of bytes.
@@ -164,6 +172,18 @@ def load_run_manifest(store: ConditionalStore, run_id: str) -> dict[str, Any]:
     key = run_key(run_id, RUN_MANIFEST_PATH)
     document = _read_json(store, key, "run_manifest")
 
+    schema_name = RUN_SCHEMAS.get(document.get("schema"))
+    if schema_name is None:
+        raise RunRejected(
+            [
+                Finding(
+                    "run_manifest_invalid",
+                    f"{key} declares schema {document.get('schema')!r}; this reader "
+                    f"knows {sorted(RUN_SCHEMAS)}",
+                    "schema",
+                )
+            ]
+        )
     findings = [
         Finding(
             "run_manifest_invalid",
@@ -171,7 +191,7 @@ def load_run_manifest(store: ConditionalStore, run_id: str) -> dict[str, Any]:
             "/".join(str(part) for part in error.absolute_path) or "<root>",
         )
         for error in sorted(
-            schema_validator("green-run-v1").iter_errors(document),
+            schema_validator(schema_name).iter_errors(document),
             key=lambda error: list(error.absolute_path),
         )
     ]

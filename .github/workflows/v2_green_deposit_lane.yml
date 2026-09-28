@@ -31,10 +31,19 @@ name: v2 green deposit lane (detect a window, deposit runs/<run-id>/)
 # detection, whose rows carry wall-clock timestamps, so the first differing
 # key is a `conflict` and the lane fails closed instead of overwriting.
 #
-# A run started from this lane begins from an EMPTY persistence state: the
-# state a scheduled run would chain on is not in any bucket (PHASE_6E §2.3).
-# Its alerts are a valid candidate deposit and are NOT comparable with the
-# release built from the 2026 replay.
+# Where the run's persistence state starts (PHASE_6G_2026-09-28.md):
+#
+#   no from_run  an EMPTY state, as before. Its alerts are a valid candidate
+#                deposit and are NOT comparable with the release built from
+#                the 2026 replay: "strong" needs two sightings.
+#   from_run     the state deposited at runs/<from_run>/persistence_state.geojson,
+#                refused unless its length and sha256 are what that run's
+#                run.json declares, and unless `start` is exactly the day after
+#                the last date that run's ledger covers (no overlap, no gap).
+#
+# Either way the deposit now writes this run's own state into its prefix,
+# before run.json, and run.json (araripe.green.run/2) names the predecessor or
+# says null. That is what lets the next run continue from this one.
 
 on:
   workflow_dispatch:
@@ -45,6 +54,10 @@ on:
       end:
         description: "One past the last UTC date, YYYY-MM-DD (exclusive); at most 16 days after start"
         required: true
+      from_run:
+        description: "Optional: the run whose persistence state this one continues (start must be the day after its last covered date). Empty starts from an empty state."
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -57,6 +70,7 @@ jobs:
     environment: v2-staging
     outputs:
       run_id: ${{ steps.window.outputs.run_id }}
+      from_run: ${{ steps.window.outputs.from_run }}
     env:
       R2_STAGING_BUCKET: ${{ vars.R2_STAGING_BUCKET }}
       R2_ENDPOINT_URL: ${{ vars.R2_ENDPOINT_URL }}
@@ -75,11 +89,15 @@ jobs:
         env:
           START: ${{ github.event.inputs.start }}
           END: ${{ github.event.inputs.end }}
+          FROM_RUN: ${{ github.event.inputs.from_run }}
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import os, datetime as dt
+          import os, re, datetime as dt
           start, end = os.environ["START"], os.environ["END"]
+          from_run = os.environ.get("FROM_RUN", "")
+          if from_run and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", from_run):
+              raise SystemExit("::error::from_run must be one run id, one path segment")
           try:
               a, b = dt.date.fromisoformat(start), dt.date.fromisoformat(end)
           except ValueError:
@@ -94,7 +112,9 @@ jobs:
           with open(os.environ["GITHUB_OUTPUT"], "a") as out:
               out.write("months=%s\n" % " ".join("--month %d" % m for m in months))
               out.write("run_id=ci-%s\n" % os.environ["GITHUB_RUN_ID"])
-          print("window %s..%s, baseline months %s" % (start, end, months))
+              out.write("from_run=%s\n" % from_run)
+          print("window %s..%s, baseline months %s, continues %s"
+                % (start, end, months, from_run or "nothing (empty state)"))
           PY
 
       - name: Check out the lane code
@@ -110,6 +130,24 @@ jobs:
           set -euo pipefail
           python -m pip install --quiet --disable-pip-version-check -r requirements-green-detect.txt
           python -m pip freeze | grep -iE '^(earthengine-api|numpy|scipy|rasterio|geopandas|shapely|pyproj|boto3|botocore)=='
+
+      - name: Fetch and verify the predecessor's persistence state
+        # Only with from_run. Read-only: ReadOnlyStore refuses every write, and
+        # fetch_green_state.py imports no config module. It refuses a window
+        # that does not start the day after the predecessor's last covered date
+        # BEFORE it downloads the state, and a state whose length or sha256 is
+        # not what the predecessor's run.json declares before it writes a byte.
+        if: steps.window.outputs.from_run != ''
+        env:
+          R2_STAGING_ACCESS_KEY_ID: ${{ secrets.R2_STAGING_ACCESS_KEY_ID }}
+          R2_STAGING_SECRET_ACCESS_KEY: ${{ secrets.R2_STAGING_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          FROM_RUN: ${{ steps.window.outputs.from_run }}
+          START: ${{ github.event.inputs.start }}
+        run: |
+          set -euo pipefail
+          python scripts/fetch_green_state.py --from-run "$FROM_RUN" \
+            --start "$START" --out-dir "$RUNNER_TEMP/replay"
 
       - name: Fetch and verify the baseline months the window needs
         # The only step in this job that holds an R2 identity. It downloads,
@@ -136,15 +174,22 @@ jobs:
           python scripts/replay_2026.py plan --service-account \
             --start "$START" --end "$END" --out-dir "$REPLAY_DIR"
 
-      - name: Detect, from an empty persistence state, as the green account
+      - name: Detect, from the predecessor's state or an empty one, as the green account
         env:
           GEE_GREEN_SA_KEY: ${{ secrets.GEE_GREEN_SA_KEY }}
           START: ${{ github.event.inputs.start }}
           END: ${{ github.event.inputs.end }}
+          FROM_RUN: ${{ steps.window.outputs.from_run }}
         run: |
           set -euo pipefail
           REPLAY_DIR="$RUNNER_TEMP/replay"
-          test ! -e "$REPLAY_DIR/persistence_state.geojson"
+          if [ -n "$FROM_RUN" ]; then
+            test -s "$REPLAY_DIR/persistence_state.geojson"
+            test -s "$REPLAY_DIR/predecessor.json"
+          else
+            test ! -e "$REPLAY_DIR/persistence_state.geojson"
+            test ! -e "$REPLAY_DIR/predecessor.json"
+          fi
           python scripts/replay_2026.py run --service-account \
             --start "$START" --end "$END" --out-dir "$REPLAY_DIR" \
             --state-path "$REPLAY_DIR/persistence_state.geojson" \
@@ -153,12 +198,15 @@ jobs:
       - name: Assemble the run prefix locally, with no credential
         env:
           RUN_ID: ${{ steps.window.outputs.run_id }}
+          FROM_RUN: ${{ steps.window.outputs.from_run }}
         run: |
           set -euo pipefail
           REPLAY_DIR="$RUNNER_TEMP/replay"
+          LINK=()
+          if [ -n "$FROM_RUN" ]; then LINK=(--predecessor "$REPLAY_DIR/predecessor.json"); fi
           python scripts/assemble_green_run.py plan --run "$RUN_ID" \
             --ledger "$REPLAY_DIR/ledger.json" --alerts-dir "$REPLAY_DIR/alerts" \
-            --state "$REPLAY_DIR/persistence_state.geojson"
+            --state "$REPLAY_DIR/persistence_state.geojson" ${LINK[@]+"${LINK[@]}"}
 
       - name: Hand the detection's outputs to the deposit job
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -167,6 +215,7 @@ jobs:
           path: |
             ${{ runner.temp }}/replay/ledger.json
             ${{ runner.temp }}/replay/persistence_state.geojson
+            ${{ runner.temp }}/replay/predecessor.json
             ${{ runner.temp }}/replay/alerts/
           if-no-files-found: error
           retention-days: 7
@@ -187,6 +236,7 @@ jobs:
       R2_STAGING_BUCKET: ${{ vars.R2_STAGING_BUCKET }}
       R2_ENDPOINT_URL: ${{ vars.R2_ENDPOINT_URL }}
       RUN_ID: ${{ needs.detect.outputs.run_id }}
+      FROM_RUN: ${{ needs.detect.outputs.from_run }}
 
     steps:
       - name: Fail closed unless the target is exactly the approved staging bucket
@@ -231,9 +281,13 @@ jobs:
           DETECTION: ${{ runner.temp }}/detection
         run: |
           set -euo pipefail
+          # With from_run, the link is re-confirmed against the predecessor's
+          # run.json with THIS job's identity before anything is written.
+          LINK=()
+          if [ -n "$FROM_RUN" ]; then LINK=(--predecessor "$DETECTION/predecessor.json"); fi
           python3 scripts/assemble_green_run.py apply --run "$RUN_ID" \
             --ledger "$DETECTION/ledger.json" --alerts-dir "$DETECTION/alerts" \
-            --state "$DETECTION/persistence_state.geojson"
+            --state "$DETECTION/persistence_state.geojson" ${LINK[@]+"${LINK[@]}"}
 
       - name: Re-read the prefix and validate it, writing nothing
         env:

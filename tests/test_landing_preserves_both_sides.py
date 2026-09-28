@@ -49,6 +49,9 @@ MODULOS_DE_PUBLICACAO = (
     "run_assembler",
     "run_inputs",
     "site_artifact",
+    # Phase 6: where a run's persistence state lives and how the next run
+    # continues from it (docs/implementation/PHASE_6G_2026-09-28.md).
+    "state_chain",
 )
 
 #: Os workflows verdes. `cloudflare_green_control.yml` é o broker protegido: se
