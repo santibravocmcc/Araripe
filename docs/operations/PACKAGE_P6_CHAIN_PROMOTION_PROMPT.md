@@ -186,12 +186,15 @@ forma nova foi decidida nesta sessão; eu preferi que você a visse antes.
 
 ### Tem algo preocupante?
 
-Um custo, não um risco: do jeito escolhido, cada publicação guarda uma cópia
-completa do histórico, hoje perto de 2 GB. Se publicarmos duas vezes por
-semana, isso soma algo como 300 GB no primeiro ano, e nada é apagado. Não é
-urgente — a frequência das publicações é decidida na virada, e publicar uma
-vez por semana, ou só quando há alerta novo, reduz muito. Mas vale decidir
-com esse número na mão.
+Um custo que cresce sem teto, não um risco de hoje. Medi de verdade em 29/09.
+O que mais pesa não são as cópias da publicação: é o "estado" de cerca de 1 GB
+que cada rodada guarda para sempre. Só isso leva a caixa de testes de 22 GB
+para uns 140 GB em um ano. Publicar a cada rodada, do jeito construído,
+leva para uns 400 GB. Em dinheiro ainda é pouco, uns 6 dólares por mês ao fim
+do primeiro ano. Publicar só quando há alerta novo quase não ajuda, porque
+metade das rodadas tem alerta. O que ajuda de verdade é comprimir o estado, que
+encolhe quase 4 vezes, e, mais adiante, publicar por referência em vez de
+cópia. As alternativas e os números estão no documento de decisão.
 
 ### O que ainda falta no caminho
 
