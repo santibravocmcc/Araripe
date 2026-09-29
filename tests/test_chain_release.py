@@ -402,7 +402,7 @@ def test_the_gate_dispatches_on_the_declared_version():
     root = members[0]
     assert len(cr.check_release(root.release, root.ledger_document)[1]) == 1
     with pytest.raises(ReleaseRejected) as raised:
-        cr.check_release(dict(release, schema="araripe.green.release/3"), ledger_chain)
+        cr.check_release(dict(release, schema="araripe.green.release/4"), ledger_chain)
     assert raised.value.codes == ("release_schema_mismatch",)
     with pytest.raises(ReleaseRejected) as raised:
         cr.check_release([release], ledger_chain)
@@ -676,7 +676,8 @@ def test_the_staging_script_emits_the_chain_release_and_writes_nothing(
     monkeypatch.setenv("GITHUB_OUTPUT", str(output))
     writes, before = list(fake.writes), len(fake.reads)
     assert stage.main([]) == 0
-    expected = cr.build_chain_release(members)["release_id"]
+    expected = cr.build_reference_release(members)[0]["release_id"]
+    assert expected.startswith("rel-g3-"), "the lane stages the version-3 release"
     assert output.read_text() == f"release_id={expected}\n"
     printed = capsys.readouterr().out
     assert f"{CHAIN_ROOT} -> ci-1 -> ci-2" in printed and "read-only" in printed
@@ -701,13 +702,20 @@ def test_publish_chain_promotes_exactly_the_staged_release(monkeypatch, capsys):
 
     fake, store, members = bucket_with_a_chain_and_a_live_root()
     monkeypatch.setattr(publish_cli, "build_store", lambda: store)
-    expected = cr.build_chain_release(members)["release_id"]
+    expected = cr.build_reference_release(members)[0]["release_id"]
     assert publish_cli.main(["publish-chain", "--expect", expected]) == 0
     pointer = json.loads(fake.body(POINTER_KEY))
     assert pointer["release_id"] == expected
     assert pointer["coverage"]["observed_dates"] == [
         "2026-04-07", "2026-04-10", "2026-04-12", "2026-04-15"]
+    assert pointer["tombstones"] == []
     assert f"pointer  : promote -> {expected} at sequence 2" in capsys.readouterr().out
+    # Every member's version-1 release is published, and the index holds no object.
+    for m in members:
+        ap.verify_release(store, m.release)
+    index_keys = [k for k in fake.keys() if k.startswith(f"releases/{expected}/")]
+    assert sorted(index_keys) == [f"releases/{expected}/ledger.json",
+                                  f"releases/{expected}/release.json"]
 
 
 def test_publish_chain_refuses_a_chain_that_moved_since_staging(monkeypatch, capsys):
@@ -718,7 +726,7 @@ def test_publish_chain_refuses_a_chain_that_moved_since_staging(monkeypatch, cap
 
     fake, store, members = bucket_with_a_chain_and_a_live_root()
     monkeypatch.setattr(publish_cli, "build_store", lambda: store)
-    staged = cr.build_chain_release(members[:2])["release_id"]
+    staged = cr.build_reference_release(members[:2])[0]["release_id"]
     live = fake.body(POINTER_KEY)
     writes = list(fake.writes)
     assert publish_cli.main(["publish-chain", "--expect", staged]) == 1
@@ -800,3 +808,227 @@ def test_the_chain_is_gated_after_it_is_composed(monkeypatch):
     with pytest.raises(ReleaseRejected) as raised:
         cr.load_chain(ri.ReadOnlyStore(fake, cs.STAGING_BUCKET), (CHAIN_ROOT, "ci-1", "ci-2"))
     assert raised.value.codes == ("coverage_mismatch",)
+
+
+# ═══ version 3: the chain release BY REFERENCE (PHASE_6J §2) ═══════════════
+
+
+def published_members():
+    """A bucket where every member's version-1 release is published, and the
+    root's is live — the state publish-chain leaves before the index."""
+
+    fake = FakeS3()
+    store = cs.ConditionalStore(fake, cs.STAGING_BUCKET)
+    members, bodies = chain(ROOT, MIDDLE, HEAD)
+    for m in members:
+        own = {o["path"]: bodies[o["path"]] for o in m.release["objects"]}
+        publish_release(store, m.release, m.ledger_document, own)
+    promote(store, members[0].release, members[0].ledger_document, now=NOW)
+    return store, fake, members
+
+
+def reference_codes(document, index, members):
+    with pytest.raises(ReleaseRejected) as raised:
+        cr.check_reference_release(document, index, members)
+    return raised.value.codes
+
+
+def test_the_reference_release_is_an_index_of_its_members():
+    members, _ = chain(ROOT, MIDDLE, HEAD)
+    release, index = cr.build_reference_release(members)
+    assert release["schema"] == "araripe.green.release/3"
+    assert release["release_id"].startswith("rel-g3-")
+    assert [m["release_id"] for m in release["members"]] == [
+        m.release["release_id"] for m in members]
+    assert all(o["release_id"] in {m.release["release_id"] for m in members}
+               for o in release["objects"])
+    for m in members:
+        mine = [dict(o) for o in release["objects"] if o["release_id"] == m.release["release_id"]]
+        assert [{k: v for k, v in o.items() if k != "release_id"} for o in mine] == m.release["objects"]
+    assert release["coverage"]["observed_dates"] == [
+        "2026-04-07", "2026-04-10", "2026-04-12", "2026-04-15"]
+    assert release["state_watermark"]["persistence_state_sha256"] == "3" * 64
+    assert index["schema"] == "araripe.green.ledger-index/1"
+    assert [e["key"] for e in index["ledgers"]] == [
+        f"releases/{m.release['release_id']}/ledger.json" for m in members]
+    assert list(schema_validator("green-release-v3").iter_errors(release)) == []
+    cr.check_reference_release(release, index, members)
+
+
+def test_the_reference_identity_pins_each_members_manifest_bytes():
+    """A date_product is not sealed by the ledger, so the member's manifest
+    digest is what makes the reference point at bytes, not at a name."""
+
+    members, _ = chain(ROOT, MIDDLE, HEAD)
+    first = cr.build_reference_release(members)[0]["release_id"]
+    assert cr.build_reference_release(members)[0]["release_id"] == first
+    edited = deepcopy(members[2].release)
+    edited["objects"][0]["content_type"] = "application/json"
+    other = [members[0], members[1], cr.ChainMember(edited, members[2].ledger_document)]
+    assert cr.build_reference_release(other)[0]["release_id"] != first
+    assert cr.build_reference_release(members[:2])[0]["release_id"] != first
+    assert cr.reference_release_identity([m.release for m in members[::-1]])[0] != first
+
+
+def test_the_reference_gate_refuses_every_departure_from_its_members():
+    members, _ = chain(ROOT, MIDDLE, HEAD)
+    release, index = cr.build_reference_release(members)
+    for key, edit in (
+        ("dates", lambda d: d["dates"][0].__setitem__("observation_count", 9)),
+        ("objects", lambda d: d["objects"][0].__setitem__("release_id", d["members"][2]["release_id"])),
+        ("coverage", lambda d: d["coverage"].__setitem__("last_observed_on", "2026-04-12")),
+        ("state_watermark", lambda d: d["state_watermark"].__setitem__("persistence_state_bytes", 1)),
+        ("ledgers", lambda d: d["ledgers"].__setitem__("bytes", 1)),
+    ):
+        tampered = deepcopy(release)
+        edit(tampered)
+        assert "reference_release_does_not_derive_from_its_members" in reference_codes(
+            tampered, index, members), key
+    tampered = deepcopy(release)
+    tampered["members"][1]["release_document_sha256"] = "0" * 64
+    assert "member_manifest_mismatch" in reference_codes(tampered, index, members)
+    wrong_index = deepcopy(index)
+    wrong_index["ledgers"][0]["bytes"] += 1
+    assert reference_codes(release, wrong_index, members) == ("ledger_object_mismatch",)
+    assert reference_codes(release, index, members[:2]) == ("reference_members_mismatch",)
+
+
+def test_the_reference_gate_reads_order_and_generation_from_the_members():
+    members, _ = chain(ROOT, MIDDLE, HEAD)
+    release, index = cr.build_reference_release(members)
+    swapped = [members[0], members[2], members[1]]
+    with pytest.raises(ReleaseRejected) as raised:
+        cr.check_reference_release(dict(release, members=[release["members"][i] for i in (0, 2, 1)]),
+                                   index, swapped)
+    assert "chain_dates_overlap" in raised.value.codes
+    touching, _ = chain(ROOT, {"2026-04-10": [ALERTS]})
+    with pytest.raises(ReleaseBuildError, match="chain_dates_overlap"):
+        cr.build_reference_release(touching)
+
+
+def test_a_member_whose_own_release_does_not_check_is_refused_by_reference_too():
+    members, _ = chain(ROOT, MIDDLE, HEAD)
+    tampered = deepcopy(members[2].release)
+    tampered["dates"][0]["observation_count"] += 1
+    with pytest.raises(ReleaseRejected) as raised:
+        cr.build_reference_release([members[0], members[1],
+                                    cr.ChainMember(tampered, members[2].ledger_document)])
+    assert raised.value.codes == ("date_accounting_mismatch",)
+
+
+def test_the_gate_needs_the_members_it_references():
+    members, _ = chain(ROOT, MIDDLE, HEAD)
+    release, index = cr.build_reference_release(members)
+    with pytest.raises(ReleaseBuildError, match="member releases as read from the store"):
+        cr.check_release(release, index)
+
+
+def test_publishing_a_reference_release_writes_only_its_index():
+    store, fake, members = published_members()
+    release, index = cr.build_reference_release(members)
+    before = set(fake.keys())
+    ap.publish_release(store, release, index, {})
+    added = sorted(set(fake.keys()) - before)
+    assert added == [release["release_prefix"] + "ledger.json",
+                     release["release_prefix"] + "release.json"]
+    assert fake.writes[-1][0] == release["release_prefix"] + "release.json"
+    with pytest.raises(cs.ObjectStoreError, match="stores none"):
+        ap.publish_release(store, release, index, {"alerts/x.geojson": b"{}"})
+
+
+def test_a_reference_release_verifies_against_its_members_objects():
+    store, fake, members = published_members()
+    release, index = cr.build_reference_release(members)
+    ap.publish_release(store, release, index, {})
+    stored = ap.verify_release(store, release)
+    assert len(stored) == len(release["objects"]) + len(release["members"]) + 2
+    item = release["objects"][-1]
+    key = f"releases/{item['release_id']}/{item['path']}"
+    del fake.objects[key]
+    with pytest.raises(ap.ReleaseIncomplete) as raised:
+        ap.verify_release(store, release)
+    assert raised.value.codes == ("release_object_absent",)
+
+
+def test_a_member_manifest_that_changed_in_the_store_fails_verification():
+    store, fake, members = published_members()
+    release, index = cr.build_reference_release(members)
+    ap.publish_release(store, release, index, {})
+    key = f"releases/{release['members'][1]['release_id']}/release.json"
+    fake.objects[key] = (fake.body(key) + b" ", "application/json")
+    with pytest.raises(ap.ReleaseIncomplete) as raised:
+        ap.verify_release(store, release)
+    assert raised.value.codes == ("release_object_mismatch",)
+
+
+def test_the_reference_release_promotes_over_the_live_root_with_nothing_retired():
+    store, fake, members = published_members()
+    release, index = cr.build_reference_release(members)
+    ap.publish_release(store, release, index, {})
+    result = promote(store, release, index, now=NOW)
+    pointer = json.loads(fake.body(POINTER_KEY))
+    assert (result.action, result.sequence) == ("promote", 2)
+    assert pointer["release_id"] == release["release_id"]
+    assert pointer["tombstones"] == [], "the root's objects are the same objects"
+    assert [l["ledger_id"] for l in pointer["ledgers"]] == [
+        m["ledger_id"] for m in release["members"]]
+    assert list(schema_validator("green-pointer-v2").iter_errors(pointer)) == []
+    loaded, loaded_index = ap.load_published_release(store, release["release_id"])
+    assert loaded == release and loaded_index == index
+
+
+def test_a_reference_release_whose_member_is_not_published_is_never_promoted():
+    fake = FakeS3()
+    store = cs.ConditionalStore(fake, cs.STAGING_BUCKET)
+    members, bodies = chain(ROOT, MIDDLE, HEAD)
+    root = members[0]
+    publish_release(store, root.release, root.ledger_document,
+                    {o["path"]: bodies[o["path"]] for o in root.release["objects"]})
+    promote(store, root.release, root.ledger_document, now=NOW)
+    release, index = cr.build_reference_release(members)
+    ap.publish_release(store, release, index, {})
+    live = fake.body(POINTER_KEY)
+    with pytest.raises(cs.ObjectStoreError, match="is absent"):
+        promote(store, release, index, now=NOW)
+    assert fake.body(POINTER_KEY) == live
+
+
+def test_rolling_back_from_a_reference_release_tombstones_by_the_real_key():
+    store, fake, members = published_members()
+    release, index = cr.build_reference_release(members)
+    ap.publish_release(store, release, index, {})
+    promote(store, release, index, now=NOW)
+    rollback(store, members[0].release["release_id"], now=NOW)
+    pointer = json.loads(fake.body(POINTER_KEY))
+    assert pointer["rolled_back_from"]["release_id"] == release["release_id"]
+    retired = [t for t in pointer["tombstones"] if t["reason"] == "absent_from_successor"]
+    assert retired, "the head's objects are retired by the rollback"
+    for stone in retired:
+        assert stone["key"] in fake.objects, "a tombstone names a key that exists"
+        assert stone["key"].startswith("releases/rel-g1-")
+
+
+def test_the_reference_chain_is_read_from_the_bucket_and_writes_nothing():
+    fake, members = bucket_with_a_chain()
+    store = ri.ReadOnlyStore(fake, cs.STAGING_BUCKET)
+    staged = cr.load_reference_chain(store, (CHAIN_ROOT, "ci-1", "ci-2"))
+    assert staged.release == cr.build_reference_release(members)[0]
+    assert [r.run_id for r in staged.runs] == [CHAIN_ROOT, "ci-1", "ci-2"]
+    assert fake.writes == []
+    assert "none copied" in cr.describe_reference(staged)
+
+
+def test_one_path_in_two_members_is_refused_by_reference():
+    """Mutation R4: the route's allowlist is keyed by path, so two members
+    declaring one path would leave which bytes are served to dictionary order."""
+
+    root, _ = member(ROOT)
+    ledger, bodies = build_ledger(HEAD)
+    objects = objects_for(ledger, bodies)
+    taken = root.release["objects"][0]["path"]
+    objects[0] = type(objects[0])(taken, objects[0].body, objects[0].content_type,
+                                  objects[0].observed_on, objects[0].acquisition_id)
+    clash = build_release(check_processing_ledger(ledger), ledger, objects,
+                          persistence_state_sha256="3" * 64, persistence_state_bytes=1)
+    with pytest.raises(ReleaseBuildError, match="duplicate_object_path"):
+        cr.build_reference_release([root, cr.ChainMember(clash, ledger)])

@@ -138,6 +138,25 @@ SAFE_FILENAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._@+-]*$")
 PUBLIC = "public"
 PRIVATE = "private"
 
+#: A member release a version-3 release may reference (PHASE_6J §2.4): a
+#: version-1 release id and nothing else, so a manifest field can only ever
+#: name one prefix directly under ``releases/``.
+MEMBER_RELEASE_ID = re.compile(r"^rel-g1-[0-9a-f]{64}$")
+
+
+def live_member_ids(manifest: Mapping[str, Any] | None) -> frozenset[str]:
+    """The member releases a live version-3 manifest references; empty otherwise."""
+
+    if not manifest:
+        return frozenset()
+    return frozenset(
+        block["release_id"]
+        for block in manifest.get("members", ())
+        if isinstance(block, Mapping)
+        and isinstance(block.get("release_id"), str)
+        and MEMBER_RELEASE_ID.match(block["release_id"])
+    )
+
 
 class DeliveryRefused(Rejected):
     """The request does not resolve to anything this boundary may serve."""
@@ -182,7 +201,9 @@ class Served:
     bytes: int | None = None
 
 
-def classify_key(key: str, *, live_release_id: str | None) -> Exposure:
+def classify_key(
+    key: str, *, live_release_id: str | None, live_members: frozenset[str] = frozenset()
+) -> Exposure:
     """Classify one stored key against the exposure policy, failing closed.
 
     ``live_release_id`` is read from the pointer.  Passing ``None`` — no
@@ -208,6 +229,9 @@ def classify_key(key: str, *, live_release_id: str | None) -> Exposure:
             return Exposure(key, PRIVATE, "release_prefix_malformed")
         if live_release_id is not None and release_id == live_release_id:
             return Exposure(key, PUBLIC, "live_release")
+        if release_id in live_members:
+            # PHASE_6J §2.4: a version-3 release serves its members' objects.
+            return Exposure(key, PUBLIC, "member_of_the_live_release")
         return Exposure(key, PRIVATE, "release_not_live")
     return Exposure(key, PRIVATE, "unclassified")
 
@@ -337,6 +361,7 @@ def resolve(
             "manifest lists it, never because it looks safe.",
         )
 
+    key = _object_key(manifest, entry, rest)
     content_type = _media_type(entry["content_type"], f"objects/{rest}")
     headers = _headers(content_type, CACHE_RESOLVED)
     # A checksum-based validator, not the store's ETag. R2's ETag is the MD5 of
@@ -353,11 +378,35 @@ def resolve(
             'attachment; filename="' + _filename(rest) + '"'
         )
     return Served(
-        key=prefix + rest,
+        key=key,
         headers=headers,
         sha256=entry["sha256"],
         bytes=entry["bytes"],
     )
+
+
+def _object_key(manifest: Mapping[str, Any], entry: Mapping[str, Any], rest: str) -> str:
+    """Where a declared object lives: the live prefix, or a listed member's.
+
+    A version-3 entry names its member release (PHASE_6J §2.4).  The key is
+    still never built from the request: ``rest`` is a declared path, and the
+    member is accepted only as a well-formed version-1 id that the live
+    manifest itself lists.  Anything else is the live manifest's fault, not
+    the request's.
+    """
+
+    owner = entry.get("release_id")
+    if owner is None and "members" not in manifest:
+        return manifest["release_prefix"] + rest
+    if not isinstance(owner, str) or owner not in live_member_ids(manifest):
+        raise _refuse(
+            "object_release_unusable",
+            f"{rest!r} is declared in {owner!r}, which is not a member release "
+            "the live manifest lists. A member is a well-formed version-1 release "
+            "id listed in members[]; nothing else may choose a prefix.",
+            f"objects/{rest}/release_id",
+        )
+    return f"{RELEASES_ROOT}{owner}/{rest}"
 
 
 def _headers(content_type: str, cache_control: str) -> dict[str, str]:
@@ -414,5 +463,5 @@ def public_keys(manifest: Mapping[str, Any]) -> tuple[str, ...]:
 
     prefix = manifest["release_prefix"]
     return (POINTER_KEY, prefix + MANIFEST_NAME, prefix + LEDGER_NAME) + tuple(
-        prefix + item["path"] for item in manifest["objects"]
+        _object_key(manifest, item, item["path"]) for item in manifest["objects"]
     )

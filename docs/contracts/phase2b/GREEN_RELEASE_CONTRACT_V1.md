@@ -368,3 +368,33 @@ see this case, because the head's own release *advances* the last date.
 
 The decision, the options it ruled out and the measured cost are
 [`../../implementation/PHASE_6I_2026-09-28.md`](../../implementation/PHASE_6I_2026-09-28.md).
+
+## 13. Version 3: the chain release by reference (added 2026-09-29, Phase 6)
+
+The owner chose, on 2026-09-29, to publish a chain **by reference**
+(`../../implementation/PHASE_6J_2026-09-29.md` §2), because version 2 stores the
+whole history again on every promotion. **Version 2 stays defined and is never
+produced**: nothing was published with it, and the lane composes version 3.
+
+    release_id = "rel-g3-" + SHA256_US(
+        "araripe.green.release/3",
+        for each member, root first: release_id, release_document_sha256)
+
+* **Every run of the chain publishes its own version-1 release**, once, under
+  `releases/`. That is the public unit; `runs/` stays private.
+* **The version-3 release is an index**: `release.json`, whose `members` list
+  each member release and its manifest digest, whose `dates` and `objects` are
+  the members' own with the member's `release_id` added; and `ledger.json`, an
+  `araripe.green.ledger-index/1` document naming each member's ledger key, size
+  and sha256. No object is copied.
+* **The member manifest digest is part of the identity** because a version-1
+  identity does not seal the bytes of a `date_product` (§2, property 3).
+* **The gate** reads every member from the store, runs §3 on each, applies the
+  cross-member rules of §12, and requires the index to be **exactly** what the
+  members determine. `verify_release` re-reads every object in its member's
+  prefix and every member's `release.json`.
+* **Retention** keeps every member of any version-3 release in the bucket.
+
+Schema: [`schemas/green-release-v3.schema.json`](schemas/green-release-v3.schema.json).
+`green-pointer-v2.schema.json` now also accepts `rel-g3-`; no version-2 pointer
+had been written, so widening it invalidates nothing.

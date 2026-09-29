@@ -1097,3 +1097,44 @@ def test_a_runs_persistence_state_is_retained_even_once_its_release_is_published
     deeper = decide("runs/proof-a/alerts/persistence_state.geojson", age_days=999,
                     runs=LINKED, accept_run_manifest_loss=True)
     assert deeper.action == rt.ELIGIBLE
+
+
+# ── PHASE_6J §2: a version-3 release keeps its members ──────────────────────
+
+
+def test_every_member_of_a_chain_release_is_retained_and_the_live_ones_say_so():
+    from src.publication import retention as rt
+
+    live_chain = "rel-g3-" + "a" * 64
+    old_chain = "rel-g3-" + "b" * 64
+    served, kept, loose = ("rel-g1-" + c * 64 for c in "cde")
+    members = {live_chain: (served,), old_chain: (kept,)}
+    pointer = {"release_id": live_chain}
+    moment = datetime(2027, 1, 1, tzinfo=timezone.utc)
+
+    def decide(release):
+        item = rt.StoredKey(f"releases/{release}/alerts/x.geojson", 1,
+                            datetime(2026, 1, 1, tzinfo=timezone.utc))
+        return rt.classify(item, pointer=pointer, runs={}, as_of=moment,
+                           chain_members=members, lineage=None)
+
+    assert (decide(served).action, decide(served).reason) == (
+        rt.RETAIN, "release_is_served_by_the_live_release")
+    assert (decide(kept).action, decide(kept).reason) == (
+        rt.RETAIN, "release_is_a_member_of_a_chain_release")
+    assert decide(loose).reason != "release_is_a_member_of_a_chain_release"
+
+
+def test_the_planner_reads_each_chain_releases_members_from_the_store():
+    from src.publication import conditional_store as cs
+    from src.publication import retention as rt
+    from tests.fake_object_store import FakeS3
+
+    chain = "rel-g3-" + "a" * 64
+    member = "rel-g1-" + "c" * 64
+    manifest = json.dumps({"members": [{"release_id": member}]}).encode()
+    fake = FakeS3({f"releases/{chain}/release.json": (manifest, "application/json"),
+                   f"releases/{chain}/ledger.json": (b"{}", "application/json")})
+    store = cs.ConditionalStore(fake, cs.STAGING_BUCKET)
+    inventory = rt.list_inventory(fake, cs.STAGING_BUCKET)
+    assert rt.resolve_chain_members(store, inventory) == {chain: (member,)}

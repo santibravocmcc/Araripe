@@ -75,16 +75,19 @@ name: v2 green operational publication (candidate then promotion)
 # -----------------------------------------------------------------
 #   run   — one run prefix, its own version-1 release. What this lane did
 #           before; unchanged.
-#   chain — the chain's version-2 release: every run from the root to the
-#           head, derived from the bucket as the deposit lane derives it. A
+#   chain — the chain's version-3 release (PHASE_6J §2): an index of every
+#           run's version-1 release, from the root to the head, derived from
+#           the bucket as the deposit lane derives it. A
 #           chained run's own release covers only its window, so promoting it
 #           would retire every earlier date — which promote() now refuses
 #           (coverage_dates_dropped). No run_id: naming one would let an
 #           operator pick a member, and the chain is not a choice.
 #
-# The chain release copies every member's objects into its own prefix (~1.8 GB
-# on 2026-09-28). The promotion job reads them, writes them and re-reads them,
-# so its timeout is larger than the per-run one.
+# The chain release copies nothing. The promotion job publishes each member's
+# own version-1 release once (idempotent: already-published members are
+# unchanged), reads and verifies every object (~1.8 GB on 2026-09-28), then
+# writes the two small index documents — so its timeout is larger than the
+# per-run one.
 
 on:
   workflow_dispatch:

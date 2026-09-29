@@ -220,3 +220,27 @@ policy lives here and is pinned by vectors rather than left to the Worker.
   it.
 * **The blue public path stays live and untouched.** Turning it off is
   rehearsed, not executed — `GREEN_RETENTION_AND_MIGRATION.md` §4.
+
+## 7. A chain release served by reference (added 2026-09-29, Phase 6)
+
+A version-3 release (`GREEN_RELEASE_CONTRACT_V1.md` §13) holds no object: each
+declared object names, in `release_id`, the member release whose prefix holds
+it. The route then resolves
+
+    releases/<release_id>/<declared path>
+
+**only** when that `release_id` is a well-formed version-1 id **and** is listed
+in the live manifest's `members`. Otherwise `object_release_unusable` — a fault
+of the live manifest, not of the request, so the Worker answers 500. In a
+manifest that has `members`, an object with no `release_id` is refused too: it
+would otherwise be looked for in the index's own prefix, where nothing lives.
+
+The guarantee of §2 is unchanged: no key is built from the request. The path is
+a declared one, and the prefix comes from two fields of the live manifest,
+bounded by its own member list. `release.json` and `ledger.json` still come
+from the live release's own prefix.
+
+`classify_key` calls a member of the live release public
+(`member_of_the_live_release`); every other release stays private. The
+conformance vectors are `araripe.green.delivery-vectors/2`: two fixtures,
+`release` and `chain`, and every implementation must reproduce both.

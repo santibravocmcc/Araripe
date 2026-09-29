@@ -65,6 +65,7 @@ from src.publication.green_release import (
     _check_objects,
     check_green_release,
     ledger_bytes,
+    release_bytes,
     schema_validator,
     sha256_bytes,
 )
@@ -578,15 +579,23 @@ def _check_watermark(
 
 # ── one gate for both versions ───────────────────────────────────────────────
 
-def check_release(document: Any, ledger_payload: Any):
-    """Dispatch on the declared version: the version-1 gate or the chain gate.
+def check_release(document: Any, ledger_payload: Any, members: Sequence[ChainMember] | None = None):
+    """Dispatch on the declared version: the version-1, chain or reference gate.
 
     ``ledger_payload`` is what ``ledger.json`` holds for that version — a
-    processing ledger, or a ledger chain.  Returns ``(document, acceptances)``
-    with ``acceptances`` always a tuple, one per ledger.
+    processing ledger, a ledger chain, or a ledger index.  A version-3 release
+    also needs its ``members`` as read from the store.  Returns
+    ``(document, acceptances)`` with ``acceptances`` always a tuple.
     """
 
     declared = document.get("schema") if isinstance(document, dict) else None
+    if declared == REFERENCE_RELEASE_SCHEMA:
+        if members is None:
+            raise ReleaseBuildError(
+                "a version-3 release is checked against its member releases as "
+                "read from the store; pass them (atomic_publish does)"
+            )
+        return check_reference_release(document, ledger_payload, members)
     if declared == CHAIN_RELEASE_SCHEMA:
         return check_chain_release(document, ledger_payload)
     if declared == RELEASE_SCHEMA or not isinstance(document, dict):
@@ -596,8 +605,9 @@ def check_release(document: Any, ledger_payload: Any):
         [
             ReleaseRejection(
                 "release_schema_mismatch",
-                f"this repository publishes {RELEASE_SCHEMA!r} and "
-                f"{CHAIN_RELEASE_SCHEMA!r}; the document declares {declared!r}. A "
+                f"this repository publishes {RELEASE_SCHEMA!r}, "
+                f"{CHAIN_RELEASE_SCHEMA!r} and {REFERENCE_RELEASE_SCHEMA!r}; the "
+                f"document declares {declared!r}. A "
                 "different version is refused, not coerced.",
                 "schema",
             )
@@ -608,7 +618,7 @@ def check_release(document: Any, ledger_payload: Any):
 def ledger_file(document: Mapping[str, Any]) -> tuple[int, str]:
     """``(bytes, file_sha256)`` of the ``ledger.json`` a release declares."""
 
-    block = document["ledgers"] if document["schema"] == CHAIN_RELEASE_SCHEMA else document["ledger"]
+    block = document["ledger"] if document["schema"] == RELEASE_SCHEMA else document["ledgers"]
     return block["bytes"], block["file_sha256"]
 
 
@@ -617,6 +627,8 @@ def ledger_references(document: Mapping[str, Any]) -> list[dict[str, str]]:
 
     if document["schema"] == CHAIN_RELEASE_SCHEMA:
         blocks = document["ledgers"]["chain"]
+    elif document["schema"] == REFERENCE_RELEASE_SCHEMA:
+        blocks = document["members"]
     else:
         blocks = [document["ledger"]]
     return [
@@ -695,5 +707,323 @@ def describe(chain: StagedChain) -> str:
             f"  {run_id:<22} {block['ledger_id'][:18]}…  "
             f"{block['first_observed_on']} … {block['last_observed_on']}  "
             f"{count} date(s)"
+        )
+    return "\n".join(lines)
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# Version 3: the chain release BY REFERENCE (docs/implementation/PHASE_6J_2026-09-29.md §2)
+# ═════════════════════════════════════════════════════════════════════════════
+#
+# Version 2 copies every member's objects into its own prefix, so every
+# promotion stores the whole history again — ~270 GB in a year when every run
+# is promoted (PHASE_6I §5.3). Version 3 stores nothing but an index: every
+# member run publishes its own version-1 release once, under releases/, and
+# the version-3 manifest declares each object together with the member release
+# that holds it. The route resolves ``releases/<member>/<path>`` only for a
+# member the live manifest lists.
+
+REFERENCE_RELEASE_SCHEMA = "araripe.green.release/3"
+REFERENCE_RELEASE_IDENTITY_DOMAIN = "araripe.green.release/3"
+REFERENCE_RELEASE_ID_PREFIX = "rel-g3-"
+LEDGER_INDEX_SCHEMA = "araripe.green.ledger-index/1"
+
+
+def reference_release_identity(members: Sequence[Mapping[str, Any]]) -> tuple[str, str]:
+    """``(release_id, identity_inputs_sha256)`` from the member releases, in order.
+
+    Per member: its ``release_id`` and the sha256 of its ``release.json``.  The
+    manifest digest is not decoration: a version-1 identity does not seal the
+    bytes of a ``date_product`` (``GREEN_RELEASE_CONTRACT_V1.md`` §2, property
+    3), so without it this release would point at a name, not at bytes.
+    """
+
+    components: list[str] = [REFERENCE_RELEASE_IDENTITY_DOMAIN]
+    for member in members:
+        components += [member["release_id"], sha256_bytes(release_bytes_of(member))]
+    digest = identity_sha256(*components)
+    return REFERENCE_RELEASE_ID_PREFIX + digest, digest
+
+
+def release_bytes_of(document: Mapping[str, Any]) -> bytes:
+    return release_bytes(dict(document))
+
+
+def ledger_index_document(members: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    """The ``ledger.json`` of a version-3 release: where each member's ledger is."""
+
+    return {
+        "schema": LEDGER_INDEX_SCHEMA,
+        "ledgers": [
+            {
+                "release_id": member["release_id"],
+                "ledger_id": member["ledger"]["ledger_id"],
+                "key": f"{RELEASES_ROOT}/{member['release_id']}/{LEDGER_PATH}",
+                "bytes": member["ledger"]["bytes"],
+                "file_sha256": member["ledger"]["file_sha256"],
+            }
+            for member in members
+        ],
+    }
+
+
+def _reference_member_block(member: Mapping[str, Any]) -> dict[str, Any]:
+    block = {
+        "release_id": member["release_id"],
+        "release_document_sha256": sha256_bytes(release_bytes_of(member)),
+    }
+    block.update({key: member["ledger"][key] for key in _SEALED})
+    block["first_observed_on"] = member["coverage"]["first_observed_on"]
+    block["last_observed_on"] = member["coverage"]["last_observed_on"]
+    return block
+
+
+def _derive_reference_release(members: Sequence[ChainMember]) -> tuple[dict[str, Any], dict[str, Any]]:
+    """The version-3 manifest and ledger index that ``members`` determine.
+
+    Pure: the builder returns it and the gate compares against it, so the two
+    cannot disagree about what a member contributes.
+    """
+
+    manifests = [member.release for member in members]
+    dates: list[dict[str, Any]] = []
+    objects: list[dict[str, Any]] = []
+    for manifest in manifests:
+        for entry in manifest["dates"]:
+            dates.append({**entry, "release_id": manifest["release_id"]})
+        for item in manifest["objects"]:
+            objects.append({**item, "release_id": manifest["release_id"]})
+    objects.sort(key=lambda item: item["path"])
+    observed = [entry["observed_on"] for entry in dates]
+    index = ledger_index_document(manifests)
+    index_bytes = ledger_bytes(index)
+    release_id, digest = reference_release_identity(manifests)
+    head = manifests[-1]["state_watermark"]
+    document = {
+        "schema": REFERENCE_RELEASE_SCHEMA,
+        "release_id": release_id,
+        "identity_inputs_sha256": digest,
+        "release_prefix": chain_release_prefix(release_id),
+        "members": [_reference_member_block(m) for m in manifests],
+        "ledgers": {
+            "path": LEDGER_PATH,
+            "bytes": len(index_bytes),
+            "file_sha256": sha256_bytes(index_bytes),
+        },
+        "coverage": {
+            "observed_dates": observed,
+            "first_observed_on": observed[0],
+            "last_observed_on": observed[-1],
+        },
+        "dates": dates,
+        "objects": objects,
+        "state_watermark": {
+            "finalized_through": observed[-1],
+            "finalized_dates": observed,
+            "persistence_state_sha256": head["persistence_state_sha256"],
+            "persistence_state_bytes": head["persistence_state_bytes"],
+        },
+    }
+    return document, index
+
+
+def _member_findings(members: Sequence[ChainMember]) -> list[Finding]:
+    """Every member passes the version-1 gate; then order, generation, paths."""
+
+    blocks = []
+    for member in members:
+        _, acceptance = check_green_release(member.release, member.ledger_document)
+        blocks.append(
+            {
+                **{key: getattr(acceptance, key) for key in _SEALED},
+                "first_observed_on": acceptance.observed_dates[0],
+                "last_observed_on": acceptance.observed_dates[-1],
+            }
+        )
+    findings = _chain_order_findings(blocks)
+    seen: dict[str, str] = {}
+    for member in members:
+        for item in member.release["objects"]:
+            other = seen.setdefault(item["path"], member.release["release_id"])
+            if other != member.release["release_id"]:
+                findings.append(
+                    ReleaseRejection(
+                        "duplicate_object_path",
+                        f"{item['path']!r} is published by {other} and by "
+                        f"{member.release['release_id']}; one logical path is one "
+                        "object in a release",
+                        "objects",
+                    )
+                )
+    return findings
+
+
+def build_reference_release(members: Sequence[ChainMember]) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Compose the version-3 release of a chain from its members' version-1 releases.
+
+    Returns ``(manifest, ledger_index)``.  Every member is checked first; a
+    refusal here is a ``ReleaseBuildError`` naming every finding.
+    """
+
+    if not members:
+        raise ReleaseBuildError("a chain release needs at least one member run")
+    findings = _member_findings(members)
+    if findings:
+        raise ReleaseBuildError("; ".join(f"{f.code}: {f.detail}" for f in findings))
+    return _derive_reference_release(members)
+
+
+def check_reference_release(
+    document: Any, ledger_index: Any, members: Sequence[ChainMember]
+) -> tuple[dict[str, Any], tuple[LedgerAcceptance, ...]]:
+    """Accept a version-3 release as a promotion input, or reject it.
+
+    ``members`` are the member releases **as read from the store**, each with
+    its stored ledger — ``atomic_publish.load_published_release`` reads them,
+    so each is already the canonical bytes a consumer would fetch.  The
+    manifest must then be exactly what those members determine.
+    """
+
+    if not isinstance(document, dict) or document.get("schema") != REFERENCE_RELEASE_SCHEMA:
+        declared = document.get("schema") if isinstance(document, dict) else None
+        raise ReleaseRejected(
+            [
+                ReleaseRejection(
+                    "release_schema_mismatch",
+                    f"a reference release declares {REFERENCE_RELEASE_SCHEMA!r}; the "
+                    f"document declares {declared!r}",
+                    "schema",
+                )
+            ]
+        )
+    errors = sorted(
+        schema_validator("green-release-v3").iter_errors(document),
+        key=lambda error: list(error.absolute_path),
+    )
+    if errors:
+        raise ReleaseRejected(
+            ReleaseRejection(
+                "release_schema_invalid",
+                error.message,
+                "/".join(str(part) for part in error.absolute_path) or "<root>",
+            )
+            for error in errors
+        )
+    listed = [block["release_id"] for block in document["members"]]
+    supplied = [member.release["release_id"] for member in members]
+    if listed != supplied:
+        raise ReleaseRejected(
+            [
+                ReleaseRejection(
+                    "reference_members_mismatch",
+                    f"the manifest lists {listed} and the members read are {supplied}",
+                    "members",
+                )
+            ]
+        )
+
+    findings = _member_findings(members)
+    expected, index = _derive_reference_release(members)
+    for index_no, (block, want) in enumerate(zip(document["members"], expected["members"])):
+        if block["release_document_sha256"] != want["release_document_sha256"]:
+            findings.append(
+                ReleaseRejection(
+                    "member_manifest_mismatch",
+                    f"member {block['release_id']} is declared with a manifest "
+                    "digest its stored release.json does not have",
+                    f"members/{index_no}/release_document_sha256",
+                )
+            )
+    for key in ("release_id", "identity_inputs_sha256", "release_prefix", "members",
+                "ledgers", "coverage", "dates", "objects", "state_watermark"):
+        if key == "members" and any(f.code == "member_manifest_mismatch" for f in findings):
+            continue
+        if document[key] != expected[key]:
+            findings.append(
+                ReleaseRejection(
+                    "reference_release_does_not_derive_from_its_members",
+                    f"{key} is not what the member releases determine",
+                    key,
+                )
+            )
+    if ledger_index != index:
+        findings.append(
+            ReleaseRejection(
+                "ledger_object_mismatch",
+                "ledger.json is not the index of the members' ledgers",
+                "ledger.json",
+            )
+        )
+    if findings:
+        raise ReleaseRejected(findings)
+    return document, tuple(
+        check_processing_ledger(member.ledger_document) for member in members
+    )
+
+
+def reference_object_key(document: Mapping[str, Any], item: Mapping[str, Any]) -> str:
+    """Where one declared object of a release lives: its member's prefix for
+    version 3, the release's own prefix otherwise."""
+
+    owner = item.get("release_id", document["release_id"])
+    return f"{RELEASES_ROOT}/{owner}/{item['path']}"
+
+
+def load_reference_chain(store: ConditionalStore, path: Sequence[str]) -> "StagedReference":
+    """Read every run of ``path`` and compose the version-3 release.
+
+    Each member is read with ``run_inputs.load_run`` — the same checks the
+    per-run publication makes — and its version-1 release is what the chain
+    references.  Nothing is written here.
+    """
+
+    from src.publication import run_inputs
+
+    members: list[ChainMember] = []
+    staged_runs = []
+    for run_id in path:
+        staged = run_inputs.load_run(store, run_id)
+        staged_runs.append(staged)
+        members.append(ChainMember(staged.release, staged.ledger_document))
+    release, index = build_reference_release(members)
+    check_reference_release(release, index, members)
+    return StagedReference(tuple(path), release, index, tuple(staged_runs))
+
+
+@dataclass(frozen=True)
+class StagedReference:
+    """A version-3 release in memory, and the member runs it references."""
+
+    path: tuple[str, ...]
+    release: dict[str, Any]
+    ledger_index: dict[str, Any]
+    runs: tuple[Any, ...]
+
+    @property
+    def release_id(self) -> str:
+        return self.release["release_id"]
+
+
+def describe_reference(staged: StagedReference) -> str:
+    release = staged.release
+    coverage = release["coverage"]
+    size = sum(item["bytes"] for item in release["objects"])
+    lines = [
+        f"chain            : {' -> '.join(staged.path)}",
+        f"release          : {staged.release_id}",
+        f"prefix           : {release['release_prefix']} (release.json + ledger.json only)",
+        "coverage         : "
+        f"{coverage['first_observed_on']} … {coverage['last_observed_on']} "
+        f"({len(coverage['observed_dates'])} UTC date(s))",
+        f"objects          : {len(release['objects'])}, {size} bytes, referenced in "
+        f"{len(release['members'])} member release(s) — none copied",
+        "",
+        "members:",
+    ]
+    for run_id, block in zip(staged.path, release["members"]):
+        count = sum(1 for e in release["dates"] if e["release_id"] == block["release_id"])
+        lines.append(
+            f"  {run_id:<22} {block['release_id'][:22]}…  "
+            f"{block['first_observed_on']} … {block['last_observed_on']}  {count} date(s)"
         )
     return "\n".join(lines)

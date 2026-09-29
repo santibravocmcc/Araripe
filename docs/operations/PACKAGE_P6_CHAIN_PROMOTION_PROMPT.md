@@ -1,16 +1,17 @@
-# Phase 6 — promover a release da cadeia no staging, e provar a volta
+# Phase 6 — promover a release da cadeia por referência no staging, e provar a volta
 
-Escrito em 2026-09-28, depois de decidir e construir a release pública de uma
-cadeia (`araripe.green.release/2`). Método:
+Reescrito em 2026-09-29, depois da opção H (PHASE_6J): o estado comprimido
+está em produção verde, e a release da cadeia passou a ser uma **`/3` por
+referência** — um índice das releases `/1` de cada rodada, sem cópia. Método:
 [`HANDOFF_PROMPT_METHOD.md`](HANDOFF_PROMPT_METHOD.md) versão 2 — o corpo é
 para o agente executor e a **seção final é para o dono**.
 
 > **NEXT SESSION MODEL: Opus 5.5 — EFFORT: medium**
 >
-> Por quê: a forma já está decidida, testada e composta do bucket real só
-> leitura (PHASE_6I §8). O que resta é executar um caminho provado e medir com
-> cuidado. Não é pergunta de contrato; é prova ao vivo. Se a prova contradisser
-> a decisão, **pare e pergunte** — não redesenhe.
+> Por quê: a forma está decidida pelo dono, construída, testada nos dois
+> repositórios e composta do bucket real só leitura (PHASE_6J §3.3). O que
+> resta é executar um caminho provado e medir. Se a prova contradisser a
+> decisão, **pare e pergunte** — não redesenhe.
 
 ---
 
@@ -18,95 +19,96 @@ para o agente executor e a **seção final é para o dono**.
 
     git fetch origin
     git rev-parse origin/main
-    git show origin/main:src/publication/chain_release.py | head -3
-    git show origin/main:docs/implementation/PHASE_6I_2026-09-28.md | grep -n '^## '
-    git log origin/main --grep 'release de cadeia' --oneline
+    git show origin/main:src/publication/chain_release.py | grep -n 'REFERENCE_RELEASE_SCHEMA ='
+    git show origin/main:docs/implementation/PHASE_6J_2026-09-29.md | grep -n '^## '
     git config core.hooksPath .githooks     # uma vez por clone
 
-O `chain_release.py` tem de existir na `main`, e o PHASE_6I tem de ter as
-seções 0 a 10. **Se não existir, a PR não foi mesclada pelo dono: pare.** Não
-mescle você mesmo — a PR não é a mínima e inerte que a política deixa o agente
-mesclar (PHASE_6I §10), e a promoção só roda da `main`.
+E no site:
 
-Suíte medida em 2026-09-28:
+    git -C ../site fetch origin
+    git -C ../site show origin/main:worker/data_route.js | grep -n 'object_release_unusable'
+
+As duas coisas têm de estar na `main`, e **o Worker verde tem de ter sido
+reimplantado pelo dono depois do merge do site** — da máquina dele, no clone
+do site atualizado, com o mesmo comando de 2026-09-27
+(`scripts/green_worker.sh deploy GREEN-ONLY`, PHASE_6B §1). Esse terceiro fato não se
+confere por git: pergunte ao dono, ou leia a data da última implantação que
+ele informar. **Sem o Worker novo, não promova**: o Worker antigo, diante de
+uma `/3`, procuraria os objetos no prefixo do índice e responderia 503.
+
+Suíte medida em 2026-09-29:
 
 | repositório | comando | resultado |
 | --- | --- | --- |
-| backend | `/opt/anaconda3/envs/araripe/bin/python -m pytest -q` | **2405** na branch da PR (2337 na base) |
+| backend | `/opt/anaconda3/envs/araripe/bin/python -m pytest -q` | **2449** |
+| site | `npm run test:worker` (com `../Araripe` na mesma `main`) | **56** |
 
 Rode e use o número que sair.
 
 ## 2. O que já foi verificado, para o executor não refazer
 
-Em [`../implementation/PHASE_6I_2026-09-28.md`](../implementation/PHASE_6I_2026-09-28.md):
+Em [`../implementation/PHASE_6J_2026-09-29.md`](../implementation/PHASE_6J_2026-09-29.md):
 
-- **Por que (a)** e não (b) nem (c), e por que copiar e não referenciar (§2).
-  Não reabra.
-- **As constantes `/1` não mudam** — o freeze da Phase 3 as fixa e o
-  `replay_2026.py` recusa detectar se mudarem (§0, §4). O teste
-  `test_the_version_one_contract_and_its_constants_are_untouched` roda o
-  `freeze.load_freeze()`.
-- **A release que a cadeia compõe hoje, só leitura, do bucket real** (§8):
-  `rel-g2-a24441c9ee5a84179af16578400ef7db15333943c30ee03a670b28d708c45ee4`,
-  102 datas, 2026-01-02 … 2026-09-24, 84 objetos (1 804 054 886 bytes),
-  `ledger.json` de 60 533 651 bytes; contra o ponteiro vivo: nenhuma data
-  perdida, zero tombstones, 72/72 objetos carregados byte a byte. Composição
-  local em 265 s.
-- **O site não precisa mudar** (§8): compositor e rota da `origin/main` do site
-  compõem e servem uma `/2` de fixture.
-- **A guarda nova** recusa promover a release da cabeça sozinha
-  (`coverage_dates_dropped`) — o caso que motivou o pacote, em teste.
-- **Mutação**: 33, 32 mortas, M15 equivalente e explicada (§9).
+- **O estado comprimido está provado ao vivo** (§1.4): `ci-36587297892`
+  depositou `run.json /3` e o estado em 259 063 959 bytes para 1 021 260 480;
+  a cabeça o lê e o `fetch_state` o infla e confere em 19 s.
+- **A `/3` composta do bucket real, só leitura** (§3.3):
+  `rel-g3-264ba36ee44bc799fd4fe7f22748d84488469087ec1924e2130ac5b28ba53a02`,
+  103 datas até 2026-09-27, zero tombstones contra o ponteiro vivo, grava ~100
+  KB e referencia 1,8 GB em 5 membros. Quatro membros ainda não têm a sua
+  `/1` publicada; o `publish-chain` publica cada uma antes do índice.
+- **A rota do site e a do backend concordam** nos 28 vetores `/2`, e as
+  mutações da regra do membro morrem nos dois lados (§3.2).
+- **A `/2` fica definida e nunca é produzida** (`GREEN_RELEASE_CONTRACT_V1.md`
+  §13). Não a promova.
 
 ## 3. A tarefa
 
-Promover a release da cadeia no staging a partir da `main`, **provar ao vivo**
-o que a §8 do PHASE_6I previu, e provar a volta: rollback para a release do
-replay e promoção da cadeia de novo — as duas direções com o ponteiro `/2`.
+Promover a `/3` no staging a partir da `main`, **provar ao vivo** o que a
+§3.3 previu, e provar a volta: rollback para a release do replay e promoção
+da `/3` de novo.
 
 ## 4. O escopo, na ordem em que se sustenta
 
-1. **Ler antes de escrever.** O ponteiro vivo (sequência, versão, release), a
-   cabeça da cadeia (`resolve_chain_head.py` ou a leitura só leitura da §8) e o
-   histórico (`publish_green_release.py history` não roda local sem a
-   identidade de promoção — leia os registros com o profile, só leitura). Se a
-   cadeia andou desde 2026-09-28, a release é outra: anote qual.
+1. **Ler antes de escrever**: o ponteiro vivo, a cabeça da cadeia e o
+   histórico, só leitura. Se a cadeia andou desde 2026-09-29, a `/3` é outra:
+   anote qual.
 2. **Promover**:
 
        gh workflow run v2_operational_publish.yml --repo santibravocmcc/Araripe -f source=chain
 
-   Acompanhe com `gh run view <id> --json jobs` (o `--log` só com o job
-   terminado). Meça o tempo de cada job e o pico: é o primeiro dado real do
-   custo de uma promoção de cadeia.
+   Acompanhe com `gh run view <id> --json jobs`. Meça o tempo de cada job: é o
+   primeiro dado real do custo de uma promoção por referência.
 3. **Conferir ao vivo, só leitura**: ponteiro na sequência seguinte, `/2`,
-   com um `ledgers` por membro e a cobertura inteira; o prefixo
-   `releases/rel-g2-…/` com `release.json`, `ledger.json` e os objetos;
-   `verify_release` sobre ele; os registros de histórico do `/1` substituído
-   (byte a byte) e do `/2` novo; zero tombstones.
-4. **A volta**: `rollback --to` a release do replay e, em seguida, promover a
-   cadeia de novo (a lane com `source=chain` de novo). Três escritas, três
-   registros, o histórico consistente. Hoje isso só está provado no store
-   falso (`test_rollback_from_a_chain_release_to_the_root_names_both`).
-5. **O registro**: um `PHASE_6J` com as medições, e a linha do roadmap
-   atualizada.
+   nomeando `rel-g3-…`, um `ledgers` por membro; `releases/rel-g3-…/` com
+   **só** `release.json` e `ledger.json`; as `/1` dos quatro membros novos
+   publicadas; `verify_release` sobre a `/3`; registros de histórico 14 (os
+   bytes `/1`) e 15; zero tombstones.
+4. **Pelo Worker verde**, se o dono o tiver deixado acessível: `release.json`,
+   `ledger.json` e um objeto de setembro respondem 200, e o objeto sai do
+   prefixo do membro. Use o verificador do site
+   (`scripts/verify_green_route_remote.sh`) só se a janela estiver aberta — a
+   abertura é do dono ou do broker, nunca sua por outro caminho.
+5. **A volta**: `rollback --to` a release do replay e promover a `/3` de novo.
+   Três escritas, três registros, o histórico consistente, e os tombstones do
+   rollback nomeando chaves que existem (prefixos `rel-g1-`).
+6. **O registro**: um `PHASE_6K` com as medições, e a linha do roadmap.
 
 **Fora de escopo, explicitamente:**
 
-- **a cadência de promoção** e o agendamento Seg/Qui — da virada; mas registre
-  o custo medido, que é o insumo dela (PHASE_6I §5);
-- **uma `/3` com referências em vez de cópias** — só quando a rota puder mudar;
+- **a cadência** de detecção e promoção, e o `queue: max` — da virada;
 - **as páginas do site**, a fonte (Landsat), as três datas — outro pacote;
-- **a retenção** das cópias e dos estados;
+- **a retenção** das rodadas cujos membros foram publicados;
 - **a validação de acurácia** — Phase 5.
 
 ## 5. Decisões de escopo já tomadas, com a base
 
-- **A release de cadeia é (a), `/2`, autocontida por cópia** — PHASE_6I §2.
-- **`promote` recusa perder uma data publicada**; ir para trás é `rollback`
-  — PHASE_6I §3.
-- **Ponteiro escrito como `/2`; leitores aceitam `/1` e `/2`** — PHASE_6I §4.
-- **`RELEASE_SCHEMA` e `POINTER_SCHEMA` continuam `/1`** — o freeze.
-- **Cabeça derivada, raiz `rep-2026-08-30-v3`** — PHASE_6H §1.
+- **Opção H**: estado comprimido e publicação por referência — decisão do dono
+  em 2026-09-29, PHASE_6J.
+- **A unidade pública é a release `/1` de cada rodada**; `runs/` continua
+  privada — PHASE_6J §2.1.
+- **`promote` recusa perder uma data publicada** — PHASE_6I §3.
+- **`RELEASE_SCHEMA` e `POINTER_SCHEMA` continuam `/1`** — o freeze da Phase 3.
 - **D1**: `araripe-v2-staging` é o bucket verde canônico.
 - **Nada é apagado**, em nenhum bucket, nunca.
 
@@ -115,96 +117,76 @@ Se aparecer evidência contra qualquer uma, **pare e pergunte**.
 ## 6. Fronteiras duras
 
 - A `main` dos dois repositórios é **pull-request-only**, e **a `main` do site
-  faz deploy de produção**. Nada no site muda neste pacote.
+  faz deploy de produção**.
 - **`detect_gee.yml` e `update_data.yml` não são idempotentes** e escrevem em
   produção. Nunca os dispare.
 - Nunca nomeie um Environment que não exista; nunca aprove a sua própria
   requisição.
 - Claude não recebe credencial de control-plane da Cloudflare; a allowlist do
   broker é exatamente `audit`, `enforce-worker-isolation`,
-  `disable-site-branch-deploy`.
+  `disable-site-branch-deploy`. **Reimplantar o Worker verde não está nela.**
 - **Não ligue** `green_site_publish.yml` ao Environment `v2-green-deploy`.
-- **`v2_operational_publish.yml` não tem modo "só validar"**: o job `promote`
-  segue o `stage`. Dispará-lo é promover.
-- **O profile local só lê.** A promoção roda na lane, com a identidade de
-  promoção. Se o dono já revogou a chave local, verifique pelas lanes e não a
-  peça de volta.
+- **`v2_operational_publish.yml` não tem modo "só validar"**: dispará-lo é
+  promover.
+- **O profile local só lê.**
 
 ## 7. Armadilhas já pagas — não redescobrir
 
 - **O `stage` está no grupo `araripe-green-candidate`**, o mesmo do `deposit`:
-  um `deposit` pendente é cancelado se o `stage` chegar depois (PHASE_6H §9).
-  Não dispare os dois juntos.
+  um `deposit` pendente é cancelado se o `stage` chegar depois.
 - **`publish-chain --expect`** recusa (`chain_moved_since_staging`) se uma
-  rodada entrar entre o stage e o promote. É a recusa certa; dispare de novo.
-- **O `promote` lê o corpo inteiro duas vezes** (`verify_release` no
-  `_publish_verify_promote` e de novo dentro do `promote`) — ~1,8 GB cada.
-  O timeout do job é 60 min por isso.
-- **O ponteiro verde é `pointers/green/current.json`**; o histórico,
-  `pointers/green/history/<10 dígitos>.json`.
+  rodada entrar entre o stage e o promote. Dispare de novo.
+- **O `promote` lê os objetos mais de uma vez** — na verificação de cada
+  membro, na do índice e dentro do `promote` —, ~1,8 GB cada. Timeout 60 min.
+- **Um SHA escrito de memória passa na revisão.** Em 2026-09-29 um SHA de base
+  inventado chegou a ser escrito no PHASE_6J e só não entrou porque foi
+  relido do `git rev-parse` antes do commit. Copie sempre da ferramenta.
+- **O compositor do site da branch local não é o da `main`**: use `git archive
+  origin/main scripts worker | tar -x` fora do clone.
 - **`gh run view --log` só funciona com o job terminado.**
-- **Mensagem de commit por arquivo**, `git commit -F`; depois de cada push,
-  `gh pr list --head <branch> --state all`.
-- **Limpe `__pycache__` e use `PYTHONDONTWRITEBYTECODE=1`** antes de cada
-  mutação.
-- **O compositor do site da branch local não é o da `main`**: o clone do site
-  estava em `claude/route-reader-user-agent`. Para rodar o da `main`, `git
-  archive origin/main scripts worker | tar -x` fora do clone.
 
 ## 8. Estado que o pacote herda
 
-- **PR desta sessão** aberta, **não mesclada** — a promoção depende dela.
 - **Ponteiro verde:** sequência 14, `/1`, `rel-g1-fb722b2d…` (o replay).
 - **Cadeia:** `rep-2026-08-30-v3 -> ci-36456671793 -> ci-36462882711 ->
-  ci-36465147834`, até 2026-09-24. Nenhum `schedule:`; a cadeia só anda por
-  despacho.
+  ci-36465147834 -> ci-36587297892`, até 2026-09-27. Nenhum `schedule:`.
+- **O bucket de staging:** ~22 GB; `baselines_v2` 13,6 GB.
 - **Setembro tem alertas reais** em seis datas, nenhuma publicada.
 - **A produção azul está parada** desde 2026-09-03; o conserto é a virada.
-- **Achados esperando a sua vez:** cada release de cadeia copia o histórico
-  inteiro (PHASE_6I §5); o site atribui "Landsat 8/9"; o índice não tem campo
-  para a última tentativa de automação; cada rodada guarda ~1 GB de estado; a
-  retenção não sabe que uma release de cadeia contém os objetos das rodadas.
+- **Achados esperando a sua vez:** o site atribui "Landsat 8/9"; o índice não
+  tem campo para a última tentativa de automação; as rodadas antigas guardam
+  o estado descomprimido (~1 GB cada) e não são reescritas.
 - **O token da NASA expira em 2026-11-06.**
 
 ## 9. Para o dono — em linguagem simples
 
 ### O que ficou pendente da tarefa atual
 
-Uma coisa, de propósito: colocar os dados novos na vitrine de testes. Está
-tudo pronto e conferido — o sistema agora junta todas as rodadas numa
-publicação só, com os oito meses antigos e setembro juntos, e se recusa a
-publicar algo que apague datas já publicadas. Mas publicar é para sempre, e a
-forma nova foi decidida nesta sessão; eu preferi que você a visse antes.
+Só publicar. O estado comprimido já está funcionando de verdade, e a
+publicação por referência está pronta nos dois lados — o sistema e o site. Ela
+não foi feita ainda porque o servidor de testes do site precisa ser
+reimplantado com a versão nova antes, e isso só você pode fazer.
 
 ### O que você precisa fazer
 
-1. **Ler e mesclar a PR desta sessão.** Não é urgente, mas os alertas de
-   setembro só chegam à vitrine de testes depois disso. O documento de
-   decisão explica em poucas páginas o que foi escolhido e por quê.
-2. **Abrir a próxima sessão com este documento**, depois do merge, no modelo e
-   esforço do topo. Ela faz a publicação e a prova.
+1. **Reimplantar o servidor de testes do site** (o Worker verde) a partir da
+   versão nova do site, do mesmo jeito que você fez em 27/09 — o comando está
+   no começo deste documento. Não é urgente,
+   mas a publicação espera por isso.
+2. **Abrir a próxima sessão com este documento** depois da reimplantação, no
+   modelo e esforço do topo, dizendo que ela foi feita.
 
 ### Tem algo preocupante?
 
-Um custo que cresce sem teto, não um risco de hoje. Medi de verdade em 29/09.
-O que mais pesa não são as cópias da publicação: é o "estado" de cerca de 1 GB
-que cada rodada guarda para sempre. Só isso leva a caixa de testes de 22 GB
-para uns 140 GB em um ano. Publicar a cada rodada, do jeito construído,
-leva para uns 400 GB. Em dinheiro ainda é pouco, uns 6 dólares por mês ao fim
-do primeiro ano. Publicar só quando há alerta novo quase não ajuda, porque
-metade das rodadas tem alerta. O que ajuda de verdade é comprimir o estado, que
-encolhe quase 4 vezes, e, mais adiante, publicar por referência em vez de
-cópia. As alternativas e os números estão no documento de decisão.
+Não. O custo que preocupava caiu: cada rodada nova guarda um quarto do que
+guardava, e publicar passa a gravar só um índice pequeno em vez de copiar
+quase 2 GB.
 
 ### O que ainda falta no caminho
 
-- **Publicar a cadeia na vitrine de testes** — a próxima sessão, depois do
-  merge.
-- **Detecção agendada da versão nova** — duas vezes por semana; pronta, liga
-  junto com a virada, e junto com ela a frequência das publicações.
-- **As páginas do site** — linguagem, fonte (tirar o Landsat), as três datas
-  separadas, e as datas muito pesadas.
-- **A virada** — o site passa a ler os dados novos no próprio domínio, e só
-  depois o caminho antigo é desligado.
-- **Fase 5** — a validação independente; até ela, nada é publicado como
-  "precisão do sistema".
+- **Publicar a cadeia na vitrine de testes** — a próxima sessão, depois da
+  reimplantação.
+- **Detecção e publicação agendadas** — ligam na virada, com a frequência.
+- **As páginas do site** — linguagem, fonte (tirar o Landsat), as três datas.
+- **A virada** — o site passa a ler os dados novos no próprio domínio.
+- **Fase 5** — a validação independente.

@@ -63,12 +63,15 @@ answered first, with the smaller lane-2 identity, by
 ``scripts/stage_green_run.py``.
 
 ``publish-chain`` is the Phase 6 entry point
-(``docs/implementation/PHASE_6I_2026-09-28.md``): a chained run's own release
-covers only its window, so promoting it would retire every earlier date.  The
-chain's release is composed of every run from the root to the head, derived
-from the bucket as the deposit lane derives it, and published only if it is
-the release ``scripts/stage_chain_release.py`` accepted with the lane-2
-identity (``--expect``).
+(``docs/implementation/PHASE_6I_2026-09-28.md``,
+``docs/implementation/PHASE_6J_2026-09-29.md`` §2): a chained run's own
+release covers only its window, so promoting it would retire every earlier
+date.  The chain's release is a version-3 index of every run's version-1
+release, from the root to the head, derived from the bucket as the deposit
+lane derives it.  Each member release is published first — once, and
+idempotently — and the index only if it is the release
+``scripts/stage_chain_release.py`` accepted with the lane-2 identity
+(``--expect``).
 
 ``apply``, ``publish``, ``publish-chain``, ``rollback`` and ``status`` need the **promotion** identity, which
 is deliberately not the green candidate identity and is not provisioned yet.
@@ -433,8 +436,8 @@ def cmd_publish_chain(args) -> int:
 
     store = build_store()
     head = sc.resolve_head(store)
-    staged = cr.load_chain(store, head.path)
-    print(cr.describe(staged))
+    staged = cr.load_reference_chain(store, head.path)
+    print(cr.describe_reference(staged))
     if staged.release_id != args.expect:
         raise ap.PromotionRefused(
             [
@@ -448,9 +451,17 @@ def cmd_publish_chain(args) -> int:
                 )
             ]
         )
-    return _publish_verify_promote(
-        staged.release, staged.ledger_chain, staged.bodies, store
-    )
+    # The members first: each run's own version-1 release, write-once and
+    # idempotent — the root's is already published — then verified. Only a
+    # chain whose every member is published and complete gets its index.
+    for run in staged.runs:
+        report = ap.publish_release(store, run.release, run.ledger_document, run.bodies)
+        ap.verify_release(store, run.release)
+        print(
+            f"member   : {run.run_id} -> {run.release_id} "
+            f"({len(report.created)} created, {len(report.unchanged)} already identical)"
+        )
+    return _publish_verify_promote(staged.release, staged.ledger_index, {}, store)
 
 
 def cmd_rollback(args) -> int:

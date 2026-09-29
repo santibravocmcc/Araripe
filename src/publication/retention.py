@@ -419,8 +419,15 @@ def classify(
     phase_open: bool = True,
     accept_run_manifest_loss: bool = False,
     lineage: Lineage | None = None,
+    chain_members: Mapping[str, tuple[str, ...]] | None = None,
 ) -> Disposition:
-    """Decide one object, failing closed on anything unrecognised."""
+    """Decide one object, failing closed on anything unrecognised.
+
+    ``chain_members`` maps every version-3 release in the store to the member
+    releases it references (``resolve_chain_members``).  A member is retained
+    whatever else is true of it: the version-3 release serves its objects
+    from the member's prefix (PHASE_6J §2).
+    """
 
     key = item.key
     live = pointer["release_id"] if pointer else None
@@ -445,6 +452,21 @@ def classify(
                 key, item.size, "release", RETAIN, "release_is_live",
                 "the pointer names this release; it is what the delivery route "
                 "serves",
+            )
+        holders = sorted(
+            chain for chain, members in (chain_members or {}).items()
+            if release_id in members
+        )
+        if holders:
+            served = live in holders
+            return Disposition(
+                key, item.size, "release", RETAIN,
+                "release_is_served_by_the_live_release" if served
+                else "release_is_a_member_of_a_chain_release",
+                "a version-3 release references this release's objects in place "
+                f"({', '.join(holders)}); removing it would break "
+                + ("the live release" if served else "that release")
+                + " (PHASE_6J §2)",
             )
         if release_id in referenced:
             return Disposition(
@@ -761,6 +783,31 @@ def list_inventory(client: Any, bucket: str) -> list[StoredKey]:
                 f"listing {bucket} reported more results and returned no "
                 "continuation token; refusing to plan over a partial inventory"
             )
+
+
+def resolve_chain_members(store: Any, inventory: Iterable[StoredKey]) -> dict[str, tuple[str, ...]]:
+    """Every version-3 release in the store, and the member releases it references.
+
+    Read from each ``releases/rel-g3-…/release.json``.  A manifest that cannot
+    be read or parsed fails the whole plan: a member list the planner could not
+    see is a member it might classify as removable.
+    """
+
+    import json
+
+    out: dict[str, tuple[str, ...]] = {}
+    for item in inventory:
+        if not item.key.startswith(db.RELEASES_ROOT + "rel-g3-"):
+            continue
+        release_id = _release_id_of(item.key)
+        if release_id is None or item.key != f"{db.RELEASES_ROOT}{release_id}/release.json":
+            continue
+        stored = store.get(item.key)
+        if stored is None:
+            raise RuntimeError(f"{item.key} was listed and is absent")
+        manifest = json.loads(stored.body)
+        out[release_id] = tuple(block["release_id"] for block in manifest["members"])
+    return out
 
 
 def resolve_run_links(store: Any, inventory: Iterable[StoredKey]) -> dict[str, RunLink]:

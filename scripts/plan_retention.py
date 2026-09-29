@@ -99,13 +99,14 @@ def main(argv=None) -> int:
         stored_pointer = store.get(db.POINTER_KEY)
         pointer = json.loads(stored_pointer.body) if stored_pointer else None
         runs = retention.resolve_run_links(store, inventory)
+        chain_members = retention.resolve_chain_members(store, inventory)
         found = ph.read_history(
             store,
             pointer,
             stored_pointer.body if stored_pointer else None,
             keys=[item.key for item in inventory if item.key.startswith(ph.HISTORY_ROOT)],
         )
-    except cs.ObjectStoreError as exc:
+    except (cs.ObjectStoreError, RuntimeError, ValueError) as exc:
         print(f"erro: {exc}", file=sys.stderr)
         return 1
 
@@ -125,6 +126,7 @@ def main(argv=None) -> int:
         verification_horizon_days=args.verification_horizon_days,
         phase_open=not args.phase_closed,
         accept_run_manifest_loss=args.accept_run_manifest_loss,
+        chain_members=chain_members,
     )
 
     if args.json:

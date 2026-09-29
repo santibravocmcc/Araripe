@@ -88,6 +88,53 @@ FIXTURE = {
     },
 }
 
+#: A version-3 chain release (PHASE_6J §2.4): an index whose objects live in
+#: two member releases.  Every chain case resolves against this fixture.
+_CHAIN_ID = "rel-g3-" + "d4" * 32
+_CHAIN_PREFIX = f"releases/{_CHAIN_ID}/"
+_MEMBER_A = "rel-g1-" + "e5" * 32
+_MEMBER_B = "rel-g1-" + "f6" * 32
+
+CHAIN_FIXTURE = {
+    "pointer": {
+        "schema": "araripe.green.pointer/2",
+        "sequence": 15,
+        "action": "promote",
+        "release_id": _CHAIN_ID,
+    },
+    "manifest": {
+        "schema": "araripe.green.release/3",
+        "release_id": _CHAIN_ID,
+        "release_prefix": _CHAIN_PREFIX,
+        # The third entry is malformed on purpose: listing an id must not be
+        # enough to turn it into a prefix, so the "listed-looking" case below
+        # exercises the id pattern in every implementation, not only in Python.
+        "members": [
+            {"release_id": _MEMBER_A},
+            {"release_id": _MEMBER_B},
+            {"release_id": "../runs/ci-1"},
+        ],
+        "objects": [
+            {
+                "path": "alerts/run-2026-08-30.geojson",
+                "bytes": 29539158,
+                "sha256": "a7" * 32,
+                "content_type": "application/geo+json",
+                "release_id": _MEMBER_A,
+            },
+            {
+                "path": "alerts/run-2026-09-24.geojson",
+                "bytes": 19325375,
+                "sha256": "b8" * 32,
+                "content_type": "application/geo+json",
+                "release_id": _MEMBER_B,
+            },
+        ],
+    },
+}
+
+FIXTURES = {"release": FIXTURE, "chain": CHAIN_FIXTURE}
+
 #: The declared path the content-type cases exercise; naming it keeps the
 #: patch and the request pointing at the same object.
 ALERT_PATH = "/data/green/alerts/2026-04-07/19741870aa21.geojson"
@@ -136,6 +183,30 @@ CASES: list[dict] = [
      "method": "PUT", "path": "/data/green/series.json"},
     {"name": "DELETE is refused; this route reads",
      "method": "DELETE", "path": "/data/green/series.json"},
+    # ── a version-3 chain release, served by reference (PHASE_6J §2.4) ──────
+    {"name": "a chain release's manifest is its own, from its own prefix",
+     "fixture": "chain", "method": "GET", "path": "/data/green/release.json"},
+    {"name": "a chain release's ledger index is public from its own prefix",
+     "fixture": "chain", "method": "GET", "path": "/data/green/ledger.json"},
+    {"name": "a referenced object is served from the prefix of the member that holds it",
+     "fixture": "chain", "method": "GET", "path": "/data/green/alerts/run-2026-08-30.geojson"},
+    {"name": "each object resolves to its own member, not to the first one",
+     "fixture": "chain", "method": "GET", "path": "/data/green/alerts/run-2026-09-24.geojson"},
+    {"name": "a member prefix cannot be addressed directly",
+     "fixture": "chain", "method": "GET",
+     "path": f"/data/green/releases/{_MEMBER_A}/alerts/run-2026-08-30.geojson"},
+    {"name": "an object naming a release the live manifest does not list is refused",
+     "fixture": "chain", "method": "GET", "path": "/data/green/alerts/run-2026-08-30.geojson",
+     "object_patch": {"release_id": "rel-g1-" + "00" * 32}},
+    {"name": "an object naming anything but a version-1 id is refused, even a listed-looking one",
+     "fixture": "chain", "method": "GET", "path": "/data/green/alerts/run-2026-08-30.geojson",
+     "object_patch": {"release_id": "../runs/ci-1"}},
+    {"name": "an object of a chain release that names no member is refused, not served from the index",
+     "fixture": "chain", "method": "GET", "path": "/data/green/alerts/run-2026-08-30.geojson",
+     "object_patch": {"release_id": None}},
+    {"name": "an object naming the chain release itself is refused",
+     "fixture": "chain", "method": "GET", "path": "/data/green/alerts/run-2026-08-30.geojson",
+     "object_patch": {"release_id": _CHAIN_ID}},
 ]
 
 
@@ -148,10 +219,11 @@ def _manifest_for(case: dict) -> dict:
     unchecked in every implementation but the Python one.
     """
 
+    fixture = FIXTURES[case.get("fixture", "release")]
     patch = case.get("object_patch")
     if not patch:
-        return FIXTURE["manifest"]
-    manifest = json.loads(json.dumps(FIXTURE["manifest"]))
+        return fixture["manifest"]
+    manifest = json.loads(json.dumps(fixture["manifest"]))
     manifest["objects"][0].update(patch)
     return manifest
 
@@ -161,7 +233,7 @@ def _evaluate(case: dict) -> dict:
         served = db.resolve(
             case["method"],
             case["path"],
-            pointer=FIXTURE["pointer"],
+            pointer=FIXTURES[case.get("fixture", "release")]["pointer"],
             manifest=_manifest_for(case),
             download=case.get("download", False),
         )
@@ -179,7 +251,7 @@ def _evaluate(case: dict) -> dict:
 
 def build_vectors() -> dict:
     return {
-        "schema": "araripe.green.delivery-vectors/1",
+        "schema": "araripe.green.delivery-vectors/2",
         "boundary_schema": db.BOUNDARY_SCHEMA,
         "mount": db.MOUNT,
         "note": (
@@ -189,10 +261,11 @@ def build_vectors() -> dict:
             "Regenerate with `vectors --write` and review the diff; a silent "
             "change to this file is a change to what the project publishes."
         ),
-        "fixture": FIXTURE,
+        "fixtures": FIXTURES,
         "cases": [
             {
                 "name": case["name"],
+                "fixture": case.get("fixture", "release"),
                 "method": case["method"],
                 "path": case["path"],
                 "download": case.get("download", False),
@@ -255,7 +328,11 @@ def cmd_surface(args) -> int:
         return 1
 
     live = pointer["release_id"] if pointer else None
-    classified = [db.classify_key(item.key, live_release_id=live) for item in inventory]
+    members = db.live_member_ids(manifest)
+    classified = [
+        db.classify_key(item.key, live_release_id=live, live_members=members)
+        for item in inventory
+    ]
     public = [entry for entry in classified if entry.is_public]
 
     print(f"bucket        : {bucket}")
