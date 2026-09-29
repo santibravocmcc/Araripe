@@ -23,7 +23,7 @@ from pathlib import Path
 import pytest
 
 from src.publication import delivery_boundary as db
-from scripts.check_delivery_boundary import FIXTURE, VECTORS_PATH, build_vectors
+from scripts.check_delivery_boundary import CHAIN_FIXTURE, FIXTURE, FIXTURES, VECTORS_PATH, build_vectors
 
 LIVE = "rel-g1-" + "ae" * 32
 OTHER = "rel-g1-" + "5f" * 32
@@ -401,6 +401,73 @@ def test_every_vector_case_is_named_for_a_property_and_none_repeats():
     names = [case["name"] for case in stored["cases"]]
     assert len(names) == len(set(names))
     assert stored["mount"] == db.MOUNT
-    assert stored["fixture"] == FIXTURE
+    assert stored["fixtures"] == FIXTURES
+    assert {case["fixture"] for case in stored["cases"]} == {"release", "chain"}
     outcomes = {case["expect"]["outcome"] for case in stored["cases"]}
     assert outcomes == {"served", "refused"}
+
+
+# ── PHASE_6J §2.4: a version-3 release serves its members' objects ──────────
+
+
+def _chain(patch=None):
+    manifest = json.loads(json.dumps(CHAIN_FIXTURE["manifest"]))
+    if patch:
+        manifest["objects"][0].update(patch)
+    return CHAIN_FIXTURE["pointer"], manifest
+
+
+def test_a_referenced_object_resolves_to_its_members_prefix():
+    pointer, manifest = _chain()
+    for item in manifest["objects"]:
+        served = db.resolve("GET", db.MOUNT + item["path"], pointer=pointer, manifest=manifest)
+        assert served.key == f"releases/{item['release_id']}/{item['path']}"
+        assert served.headers["X-Araripe-Release-Id"] == manifest["release_id"]
+
+
+@pytest.mark.parametrize(
+    "owner",
+    ["rel-g1-" + "00" * 32, "../runs/ci-1", "rel-g3-" + "d4" * 32, "", None, 7],
+    ids=["unlisted", "traversal", "the-chain-itself", "empty", "null", "not-a-string"],
+)
+def test_an_object_that_names_no_listed_member_is_refused(owner):
+    pointer, manifest = _chain({"release_id": owner})
+    with pytest.raises(db.DeliveryRefused) as raised:
+        db.resolve("GET", db.MOUNT + manifest["objects"][0]["path"],
+                   pointer=pointer, manifest=manifest)
+    assert raised.value.codes == ("object_release_unusable",)
+
+
+def test_a_member_listed_with_a_malformed_id_does_not_become_a_prefix():
+    """The member list is itself filtered: listing a bad id authorises nothing."""
+
+    pointer, manifest = _chain({"release_id": "../runs/ci-1"})
+    manifest["members"].append({"release_id": "../runs/ci-1"})
+    with pytest.raises(db.DeliveryRefused) as raised:
+        db.resolve("GET", db.MOUNT + manifest["objects"][0]["path"],
+                   pointer=pointer, manifest=manifest)
+    assert raised.value.codes == ("object_release_unusable",)
+
+
+def test_the_public_surface_of_a_chain_release_is_its_index_and_its_members_objects():
+    pointer, manifest = _chain()
+    keys = set(db.public_keys(manifest))
+    assert keys == {
+        db.POINTER_KEY,
+        manifest["release_prefix"] + "release.json",
+        manifest["release_prefix"] + "ledger.json",
+        *(f"releases/{o['release_id']}/{o['path']}" for o in manifest["objects"]),
+    }
+
+
+def test_a_member_of_the_live_release_is_public_and_another_release_is_not():
+    _, manifest = _chain()
+    members = db.live_member_ids(manifest)
+    member = manifest["members"][0]["release_id"]
+    assert db.classify_key(f"releases/{member}/x.geojson", live_release_id=manifest["release_id"],
+                           live_members=members).reason == "member_of_the_live_release"
+    other = "rel-g1-" + "99" * 32
+    assert not db.classify_key(f"releases/{other}/x.geojson", live_release_id=manifest["release_id"],
+                               live_members=members).is_public
+    assert db.live_member_ids(None) == frozenset()
+    assert db.live_member_ids(FIXTURE["manifest"]) == frozenset()

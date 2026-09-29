@@ -79,7 +79,14 @@ from src.publication.conditional_store import (
     StoredObject,
 )
 from src.publication.findings import Finding, Rejected
-from src.publication.chain_release import check_release, ledger_file, ledger_references
+from src.publication.chain_release import (
+    REFERENCE_RELEASE_SCHEMA,
+    ChainMember,
+    check_release,
+    ledger_file,
+    ledger_references,
+    reference_object_key,
+)
 from src.publication.green_release import (
     LEDGER_CONTENT_TYPE,
     LEDGER_PATH,
@@ -182,6 +189,28 @@ def publish_release(
     """
 
     release_id = document["release_id"]
+    if document["schema"] == REFERENCE_RELEASE_SCHEMA:
+        # Version 3 holds no object: every body lives in a member release,
+        # published before this one (PHASE_6J §2). Offering a body here would
+        # write an object nothing serves.
+        if bodies:
+            raise ObjectStoreError(
+                "a version-3 release references its members' objects and "
+                f"stores none; {len(bodies)} body(ies) were offered"
+            )
+        outcomes = [
+            store.put_if_absent(
+                object_key(release_id, LEDGER_PATH),
+                ledger_bytes(dict(ledger_document)),
+                LEDGER_CONTENT_TYPE,
+            ),
+            store.put_if_absent(
+                object_key(release_id, MANIFEST_PATH),
+                release_bytes(dict(document)),
+                RELEASE_CONTENT_TYPE,
+            ),
+        ]
+        return PublishReport(release_id, tuple(outcomes))
     declared = {item["path"]: item for item in document["objects"]}
     missing = sorted(set(declared) - set(bodies))
     extra = sorted(set(bodies) - set(declared))
@@ -255,15 +284,24 @@ def verify_release(
     findings: list[Finding] = []
     stored: list[StoredObject] = []
 
-    checks: list[tuple[str, int, str]] = [
-        (item["path"], item["bytes"], item["sha256"]) for item in document["objects"]
+    checks: list[tuple[str, str, int | None, str]] = [
+        (item["path"], reference_object_key(document, item), item["bytes"], item["sha256"])
+        for item in document["objects"]
     ]
-    checks.append((LEDGER_PATH, *ledger_file(document)))
+    if document["schema"] == REFERENCE_RELEASE_SCHEMA:
+        # Each member's manifest must still be the one this release names.
+        checks += [
+            (f"members/{block['release_id']}", object_key(block["release_id"], MANIFEST_PATH),
+             None, block["release_document_sha256"])
+            for block in document["members"]
+        ]
+    checks.append((LEDGER_PATH, object_key(release_id, LEDGER_PATH), *ledger_file(document)))
     manifest = release_bytes(dict(document))
-    checks.append((MANIFEST_PATH, len(manifest), sha256_bytes(manifest)))
+    checks.append(
+        (MANIFEST_PATH, object_key(release_id, MANIFEST_PATH), len(manifest), sha256_bytes(manifest))
+    )
 
-    for path, size, digest in checks:
-        key = object_key(release_id, path)
+    for path, key, size, digest in checks:
         try:
             found = store.get(key)
         except ObjectStoreError as exc:
@@ -281,7 +319,7 @@ def verify_release(
             )
             continue
         actual = sha256_bytes(found.body)
-        if found.size != size or actual != digest:
+        if (size is not None and found.size != size) or actual != digest:
             findings.append(
                 Finding(
                     "release_object_mismatch",
@@ -390,13 +428,30 @@ def load_published_release(
     except (ValueError, UnicodeDecodeError) as exc:
         raise ObjectStoreError(f"{ledger_key} is not valid JSON: {exc}") from exc
 
-    check_release(document, ledger_document)
+    check_release(document, ledger_document, _members_of(store, document))
     if document["release_id"] != release_id:
         raise ObjectStoreError(
             f"{manifest_key} declares {document['release_id']}, which is not the "
             "release the key addresses"
         )
     return document, ledger_document
+
+
+def _members_of(store: ConditionalStore, document: Any) -> list[ChainMember] | None:
+    """A version-3 release's members, each read and revalidated from the store.
+
+    ``None`` for any other version.  Reading them through
+    ``load_published_release`` is the point: a member is accepted only as the
+    canonical bytes a consumer would fetch, and only after its own gate.
+    """
+
+    if not isinstance(document, dict) or document.get("schema") != REFERENCE_RELEASE_SCHEMA:
+        return None
+    members = []
+    for block in document.get("members", []):
+        manifest, ledger = load_published_release(store, block["release_id"])
+        members.append(ChainMember(manifest, ledger))
+    return members
 
 
 def tombstones(previous: Mapping[str, Any], successor: Mapping[str, Any]) -> list[dict]:
@@ -430,7 +485,7 @@ def tombstones(previous: Mapping[str, Any], successor: Mapping[str, Any]) -> lis
         item = old_objects[path]
         observed_on = item["provenance"]["observed_on"]
         entry: dict[str, Any] = {
-            "key": object_key(old_id, path),
+            "key": reference_object_key(previous, item),
             "superseded_release_id": old_id,
             "observed_on": observed_on,
         }
@@ -631,7 +686,7 @@ def promote(
     whose record failed is also how that record gets written.
     """
 
-    check_release(document, ledger_document)
+    check_release(document, ledger_document, _members_of(store, document))
     verify_release(store, document)
 
     live, stored = read_live_pointer(store)
