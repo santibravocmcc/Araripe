@@ -72,7 +72,7 @@ from typing import Any, Iterable, Mapping
 
 from src.publication import delivery_boundary as db
 from src.publication import promotion_history as ph
-from src.publication.state_chain import STATE_PATH
+from src.publication.state_chain import STATE_GZIP_PATH, STATE_PATH
 
 #: Contract version of a retention plan document.
 PLAN_SCHEMA = "araripe.green.retention-plan/1"
@@ -506,7 +506,10 @@ def classify(
 
     if key.startswith(db.RUNS_ROOT):
         run_id = _run_id_of(key)
-        if run_id and key == f"{db.RUNS_ROOT}{run_id}/{STATE_PATH}":
+        if run_id and key in (
+            f"{db.RUNS_ROOT}{run_id}/{STATE_PATH}",
+            f"{db.RUNS_ROOT}{run_id}/{STATE_GZIP_PATH}",
+        ):
             # PHASE_6G §1: the run prefix is the state's only home. A release
             # carries its digest, never its bytes, so "the release is
             # published" says nothing about whether the state survives — and

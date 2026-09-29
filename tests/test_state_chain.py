@@ -9,6 +9,7 @@ read — because a check that raises for the wrong reason still raises
 from __future__ import annotations
 
 import importlib.util
+import gzip
 import json
 from pathlib import Path
 
@@ -314,12 +315,9 @@ def test_confirm_link_compares_with_the_predecessors_own_declaration():
 
 def _assembled(**kwargs):
     ledger, _ = build_ledger({"2026-04-11": [ZERO]})
-    return ra.assemble_run(
-        "succ-1", ledger, {"2026-04-11": []},
-        persistence_state_sha256=sha256_bytes(STATE),
-        persistence_state_bytes=len(STATE),
-        **kwargs,
-    )
+    kwargs.setdefault("persistence_state_sha256", sha256_bytes(STATE))
+    kwargs.setdefault("persistence_state_bytes", len(STATE))
+    return ra.assemble_run("succ-1", ledger, {"2026-04-11": []}, **kwargs)
 
 
 def test_an_empty_start_is_declared_as_null_not_omitted():
@@ -334,15 +332,18 @@ def test_a_chained_run_declares_its_predecessor():
 
 def test_the_state_is_deposited_before_run_json_and_outside_objects():
     run = _assembled(persistence_state_body=STATE)
-    assert run.bodies[sc.STATE_PATH] == STATE
-    assert all(o["path"] != sc.STATE_PATH for o in run.document["objects"]), (
+    assert gzip.decompress(run.bodies[sc.STATE_GZIP_PATH]) == STATE
+    assert sc.STATE_PATH not in run.bodies, "the state is deposited compressed only"
+    assert all(o["path"] not in (sc.STATE_PATH, sc.STATE_GZIP_PATH)
+               for o in run.document["objects"]), (
         "objects become the release; the state is never published"
     )
     store, fake = writer({})
     ra.upload(store, run)
     keys = [key for key, _ in fake.writes]
     assert keys[-1] == "runs/succ-1/run.json"
-    assert keys.index("runs/succ-1/persistence_state.geojson") < len(keys) - 1
+    assert keys.index(f"runs/succ-1/{sc.STATE_GZIP_PATH}") < len(keys) - 1
+    assert fake.objects[f"runs/succ-1/{sc.STATE_GZIP_PATH}"][1] == "application/gzip"
 
 
 @pytest.mark.parametrize("body", [STATE + b"x", bytes(reversed(STATE))])
@@ -392,10 +393,15 @@ def test_the_apply_deposits_a_chained_run_with_its_state(tmp_path, monkeypatch):
     ])
     assert code == 0
     run = json.loads(fake.objects["runs/succ-1/run.json"][0])
-    assert run["schema"] == "araripe.green.run/2"
+    assert run["schema"] == "araripe.green.run/3"
     assert run["predecessor"] == {"run_id": PRED, "persistence_state_sha256": sha256_bytes(STATE)}
-    assert fake.objects["runs/succ-1/persistence_state.geojson"][0] == b"new state\n"
-    assert run["persistence_state"] == {"sha256": sha256_bytes(b"new state\n"), "bytes": 10}
+    stored = fake.objects[f"runs/succ-1/{sc.STATE_GZIP_PATH}"][0]
+    assert gzip.decompress(stored) == b"new state\n"
+    assert "runs/succ-1/persistence_state.geojson" not in fake.objects
+    assert run["persistence_state"] == {
+        "sha256": sha256_bytes(b"new state\n"), "bytes": 10,
+        "stored": {"path": sc.STATE_GZIP_PATH, "encoding": "gzip",
+                   "sha256": sha256_bytes(stored), "bytes": len(stored)}}
     # and the new run is itself a valid predecessor for the one after it
     successor = sc.read_predecessor(store, "succ-1")
     assert successor.next_start == "2026-04-12"
@@ -500,3 +506,166 @@ def test_a_chained_state_refuses_a_date_it_already_passed(tmp_path):
             baseline_version=BASELINE_VERSION,
             monitoring_extent_id=MONITORING_EXTENT_ID, mode="rebuild",
         )
+
+
+# ── PHASE_6J: the state is stored compressed ─────────────────────────────────
+
+
+def compressed_layout(*, body=None, stored_override=None, run_id="gz-1"):
+    """A version-3 run whose state is deposited as gzip."""
+
+    ledger, _ = build_ledger({"2026-04-07": [ALERTS]})
+    body = sc.compress_state(STATE) if body is None else body
+    stored = {"path": sc.STATE_GZIP_PATH, "encoding": "gzip",
+              "sha256": sha256_bytes(body), "bytes": len(body)}
+    stored.update(stored_override or {})
+    run = {
+        "schema": "araripe.green.run/3", "run_id": run_id, "ledger": "ledger.json",
+        "persistence_state": {"sha256": sha256_bytes(STATE), "bytes": len(STATE),
+                              "stored": stored},
+        "predecessor": None, "objects": [],
+    }
+    return {
+        f"runs/{run_id}/run.json": (json.dumps(run).encode(), "application/json"),
+        f"runs/{run_id}/ledger.json": (json.dumps(ledger).encode(), "application/json"),
+        f"runs/{run_id}/{sc.STATE_GZIP_PATH}": (body, "application/gzip"),
+    }
+
+
+def test_a_compressed_state_is_read_back_as_the_uncompressed_bytes():
+    store, fake = reader(compressed_layout())
+    predecessor = sc.read_predecessor(store, "gz-1")
+    assert predecessor.stored["path"] == sc.STATE_GZIP_PATH
+    assert sc.fetch_state(store, predecessor) == STATE
+    assert "runs/gz-1/persistence_state.geojson" not in fake.reads, (
+        "a version-3 run is read from its stored object, never the legacy name")
+
+
+def test_compression_is_deterministic_and_carries_no_clock():
+    assert sc.compress_state(STATE) == sc.compress_state(STATE)
+    assert sc.compress_state(STATE)[4:8] == b"\x00\x00\x00\x00", "gzip MTIME is zero"
+
+
+def test_the_legacy_uncompressed_state_is_still_read():
+    """rep-2026-08-30-v3 and the three chained runs are /1 and /2, uncompressed."""
+
+    store, _ = reader(predecessor_layout(schema=2))
+    assert sc.fetch_state(store, sc.read_predecessor(store, PRED)) == STATE
+
+
+def test_a_stored_object_that_is_not_the_one_written_is_refused_before_inflating():
+    written = sc.compress_state(STATE)
+    declared = {"sha256": sha256_bytes(written), "bytes": len(written)}
+    store, _ = reader(compressed_layout(body=written + b"xx", stored_override=declared))
+    with pytest.raises(sc.ChainRejected) as excinfo:
+        sc.fetch_state(store, sc.read_predecessor(store, "gz-1"))
+    assert set(excinfo.value.codes) == {
+        "predecessor_stored_state_digest_mismatch", "predecessor_stored_state_length_mismatch"}
+    # same length, other bytes: the digest alone
+    swapped = bytearray(written); swapped[-9] ^= 1
+    store, _ = reader(compressed_layout(body=bytes(swapped), stored_override=declared))
+    with pytest.raises(sc.ChainRejected) as excinfo:
+        sc.fetch_state(store, sc.read_predecessor(store, "gz-1"))
+    assert excinfo.value.codes == ("predecessor_stored_state_digest_mismatch",)
+
+
+def test_a_stored_object_whose_contents_are_another_state_is_refused():
+    """The object is exactly what run.json says — and holds other bytes."""
+
+    other = sc.compress_state(bytes(reversed(STATE)))
+    store, _ = reader(compressed_layout(body=other))
+    with pytest.raises(sc.ChainRejected) as excinfo:
+        sc.fetch_state(store, sc.read_predecessor(store, "gz-1"))
+    assert excinfo.value.codes == ("predecessor_state_digest_mismatch",)
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        b"not gzip at all",
+        sc.compress_state(STATE) + b"trailing",
+        sc.compress_state(STATE + b"x" * 1000),  # inflates past the declared length
+        sc.compress_state(STATE)[:-6],  # truncated stream
+    ],
+    ids=["garbage", "trailing-bytes", "overlong", "truncated"],
+)
+def test_a_stored_object_that_does_not_inflate_to_exactly_the_state_is_refused(body):
+    store, _ = reader(compressed_layout(body=body))
+    with pytest.raises(sc.ChainRejected) as excinfo:
+        sc.fetch_state(store, sc.read_predecessor(store, "gz-1"))
+    assert excinfo.value.codes == ("predecessor_state_undecodable",)
+
+
+def test_inflation_is_bounded_by_the_declared_length(monkeypatch):
+    """A decompression bomb must not allocate more than run.json promised.
+
+    Measured on the inflater itself: it is asked for at most one byte more
+    than declared, so a 50 MiB bomb yields 11 bytes before the refusal.
+    """
+
+    import zlib
+
+    produced = []
+    real = zlib.decompressobj
+
+    class Spy:
+        def __init__(self, *args):
+            self.inner = real(*args)
+
+        def decompress(self, data, max_length=0):
+            out = self.inner.decompress(data, max_length)
+            produced.append(len(out))
+            return out
+
+        def __getattr__(self, name):
+            return getattr(self.inner, name)
+
+    monkeypatch.setattr(sc.zlib, "decompressobj", Spy)
+    bomb = gzip.compress(b"\0" * (50 * 1024 * 1024), compresslevel=9, mtime=0)
+    with pytest.raises(sc.ChainRejected):
+        sc._decompress(bomb, 10, "k")
+    assert produced == [11]
+
+
+def test_the_single_put_ceiling_applies_to_the_compressed_object(monkeypatch):
+    """What is PUT is the gzip; a state bigger than one PUT that compresses
+    under it deposits, and one that does not is refused."""
+
+    body = b'{"type":"FeatureCollection","features":[]}\n' * 40
+    compressed = sc.compress_state(body)
+    assert len(compressed) < len(body)
+    monkeypatch.setattr(sc, "MAX_SINGLE_PUT_BYTES", len(compressed))
+    run = _assembled(persistence_state_body=body,
+                     persistence_state_sha256=sha256_bytes(body),
+                     persistence_state_bytes=len(body))
+    assert run.bodies[sc.STATE_GZIP_PATH] == compressed
+    monkeypatch.setattr(sc, "MAX_SINGLE_PUT_BYTES", len(compressed) - 1)
+    with pytest.raises(sc.ChainRejected) as excinfo:
+        _assembled(persistence_state_body=body,
+                   persistence_state_sha256=sha256_bytes(body),
+                   persistence_state_bytes=len(body))
+    assert excinfo.value.codes == ("state_exceeds_single_put",)
+
+
+def test_the_version_three_schema_pins_the_stored_name_and_encoding():
+    from src.publication.green_release import schema_validator
+
+    ok = json.loads(compressed_layout()["runs/gz-1/run.json"][0])
+    validator = schema_validator("green-run-v3")
+    assert list(validator.iter_errors(ok)) == []
+    for field, value in (("path", "../x.gz"), ("encoding", "zstd")):
+        bad = json.loads(json.dumps(ok))
+        bad["persistence_state"]["stored"][field] = value
+        assert list(validator.iter_errors(bad)), field
+
+
+def test_retention_keeps_the_compressed_state_like_the_uncompressed_one():
+    from datetime import datetime, timezone
+
+    from src.publication import retention as rt
+
+    item = rt.StoredKey(key=f"runs/gz-1/{sc.STATE_GZIP_PATH}", size=1,
+                        last_modified=datetime(2026, 1, 1, tzinfo=timezone.utc))
+    decision = rt.classify(item, pointer=None, runs={},
+                           as_of=datetime(2027, 1, 1, tzinfo=timezone.utc))
+    assert (decision.action, decision.reason) == (rt.RETAIN, "persistence_state_is_the_chain")

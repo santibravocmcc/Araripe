@@ -10,6 +10,18 @@ Where the state lives (§1)
 declares under ``persistence_state``.  It is **not** listed in ``objects``:
 those become the release, and the state is never published.
 
+Stored compressed (PHASE_6J)
+----------------------------
+From ``araripe.green.run/3`` on, the state is deposited gzip-compressed at
+``persistence_state.geojson.gz`` and ``run.json`` names that object under
+``persistence_state.stored``, with its own digest and length.  The state
+compresses 3.9x (1 021 260 480 -> 259 064 005 bytes, measured on
+``ci-36465147834``), and one ~1 GB state per run was the largest share of the
+bucket's growth (PHASE_6I §5).  ``persistence_state.sha256`` and ``.bytes``
+still describe the **uncompressed** state, so every predecessor link and every
+release compares the same object it always did; the older runs, uncompressed
+at ``STATE_PATH``, stay readable and are never rewritten.
+
 How a run names its predecessor (§2)
 ------------------------------------
 ``araripe.green.run/2`` adds one required field, ``predecessor``: the run whose
@@ -43,7 +55,9 @@ declares it, and only with ``put_if_absent``; read or write a pointer; import
 
 from __future__ import annotations
 
+import gzip
 import re
+import zlib
 from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Any, Mapping
@@ -68,6 +82,14 @@ from src.publication.run_inputs import (
 #: from drifting.
 STATE_PATH = "persistence_state.geojson"
 STATE_CONTENT_TYPE = "application/geo+json"
+
+#: The compressed state of a version-3 run (PHASE_6J).  ``GZIP_LEVEL`` 6 is
+#: gzip's default; level 9 bought 8% more on the measured state for several
+#: times the time, and brotli 9% more for a codec the standard library lacks.
+STATE_GZIP_PATH = "persistence_state.geojson.gz"
+STATE_GZIP_CONTENT_TYPE = "application/gzip"
+STATE_GZIP_ENCODING = "gzip"
+GZIP_LEVEL = 6
 
 #: The largest body one R2 PUT accepts: "5 GiB (single-part)", footnote "5 MiB
 #: less than 5 GiB" — developers.cloudflare.com/r2/platform/limits/, read
@@ -97,6 +119,9 @@ class Predecessor:
     persistence_state_sha256: str
     persistence_state_bytes: int
     last_observed_on: str
+    #: ``persistence_state.stored`` of a version-3 run, or ``None`` for the
+    #: uncompressed object at ``STATE_PATH``.
+    stored: Mapping[str, Any] | None = None
 
     @property
     def next_start(self) -> str:
@@ -113,6 +138,59 @@ class Predecessor:
 
 def state_key(run_id: str) -> str:
     return run_key(run_id, STATE_PATH)
+
+
+def compress_state(body: bytes) -> bytes:
+    """The deposited form of a state: gzip, with no name and no timestamp.
+
+    ``mtime=0`` keeps the header free of the clock, so compressing the same
+    state twice on one machine gives the same bytes.  Nothing depends on
+    bytes being equal across zlib builds: the state's identity is the digest
+    of the uncompressed bytes, and ``stored.sha256`` only proves the object
+    read is the object written.
+    """
+
+    return gzip.compress(body, compresslevel=GZIP_LEVEL, mtime=0)
+
+
+def stored_block(compressed: bytes) -> dict[str, Any]:
+    """``persistence_state.stored`` for a compressed state."""
+
+    return {
+        "path": STATE_GZIP_PATH,
+        "encoding": STATE_GZIP_ENCODING,
+        "sha256": sha256_bytes(compressed),
+        "bytes": len(compressed),
+    }
+
+
+def _decompress(compressed: bytes, declared: int, key: str) -> bytes:
+    """Inflate at most one byte more than ``declared``, or refuse.
+
+    Bounded, so a corrupt or hostile object cannot make the runner allocate
+    more than the run.json promised: the extra byte is how an overlong stream
+    is told apart from an exact one.
+    """
+
+    inflater = zlib.decompressobj(16 + zlib.MAX_WBITS)
+    try:
+        body = inflater.decompress(compressed, declared + 1)
+    except zlib.error as exc:
+        raise ChainRejected(
+            [Finding("predecessor_state_undecodable", f"{key}: {exc}", key)]
+        ) from exc
+    if len(body) > declared or not inflater.eof or inflater.unused_data:
+        raise ChainRejected(
+            [
+                Finding(
+                    "predecessor_state_undecodable",
+                    f"{key} does not inflate to exactly one gzip stream of at most "
+                    f"{declared} bytes",
+                    key,
+                )
+            ]
+        )
+    return body
 
 
 def check_single_put(size: int, where: str) -> None:
@@ -159,6 +237,7 @@ def read_predecessor(store: ConditionalStore, run_id: str) -> Predecessor:
         persistence_state_sha256=state["sha256"],
         persistence_state_bytes=state["bytes"],
         last_observed_on=dates[-1],
+        stored=state.get("stored"),
     )
 
 
@@ -204,7 +283,12 @@ def fetch_state(store: ConditionalStore, predecessor: Predecessor) -> bytes:
     as "present".
     """
 
-    key = state_key(predecessor.run_id)
+    compressed = predecessor.stored
+    key = (
+        run_key(predecessor.run_id, compressed["path"])
+        if compressed
+        else state_key(predecessor.run_id)
+    )
     try:
         stored = store.get(key)
     except ObjectStoreError as exc:
@@ -224,6 +308,29 @@ def fetch_state(store: ConditionalStore, predecessor: Predecessor) -> bytes:
             ]
         )
     body = stored.body
+    if compressed:
+        # The object first — is it the one written? — then the state it holds.
+        findings = []
+        if len(body) != compressed["bytes"]:
+            findings.append(
+                Finding(
+                    "predecessor_stored_state_length_mismatch",
+                    f"{key} holds {len(body)} bytes and the run.json declares "
+                    f"{compressed['bytes']}",
+                    key,
+                )
+            )
+        if sha256_bytes(body) != compressed["sha256"]:
+            findings.append(
+                Finding(
+                    "predecessor_stored_state_digest_mismatch",
+                    f"{key} does not hash to the stored digest the run.json declares",
+                    key,
+                )
+            )
+        if findings:
+            raise ChainRejected(findings)
+        body = _decompress(body, predecessor.persistence_state_bytes, key)
     findings = []
     if len(body) != predecessor.persistence_state_bytes:
         findings.append(

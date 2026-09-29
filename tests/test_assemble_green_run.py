@@ -270,9 +270,18 @@ def test_o_digest_do_estado_de_persistencia_e_calculado_do_arquivo(tmp_path):
     run = aggr.assemble(args)
     import hashlib
 
+    from src.publication import state_chain
+
+    compressed = state_chain.compress_state(body)
     assert run.document["persistence_state"] == {
         "sha256": hashlib.sha256(body).hexdigest(),
         "bytes": len(body),
+        "stored": {
+            "path": "persistence_state.geojson.gz",
+            "encoding": "gzip",
+            "sha256": hashlib.sha256(compressed).hexdigest(),
+            "bytes": len(compressed),
+        },
     }
 
 

@@ -308,6 +308,7 @@ def assemble_run(
                 }
             )
 
+    stored = None
     if persistence_state_body is not None:
         if (
             len(persistence_state_body) != persistence_state_bytes
@@ -322,8 +323,12 @@ def assemble_run(
                 )
             )
         else:
-            state_chain.check_single_put(len(persistence_state_body), "persistence_state")
-            bodies[state_chain.STATE_PATH] = persistence_state_body
+            # Deposited compressed (PHASE_6J); the digest and length in run.json
+            # stay the uncompressed state's, and `stored` names the object.
+            compressed = state_chain.compress_state(persistence_state_body)
+            state_chain.check_single_put(len(compressed), "persistence_state")
+            bodies[state_chain.STATE_GZIP_PATH] = compressed
+            stored = state_chain.stored_block(compressed)
 
     if findings:
         raise RunAssemblyRejected(findings)
@@ -335,6 +340,7 @@ def assemble_run(
         "persistence_state": {
             "sha256": persistence_state_sha256,
             "bytes": persistence_state_bytes,
+            **({"stored": stored} if stored else {}),
         },
         "predecessor": link,
         "objects": objects,
@@ -378,8 +384,9 @@ def describe(run: AssembledRun) -> str:
         ),
         "state      : "
         + (
-            f"deposited, {len(run.bodies[state_chain.STATE_PATH])} bytes"
-            if state_chain.STATE_PATH in run.bodies
+            f"deposited gzip, {len(run.bodies[state_chain.STATE_GZIP_PATH])} bytes "
+            f"for {run.document['persistence_state']['bytes']}"
+            if state_chain.STATE_GZIP_PATH in run.bodies
             else "declared by digest only, not deposited"
         ),
         f"dates      : {len(dates)} publishing, "
@@ -429,6 +436,8 @@ def upload(
         content_type = (
             "application/json"
             if path in (RUN_MANIFEST_PATH, LEDGER_PATH)
+            else state_chain.STATE_GZIP_CONTENT_TYPE
+            if path == state_chain.STATE_GZIP_PATH
             else GEOJSON_CONTENT_TYPE
         )
         outcome = store.put_if_absent(run.prefix + path, run.bodies[path], content_type)

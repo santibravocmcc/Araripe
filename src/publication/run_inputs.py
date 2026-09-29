@@ -56,14 +56,17 @@ from src.publication.green_release import (
 from src.publication.ledger_gate import check_processing_ledger
 
 #: Contract version of the run input document a run deposits today.  Version 2
-#: adds ``predecessor`` (``docs/implementation/PHASE_6G_2026-09-28.md`` §2).
-RUN_SCHEMA = "araripe.green.run/2"
+#: adds ``predecessor`` (``docs/implementation/PHASE_6G_2026-09-28.md`` §2);
+#: version 3 adds ``persistence_state.stored``, the gzip-compressed state
+#: (``docs/implementation/PHASE_6J_2026-09-29.md``).
+RUN_SCHEMA = "araripe.green.run/3"
 
 #: Every version a reader accepts, and the schema file that validates it.  The
 #: two version-1 documents in the bucket are immutable and stay readable.
 RUN_SCHEMAS = {
     "araripe.green.run/1": "green-run-v1",
     "araripe.green.run/2": "green-run-v2",
+    "araripe.green.run/3": "green-run-v3",
 }
 
 #: The lane-2 root.  Every run writes under its own immutable prefix here and
