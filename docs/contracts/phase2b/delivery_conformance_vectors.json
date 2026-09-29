@@ -472,6 +472,9 @@
           },
           {
             "release_id": "rel-g1-f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6"
+          },
+          {
+            "release_id": "../runs/ci-1"
           }
         ],
         "objects": [

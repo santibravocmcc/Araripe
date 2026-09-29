@@ -106,7 +106,14 @@ CHAIN_FIXTURE = {
         "schema": "araripe.green.release/3",
         "release_id": _CHAIN_ID,
         "release_prefix": _CHAIN_PREFIX,
-        "members": [{"release_id": _MEMBER_A}, {"release_id": _MEMBER_B}],
+        # The third entry is malformed on purpose: listing an id must not be
+        # enough to turn it into a prefix, so the "listed-looking" case below
+        # exercises the id pattern in every implementation, not only in Python.
+        "members": [
+            {"release_id": _MEMBER_A},
+            {"release_id": _MEMBER_B},
+            {"release_id": "../runs/ci-1"},
+        ],
         "objects": [
             {
                 "path": "alerts/run-2026-08-30.geojson",
