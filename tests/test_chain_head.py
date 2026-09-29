@@ -261,7 +261,7 @@ def test_the_apply_asks_again_right_before_run_json(tmp_path, monkeypatch):
 
     def racing_put(**kwargs):
         response = original(**kwargs)
-        if kwargs["Key"].endswith("persistence_state.geojson"):
+        if kwargs["Key"].endswith(sc.STATE_GZIP_PATH):
             fake.objects.update(sibling)
         return response
 
@@ -271,7 +271,7 @@ def test_the_apply_asks_again_right_before_run_json(tmp_path, monkeypatch):
     argv = _detection(tmp_path, "ci-1", sha256_bytes(state_of("ci-1")))
     assert assemble.main(argv) == 1
     written = [key for key, _ in fake.writes]
-    assert "runs/ci-9/persistence_state.geojson" in written
+    assert f"runs/ci-9/{sc.STATE_GZIP_PATH}" in written
     assert "runs/ci-9/run.json" not in written, "the commit point must not be written"
 
 

@@ -403,7 +403,7 @@ def test_a_source_cannot_escape_the_run_prefix(run, source):
 @pytest.mark.parametrize(
     "mutate, expected",
     [
-        (lambda d: d.__setitem__("schema", "araripe.green.run/3"), "run_manifest_invalid"),
+        (lambda d: d.__setitem__("schema", "araripe.green.run/4"), "run_manifest_invalid"),
         (lambda d: d.__setitem__("schema", "araripe.green.run/1"), "run_manifest_invalid"),
         (lambda d: d.pop("predecessor"), "run_manifest_invalid"),
         (lambda d: d.pop("persistence_state"), "run_manifest_invalid"),
