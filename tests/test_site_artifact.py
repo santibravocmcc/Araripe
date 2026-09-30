@@ -55,13 +55,16 @@ def test_the_vectors_declare_the_policy_they_were_built_from():
         "min_pcount_max": sa.MIN_PCOUNT_MAX,
         "full_object_suffix": sa.FULL_OBJECT_SUFFIX,
         "strong_object_suffix": sa.STRONG_OBJECT_SUFFIX,
+        "unanalyzed_alert_state": sa.UNANALYZED_ALERT_STATE,
+        "unanalyzed_reasons": list(sa.UNANALYZED_REASONS),
     }
 
 
 def test_every_vector_group_is_populated():
     """An empty group passes every conformance loop in both repositories."""
 
-    for group in ("object_cases", "run_cases", "index_cases", "rejection_cases"):
+    for group in ("object_cases", "run_cases", "index_cases", "rejection_cases",
+                  "date_cases"):
         assert VECTORS[group], group
 
 
@@ -211,6 +214,7 @@ def test_a_null_persistence_count_does_not_raise():
 def test_composed_index_matches_the_vector(case):
     composed = sa.compose_alert_index(
         case["runs"],
+        unanalyzed_dates=case["unanalyzed_dates"],
         object_base=VECTORS["fixture"]["object_base"],
         source=VECTORS["fixture"]["source"],
         strong_points_file=VECTORS["fixture"]["strong_points_file"],
@@ -253,7 +257,7 @@ def test_totals_need_no_features():
             "pcount_max": 11,
         }
     ]
-    index = sa.compose_alert_index(rows, object_base="/data/green/", source="s",
+    index = sa.compose_alert_index(rows, unanalyzed_dates=[], object_base="/data/green/", source="s",
                                  strong_points_file="p.json")
     assert index["totals"] == {
         "count": 7,
@@ -287,7 +291,7 @@ def test_object_base_plus_file_is_a_request_the_green_route_resolves():
     rows[0]["area_ha"] = 0.0
     rows[0]["pcount_max"] = 1
     index = sa.compose_alert_index(
-        rows, object_base="/data/green/", source="s", strong_points_file="p.json"
+        rows, unanalyzed_dates=[], object_base="/data/green/", source="s", strong_points_file="p.json"
     )
     jsonschema.validate(index, SCHEMA)
     assert index["object_base"] + index["runs"][0]["file"] == (
@@ -301,7 +305,7 @@ def test_object_base_is_required_by_the_schema():
 
     assert "object_base" in SCHEMA["required"]
     index = sa.compose_alert_index(
-        [], object_base="/data/green/", source="s", strong_points_file="p.json"
+        [], unanalyzed_dates=[], object_base="/data/green/", source="s", strong_points_file="p.json"
     )
     del index["object_base"]
     with pytest.raises(jsonschema.ValidationError):
@@ -314,7 +318,7 @@ def test_the_point_index_is_a_sibling_name_not_a_release_path():
     ``object_base``.  The schema keeps it to one path segment for that reason."""
 
     index = sa.compose_alert_index(
-        [], object_base="/data/green/", source="s", strong_points_file="alerts/p.json"
+        [], unanalyzed_dates=[], object_base="/data/green/", source="s", strong_points_file="alerts/p.json"
     )
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.validate(index, SCHEMA)
@@ -325,7 +329,7 @@ def test_the_total_area_is_a_float_even_with_no_runs():
     The index must be byte-reproducible from an immutable release, so this is a
     contract detail rather than a style preference."""
 
-    empty = sa.compose_alert_index([], object_base="/data/green/", source="s",
+    empty = sa.compose_alert_index([], unanalyzed_dates=[], object_base="/data/green/", source="s",
                                  strong_points_file="p.json")
     assert isinstance(empty["totals"]["area_ha"], float)
     assert empty["last_run"] is None
@@ -358,7 +362,7 @@ def test_the_per_run_maximum_aggregates_to_the_old_global_maximum():
         rows.append(
             {"date": date, "file": f"alerts/{date}.geojson", "file_strong": f"alerts/{date}.s.geojson", **stats}
         )
-    index = sa.compose_alert_index(rows, object_base="/data/green/", source="s",
+    index = sa.compose_alert_index(rows, unanalyzed_dates=[], object_base="/data/green/", source="s",
                                  strong_points_file="p.json")
     assert index["totals"]["pcount_max"] == global_max == 42
 
@@ -406,7 +410,7 @@ def test_the_validator_accepts_what_the_composer_builds():
             "pcount_max": 4,
         }
     ]
-    index = sa.compose_alert_index(rows, object_base="/data/green/", source="s",
+    index = sa.compose_alert_index(rows, unanalyzed_dates=[], object_base="/data/green/", source="s",
                                  strong_points_file="p.json")
     sa.check_alert_index(index)
     jsonschema.validate(index, SCHEMA)
@@ -452,6 +456,7 @@ def test_a_rejection_reports_every_finding_at_once():
                 "pcount_max": 1,
             }
         ],
+        unanalyzed_dates=[],
         object_base="/data/green/",
         source="s",
         strong_points_file="p.json",
@@ -475,3 +480,97 @@ def test_the_generator_refuses_a_rejection_case_that_is_accepted():
 
     source = (ROOT / "scripts/check_site_artifact.py").read_text(encoding="utf-8")
     assert "was accepted; it proves nothing" in source
+
+
+# ── group 4: a release date in, its unanalysed entry out (PHASE_6O §4) ────────
+
+@pytest.mark.parametrize("case", VECTORS["date_cases"], ids=_ids(VECTORS["date_cases"]))
+def test_unanalyzed_date_matches_the_vector(case):
+    if "expected_codes" in case:
+        with pytest.raises(sa.SiteArtifactRejected) as raised:
+            sa.unanalyzed_date(case["entry"])
+        assert sorted(set(raised.value.codes)) == case["expected_codes"]
+    else:
+        assert sa.unanalyzed_date(case["entry"]) == case["expected"]
+
+
+def test_the_date_cases_cover_ran_refused_and_unexplained():
+    """Every branch of unanalyzed_date is a vector, so the site port meets each."""
+
+    outcomes = {
+        "ran" if case.get("expected", 0) is None
+        else "refused" if "expected_codes" in case
+        else "unanalysed"
+        for case in VECTORS["date_cases"]
+    }
+    assert outcomes == {"ran", "refused", "unanalysed"}
+
+
+def test_the_unanalysed_vocabulary_is_the_producers_minus_the_sealing_statuses():
+    """The copy in site_artifact.py is derived here from where the producer
+    promises it: the ledger's terminal statuses and the pinned schema's
+    sealing semantics (the same pair green_release.classify_date reads)."""
+
+    from src.detection.ledger_v3 import TERMINAL_STATUSES
+    from src.publication import ledger_binding
+
+    sealing = ledger_binding.pinned_status_semantics()["artifact_sealing"]
+    assert sa.UNANALYZED_REASONS == tuple(sorted(set(TERMINAL_STATUSES) - set(sealing)))
+
+
+def test_the_schema_enumerates_the_same_reasons():
+    reasons = SCHEMA["$defs"]["unanalyzed_date"]["properties"]["reasons"]["items"]["enum"]
+    assert tuple(reasons) == sa.UNANALYZED_REASONS
+
+
+def test_the_unanalysed_state_is_the_one_classify_date_gives_to_no_usable_acquisition():
+    from src.publication.green_release import classify_date
+
+    for status in sa.UNANALYZED_REASONS:
+        assert classify_date({status: 1}).alert_state == sa.UNANALYZED_ALERT_STATE
+    assert classify_date({"complete_zero_alerts": 1}).alert_state != sa.UNANALYZED_ALERT_STATE
+
+
+def test_reasons_are_sorted_whatever_the_order_of_status_counts():
+    """The JSON vectors are serialised with sorted keys, so they cannot prove
+    this; a port that forgot to sort would pass every date case."""
+
+    entry = {
+        "observed_on": "2026-03-01",
+        "alert_state": "no_valid_coverage",
+        "status_counts": {"rejected_quality": 1, "failed_download": 1},
+    }
+    assert sa.unanalyzed_date(entry)["reasons"] == ["failed_download", "rejected_quality"]
+
+
+def test_the_unanalysed_list_is_required_by_the_composer():
+    """A default of [] would let a caller drop every refused date silently —
+    the defect the field exists to remove."""
+
+    with pytest.raises(TypeError):
+        sa.compose_alert_index([], object_base="/data/green/", source="s",
+                               strong_points_file="p.json")
+
+
+def test_unanalysed_dates_touch_no_total_and_no_last_run():
+    case = next(c for c in VECTORS["index_cases"] if c["unanalyzed_dates"])
+    without = sa.compose_alert_index(
+        case["runs"], unanalyzed_dates=[], object_base="/data/green/", source="s",
+        strong_points_file="p.json",
+    )
+    with_them = sa.compose_alert_index(
+        case["runs"], unanalyzed_dates=case["unanalyzed_dates"], object_base="/data/green/",
+        source="s", strong_points_file="p.json",
+    )
+    assert with_them["totals"] == without["totals"]
+    assert with_them["last_run"] == without["last_run"] == case["runs"][-1]["date"]
+    assert max(e["date"] for e in case["unanalyzed_dates"]) > with_them["last_run"]
+
+
+def test_an_index_without_the_field_is_still_valid():
+    """Additive in /1: an index composed before PHASE_6O stays schema-valid."""
+
+    case = VECTORS["index_cases"][1]
+    old = {k: v for k, v in case["expected"].items() if k != "unanalyzed_dates"}
+    jsonschema.validate(old, SCHEMA)
+    sa.check_alert_index(old)

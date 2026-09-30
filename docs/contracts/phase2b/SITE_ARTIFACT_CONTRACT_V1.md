@@ -239,6 +239,41 @@ bullet is explicit — *"Verify the main domain, same-origin data route, CORS,
 full/strong modes, downloads"* — and touching `src/js/alertas.js` would change
 what the production deploy serves. §9 records what that leaves untested.
 
+## 6d. Dates without analysis — added 2026-09-30 (PHASE_6O §4)
+
+A release covers dates on which no acquisition was usable: the quality gate
+refused them (too little valid area, or too much of it flagged at once) or
+processing failed. `green_release.classify_date` gives such a date
+`alert_state = "no_valid_coverage"`. Before this section the composer skipped
+it, and the page could not tell a refused date from one nobody looked at — in
+the live release of 2026-09-30 that was **61 of 103** dates.
+
+The index now carries them in `unanalyzed_dates[]`, one
+`{"date", "reasons"}` per such date, in release order:
+
+- `reasons` is the set of `status_counts` keys with a count above zero,
+  sorted — the ledger's vocabulary (`ledger_v3.TERMINAL_STATUSES` minus the
+  two artifact-sealing statuses), never a site code. The rule is
+  `site_artifact.unanalyzed_date`; the `date_cases` vector group carries it to
+  the site.
+- A date in that state whose statuses do not explain it (none, or a sealing
+  one) is **refused** (`unanalyzed_date_is_not_explained`), never shown with an
+  invented reason.
+- The entries carry no feature and no statistic. They are not runs: disjoint
+  from `runs[]`, absent from `totals`, never `last_run`.
+- The field is **additive within `/1`**: optional in the schema, so an index
+  composed before it stays valid; always emitted by both composers, empty when
+  no date qualifies. The composer takes it as a required argument — a default
+  would let a caller drop the dates silently again.
+- `check_alert_index` adds four relations the schema cannot state:
+  `unanalyzed_dates_out_of_order`, `unanalyzed_date_repeated`,
+  `date_is_both_run_and_unanalyzed`, `unanalyzed_reasons_not_canonical`.
+
+What the page says for each reason is the site's text, bound to the backend
+thresholds by the site's own test. The exact percentage of a refused date lives
+in the ledger, not the release, and is deliberately not carried (owner,
+2026-09-30).
+
 ## 7. Where each half of the check lives
 
 Following the division Package 2B.2A reached by deleting code:
