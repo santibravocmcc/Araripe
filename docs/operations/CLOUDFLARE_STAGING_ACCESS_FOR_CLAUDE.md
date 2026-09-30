@@ -6,6 +6,13 @@
 
 **Only approved Claude bucket:** `araripe-v2-staging`
 
+> **Decision 2026-09-30 (owner):** at the Phase 6 cutover this bucket stops
+> being a sandbox and becomes the canonical green bucket the public site reads
+> (`PACKAGE_P6_PROMPT.md` §3, option (a)). **Until the cutover, everything
+> below still holds.** Before the cutover `claude-araripe-v2-staging-rw` must
+> be revoked (see *Revocation*) and this document rewritten for the new role;
+> neither has happened yet.
+
 ## Boundary
 
 Claude Code may read and write objects only in the disposable private bucket
