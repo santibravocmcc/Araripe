@@ -12,7 +12,7 @@ the drift is silent because both look right in isolation — the exact reasoning
 ``scripts/check_delivery_boundary.py`` recorded for the delivery boundary in
 Package 2B.3, reused here rather than reinvented.
 
-So the policy is pinned as **vectors**, in four groups because there are four
+So the policy is pinned as **vectors**, in five groups because there are five
 distinct claims to break:
 
 ``object_cases``
@@ -32,6 +32,11 @@ distinct claims to break:
 ``rejection_cases``
     A malformed index in, a set of finding codes out.  A validator that
     accepted everything would pass the first two groups perfectly.
+
+``date_cases``
+    One release ``dates[]`` entry in, its ``unanalyzed_dates`` entry out —
+    ``null`` for a date that ran, or a refusal.  PHASE_6O §4: which dates the
+    page shows as unanalysed is a policy, so it crosses the boundary too.
 
 Neither implementation is the reference — this file is.  A change to the policy
 that forgets one of the cases fails the gate in both repositories.
@@ -268,6 +273,7 @@ def _index_cases() -> list[dict]:
                 "fail on a correct, empty green release."
             ),
             "runs": [],
+            "unanalyzed_dates": [],
         },
         {
             "name": "totals aggregate rows whose features were never supplied",
@@ -285,6 +291,7 @@ def _index_cases() -> list[dict]:
                 _row("2026-08-30", count=2, area_ha=45883.5, high=1, medium=1, low=0,
                      first_obs=0, candidate=1, confirmed=1, strong=1, pcount_max=9),
             ],
+            "unanalyzed_dates": [],
         },
         {
             "name": "the total area sums values already rounded",
@@ -298,6 +305,7 @@ def _index_cases() -> list[dict]:
                 _row("2026-05-02", count=1, area_ha=0.1, high=1, first_obs=1, pcount_max=1),
                 _row("2026-05-03", count=1, area_ha=0.1, high=1, first_obs=1, pcount_max=1),
             ],
+            "unanalyzed_dates": [],
         },
         {
             "name": "pcount_max is the maximum of the rows, not of the last one",
@@ -310,11 +318,33 @@ def _index_cases() -> list[dict]:
                 _row("2026-06-01", count=1, area_ha=1.0, low=1, confirmed=1, pcount_max=42),
                 _row("2026-06-02", count=1, area_ha=1.0, low=1, first_obs=1, pcount_max=1),
             ],
+            "unanalyzed_dates": [],
+        },
+        {
+            "name": "unanalysed dates are carried, and touch no total and no last_run",
+            "why": (
+                "PHASE_6O §4. The live release had 61 of 103 dates with no usable "
+                "acquisition, and the index dropped every one. They are carried now, "
+                "beside runs[] and not in it: the latest date here is unanalysed, and "
+                "last_run still names the latest date that RAN."
+            ),
+            "runs": [
+                _row("2026-01-05", count=2, area_ha=3.0, high=1, medium=1, low=0,
+                     first_obs=2, candidate=0, confirmed=0, strong=0, pcount_max=1),
+                _row("2026-05-20", count=1, area_ha=1.5, high=1, medium=0, low=0,
+                     first_obs=0, candidate=1, confirmed=0, strong=1, pcount_max=3),
+            ],
+            "unanalyzed_dates": [
+                {"date": "2026-01-02", "reasons": ["rejected_quality"]},
+                {"date": "2026-05-22", "reasons": ["rejected_low_coverage"]},
+                {"date": "2026-05-27", "reasons": ["failed_download", "rejected_low_coverage"]},
+            ],
         },
     ]
     for case in cases:
         case["expected"] = sa.compose_alert_index(
-            case["runs"], object_base=OBJECT_BASE, source=SOURCE_LINE,
+            case["runs"], unanalyzed_dates=case["unanalyzed_dates"],
+            object_base=OBJECT_BASE, source=SOURCE_LINE,
             strong_points_file=STRONG_POINTS_FILE,
         )
     return cases
@@ -336,6 +366,10 @@ def _rejection_cases() -> list[dict]:
                      first_obs=1, candidate=2, confirmed=1, strong=2, pcount_max=20),
                 _row("2026-07-08", count=1, area_ha=2.5, high=0, medium=0, low=1,
                      first_obs=1, candidate=0, confirmed=0, strong=0, pcount_max=1),
+            ],
+            unanalyzed_dates=[
+                {"date": "2026-07-04", "reasons": ["rejected_low_coverage"]},
+                {"date": "2026-07-06", "reasons": ["rejected_quality"]},
             ],
             object_base=OBJECT_BASE,
             source=SOURCE_LINE,
@@ -428,6 +462,44 @@ def _rejection_cases() -> list[dict]:
         "name": "a UTC date appears twice",
         "why": "The release declares each date exactly once, so a repeated row means "
                "the composer double-counted and every total is inflated.",
+        "document": document,
+    })
+
+    document = valid()
+    document["unanalyzed_dates"].reverse()
+    cases.append({
+        "name": "unanalysed dates are not in chronological order",
+        "why": "The page lists them as the release has them; a reversed list reads as "
+               "a different history of refusals.",
+        "document": document,
+    })
+
+    document = valid()
+    document["unanalyzed_dates"].append(dict(document["unanalyzed_dates"][-1]))
+    cases.append({
+        "name": "an unanalysed date appears twice",
+        "why": "The release declares each date once; a repeat means the composer read "
+               "a date twice.",
+        "document": document,
+    })
+
+    document = valid()
+    # 2026-07-08 is the last run, so the list stays sorted and unique and the
+    # case fires on the overlap alone.
+    document["unanalyzed_dates"].append({"date": "2026-07-08", "reasons": ["rejected_quality"]})
+    cases.append({
+        "name": "a date is both a run and unanalysed",
+        "why": "classify_date gives each date one alert_state. A date on both lists "
+               "would show alerts and a refusal for the same day.",
+        "document": document,
+    })
+
+    document = valid()
+    document["unanalyzed_dates"][0]["reasons"] = ["rejected_quality", "rejected_low_coverage"]
+    cases.append({
+        "name": "the reasons of an unanalysed date are not in canonical order",
+        "why": "Shape-valid and semantically the same, but the index is reproducible "
+               "byte for byte, so two composers that order differently disagree.",
         "document": document,
     })
 
@@ -524,6 +596,73 @@ def _object_cases() -> list[dict]:
     return cases
 
 
+def _entry(date: str, alert_state: str, **counts) -> dict:
+    """A release dates[] entry, as green_release writes it (only the fields read)."""
+
+    return {
+        "observed_on": date,
+        "alert_state": alert_state,
+        "status_counts": {status: int(counts.get(status, 0)) for status in (
+            "complete_with_alerts", "complete_zero_alerts", *sa.UNANALYZED_REASONS)},
+    }
+
+
+def _date_cases() -> list[dict]:
+    cases: list[dict] = [
+        {
+            "name": "a date that ran is not unanalysed",
+            "why": "It is a row in runs[]; carrying it here too would put one day on "
+                   "both lists.",
+            "entry": _entry("2026-04-04", "alerts", complete_with_alerts=1,
+                            rejected_low_coverage=1),
+        },
+        {
+            "name": "a quiet date that ran is not unanalysed either",
+            "why": "zero_alerts is a positive observation of absence "
+                   "(green_release.classify_date), not a missing one.",
+            "entry": _entry("2026-04-05", "zero_alerts", complete_zero_alerts=1),
+        },
+        {
+            "name": "a date refused by the anomaly gate",
+            "why": "2026-01-02 in the live release: more than 30% of the valid area "
+                   "flagged at once.",
+            "entry": _entry("2026-01-02", "no_valid_coverage", rejected_quality=1),
+        },
+        {
+            "name": "a date refused for low coverage, twice",
+            "why": "Two acquisitions, both below 20% valid: one reason, not two — the "
+                   "reason is the status, not the count.",
+            "entry": _entry("2026-02-14", "no_valid_coverage", rejected_low_coverage=2),
+        },
+        {
+            "name": "mixed reasons are sorted",
+            "why": "The index is reproducible byte for byte; the order cannot depend on "
+                   "the order of status_counts.",
+            "entry": _entry("2026-03-01", "no_valid_coverage", rejected_quality=1,
+                            failed_download=1),
+        },
+        {
+            "name": "a date with no usable acquisition and no status is refused",
+            "why": "classify_date cannot produce it. Showing it with an invented reason "
+                   "would be the site explaining what the ledger did not.",
+            "entry": _entry("2026-03-02", "no_valid_coverage"),
+        },
+        {
+            "name": "a sealing status on an unanalysed date is refused",
+            "why": "A complete_* acquisition makes a date usable. If the release says "
+                   "no_valid_coverage anyway, the two disagree and neither is shown.",
+            "entry": _entry("2026-03-03", "no_valid_coverage", complete_zero_alerts=1,
+                            rejected_quality=1),
+        },
+    ]
+    for case in cases:
+        try:
+            case["expected"] = sa.unanalyzed_date(case["entry"])
+        except sa.SiteArtifactRejected as rejected:
+            case["expected_codes"] = sorted(set(rejected.codes))
+    return cases
+
+
 def build_vectors() -> dict:
     return {
         "contract": sa.INDEX_SCHEMA,
@@ -544,6 +683,8 @@ def build_vectors() -> dict:
             "min_pcount_max": sa.MIN_PCOUNT_MAX,
             "full_object_suffix": sa.FULL_OBJECT_SUFFIX,
             "strong_object_suffix": sa.STRONG_OBJECT_SUFFIX,
+            "unanalyzed_alert_state": sa.UNANALYZED_ALERT_STATE,
+            "unanalyzed_reasons": list(sa.UNANALYZED_REASONS),
         },
         "fixture": {
             "source": SOURCE_LINE,
@@ -554,6 +695,7 @@ def build_vectors() -> dict:
         "run_cases": _run_cases(),
         "index_cases": _index_cases(),
         "rejection_cases": _rejection_cases(),
+        "date_cases": _date_cases(),
     }
 
 
@@ -564,7 +706,7 @@ def _serialise(document: dict) -> str:
 def cmd_vectors(args) -> int:
     built = build_vectors()
     counts = {group: len(built[group]) for group in
-              ("object_cases", "run_cases", "index_cases", "rejection_cases")}
+              ("object_cases", "run_cases", "index_cases", "rejection_cases", "date_cases")}
     if args.write:
         VECTORS_PATH.write_text(_serialise(built), encoding="utf-8")
         print(f"wrote {counts} to {VECTORS_PATH}")

@@ -129,6 +129,25 @@ TOTAL_KEYS = (
 )
 
 
+#: The ``alert_state`` a green release gives a date with no usable acquisition.
+#: ``green_release.classify_date`` promises it is exactly "no terminal status
+#: that seals an artifact", which is what makes the date unanalysable.
+UNANALYZED_ALERT_STATE = "no_valid_coverage"
+
+#: The terminal statuses that can explain an unanalysed date: the ledger's own
+#: vocabulary (``ledger_v3.TERMINAL_STATUSES``) minus the two that seal an
+#: artifact.  Copied rather than imported so this module stays portable to the
+#: site; ``tests/test_site_artifact.py`` derives the same set from the producer
+#: and from ``ledger_binding.pinned_status_semantics``, so the copy cannot drift.
+UNANALYZED_REASONS = (
+    "failed_download",
+    "failed_missing_input",
+    "failed_processing",
+    "rejected_low_coverage",
+    "rejected_quality",
+)
+
+
 class SiteArtifactRejected(Rejected):
     """A composed index is not an acceptable site artifact."""
 
@@ -315,11 +334,51 @@ def run_statistics(features: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
     return stats
 
 
+# ── a date the release covers but nobody could analyse ───────────────────────
+
+def unanalyzed_date(date_entry: Mapping[str, Any]) -> dict[str, Any] | None:
+    """The index entry for one release ``dates[]`` entry, or ``None`` if it ran.
+
+    PHASE_6O §4.  Before this, the site composer skipped such a date with a
+    ``continue`` and the page never learned it existed: a date the quality gate
+    refused looked the same as a date nobody looked at.  Now it is carried —
+    without features, without statistics, outside ``runs[]`` and ``totals`` —
+    with the statuses that explain it.
+
+    ``reasons`` is the producer's vocabulary, not a site code: the keys of
+    ``status_counts`` with a count above zero, sorted.  A date in this state
+    with no such key, or with a key outside :data:`UNANALYZED_REASONS`,
+    contradicts ``classify_date`` and is refused rather than shown with an
+    invented reason.
+    """
+
+    if date_entry.get("alert_state") != UNANALYZED_ALERT_STATE:
+        return None
+    date = date_entry.get("observed_on")
+    counts = date_entry.get("status_counts") or {}
+    reasons = sorted(status for status, count in counts.items() if int(count) > 0)
+    unexplained = [status for status in reasons if status not in UNANALYZED_REASONS]
+    if unexplained or not reasons:
+        raise SiteArtifactRejected(
+            [
+                Finding(
+                    "unanalyzed_date_is_not_explained",
+                    f"{date} is {UNANALYZED_ALERT_STATE!r} but its status_counts give "
+                    f"{reasons or 'no status'}; only {list(UNANALYZED_REASONS)} can "
+                    "explain a date with no usable acquisition",
+                    "dates[].status_counts",
+                )
+            ]
+        )
+    return {"date": date, "reasons": reasons}
+
+
 # ── the composition: aggregation only, no features ───────────────────────────
 
 def compose_alert_index(
     runs: Sequence[Mapping[str, Any]],
     *,
+    unanalyzed_dates: Sequence[Mapping[str, Any]],
     object_base: str,
     source: str,
     strong_points_file: str,
@@ -348,6 +407,11 @@ def compose_alert_index(
     ``last_run`` is the last row's date rather than the maximum, for the same
     reason: if the two differ, the release is not what it claims and the
     validator below says so instead of papering over it.
+
+    ``unanalyzed_dates`` — the :func:`unanalyzed_date` entries, in release
+    order — is required, never defaulted: a caller that forgot it would
+    silently drop every refused date again, which is the defect it exists to
+    remove.  It touches no total and no ``last_run``.
     """
 
     totals = {
@@ -379,6 +443,10 @@ def compose_alert_index(
                 **{key: run[key] for key in RUN_STAT_KEYS},
             }
             for run in runs
+        ],
+        "unanalyzed_dates": [
+            {"date": entry["date"], "reasons": list(entry["reasons"])}
+            for entry in unanalyzed_dates
         ],
         "strong_points_file": strong_points_file,
         "totals": totals,
@@ -479,6 +547,46 @@ def check_alert_index(document: Mapping[str, Any]) -> None:
                     "different object, and collapsing them would serve every candidate "
                     "under the default view",
                     path,
+                )
+            )
+
+    unanalyzed = document.get("unanalyzed_dates") or []
+    skipped = [entry.get("date") for entry in unanalyzed]
+    if skipped != sorted(skipped):
+        findings.append(
+            Finding(
+                "unanalyzed_dates_out_of_order",
+                "unanalyzed_dates[] must be in chronological order, as the release's "
+                "dates[] is",
+                "unanalyzed_dates",
+            )
+        )
+    if len(set(skipped)) != len(skipped):
+        findings.append(
+            Finding(
+                "unanalyzed_date_repeated",
+                "a UTC date appears in unanalyzed_dates[] more than once",
+                "unanalyzed_dates",
+            )
+        )
+    for date in sorted(set(skipped) & set(dates)):
+        findings.append(
+            Finding(
+                "date_is_both_run_and_unanalyzed",
+                f"{date} is in runs[] and in unanalyzed_dates[]; a date either had a "
+                "usable acquisition or it did not",
+                "unanalyzed_dates",
+            )
+        )
+    for index, entry in enumerate(unanalyzed):
+        reasons = list(entry.get("reasons") or [])
+        if reasons != sorted(set(reasons)):
+            findings.append(
+                Finding(
+                    "unanalyzed_reasons_not_canonical",
+                    f"reasons {reasons} are not in sorted order; the index is "
+                    "reproducible byte for byte, so the order is part of it",
+                    f"unanalyzed_dates[{index}]",
                 )
             )
 

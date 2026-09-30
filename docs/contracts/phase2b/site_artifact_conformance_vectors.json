@@ -1,6 +1,154 @@
 {
   "authority": "src/publication/site_artifact.py",
   "contract": "araripe.site.alert_index/1",
+  "date_cases": [
+    {
+      "entry": {
+        "alert_state": "alerts",
+        "observed_on": "2026-04-04",
+        "status_counts": {
+          "complete_with_alerts": 1,
+          "complete_zero_alerts": 0,
+          "failed_download": 0,
+          "failed_missing_input": 0,
+          "failed_processing": 0,
+          "rejected_low_coverage": 1,
+          "rejected_quality": 0
+        }
+      },
+      "expected": null,
+      "name": "a date that ran is not unanalysed",
+      "why": "It is a row in runs[]; carrying it here too would put one day on both lists."
+    },
+    {
+      "entry": {
+        "alert_state": "zero_alerts",
+        "observed_on": "2026-04-05",
+        "status_counts": {
+          "complete_with_alerts": 0,
+          "complete_zero_alerts": 1,
+          "failed_download": 0,
+          "failed_missing_input": 0,
+          "failed_processing": 0,
+          "rejected_low_coverage": 0,
+          "rejected_quality": 0
+        }
+      },
+      "expected": null,
+      "name": "a quiet date that ran is not unanalysed either",
+      "why": "zero_alerts is a positive observation of absence (green_release.classify_date), not a missing one."
+    },
+    {
+      "entry": {
+        "alert_state": "no_valid_coverage",
+        "observed_on": "2026-01-02",
+        "status_counts": {
+          "complete_with_alerts": 0,
+          "complete_zero_alerts": 0,
+          "failed_download": 0,
+          "failed_missing_input": 0,
+          "failed_processing": 0,
+          "rejected_low_coverage": 0,
+          "rejected_quality": 1
+        }
+      },
+      "expected": {
+        "date": "2026-01-02",
+        "reasons": [
+          "rejected_quality"
+        ]
+      },
+      "name": "a date refused by the anomaly gate",
+      "why": "2026-01-02 in the live release: more than 30% of the valid area flagged at once."
+    },
+    {
+      "entry": {
+        "alert_state": "no_valid_coverage",
+        "observed_on": "2026-02-14",
+        "status_counts": {
+          "complete_with_alerts": 0,
+          "complete_zero_alerts": 0,
+          "failed_download": 0,
+          "failed_missing_input": 0,
+          "failed_processing": 0,
+          "rejected_low_coverage": 2,
+          "rejected_quality": 0
+        }
+      },
+      "expected": {
+        "date": "2026-02-14",
+        "reasons": [
+          "rejected_low_coverage"
+        ]
+      },
+      "name": "a date refused for low coverage, twice",
+      "why": "Two acquisitions, both below 20% valid: one reason, not two — the reason is the status, not the count."
+    },
+    {
+      "entry": {
+        "alert_state": "no_valid_coverage",
+        "observed_on": "2026-03-01",
+        "status_counts": {
+          "complete_with_alerts": 0,
+          "complete_zero_alerts": 0,
+          "failed_download": 1,
+          "failed_missing_input": 0,
+          "failed_processing": 0,
+          "rejected_low_coverage": 0,
+          "rejected_quality": 1
+        }
+      },
+      "expected": {
+        "date": "2026-03-01",
+        "reasons": [
+          "failed_download",
+          "rejected_quality"
+        ]
+      },
+      "name": "mixed reasons are sorted",
+      "why": "The index is reproducible byte for byte; the order cannot depend on the order of status_counts."
+    },
+    {
+      "entry": {
+        "alert_state": "no_valid_coverage",
+        "observed_on": "2026-03-02",
+        "status_counts": {
+          "complete_with_alerts": 0,
+          "complete_zero_alerts": 0,
+          "failed_download": 0,
+          "failed_missing_input": 0,
+          "failed_processing": 0,
+          "rejected_low_coverage": 0,
+          "rejected_quality": 0
+        }
+      },
+      "expected_codes": [
+        "unanalyzed_date_is_not_explained"
+      ],
+      "name": "a date with no usable acquisition and no status is refused",
+      "why": "classify_date cannot produce it. Showing it with an invented reason would be the site explaining what the ledger did not."
+    },
+    {
+      "entry": {
+        "alert_state": "no_valid_coverage",
+        "observed_on": "2026-03-03",
+        "status_counts": {
+          "complete_with_alerts": 0,
+          "complete_zero_alerts": 1,
+          "failed_download": 0,
+          "failed_missing_input": 0,
+          "failed_processing": 0,
+          "rejected_low_coverage": 0,
+          "rejected_quality": 1
+        }
+      },
+      "expected_codes": [
+        "unanalyzed_date_is_not_explained"
+      ],
+      "name": "a sealing status on an unanalysed date is refused",
+      "why": "A complete_* acquisition makes a date usable. If the release says no_valid_coverage anyway, the two disagree and neither is shown."
+    }
+  ],
   "fixture": {
     "object_base": "/data/green/",
     "source": "SENTINEL-2 L2A · LANDSAT 8/9",
@@ -26,10 +174,12 @@
           "high": 0,
           "pcount_max": 1,
           "strong": 0
-        }
+        },
+        "unanalyzed_dates": []
       },
       "name": "no runs is a legitimate index",
       "runs": [],
+      "unanalyzed_dates": [],
       "why": "The state before the first release. last_run is null and pcount_max falls back to the floor; refusing this state would make the site fail on a correct, empty green release."
     },
     {
@@ -96,7 +246,8 @@
           "high": 7,
           "pcount_max": 17,
           "strong": 3
-        }
+        },
+        "unanalyzed_dates": []
       },
       "name": "totals aggregate rows whose features were never supplied",
       "runs": [
@@ -146,6 +297,7 @@
           "strong": 1
         }
       ],
+      "unanalyzed_dates": [],
       "why": "THE point of the design: every totals field is a function of the rows alone, so a consumer verifies the whole document without reading 429k features. If any total needed a feature, this case could not be built."
     },
     {
@@ -212,7 +364,8 @@
           "high": 3,
           "pcount_max": 1,
           "strong": 0
-        }
+        },
+        "unanalyzed_dates": []
       },
       "name": "the total area sums values already rounded",
       "runs": [
@@ -262,6 +415,7 @@
           "strong": 0
         }
       ],
+      "unanalyzed_dates": [],
       "why": "Three rows at .05 sum to a different number depending on whether the rounding happened per row or once at the end. The per-row value is what a reader can add up by hand, so it is the one that is summed."
     },
     {
@@ -313,7 +467,8 @@
           "high": 0,
           "pcount_max": 42,
           "strong": 0
-        }
+        },
+        "unanalyzed_dates": []
       },
       "name": "pcount_max is the maximum of the rows, not of the last one",
       "runs": [
@@ -348,7 +503,136 @@
           "strong": 0
         }
       ],
+      "unanalyzed_dates": [],
       "why": "The largest streak may belong to any date. Taking the last row's value would shrink the UI slider whenever the newest run happens to be quiet."
+    },
+    {
+      "expected": {
+        "last_run": "2026-05-20",
+        "object_base": "/data/green/",
+        "runs": [
+          {
+            "area_ha": 3.0,
+            "candidate": 0,
+            "confirmed": 0,
+            "count": 2,
+            "date": "2026-01-05",
+            "file": "alerts/run-2026-01-05.geojson",
+            "file_strong": "alerts/run-2026-01-05.strong.geojson",
+            "first_obs": 2,
+            "high": 1,
+            "low": 0,
+            "medium": 1,
+            "pcount_max": 1,
+            "strong": 0
+          },
+          {
+            "area_ha": 1.5,
+            "candidate": 1,
+            "confirmed": 0,
+            "count": 1,
+            "date": "2026-05-20",
+            "file": "alerts/run-2026-05-20.geojson",
+            "file_strong": "alerts/run-2026-05-20.strong.geojson",
+            "first_obs": 0,
+            "high": 1,
+            "low": 0,
+            "medium": 0,
+            "pcount_max": 3,
+            "strong": 1
+          }
+        ],
+        "schema": "araripe.site.alert_index/1",
+        "source": "SENTINEL-2 L2A · LANDSAT 8/9",
+        "stats_policy_version": "1",
+        "strong_points_file": "all-strong-points.json",
+        "totals": {
+          "area_ha": 4.5,
+          "candidate": 1,
+          "confirmed": 0,
+          "count": 3,
+          "first_obs": 2,
+          "high": 2,
+          "pcount_max": 3,
+          "strong": 1
+        },
+        "unanalyzed_dates": [
+          {
+            "date": "2026-01-02",
+            "reasons": [
+              "rejected_quality"
+            ]
+          },
+          {
+            "date": "2026-05-22",
+            "reasons": [
+              "rejected_low_coverage"
+            ]
+          },
+          {
+            "date": "2026-05-27",
+            "reasons": [
+              "failed_download",
+              "rejected_low_coverage"
+            ]
+          }
+        ]
+      },
+      "name": "unanalysed dates are carried, and touch no total and no last_run",
+      "runs": [
+        {
+          "area_ha": 3.0,
+          "candidate": 0,
+          "confirmed": 0,
+          "count": 2,
+          "date": "2026-01-05",
+          "file": "alerts/run-2026-01-05.geojson",
+          "file_strong": "alerts/run-2026-01-05.strong.geojson",
+          "first_obs": 2,
+          "high": 1,
+          "low": 0,
+          "medium": 1,
+          "pcount_max": 1,
+          "strong": 0
+        },
+        {
+          "area_ha": 1.5,
+          "candidate": 1,
+          "confirmed": 0,
+          "count": 1,
+          "date": "2026-05-20",
+          "file": "alerts/run-2026-05-20.geojson",
+          "file_strong": "alerts/run-2026-05-20.strong.geojson",
+          "first_obs": 0,
+          "high": 1,
+          "low": 0,
+          "medium": 0,
+          "pcount_max": 3,
+          "strong": 1
+        }
+      ],
+      "unanalyzed_dates": [
+        {
+          "date": "2026-01-02",
+          "reasons": [
+            "rejected_quality"
+          ]
+        },
+        {
+          "date": "2026-05-22",
+          "reasons": [
+            "rejected_low_coverage"
+          ]
+        },
+        {
+          "date": "2026-05-27",
+          "reasons": [
+            "failed_download",
+            "rejected_low_coverage"
+          ]
+        }
+      ],
+      "why": "PHASE_6O §4. The live release had 61 of 103 dates with no usable acquisition, and the index dropped every one. They are carried now, beside runs[] and not in it: the latest date here is unanalysed, and last_run still names the latest date that RAN."
     }
   ],
   "note": "Neither the Python authority nor the site's composer is the reference: this file is. Add a case to the generator and regenerate; never hand-edit.",
@@ -477,7 +761,15 @@
     "min_pcount_max": 1,
     "strong_confidence_label": "high",
     "strong_min_natural_fraction": 0.5,
-    "strong_object_suffix": ".strong.geojson"
+    "strong_object_suffix": ".strong.geojson",
+    "unanalyzed_alert_state": "no_valid_coverage",
+    "unanalyzed_reasons": [
+      "failed_download",
+      "failed_missing_input",
+      "failed_processing",
+      "rejected_low_coverage",
+      "rejected_quality"
+    ]
   },
   "rejection_cases": [
     {
@@ -529,7 +821,21 @@
           "high": 3,
           "pcount_max": 20,
           "strong": 2
-        }
+        },
+        "unanalyzed_dates": [
+          {
+            "date": "2026-07-04",
+            "reasons": [
+              "rejected_low_coverage"
+            ]
+          },
+          {
+            "date": "2026-07-06",
+            "reasons": [
+              "rejected_quality"
+            ]
+          }
+        ]
       },
       "expected_codes": [
         "persistence_tiers_do_not_partition",
@@ -587,7 +893,21 @@
           "high": 3,
           "pcount_max": 20,
           "strong": 2
-        }
+        },
+        "unanalyzed_dates": [
+          {
+            "date": "2026-07-04",
+            "reasons": [
+              "rejected_low_coverage"
+            ]
+          },
+          {
+            "date": "2026-07-06",
+            "reasons": [
+              "rejected_quality"
+            ]
+          }
+        ]
       },
       "expected_codes": [
         "confidence_labels_do_not_partition"
@@ -644,7 +964,21 @@
           "high": 3,
           "pcount_max": 20,
           "strong": 2
-        }
+        },
+        "unanalyzed_dates": [
+          {
+            "date": "2026-07-04",
+            "reasons": [
+              "rejected_low_coverage"
+            ]
+          },
+          {
+            "date": "2026-07-06",
+            "reasons": [
+              "rejected_quality"
+            ]
+          }
+        ]
       },
       "expected_codes": [
         "strong_exceeds_high",
@@ -702,7 +1036,21 @@
           "high": 3,
           "pcount_max": 20,
           "strong": 2
-        }
+        },
+        "unanalyzed_dates": [
+          {
+            "date": "2026-07-04",
+            "reasons": [
+              "rejected_low_coverage"
+            ]
+          },
+          {
+            "date": "2026-07-06",
+            "reasons": [
+              "rejected_quality"
+            ]
+          }
+        ]
       },
       "expected_codes": [
         "last_run_is_not_the_last_run",
@@ -760,7 +1108,21 @@
           "high": 3,
           "pcount_max": 20,
           "strong": 2
-        }
+        },
+        "unanalyzed_dates": [
+          {
+            "date": "2026-07-04",
+            "reasons": [
+              "rejected_low_coverage"
+            ]
+          },
+          {
+            "date": "2026-07-06",
+            "reasons": [
+              "rejected_quality"
+            ]
+          }
+        ]
       },
       "expected_codes": [
         "last_run_is_not_the_last_run"
@@ -817,7 +1179,21 @@
           "high": 3,
           "pcount_max": 20,
           "strong": 2
-        }
+        },
+        "unanalyzed_dates": [
+          {
+            "date": "2026-07-04",
+            "reasons": [
+              "rejected_low_coverage"
+            ]
+          },
+          {
+            "date": "2026-07-06",
+            "reasons": [
+              "rejected_quality"
+            ]
+          }
+        ]
       },
       "expected_codes": [
         "total_does_not_aggregate_the_runs"
@@ -874,7 +1250,21 @@
           "high": 3,
           "pcount_max": 20,
           "strong": 2
-        }
+        },
+        "unanalyzed_dates": [
+          {
+            "date": "2026-07-04",
+            "reasons": [
+              "rejected_low_coverage"
+            ]
+          },
+          {
+            "date": "2026-07-06",
+            "reasons": [
+              "rejected_quality"
+            ]
+          }
+        ]
       },
       "expected_codes": [
         "total_does_not_aggregate_the_runs"
@@ -931,7 +1321,21 @@
           "high": 3,
           "pcount_max": 20,
           "strong": 2
-        }
+        },
+        "unanalyzed_dates": [
+          {
+            "date": "2026-07-04",
+            "reasons": [
+              "rejected_low_coverage"
+            ]
+          },
+          {
+            "date": "2026-07-06",
+            "reasons": [
+              "rejected_quality"
+            ]
+          }
+        ]
       },
       "expected_codes": [
         "full_and_strong_are_the_same_object"
@@ -1003,7 +1407,21 @@
           "high": 3,
           "pcount_max": 20,
           "strong": 2
-        }
+        },
+        "unanalyzed_dates": [
+          {
+            "date": "2026-07-04",
+            "reasons": [
+              "rejected_low_coverage"
+            ]
+          },
+          {
+            "date": "2026-07-06",
+            "reasons": [
+              "rejected_quality"
+            ]
+          }
+        ]
       },
       "expected_codes": [
         "run_date_repeated",
@@ -1011,6 +1429,303 @@
       ],
       "name": "a UTC date appears twice",
       "why": "The release declares each date exactly once, so a repeated row means the composer double-counted and every total is inflated."
+    },
+    {
+      "document": {
+        "last_run": "2026-07-08",
+        "object_base": "/data/green/",
+        "runs": [
+          {
+            "area_ha": 10.0,
+            "candidate": 2,
+            "confirmed": 1,
+            "count": 4,
+            "date": "2026-07-01",
+            "file": "alerts/run-2026-07-01.geojson",
+            "file_strong": "alerts/run-2026-07-01.strong.geojson",
+            "first_obs": 1,
+            "high": 3,
+            "low": 0,
+            "medium": 1,
+            "pcount_max": 20,
+            "strong": 2
+          },
+          {
+            "area_ha": 2.5,
+            "candidate": 0,
+            "confirmed": 0,
+            "count": 1,
+            "date": "2026-07-08",
+            "file": "alerts/run-2026-07-08.geojson",
+            "file_strong": "alerts/run-2026-07-08.strong.geojson",
+            "first_obs": 1,
+            "high": 0,
+            "low": 1,
+            "medium": 0,
+            "pcount_max": 1,
+            "strong": 0
+          }
+        ],
+        "schema": "araripe.site.alert_index/1",
+        "source": "SENTINEL-2 L2A · LANDSAT 8/9",
+        "stats_policy_version": "1",
+        "strong_points_file": "all-strong-points.json",
+        "totals": {
+          "area_ha": 12.5,
+          "candidate": 2,
+          "confirmed": 1,
+          "count": 5,
+          "first_obs": 2,
+          "high": 3,
+          "pcount_max": 20,
+          "strong": 2
+        },
+        "unanalyzed_dates": [
+          {
+            "date": "2026-07-06",
+            "reasons": [
+              "rejected_quality"
+            ]
+          },
+          {
+            "date": "2026-07-04",
+            "reasons": [
+              "rejected_low_coverage"
+            ]
+          }
+        ]
+      },
+      "expected_codes": [
+        "unanalyzed_dates_out_of_order"
+      ],
+      "name": "unanalysed dates are not in chronological order",
+      "why": "The page lists them as the release has them; a reversed list reads as a different history of refusals."
+    },
+    {
+      "document": {
+        "last_run": "2026-07-08",
+        "object_base": "/data/green/",
+        "runs": [
+          {
+            "area_ha": 10.0,
+            "candidate": 2,
+            "confirmed": 1,
+            "count": 4,
+            "date": "2026-07-01",
+            "file": "alerts/run-2026-07-01.geojson",
+            "file_strong": "alerts/run-2026-07-01.strong.geojson",
+            "first_obs": 1,
+            "high": 3,
+            "low": 0,
+            "medium": 1,
+            "pcount_max": 20,
+            "strong": 2
+          },
+          {
+            "area_ha": 2.5,
+            "candidate": 0,
+            "confirmed": 0,
+            "count": 1,
+            "date": "2026-07-08",
+            "file": "alerts/run-2026-07-08.geojson",
+            "file_strong": "alerts/run-2026-07-08.strong.geojson",
+            "first_obs": 1,
+            "high": 0,
+            "low": 1,
+            "medium": 0,
+            "pcount_max": 1,
+            "strong": 0
+          }
+        ],
+        "schema": "araripe.site.alert_index/1",
+        "source": "SENTINEL-2 L2A · LANDSAT 8/9",
+        "stats_policy_version": "1",
+        "strong_points_file": "all-strong-points.json",
+        "totals": {
+          "area_ha": 12.5,
+          "candidate": 2,
+          "confirmed": 1,
+          "count": 5,
+          "first_obs": 2,
+          "high": 3,
+          "pcount_max": 20,
+          "strong": 2
+        },
+        "unanalyzed_dates": [
+          {
+            "date": "2026-07-04",
+            "reasons": [
+              "rejected_low_coverage"
+            ]
+          },
+          {
+            "date": "2026-07-06",
+            "reasons": [
+              "rejected_quality"
+            ]
+          },
+          {
+            "date": "2026-07-06",
+            "reasons": [
+              "rejected_quality"
+            ]
+          }
+        ]
+      },
+      "expected_codes": [
+        "unanalyzed_date_repeated"
+      ],
+      "name": "an unanalysed date appears twice",
+      "why": "The release declares each date once; a repeat means the composer read a date twice."
+    },
+    {
+      "document": {
+        "last_run": "2026-07-08",
+        "object_base": "/data/green/",
+        "runs": [
+          {
+            "area_ha": 10.0,
+            "candidate": 2,
+            "confirmed": 1,
+            "count": 4,
+            "date": "2026-07-01",
+            "file": "alerts/run-2026-07-01.geojson",
+            "file_strong": "alerts/run-2026-07-01.strong.geojson",
+            "first_obs": 1,
+            "high": 3,
+            "low": 0,
+            "medium": 1,
+            "pcount_max": 20,
+            "strong": 2
+          },
+          {
+            "area_ha": 2.5,
+            "candidate": 0,
+            "confirmed": 0,
+            "count": 1,
+            "date": "2026-07-08",
+            "file": "alerts/run-2026-07-08.geojson",
+            "file_strong": "alerts/run-2026-07-08.strong.geojson",
+            "first_obs": 1,
+            "high": 0,
+            "low": 1,
+            "medium": 0,
+            "pcount_max": 1,
+            "strong": 0
+          }
+        ],
+        "schema": "araripe.site.alert_index/1",
+        "source": "SENTINEL-2 L2A · LANDSAT 8/9",
+        "stats_policy_version": "1",
+        "strong_points_file": "all-strong-points.json",
+        "totals": {
+          "area_ha": 12.5,
+          "candidate": 2,
+          "confirmed": 1,
+          "count": 5,
+          "first_obs": 2,
+          "high": 3,
+          "pcount_max": 20,
+          "strong": 2
+        },
+        "unanalyzed_dates": [
+          {
+            "date": "2026-07-04",
+            "reasons": [
+              "rejected_low_coverage"
+            ]
+          },
+          {
+            "date": "2026-07-06",
+            "reasons": [
+              "rejected_quality"
+            ]
+          },
+          {
+            "date": "2026-07-08",
+            "reasons": [
+              "rejected_quality"
+            ]
+          }
+        ]
+      },
+      "expected_codes": [
+        "date_is_both_run_and_unanalyzed"
+      ],
+      "name": "a date is both a run and unanalysed",
+      "why": "classify_date gives each date one alert_state. A date on both lists would show alerts and a refusal for the same day."
+    },
+    {
+      "document": {
+        "last_run": "2026-07-08",
+        "object_base": "/data/green/",
+        "runs": [
+          {
+            "area_ha": 10.0,
+            "candidate": 2,
+            "confirmed": 1,
+            "count": 4,
+            "date": "2026-07-01",
+            "file": "alerts/run-2026-07-01.geojson",
+            "file_strong": "alerts/run-2026-07-01.strong.geojson",
+            "first_obs": 1,
+            "high": 3,
+            "low": 0,
+            "medium": 1,
+            "pcount_max": 20,
+            "strong": 2
+          },
+          {
+            "area_ha": 2.5,
+            "candidate": 0,
+            "confirmed": 0,
+            "count": 1,
+            "date": "2026-07-08",
+            "file": "alerts/run-2026-07-08.geojson",
+            "file_strong": "alerts/run-2026-07-08.strong.geojson",
+            "first_obs": 1,
+            "high": 0,
+            "low": 1,
+            "medium": 0,
+            "pcount_max": 1,
+            "strong": 0
+          }
+        ],
+        "schema": "araripe.site.alert_index/1",
+        "source": "SENTINEL-2 L2A · LANDSAT 8/9",
+        "stats_policy_version": "1",
+        "strong_points_file": "all-strong-points.json",
+        "totals": {
+          "area_ha": 12.5,
+          "candidate": 2,
+          "confirmed": 1,
+          "count": 5,
+          "first_obs": 2,
+          "high": 3,
+          "pcount_max": 20,
+          "strong": 2
+        },
+        "unanalyzed_dates": [
+          {
+            "date": "2026-07-04",
+            "reasons": [
+              "rejected_quality",
+              "rejected_low_coverage"
+            ]
+          },
+          {
+            "date": "2026-07-06",
+            "reasons": [
+              "rejected_quality"
+            ]
+          }
+        ]
+      },
+      "expected_codes": [
+        "unanalyzed_reasons_not_canonical"
+      ],
+      "name": "the reasons of an unanalysed date are not in canonical order",
+      "why": "Shape-valid and semantically the same, but the index is reproducible byte for byte, so two composers that order differently disagree."
     }
   ],
   "run_cases": [

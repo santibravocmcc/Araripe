@@ -31,6 +31,13 @@
         "$ref": "#/$defs/run"
       }
     },
+    "unanalyzed_dates": {
+      "description": "Dates the release covers that nobody could analyse: every `dates[]` entry whose alert_state is no_valid_coverage, with the terminal statuses that explain it. Additive in /1 (PHASE_6O §4): optional here so an index composed before it stays valid, and always emitted by both composers, empty when there is no such date. Never a run: disjoint from `runs[]`, never in `totals`, never `last_run`. In chronological order, which check_alert_index enforces.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/unanalyzed_date"
+      }
+    },
     "strong_points_file": {
       "description": "Name of the point index the map loads for the all-runs view. It is a build artifact written beside this index by the same green step, NOT a release object, so it is resolved against the index's own location and never against object_base.",
       "$ref": "#/$defs/object_name"
@@ -193,6 +200,35 @@
       "minLength": 1,
       "maxLength": 512,
       "pattern": "^(?!\\.)(?!.*//)(?!.*/\\.)[A-Za-z0-9][A-Za-z0-9._@+-]*(/[A-Za-z0-9][A-Za-z0-9._@+-]*)*$"
+    },
+    "unanalyzed_date": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "date",
+        "reasons"
+      ],
+      "properties": {
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "reasons": {
+          "description": "The keys of the date's status_counts with a count above zero, in alphabetical order (check_alert_index enforces the order; the index is reproducible byte for byte). The ledger's own vocabulary — ledger_v3.TERMINAL_STATUSES without the two artifact-sealing statuses — never a code invented for the site.",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "failed_download",
+              "failed_missing_input",
+              "failed_processing",
+              "rejected_low_coverage",
+              "rejected_quality"
+            ]
+          }
+        }
+      }
     }
   }
 }
