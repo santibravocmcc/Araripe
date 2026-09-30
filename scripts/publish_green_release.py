@@ -22,10 +22,10 @@ represent zero-alert dates and stale objects explicitly.
 
     # the chain's public release — every run from the root to the head —
     # only if it composes to the release the candidate identity accepted:
-    python scripts/publish_green_release.py publish-chain --expect rel-g2-…
+    python scripts/publish_green_release.py publish-chain --expect rel-g3-…
 
     # deliberate backwards move, to a release that is still complete:
-    python scripts/publish_green_release.py rollback --to rel-g1-…
+    python scripts/publish_green_release.py rollback --to rel-g1-… | rel-g3-…
 
     # read the live pointer:
     python scripts/publish_green_release.py status
@@ -425,7 +425,7 @@ def cmd_publish(args) -> int:
 
 
 def cmd_publish_chain(args) -> int:
-    """Publish the chain's version-2 release, if it is the one that was staged.
+    """Publish the chain's version-3 release, if it is the one that was staged.
 
     The chain is derived again here, with the store that publishes, so the
     bytes validated are the bytes written.  Between the staging job and this

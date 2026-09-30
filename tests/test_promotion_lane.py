@@ -22,7 +22,9 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -220,14 +222,87 @@ def test_promote_is_refused_here_and_says_who_owns_it(lane):
     assert step["run"].rstrip().endswith("exit 1")
 
 
-def test_a_malformed_release_id_never_reaches_an_object_key(lane):
-    step = next(
+def release_id_gate(lane):
+    return next(
         step for step in lane_steps(lane, AUTHORITY_JOB)
         if "release id" in step["name"].lower()
     )
+
+
+def run_release_id_gate(lane, release_id: str) -> subprocess.CompletedProcess:
+    """Run the gate's own script under bash, as the runner does.
+
+    Executed rather than read: the gate used to be asserted by looking for the
+    string ``rel-g1-`` in it, which a reworded gate passes while accepting
+    anything (``docs/implementation/PHASE_6K_2026-09-29.md`` §5).
+    """
+
+    step = release_id_gate(lane)
+    return subprocess.run(
+        ["bash", "-c", step["run"]],
+        env={"PATH": os.environ["PATH"], "RELEASE_ID": release_id},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+_HEX = "0123456789abcdef" * 4
+
+
+@pytest.mark.parametrize(
+    "release_id",
+    [
+        "rel-g1-" + _HEX,
+        # a chain release by reference — what the live pointer names since
+        # sequence 15 (PHASE_6K §2), and what a rollback must be able to reach
+        "rel-g3-" + _HEX,
+        "rel-g3-264ba36ee44bc799fd4fe7f22748d84488469087ec1924e2130ac5b28ba53a02",
+    ],
+)
+def test_the_release_id_gate_accepts_a_published_release_kind(lane, release_id):
+    result = run_release_id_gate(lane, release_id)
+    assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.parametrize(
+    "release_id",
+    [
+        "",
+        _HEX,
+        # version 2 exists in chain_release.py, but nothing publishes it any
+        # more and the staging bucket holds none (listed 2026-09-30)
+        "rel-g2-" + _HEX,
+        "rel-g0-" + _HEX,
+        "rel-g4-" + _HEX,
+        "rel-g13-" + _HEX,
+        "rel-g1-" + _HEX[:-1],
+        "rel-g3-" + _HEX[:-1],
+        "rel-g1-" + _HEX + "0",
+        "rel-g3-" + _HEX + "0",
+        "rel-g3-" + _HEX.upper(),
+        "rel-g1-" + _HEX[:-1] + "g",
+        "rel-g3-../" + _HEX[:61],
+        "rel-g3-" + _HEX[:-3] + "/..",
+        "rel-g3-" + _HEX + "\n",
+        "rel-g3-" + _HEX[:-1] + "\n",
+        " rel-g3-" + _HEX,
+        "rel-g3-" + _HEX[:-1] + " ",
+        "releases/rel-g3-" + _HEX,
+        "rel-g1-rel-g3-" + _HEX,
+        "REL-G3-" + _HEX,
+        "rel-g3-",
+    ],
+)
+def test_a_malformed_release_id_never_reaches_an_object_key(lane, release_id):
+    result = run_release_id_gate(lane, release_id)
+    assert result.returncode != 0
+    assert "::error::" in result.stderr
+
+
+def test_the_release_id_gate_runs_before_the_rollback(lane):
+    step = release_id_gate(lane)
     assert step["if"] == "github.event.inputs.mode == 'rollback'"
-    script = executed(step["run"])
-    assert "rel-g1-" in script and "64" in script and "*[!0-9a-f]*" in script
     rollback = next(
         step for step in lane_steps(lane, AUTHORITY_JOB)
         if "deliberately" in step["name"]

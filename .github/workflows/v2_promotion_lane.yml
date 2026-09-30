@@ -58,7 +58,7 @@ on:
         required: false
         default: "contract-check"
       release_id:
-        description: "rollback: the release to point at, e.g. rel-g1-<64 hex>"
+        description: "rollback: the release to point at, rel-g1-<64 hex> or rel-g3-<64 hex>"
         required: false
         default: ""
       ledger:
@@ -217,16 +217,19 @@ jobs:
       - name: Accept only a well-formed release id
         # Validated here rather than trusted to the CLI: a release id addresses
         # a prefix, so a malformed one must never reach an object key.
+        # rel-g1- is a run's own release, rel-g3- a chain release by reference
+        # (PHASE_6J §2) — the two kinds the store holds. rel-g2- (a chain by
+        # copy) is refused: nothing publishes it since PHASE_6J.
         if: github.event.inputs.mode == 'rollback'
         env:
           RELEASE_ID: ${{ github.event.inputs.release_id }}
         run: |
           set -euo pipefail
           case "${RELEASE_ID}" in
-            rel-g1-*) ;;
-            *) echo "::error::release_id must look like rel-g1-<64 hex>" >&2; exit 1 ;;
+            rel-g1-*|rel-g3-*) ;;
+            *) echo "::error::release_id must look like rel-g1-<64 hex> or rel-g3-<64 hex>" >&2; exit 1 ;;
           esac
-          hex="${RELEASE_ID#rel-g1-}"
+          hex="${RELEASE_ID#rel-g[13]-}"
           test "${#hex}" -eq 64 || { echo "::error::release_id digest is not 64 chars" >&2; exit 1; }
           case "$hex" in *[!0-9a-f]*) echo "::error::release_id digest is not lowercase hex" >&2; exit 1 ;; esac
 
