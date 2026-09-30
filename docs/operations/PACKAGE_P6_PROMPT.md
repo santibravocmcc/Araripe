@@ -176,6 +176,17 @@ Duas consequências que esta fase **tem** de resolver ou registrar como aceitas:
 
 ## 3. A DECISÃO DO BUCKET — nova, e não resolvida em lugar nenhum
 
+> **DECIDIDA pelo dono em 2026-09-30: opção (a).** `araripe-v2-staging` passa a
+> ser o bucket definitivo do verde **na virada** — até lá continua regido como
+> sandbox. A recomendação e a análise estão em
+> `PACKAGE_P6_ROLLBACK_G3_PROMPT.md` §5-bis. As três condições, todas **antes
+> da virada**: (1) revogar `claude-araripe-v2-staging-rw`; (2) proteger a
+> promoção por revisor — ver a ressalva em `PACKAGE_P6_SITE_TEXT_PROMPT.md`
+> §2, porque um revisor em toda promoção contradiz a publicação automática;
+> (3) reescrever `CLOUDFLARE_STAGING_ACCESS_FOR_CLAUDE.md`, que já carrega uma
+> nota da decisão no topo. O texto abaixo é o de 2026-09-17, mantido como
+> estava.
+
 Apareceu ao responder uma pergunta do dono em 2026-09-17, e a varredura não
 achou nenhum documento que a resolva.
 
