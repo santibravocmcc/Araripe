@@ -5,12 +5,13 @@
   "scope": "which operation publishes to production without a human click after the Phase 6 cutover, which one requires a reviewer, and in which GitHub Environment each one runs",
   "record": "docs/implementation/PHASE_6P_2026-10-02.md",
   "authorization": {
-    "status": "partially_decided",
-    "authorized_by": null,
-    "authorized_on": null,
+    "status": "decided",
+    "authorized_by": "project_owner",
+    "authorized_on": "2026-10-02",
     "production_mutation_permitted": false,
     "repository_configuration_change_permitted": false,
-    "why_proposed_and_not_decided": "who may publish to production without a click is the owner's decision. This file is the design and the measurement behind it. An agent fills authorized_by and authorized_on only from the owner's own words, with the date, as config/phase6_owner_decisions_v1.json does."
+    "why_proposed_and_not_decided": "who may publish to production without a click is the owner's decision. This file is the design and the measurement behind it. An agent fills authorized_by and authorized_on only from the owner's own words, with the date, as config/phase6_owner_decisions_v1.json does.",
+    "next_owner_action": "create the Environment v2-rollback (required reviewer = the owner, prevent_self_review off, deployment branches main only, the two R2_PROMOTION_* secrets and the three variables of v2-promotion). No agent may name it in a workflow before gh api shows it exists."
   },
   "measured": {
     "measured_on": "2026-10-02",
@@ -303,7 +304,11 @@
         "copy the two R2_PROMOTION_* secrets and the three variables into it (same values as v2-promotion)"
       ],
       "agent_work_if_yes_after_the_environment_exists": "measure it with gh api, then split v2_promotion_lane.yml's `pointer` job into a read job (v2-promotion: status, history) and a rollback job (v2-rollback), with tests; never name v2-rollback in a workflow before the measurement shows it exists",
-      "decided": null
+      "decided": "yes",
+      "decided_by": "project_owner",
+      "decided_on": "2026-10-02",
+      "owner_words": "P1 aprovada, voltar atras com meu clique.",
+      "explained_before_deciding": "the owner asked when a rollback would be needed and what really needs a click; answered in chat on 2026-10-02: a release that passes every gate but is wrong, expected rare; a rollback does not fix the cause, so it comes with pausing automatic publication; routine needs no click"
     },
     {
       "id": "P2",
