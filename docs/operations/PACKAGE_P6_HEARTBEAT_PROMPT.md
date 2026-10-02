@@ -40,7 +40,11 @@ soma compensada falha (PHASE_6P §1). Use o número que sair.
 
 ## 2. As respostas do dono — leia antes de qualquer código
 
-`config/phase6_publication_authority_v1.json` tem duas propostas, P1 e P2,
+**Atualizado 2026-10-02: o dono aprovou P1 e P2** (registrado em
+`config/phase6_publication_authority_v1.json`). O que resta é ele criar o
+`v2-rollback` — então siga o ramo "P1 sim" abaixo, começando pela medição.
+
+Texto original: `config/phase6_publication_authority_v1.json` tem duas propostas, P1 e P2,
 com `decided: null`. **Só o dono preenche.** Se ele respondeu no chat, registre
 as palavras dele e a data em `authorization` (`authorized_by: project_owner`)
 e em cada `decided`, num commit próprio — `tests/test_publication_authority.py`

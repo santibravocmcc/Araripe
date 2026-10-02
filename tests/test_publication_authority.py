@@ -113,13 +113,13 @@ def test_so_o_rollback_pode_andar_para_tras_e_so_ele_pede_revisor_novo():
 
 
 def test_a_proposta_nao_se_declara_decidida_sem_o_dono():
+    """Cada decisão só sai de `null` com as palavras do dono e a data."""
+
     decision = _decision()
-    authorization = decision["authorization"]
-    undecided = [p["id"] for p in decision["proposed_decisions"] if p["decided"] is None]
-    if authorization["status"] == "proposed":
-        assert authorization["authorized_by"] is None
-        assert undecided == ["P1", "P2"]
-    else:
-        assert authorization["authorized_by"] == "project_owner"
-        assert authorization["authorized_on"]
-    assert authorization["production_mutation_permitted"] is False
+    for item in decision["proposed_decisions"]:
+        if item["decided"] is None:
+            continue
+        assert item["decided_by"] == "project_owner", item["id"]
+        assert item["decided_on"], item["id"]
+        assert item["owner_words"].strip(), item["id"]
+    assert decision["authorization"]["production_mutation_permitted"] is False

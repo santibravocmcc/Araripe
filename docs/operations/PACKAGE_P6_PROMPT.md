@@ -191,8 +191,10 @@ Duas consequências que esta fase **tem** de resolver ou registrar como aceitas:
 > `config/phase6_publication_authority_v1.json`, proposta P1: a promoção fica
 > sem revisor no `v2-promotion` (é a publicação de rotina, e o código já a
 > impede de andar para trás); o **rollback** vai para um Environment novo,
-> `v2-rollback`, com o dono como revisor. Até o dono responder, a condição (2)
-> continua como ele a escreveu. Base: PHASE_6P §3.
+> `v2-rollback`, com o dono como revisor. Base: PHASE_6P §3.
+> **DECIDIDA pelo dono em 2026-10-02: P1 aprovada** ("voltar atrás com meu
+> clique"), e P2 também. Esta é agora a condição (2). Falta o dono criar o
+> `v2-rollback`; nenhum workflow o cita antes de uma medição mostrar que existe.
 
 Apareceu ao responder uma pergunta do dono em 2026-09-17, e a varredura não
 achou nenhum documento que a resolva.
