@@ -5,7 +5,7 @@
   "scope": "which operation publishes to production without a human click after the Phase 6 cutover, which one requires a reviewer, and in which GitHub Environment each one runs",
   "record": "docs/implementation/PHASE_6P_2026-10-02.md",
   "authorization": {
-    "status": "proposed",
+    "status": "partially_decided",
     "authorized_by": null,
     "authorized_on": null,
     "production_mutation_permitted": false,
@@ -20,27 +20,56 @@
       "environments": [
         {
           "name": "cloudflare-green-control",
-          "required_reviewers": ["santibravocmcc"],
+          "required_reviewers": [
+            "santibravocmcc"
+          ],
           "prevent_self_review": false,
-          "branch_policy": ["main"],
-          "secrets": ["CLOUDFLARE_GREEN_CONTROL_TOKEN"],
-          "variables": ["CLOUDFLARE_ACCOUNT_ID", "CLOUDFLARE_CONTROL_SCOPE", "CLOUDFLARE_ZONE_ID"]
+          "branch_policy": [
+            "main"
+          ],
+          "secrets": [
+            "CLOUDFLARE_GREEN_CONTROL_TOKEN"
+          ],
+          "variables": [
+            "CLOUDFLARE_ACCOUNT_ID",
+            "CLOUDFLARE_CONTROL_SCOPE",
+            "CLOUDFLARE_ZONE_ID"
+          ]
         },
         {
           "name": "v2-promotion",
           "required_reviewers": [],
           "prevent_self_review": null,
-          "branch_policy": ["main"],
-          "secrets": ["R2_PROMOTION_ACCESS_KEY_ID", "R2_PROMOTION_SECRET_ACCESS_KEY"],
-          "variables": ["AWS_REGION", "R2_ENDPOINT_URL", "R2_STAGING_BUCKET"]
+          "branch_policy": [
+            "main"
+          ],
+          "secrets": [
+            "R2_PROMOTION_ACCESS_KEY_ID",
+            "R2_PROMOTION_SECRET_ACCESS_KEY"
+          ],
+          "variables": [
+            "AWS_REGION",
+            "R2_ENDPOINT_URL",
+            "R2_STAGING_BUCKET"
+          ]
         },
         {
           "name": "v2-staging",
           "required_reviewers": [],
           "prevent_self_review": null,
-          "branch_policy": ["main"],
-          "secrets": ["GEE_GREEN_SA_KEY", "R2_STAGING_ACCESS_KEY_ID", "R2_STAGING_SECRET_ACCESS_KEY"],
-          "variables": ["AWS_REGION", "R2_ENDPOINT_URL", "R2_STAGING_BUCKET"]
+          "branch_policy": [
+            "main"
+          ],
+          "secrets": [
+            "GEE_GREEN_SA_KEY",
+            "R2_STAGING_ACCESS_KEY_ID",
+            "R2_STAGING_SECRET_ACCESS_KEY"
+          ],
+          "variables": [
+            "AWS_REGION",
+            "R2_ENDPOINT_URL",
+            "R2_STAGING_BUCKET"
+          ]
         }
       ],
       "main_ruleset": {
@@ -56,9 +85,13 @@
         {
           "name": "v2-green-deploy",
           "required_reviewers": [],
-          "branch_policy": ["main"],
+          "branch_policy": [
+            "main"
+          ],
           "secrets": [],
-          "variables": ["CLOUDFLARE_ACCOUNT_ID"],
+          "variables": [
+            "CLOUDFLARE_ACCOUNT_ID"
+          ],
           "changed_since_2026_09_27": "the CLOUDFLARE_API_TOKEN secret recorded on 2026-09-27 is gone: the owner followed the recommendation to remove it while no reviewer is available (private repository on the free plan)"
         }
       ],
@@ -69,46 +102,114 @@
     {
       "operation": "deposit a run prefix runs/<run-id>/",
       "moves_the_pointer": false,
-      "today": {"workflow": "v2_green_deposit_lane.yml", "jobs": ["detect", "deposit"], "environment": "v2-staging", "trigger": "workflow_dispatch"},
-      "proposed": {"environment": "v2-staging", "reviewer": false, "trigger": "schedule, wired at the cutover"},
+      "today": {
+        "workflow": "v2_green_deposit_lane.yml",
+        "jobs": [
+          "detect",
+          "deposit"
+        ],
+        "environment": "v2-staging",
+        "trigger": "workflow_dispatch"
+      },
+      "proposed": {
+        "environment": "v2-staging",
+        "reviewer": false,
+        "trigger": "schedule, wired at the cutover"
+      },
       "why": "routine monitoring; ROADMAP.md:97 forbids a human approval in it"
     },
     {
       "operation": "stage: validate a run or the chain with the candidate identity, writing nothing",
       "moves_the_pointer": false,
-      "today": {"workflow": "v2_operational_publish.yml", "jobs": ["stage"], "environment": "v2-staging", "trigger": "workflow_dispatch"},
-      "proposed": {"environment": "v2-staging", "reviewer": false, "trigger": "follows the deposit"},
+      "today": {
+        "workflow": "v2_operational_publish.yml",
+        "jobs": [
+          "stage"
+        ],
+        "environment": "v2-staging",
+        "trigger": "workflow_dispatch"
+      },
+      "proposed": {
+        "environment": "v2-staging",
+        "reviewer": false,
+        "trigger": "follows the deposit"
+      },
       "why": "read-only by construction (ReadOnlyStore)"
     },
     {
       "operation": "promote the chain release (publish-chain)",
       "moves_the_pointer": true,
       "direction": "forward only, by code: promote() refuses coverage_regression and coverage_dates_dropped and has no override (src/publication/atomic_publish.py, def promote; tests test_an_older_run_may_not_replace_a_newer_release, test_promote_has_no_regression_override, test_the_heads_own_release_is_refused_because_it_drops_the_history)",
-      "today": {"workflow": "v2_operational_publish.yml", "jobs": ["promote"], "environment": "v2-promotion", "trigger": "workflow_dispatch, source=chain"},
-      "proposed": {"environment": "v2-promotion", "reviewer": false, "trigger": "follows the deposit and stage; a manual dispatch stays possible and stays unreviewed"},
+      "today": {
+        "workflow": "v2_operational_publish.yml",
+        "jobs": [
+          "promote"
+        ],
+        "environment": "v2-promotion",
+        "trigger": "workflow_dispatch, source=chain"
+      },
+      "proposed": {
+        "environment": "v2-promotion",
+        "reviewer": false,
+        "trigger": "follows the deposit and stage; a manual dispatch stays possible and stays unreviewed"
+      },
       "why": "this IS routine public-data publication. A reviewer here would make every scheduled publication wait for a click, which ROADMAP.md:97 and ROADMAP.md:612 forbid and ROADMAP.md:788 repeats for Phase 7. The protection is the gate chain before it and the code's refusal to move backwards, not a person."
     },
     {
       "operation": "promote one run's own release (publish --run)",
       "moves_the_pointer": true,
       "direction": "forward only, by the same code",
-      "today": {"workflow": "v2_operational_publish.yml", "jobs": ["promote"], "environment": "v2-promotion", "trigger": "workflow_dispatch, source=run"},
-      "proposed": {"environment": "v2-promotion", "reviewer": false, "trigger": "manual only"},
+      "today": {
+        "workflow": "v2_operational_publish.yml",
+        "jobs": [
+          "promote"
+        ],
+        "environment": "v2-promotion",
+        "trigger": "workflow_dispatch, source=run"
+      },
+      "proposed": {
+        "environment": "v2-promotion",
+        "reviewer": false,
+        "trigger": "manual only"
+      },
       "why": "harmless after the cutover for a measured reason: a chained run's own release covers only its window, so against a live chain release it is always refused with coverage_dates_dropped (PHASE_6I §3)"
     },
     {
       "operation": "rollback: point at an already published release, including an older one",
       "moves_the_pointer": true,
       "direction": "any — the only operation that may move the public pointer backwards (atomic_publish.py, def rollback, 'the general name for a deliberate non-monotonic move')",
-      "today": {"workflow": "v2_promotion_lane.yml", "jobs": ["pointer"], "environment": "v2-promotion", "trigger": "workflow_dispatch, mode=rollback"},
-      "proposed": {"environment": "v2-rollback", "environment_exists": false, "reviewer": true, "trigger": "manual only"},
+      "today": {
+        "workflow": "v2_promotion_lane.yml",
+        "jobs": [
+          "pointer"
+        ],
+        "environment": "v2-promotion",
+        "trigger": "workflow_dispatch, mode=rollback"
+      },
+      "proposed": {
+        "environment": "v2-rollback",
+        "environment_exists": false,
+        "reviewer": true,
+        "trigger": "manual only"
+      },
       "why": "it changes what the public sees, to something older, by a person's choice. It is rare, it is never routine, and a second look costs one click. It is also the remedy for a bad forward promotion, so it must stay available: a reviewer delays it, it does not remove it."
     },
     {
       "operation": "status and history: read the live pointer and the durable promotion history",
       "moves_the_pointer": false,
-      "today": {"workflow": "v2_promotion_lane.yml", "jobs": ["pointer"], "environment": "v2-promotion", "trigger": "workflow_dispatch, mode=status|history"},
-      "proposed": {"environment": "v2-promotion", "reviewer": false, "trigger": "manual only"},
+      "today": {
+        "workflow": "v2_promotion_lane.yml",
+        "jobs": [
+          "pointer"
+        ],
+        "environment": "v2-promotion",
+        "trigger": "workflow_dispatch, mode=status|history"
+      },
+      "proposed": {
+        "environment": "v2-promotion",
+        "reviewer": false,
+        "trigger": "manual only"
+      },
       "why": "read-only by code. They share the job `pointer` with rollback today, so moving rollback means splitting that job; otherwise every status read would wait for a click"
     },
     {
@@ -121,14 +222,29 @@
     {
       "operation": "Cloudflare control plane (audit, enforce-worker-isolation, disable-site-branch-deploy)",
       "moves_the_pointer": false,
-      "today": {"workflow": "cloudflare_green_control.yml", "jobs": ["restricted-control"], "environment": "cloudflare-green-control", "trigger": "workflow_dispatch"},
-      "proposed": {"environment": "cloudflare-green-control", "reviewer": true, "trigger": "manual only"},
+      "today": {
+        "workflow": "cloudflare_green_control.yml",
+        "jobs": [
+          "restricted-control"
+        ],
+        "environment": "cloudflare-green-control",
+        "trigger": "workflow_dispatch"
+      },
+      "proposed": {
+        "environment": "cloudflare-green-control",
+        "reviewer": true,
+        "trigger": "manual only"
+      },
       "why": "unchanged: account-level Workers permission"
     },
     {
       "operation": "deploy the site, which publishes the composed alert index",
       "moves_the_pointer": false,
-      "today": {"repository": "observatorio-site", "path": "push to main -> Cloudflare Workers Builds production trigger", "github_environment": null},
+      "today": {
+        "repository": "observatorio-site",
+        "path": "push to main -> Cloudflare Workers Builds production trigger",
+        "github_environment": null
+      },
       "proposed": "OPEN — see site_side_contradiction",
       "why": "the index is a build-time asset (SITE_ARTIFACT_CONTRACT_V1.md §1) and the page refuses the green source when built-from.json names a release other than the live pointer's (site src/js/alertas-fonte.js, 'indice_de_outra_release'). So every forward promotion is invisible on the page until the site is rebuilt."
     }
@@ -194,7 +310,10 @@
       "question": "accept that the ROUTINE site deploy is the Cloudflare Workers Builds production trigger on a push to the site main (option a), so D4's reviewed Environment governs only manual deploys of the green staging Worker",
       "recommended": "yes",
       "why": "it is the only option that is automatic and available on the current plan; it is also exactly the authority the blue path has today, so it is not a regression",
-      "decided": null
+      "decided": "yes",
+      "decided_by": "project_owner",
+      "decided_on": "2026-10-02",
+      "owner_words": "Em relacao a P2 acho que esta certo."
     }
   ]
 }
