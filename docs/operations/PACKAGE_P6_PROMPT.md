@@ -270,6 +270,7 @@ Na ordem em que se sustenta. **Cada passo que muta produção para e pergunta.**
 > | 3b. datas sem análise com o motivo | **NÃO está na `main`** — `site#31` foi mesclada na branch da `#30`, não na `main`; recuperada em `site#32`, aberta | `git grep datasSemAnalise origin/main` vazio; `main` do site com 11 falhas de vetor contra a `Araripe#91` |
 > | 4. as três datas | **parado no contrato** | duas saem do índice; "última tentativa de automação" não existe em release nem ponteiro (PHASE_6P §6) |
 > | 4. — atualizado na mesma data, mais tarde | **a terceira data existe**; a página ainda não a mostra | `status/green/heartbeat.json`, escrito pela lane de depósito a cada execução (`Araripe#95`, PHASE_6Q); a rota no `site#33`, não mesclada; a página é `PACKAGE_P6_THREE_DATES_PROMPT.md` |
+> | 4. — atualizado na mesma data, à noite | **a página mostra as três datas, atrás de `?dados=verde`**; não mesclada | `site#33` na `main` (a rota); `site#34` aberta (a página); PHASE_6R. Próximo: a página inicial, `PACKAGE_P6_HOME_GREEN_PROMPT.md` |
 > | 5. fontes e atribuição | **parcial, não auditado** | existem `CITATION.cff`, `DATA_LICENSE`, `NOTICE` no backend e menções de CC-BY em `alertas.html`, `dados-abertos.html`, `sobre.html`, `colabore.html`; ninguém conferiu contra a lista do bullet |
 > | 6. resumos, status, frescor | **parcial** | frescor por produto existe **só no azul** (`site/scripts/freshness.py`, `public/data/freshness/`); no verde há `run.json` por rodada e `publish_green_release.py status/history`, nada público |
 >
