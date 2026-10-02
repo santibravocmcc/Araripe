@@ -195,6 +195,13 @@ Duas consequências que esta fase **tem** de resolver ou registrar como aceitas:
 > **DECIDIDA pelo dono em 2026-10-02: P1 aprovada** ("voltar atrás com meu
 > clique"), e P2 também. Esta é agora a condição (2). Falta o dono criar o
 > `v2-rollback`; nenhum workflow o cita antes de uma medição mostrar que existe.
+>
+> **RETIRADA pelo dono no mesmo dia (2026-10-02):** criar o `v2-rollback`
+> exigiria recriar o token de promoção, e ele julgou que não vale para uma
+> operação rara. **A condição (2) cai**: nenhuma operação de publicação tem
+> revisor no GitHub. O rollback continua no `v2-promotion`, sem revisor; a
+> guarda é a regra de que um agente só o dispara a pedido do dono. P2 segue
+> aprovada.
 
 Apareceu ao responder uma pergunta do dono em 2026-09-17, e a varredura não
 achou nenhum documento que a resolva.

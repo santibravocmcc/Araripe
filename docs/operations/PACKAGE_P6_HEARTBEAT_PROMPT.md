@@ -1,4 +1,4 @@
-# Phase 6 — o batimento da automação verde, e as respostas do dono sobre autoridade
+# Phase 6 — o batimento da automação verde
 
 Escrito em 2026-10-02, ao fim da sessão que desenhou quem publica sem clique
 ([`PHASE_6P`](../implementation/PHASE_6P_2026-10-02.md)).
@@ -38,33 +38,22 @@ com a `#32`:
 `/opt/anaconda3/bin/python3.12`** — com o 3.11 do env `araripe` um teste de
 soma compensada falha (PHASE_6P §1). Use o número que sair.
 
-## 2. As respostas do dono — leia antes de qualquer código
+## 2. As respostas do dono — já dadas, não há nada a esperar
 
-**Atualizado 2026-10-02: o dono aprovou P1 e P2** (registrado em
-`config/phase6_publication_authority_v1.json`). O que resta é ele criar o
-`v2-rollback` — então siga o ramo "P1 sim" abaixo, começando pela medição.
+Registradas em `config/phase6_publication_authority_v1.json`, 2026-10-02:
 
-Texto original: `config/phase6_publication_authority_v1.json` tem duas propostas, P1 e P2,
-com `decided: null`. **Só o dono preenche.** Se ele respondeu no chat, registre
-as palavras dele e a data em `authorization` (`authorized_by: project_owner`)
-e em cada `decided`, num commit próprio — `tests/test_publication_authority.py`
-exige as duas coisas juntas.
+- **P1 — RETIRADA.** O dono aprovou e, no mesmo dia, desistiu: criar o
+  `v2-rollback` exigiria recriar o token de promoção, e não vale para uma
+  operação rara. **Nada muda em workflow**: o rollback fica no job `pointer`
+  do `v2-promotion`, sem revisor. A condição (2) do bucket **cai**. A guarda
+  do rollback é só a regra: um agente o dispara apenas a pedido do dono, para
+  aquela release, naquela hora. **Não crie, não cite e não peça o
+  `v2-rollback`** — `tests/test_publication_authority.py` falha se um
+  workflow o citar.
+- **P2 — aprovada.** O deploy de rotina do site é o Workers Builds num push à
+  `main` do site. Sem código nesta sessão.
 
-- **P1 sim** → **antes** de tocar em workflow, meça:
-  `gh api repos/santibravocmcc/Araripe/environments`. Se `v2-rollback` **não**
-  aparecer, pare: o dono ainda não criou, e **nomear um Environment
-  inexistente o cria sem proteção**. Se aparecer, com `required_reviewers` e
-  política `main`: registre a medição em `measured`, e então divida o job
-  `pointer` de `v2_promotion_lane.yml` em um de leitura (`status`, `history`,
-  em `v2-promotion`) e um de `rollback` (em `v2-rollback`). Teste por job, como
-  `tests/test_promotion_lane.py` já faz. **Não dispare o rollback** para
-  provar: a prova é um `status` lido no job novo, e a de rollback espera um
-  pedido do dono, porque um revisor vai ser chamado.
-- **P1 não, ou sem resposta** → nada muda no workflow. A condição (2) do bucket
-  continua como o dono a escreveu, e o conflito com a publicação automática
-  fica registrado, não resolvido.
-- **P2** não tem código nesta sessão; a resposta só muda o que a §3 escreve
-  sobre o lado do site.
+Comece direto pela §4.
 
 ## 3. O que já foi verificado, para o executor não refazer
 
@@ -93,7 +82,7 @@ exige as duas coisas juntas.
 
 ## 4. A tarefa
 
-**Desenhar e construir o batimento da automação verde** — o objeto que
+**Única tarefa: desenhar e construir o batimento da automação verde** — o objeto que
 responde "quando a automação tentou pela última vez, e o que aconteceu", que é
 a data que falta na §4.1.4 e a "saída de status/saúde" da §4.1.6.
 
@@ -168,8 +157,8 @@ Se aparecer evidência contra qualquer uma, **pare e pergunte**.
 
 - **Ponteiro verde:** sequência 17, `rel-g3-264ba36e…`, 103 datas até
   2026-09-27, 42 com análise e 61 sem.
-- **Backend:** a proposta de autoridade (P1, P2) aguardando o dono.
-- **Site:** `#32` aberta (a `#31` recuperada); `#21` em rascunho, não mesclar.
+- **Backend:** autoridade decidida — P1 retirada (rollback sem revisor, no `v2-promotion`), P2 aprovada.
+- **Site:** `#32` mesclada (a `#31` recuperada); `#21` em rascunho, não mesclar.
 - **A produção azul está parada** desde 2026-09-03; o site público mostra
   alertas até 30/08.
 - **O token da NASA expira em 2026-11-06.**
@@ -190,25 +179,13 @@ nova com o mesmo conteúdo.
 
 ### O que você precisa fazer
 
-1. **Mesclar a PR nova do site com as datas sem análise** (a que substitui a
-   que não entrou). Urgente no sentido de que, até ela entrar, os testes do
-   site falham; para o público não muda nada.
-2. **Mesclar a PR do backend desta sessão** — só documentos e um teste, não
-   muda nada que roda.
-3. **Responder à proposta P1**: hoje a sua condição para o bucket diz "toda
-   publicação passa por um revisor". Isso faria cada atualização automática
-   esperar o seu clique. A proposta: publicar para a frente sai sozinho (o
-   sistema já se recusa a voltar para dados mais velhos), e **só voltar atrás**
-   pede o seu clique. Se disser sim, você cria um novo lugar protegido no
-   backend, chamado `v2-rollback`, com você como revisor e as mesmas duas
-   chaves do de promoção — o passo a passo está no documento da sessão.
-4. **Responder à proposta P2**: aceitar que a atualização de rotina do site
-   continue sendo feita pela própria Cloudflare a cada mudança na branch
-   principal do site, como já é hoje — porque o outro caminho exigiria seu
-   clique a cada atualização, e o seu plano do GitHub nem oferece isso para
-   repositório privado.
-5. **Renovar o acesso à NASA antes de 6 de novembro** (até o fim de outubro).
-6. **Cancelar a chave de acesso que o assistente usa na caixa de testes** —
+*Atualizado em 2026-10-02: as duas PRs foram mescladas, e você decidiu as
+duas propostas — o voltar atrás fica sem o seu clique, e a atualização do
+site segue pela Cloudflare. Sobra:*
+
+1. **Renovar o acesso à NASA antes de 6 de novembro** (até o fim de outubro).
+   Sem isso a atualização da chuva para.
+2. **Cancelar a chave de acesso que o assistente usa na caixa de testes** —
    só perto da virada, não agora.
 
 ### Tem algo preocupante?
