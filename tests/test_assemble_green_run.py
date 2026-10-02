@@ -74,6 +74,7 @@ GREEN_SCRIPTS = (
     "fetch_green_state.py",
     "resolve_chain_head.py",
     "stage_chain_release.py",
+    "write_green_heartbeat.py",
 )
 
 

@@ -31,7 +31,10 @@ looks like protection — the division Package 2B.2A reached by deleting code
 
 Everything under `releases/` and `pointers/green/history/` is write-once.
 `pointers/green/current.json` is the single mutable object, and every write to
-it is a compare-and-swap. All of
+it is a compare-and-swap. (The automation heartbeat,
+`status/green/heartbeat.json`, is a second mutable object in the same bucket
+but **outside this contract**: no release, run or pointer refers to it, and it
+names none of them — [`GREEN_HEARTBEAT_CONTRACT_V1.md`](GREEN_HEARTBEAT_CONTRACT_V1.md).) All of
 it lives in `araripe-v2-staging`; `assert_staging_target` refuses
 `araripe-cogs` by name and refuses any endpoint but the approved account one,
 *before* a credential is read.

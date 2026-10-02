@@ -35,6 +35,7 @@ to serve.
 | processing input | `runs/<run-id>/…` | private |
 | verification artifact | `green-isolation-proof/…`, `promotion-identity-probe/…`, `readonly-identity-probe/…` | private |
 | promotion history (added 2026-09-27, Phase 6 D5) | `pointers/green/history/<sequence>.json` | private — it names releases that are no longer live |
+| automation heartbeat (added 2026-10-02, Phase 6) | `status/green/heartbeat.json` — that one key | **public**, with or without a promoted release (§8) |
 | anything else | — | **private**, and reported |
 
 The last row is the policy's shape, not a footnote. A prefix nobody has
@@ -60,6 +61,7 @@ pointer is what distinguishes them.
 ## 2. The route
 
     /data/green/current.json            → pointers/green/current.json
+    /data/green/heartbeat.json          → status/green/heartbeat.json   (§8)
     /data/green/release.json            → releases/<live>/release.json
     /data/green/ledger.json             → releases/<live>/ledger.json
     /data/green/<declared path>         → releases/<live>/<declared path>
@@ -244,3 +246,26 @@ from the live release's own prefix.
 (`member_of_the_live_release`); every other release stays private. The
 conformance vectors are `araripe.green.delivery-vectors/2`: two fixtures,
 `release` and `chain`, and every implementation must reproduce both.
+
+## 8. The automation heartbeat (added 2026-10-02, Phase 6)
+
+`status/green/heartbeat.json` says when the green deposit lane last tried and
+what happened ([`GREEN_HEARTBEAT_CONTRACT_V1.md`](GREEN_HEARTBEAT_CONTRACT_V1.md)).
+The route answers `/data/green/heartbeat.json` with it — a fixed name mapped
+to a fixed key, like the pointer, so §2's guarantee stands: no key is built
+from the request.
+
+It is resolved **first**, and needs neither the pointer nor a manifest: it
+matters most when nothing is promoted or the pointer cannot be read. It is
+`no-store`, carries no `ETag` and no `X-Araripe-Release-Id` — it belongs to no
+release. Absent is `heartbeat_absent`; a stored document whose `schema` is not
+`araripe.green.heartbeat/1` is `heartbeat_unusable`, so the URL cannot be made
+to claim it is something else. `check_release_layout` now refuses a product
+declared at `heartbeat.json` or `current.json`, two names the route answers
+before it reads the manifest.
+
+The conformance vectors are `araripe.green.delivery-vectors/3`: two more
+fixtures — `unpromoted` (no pointer, a heartbeat) and `nothing` (an empty
+bucket) — every fixture carries a `heartbeat`, and a case may carry a
+`heartbeat_patch`.
+

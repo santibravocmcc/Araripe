@@ -440,6 +440,13 @@ def classify(
             "what makes every release findable",
         )
 
+    if key == db.HEARTBEAT_KEY:
+        return Disposition(
+            key, item.size, "heartbeat", RETAIN, "heartbeat_is_the_status",
+            "the automation's one status document (GREEN_HEARTBEAT_CONTRACT_V1.md); "
+            "it is rewritten in place and carries its own history forward",
+        )
+
     if key.startswith(db.RELEASES_ROOT):
         release_id = _release_id_of(key)
         if release_id is None:

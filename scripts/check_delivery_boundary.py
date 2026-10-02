@@ -133,7 +133,39 @@ CHAIN_FIXTURE = {
     },
 }
 
-FIXTURES = {"release": FIXTURE, "chain": CHAIN_FIXTURE}
+#: A heartbeat (GREEN_HEARTBEAT_CONTRACT_V1.md): a failed attempt after a
+#: successful one, so both halves of the document are present.
+HEARTBEAT = {
+    "schema": "araripe.green.heartbeat/1",
+    "lane": "deposit",
+    "latest": {
+        "outcome": "failed",
+        "stage": "detect",
+        "finished_utc": "2026-10-05T06:41:09Z",
+        "run_id": "ci-36500000002",
+        "run_url": "https://github.com/santibravocmcc/Araripe/actions/runs/36500000002",
+    },
+    "last_success": {
+        "outcome": "deposited",
+        "stage": None,
+        "finished_utc": "2026-10-01T06:52:30Z",
+        "run_id": "ci-36500000001",
+        "run_url": "https://github.com/santibravocmcc/Araripe/actions/runs/36500000001",
+    },
+}
+
+FIXTURE["heartbeat"] = HEARTBEAT
+CHAIN_FIXTURE["heartbeat"] = HEARTBEAT
+
+FIXTURES = {
+    "release": FIXTURE,
+    "chain": CHAIN_FIXTURE,
+    # Nothing promoted yet, but the automation has run: the heartbeat must be
+    # served without a pointer.
+    "unpromoted": {"pointer": None, "manifest": None, "heartbeat": HEARTBEAT},
+    # A fresh bucket.
+    "nothing": {"pointer": None, "manifest": None, "heartbeat": None},
+}
 
 #: The declared path the content-type cases exercise; naming it keeps the
 #: patch and the request pointing at the same object.
@@ -207,6 +239,24 @@ CASES: list[dict] = [
     {"name": "an object naming the chain release itself is refused",
      "fixture": "chain", "method": "GET", "path": "/data/green/alerts/run-2026-08-30.geojson",
      "object_patch": {"release_id": _CHAIN_ID}},
+    # ── the automation heartbeat (GREEN_HEARTBEAT_CONTRACT_V1.md §5) ────────
+    {"name": "the heartbeat is public, from its one fixed key, and never cached",
+     "method": "GET", "path": "/data/green/heartbeat.json"},
+    {"name": "HEAD on the heartbeat resolves identically",
+     "method": "HEAD", "path": "/data/green/heartbeat.json"},
+    {"name": "the heartbeat is served when nothing has been promoted",
+     "fixture": "unpromoted", "method": "GET", "path": "/data/green/heartbeat.json"},
+    {"name": "with nothing promoted, the pointer is still absent",
+     "fixture": "unpromoted", "method": "GET", "path": "/data/green/current.json"},
+    {"name": "an absent heartbeat is its own refusal, not the pointer's",
+     "fixture": "nothing", "method": "GET", "path": "/data/green/heartbeat.json"},
+    {"name": "a document that is not a heartbeat is not served under its name",
+     "method": "GET", "path": "/data/green/heartbeat.json",
+     "heartbeat_patch": {"schema": "araripe.green.pointer/2"}},
+    {"name": "the heartbeat's key cannot be addressed as a path",
+     "method": "GET", "path": "/data/green/status/green/heartbeat.json"},
+    {"name": "a write to the heartbeat is refused before anything is resolved",
+     "method": "PUT", "path": "/data/green/heartbeat.json"},
 ]
 
 
@@ -228,13 +278,30 @@ def _manifest_for(case: dict) -> dict:
     return manifest
 
 
+def _heartbeat_for(case: dict) -> dict | None:
+    """The fixture heartbeat, with top-level fields replaced when a case asks."""
+
+    heartbeat = FIXTURES[case.get("fixture", "release")]["heartbeat"]
+    patch = case.get("heartbeat_patch")
+    if not patch:
+        return heartbeat
+    return {**heartbeat, **patch}
+
+
+def _manifest_or_none(case: dict) -> dict | None:
+    if FIXTURES[case.get("fixture", "release")]["manifest"] is None:
+        return None
+    return _manifest_for(case)
+
+
 def _evaluate(case: dict) -> dict:
     try:
         served = db.resolve(
             case["method"],
             case["path"],
             pointer=FIXTURES[case.get("fixture", "release")]["pointer"],
-            manifest=_manifest_for(case),
+            manifest=_manifest_or_none(case),
+            heartbeat=_heartbeat_for(case),
             download=case.get("download", False),
         )
     except db.DeliveryRefused as exc:
@@ -251,7 +318,7 @@ def _evaluate(case: dict) -> dict:
 
 def build_vectors() -> dict:
     return {
-        "schema": "araripe.green.delivery-vectors/2",
+        "schema": "araripe.green.delivery-vectors/3",
         "boundary_schema": db.BOUNDARY_SCHEMA,
         "mount": db.MOUNT,
         "note": (
@@ -270,6 +337,7 @@ def build_vectors() -> dict:
                 "path": case["path"],
                 "download": case.get("download", False),
                 "object_patch": case.get("object_patch"),
+                "heartbeat_patch": case.get("heartbeat_patch"),
                 "expect": _evaluate(case),
             }
             for case in CASES
@@ -351,7 +419,7 @@ def cmd_surface(args) -> int:
     for entry in classified:
         if not entry.is_public:
             print(f"  [{entry.reason}] {entry.key}")
-    reachable = set(db.public_keys(manifest)) if manifest else set()
+    reachable = set(db.public_keys(manifest)) if manifest else {db.HEARTBEAT_KEY}
     unreachable = [e.key for e in public if e.key not in reachable]
     if unreachable:
         print()

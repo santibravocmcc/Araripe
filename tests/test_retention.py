@@ -157,6 +157,14 @@ def test_the_pointer_itself_is_never_a_candidate():
     assert (entry.action, entry.reason) == (rt.RETAIN, "pointer_is_the_layout")
 
 
+def test_the_heartbeat_is_never_a_candidate_and_its_root_is_not_blessed():
+    entry = decide(db.HEARTBEAT_KEY, age_days=10_000, phase_open=False)
+    assert (entry.category, entry.action, entry.reason) == (
+        "heartbeat", rt.RETAIN, "heartbeat_is_the_status")
+    other = decide("status/green/other.json", age_days=10_000, phase_open=False)
+    assert (other.action, other.reason) == (rt.REVIEW, "unclassified_prefix")
+
+
 def test_referenced_release_ids_is_the_whole_of_what_the_store_remembers():
     assert rt.referenced_release_ids(POINTER) == (LIVE, ROLLED_BACK_FROM)
     assert rt.referenced_release_ids(None) == ()

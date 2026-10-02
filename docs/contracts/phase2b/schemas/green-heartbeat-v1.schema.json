@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/santibravocmcc/Araripe/docs/contracts/phase2b/schemas/green-heartbeat-v1.schema.json",
+  "title": "Araripe green automation heartbeat, version 1",
+  "description": "When the green deposit lane last tried, and what happened (GREEN_HEARTBEAT_CONTRACT_V1.md). Written at status/green/heartbeat.json by the lane's heartbeat job after every run, success or not, with a compare-and-swap. It deliberately names no release, no window and no count: what is live is the pointer's answer, and a deposit is not a publication.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "lane", "latest", "last_success"],
+  "properties": {
+    "schema": {
+      "const": "araripe.green.heartbeat/1"
+    },
+    "lane": {
+      "description": "The automation whose attempts this document records. Version 1 has one writer.",
+      "const": "deposit"
+    },
+    "latest": {
+      "description": "The most recently finished attempt, whatever its outcome.",
+      "$ref": "#/$defs/attempt"
+    },
+    "last_success": {
+      "description": "The most recently finished successful attempt, carried forward across failures; null until the first success.",
+      "oneOf": [
+        {"type": "null"},
+        {
+          "allOf": [
+            {"$ref": "#/$defs/attempt"},
+            {"properties": {"outcome": {"$ref": "#/$defs/success"}}}
+          ]
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "success": {
+      "enum": ["deposited", "nothing_to_do", "no_acquisition"]
+    },
+    "attempt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outcome", "stage", "finished_utc", "run_id", "run_url"],
+      "properties": {
+        "outcome": {
+          "enum": ["deposited", "nothing_to_do", "no_acquisition", "failed", "cancelled"]
+        },
+        "stage": {
+          "description": "The job that failed or was cancelled; null for a success.",
+          "enum": ["detect", "deposit", null]
+        },
+        "finished_utc": {
+          "description": "The heartbeat job's clock when it recorded the attempt.",
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+        },
+        "run_id": {
+          "description": "ci-<github.run_id>, as the lane names the run prefix (PHASE_6E §4).",
+          "type": "string",
+          "pattern": "^ci-[1-9][0-9]{0,19}$"
+        },
+        "run_url": {
+          "type": "string",
+          "pattern": "^https://github\\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/actions/runs/[1-9][0-9]{0,19}$"
+        }
+      },
+      "if": {
+        "properties": {"outcome": {"enum": ["failed", "cancelled"]}}
+      },
+      "then": {
+        "properties": {"stage": {"enum": ["detect", "deposit"]}}
+      },
+      "else": {
+        "properties": {"stage": {"const": null}}
+      }
+    }
+  }
+}
