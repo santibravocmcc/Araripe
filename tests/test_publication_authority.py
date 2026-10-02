@@ -66,17 +66,14 @@ def test_todo_environment_citado_num_workflow_foi_medido():
     )
 
 
-def test_o_environment_proposto_ainda_nao_e_citado():
-    """O espelho do teste acima, para o nome que a proposta introduz."""
+def test_nenhum_workflow_cita_o_v2_rollback_que_nao_foi_criado():
+    """P1 foi retirada pelo dono em 2026-10-02: o `v2-rollback` não existe.
 
-    proposed = {
-        op["proposed"]["environment"]
-        for op in _decision()["operations"]
-        if isinstance(op.get("proposed"), dict)
-        and op["proposed"].get("environment_exists") is False
-    }
-    assert proposed == {"v2-rollback"}
-    assert not proposed & set(_jobs_with_an_environment().values())
+    Citá-lo num workflow faria o GitHub criá-lo sem proteção e sem segredo.
+    """
+
+    assert "v2-rollback" not in set(_jobs_with_an_environment().values())
+    assert "v2-rollback" not in _measured_names()
 
 
 def test_todo_job_com_identidade_esta_no_inventario():
@@ -95,21 +92,20 @@ def test_todo_job_com_identidade_esta_no_inventario():
     assert listed == _jobs_with_an_environment()
 
 
-def test_so_o_rollback_pode_andar_para_tras_e_so_ele_pede_revisor_novo():
-    """A hipótese do briefing, depois de medida: o eixo é a direção, não o gatilho.
+def test_so_o_rollback_anda_para_tras_e_nenhuma_publicacao_tem_revisor():
+    """Depois da retirada da P1: nenhuma operação que move o ponteiro tem revisor.
 
-    `promote()` recusa `coverage_regression` e `coverage_dates_dropped` sem
-    override (`tests/test_atomic_publish.py`, `tests/test_chain_release.py`),
-    então só `rollback()` move o ponteiro para trás — e só ele ganha revisor.
-    Uma publicação de rotina com revisor contradiz ROADMAP.md:97.
+    O que impede andar para trás por acidente é que só `rollback()` faz isso
+    (`promote()` recusa `coverage_regression` e `coverage_dates_dropped`), e
+    que um agente só o dispara a pedido do dono. Uma publicação de rotina com
+    revisor contradiria ROADMAP.md:97.
     """
 
     moves = [op for op in _decision()["operations"] if op["moves_the_pointer"]]
-    reviewed = [op["operation"] for op in moves if op["proposed"]["reviewer"]]
-    assert len(reviewed) == 1 and reviewed[0].startswith("rollback")
-    for op in moves:
-        if not op["proposed"]["reviewer"]:
-            assert op["direction"].startswith("forward only"), op["operation"]
+    backwards = [op for op in moves if not op["direction"].startswith("forward only")]
+    assert len(backwards) == 1 and backwards[0]["operation"].startswith("rollback")
+    assert "owner asks" in backwards[0]["proposed"]["guard"]
+    assert not any(op["proposed"]["reviewer"] for op in moves)
 
 
 def test_a_proposta_nao_se_declara_decidida_sem_o_dono():

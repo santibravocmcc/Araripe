@@ -11,7 +11,7 @@
     "production_mutation_permitted": false,
     "repository_configuration_change_permitted": false,
     "why_proposed_and_not_decided": "who may publish to production without a click is the owner's decision. This file is the design and the measurement behind it. An agent fills authorized_by and authorized_on only from the owner's own words, with the date, as config/phase6_owner_decisions_v1.json does.",
-    "next_owner_action": "create the Environment v2-rollback (required reviewer = the owner, prevent_self_review off, deployment branches main only, the two R2_PROMOTION_* secrets and the three variables of v2-promotion). No agent may name it in a workflow before gh api shows it exists."
+    "condition_2_of_the_bucket_decision": "dropped by the owner on 2026-10-02 (P1 withdrawn). The pointer is guarded by code (promote forward-only) and the history (D5); a backward move is guarded only by the rule that an agent never dispatches one without the owner asking."
   },
   "measured": {
     "measured_on": "2026-10-02",
@@ -188,12 +188,12 @@
         "trigger": "workflow_dispatch, mode=rollback"
       },
       "proposed": {
-        "environment": "v2-rollback",
-        "environment_exists": false,
-        "reviewer": true,
-        "trigger": "manual only"
+        "environment": "v2-promotion",
+        "reviewer": false,
+        "trigger": "manual only",
+        "guard": "policy, not GitHub: an agent dispatches a rollback only after the owner asks for it in chat, for that release, at that time (AGENTS.md: production-affecting actions wait for explicit human approval)"
       },
-      "why": "it changes what the public sees, to something older, by a person's choice. It is rare, it is never routine, and a second look costs one click. It is also the remedy for a bad forward promotion, so it must stay available: a reviewer delays it, it does not remove it."
+      "why": "it changes what the public sees, to something older, by a person's choice. It is rare, it is never routine, and a second look costs one click. It is also the remedy for a bad forward promotion, so it must stay available: a reviewer delays it, it does not remove it. REVISED 2026-10-02: the owner withdrew P1 — the reviewer is not worth recreating a token and configuring a new Environment. Rollback stays where it is, in v2-promotion, unreviewed."
     },
     {
       "operation": "status and history: read the live pointer and the durable promotion history",
@@ -211,7 +211,7 @@
         "reviewer": false,
         "trigger": "manual only"
       },
-      "why": "read-only by code. They share the job `pointer` with rollback today, so moving rollback means splitting that job; otherwise every status read would wait for a click"
+      "why": "read-only by code. They share the job `pointer` with rollback; with P1 withdrawn nothing needs splitting"
     },
     {
       "operation": "tombstone",
@@ -299,16 +299,18 @@
       "question": "replace condition (2) of the 2026-09-30 bucket decision ('required reviewer on v2-promotion') with: promotion stays unreviewed in v2-promotion; rollback moves to a new Environment v2-rollback with the owner as required reviewer, branch policy main, holding the promotion key pair",
       "recommended": "yes",
       "why": "condition (2) as written would put a click on every scheduled publication, because v2-promotion serves the whole promotion lane (both jobs that name it are listed in operations[]). The only pointer move that can go backwards is rollback, and only it is never routine.",
-      "owner_actions_if_yes": [
-        "create the Environment v2-rollback in the backend repository: required reviewer = the owner, prevent_self_review off, deployment branches = main only",
-        "copy the two R2_PROMOTION_* secrets and the three variables into it (same values as v2-promotion)"
-      ],
-      "agent_work_if_yes_after_the_environment_exists": "measure it with gh api, then split v2_promotion_lane.yml's `pointer` job into a read job (v2-promotion: status, history) and a rollback job (v2-rollback), with tests; never name v2-rollback in a workflow before the measurement shows it exists",
-      "decided": "yes",
+      "decided": "no",
       "decided_by": "project_owner",
       "decided_on": "2026-10-02",
-      "owner_words": "P1 aprovada, voltar atras com meu clique.",
-      "explained_before_deciding": "the owner asked when a rollback would be needed and what really needs a click; answered in chat on 2026-10-02: a release that passes every gate but is wrong, expected rare; a rollback does not fix the cause, so it comes with pausing automatic publication; routine needs no click"
+      "explained_before_deciding": "the owner asked when a rollback would be needed and what really needs a click; answered in chat on 2026-10-02: a release that passes every gate but is wrong, expected rare; a rollback does not fix the cause, so it comes with pausing automatic publication; routine needs no click",
+      "reversed_on": "2026-10-02",
+      "first_answer": {
+        "decided": "yes",
+        "owner_words": "P1 aprovada, voltar atras com meu clique."
+      },
+      "owner_words": "Desisti da nossa decisao do P1. O trabalho envolvido em criar novamente o token e fazer esse passo a passo, nao valem a pena para mim.",
+      "why_reversed": "creating v2-rollback needs the two promotion secrets, which GitHub never shows again and the owner would have to re-create as a new R2 token; the owner judged the cost above the benefit for an operation expected to be rare",
+      "consequence": "no workflow changes. Rollback runs in v2-promotion without a reviewer, as today. Condition (2) of the bucket decision is dropped, not rewritten: no publication operation has a GitHub reviewer."
     },
     {
       "id": "P2",
