@@ -72,6 +72,14 @@ POINTER_KEY = "pointers/green/current.json"
 #: decision for the cutover, not a default.
 HISTORY_ROOT = "pointers/green/history/"
 
+#: The automation heartbeat (``GREEN_HEARTBEAT_CONTRACT_V1.md``): when the
+#: green lane last tried, and what happened.  Public, at one fixed key, served
+#: whether or not anything is promoted — it must be readable precisely when
+#: nothing is live.  It names no release, so it is not a second answer to
+#: "what is live".  Every other key under ``status/`` stays unclassified.
+HEARTBEAT_KEY = "status/green/heartbeat.json"
+HEARTBEAT_SCHEMA = "araripe.green.heartbeat/1"
+
 #: Roots, with the exposure each carries.  Every key in the bucket is matched
 #: against these in order, and anything unmatched is private: the policy fails
 #: closed on a prefix nobody has classified yet.
@@ -93,6 +101,7 @@ MOUNT = "/data/green/"
 #: Reserved names directly under the mount.  They are the three documents a
 #: consumer needs to verify what it received, and none of them is a product.
 POINTER_NAME = "current.json"
+HEARTBEAT_NAME = "heartbeat.json"
 MANIFEST_NAME = "release.json"
 LEDGER_NAME = "ledger.json"
 
@@ -102,6 +111,13 @@ LEDGER_NAME = "ledger.json"
 #: does — otherwise a product would decide what ``/data/green/release.json``
 #: means.
 RESERVED_RELEASE_PATHS = frozenset({MANIFEST_NAME, LEDGER_NAME})
+
+#: Every name the route answers before it consults the manifest.  A product
+#: declared at one of them could never be served — the route answers that
+#: name with something else — so ``check_release_layout`` refuses it.
+#: ``current.json`` had the same latent shadowing before the heartbeat
+#: existed; naming both here closes it for both.
+RESERVED_MOUNT_NAMES = RESERVED_RELEASE_PATHS | {POINTER_NAME, HEARTBEAT_NAME}
 
 ALLOWED_METHODS = ("GET", "HEAD")
 
@@ -215,6 +231,8 @@ def classify_key(
 
     if key == POINTER_KEY:
         return Exposure(key, PUBLIC, "pointer")
+    if key == HEARTBEAT_KEY:
+        return Exposure(key, PUBLIC, "heartbeat")
     if key.startswith(HISTORY_ROOT):
         return Exposure(key, PRIVATE, "promotion_history")
     if key.startswith(RUNS_ROOT):
@@ -240,9 +258,11 @@ def check_release_layout(manifest: Mapping[str, Any]) -> None:
     """Refuse a release whose products would shadow the layout's own names.
 
     ``release.json`` and ``ledger.json`` are the release layout's, and the
-    route serves them under reserved names.  A manifest declaring a *product*
-    at one of those paths would make ``/data/green/release.json`` ambiguous,
-    so it is refused here rather than resolved by precedence.
+    route serves them under reserved names; ``current.json`` and
+    ``heartbeat.json`` it answers before the manifest is read.  A manifest
+    declaring a *product* at one of those paths would make
+    ``/data/green/release.json`` ambiguous, or the product unreachable, so it
+    is refused here rather than resolved by precedence.
 
     Reachable, and not a re-check of the schema: ``logical_path`` permits both
     strings, and ``check_green_release`` has no opinion about them.
@@ -256,7 +276,7 @@ def check_release_layout(manifest: Mapping[str, Any]) -> None:
             f"objects/{index}",
         )
         for index, item in enumerate(manifest["objects"])
-        if item["path"] in RESERVED_RELEASE_PATHS
+        if item["path"] in RESERVED_MOUNT_NAMES
     ]
     if findings:
         raise BoundaryViolation(findings)
@@ -295,14 +315,17 @@ def resolve(
     *,
     pointer: Mapping[str, Any] | None,
     manifest: Mapping[str, Any] | None,
+    heartbeat: Mapping[str, Any] | None = None,
     download: bool = False,
 ) -> Served:
     """Resolve one request into exactly one object key, or refuse it.
 
     ``pointer`` and ``manifest`` are the live pointer and the manifest of the
-    release it names; the caller reads both.  Nothing here contacts a store,
-    so the whole boundary is decidable without one — which is what lets a
-    Worker, a test and a review all evaluate the same function.
+    release it names; the caller reads both.  ``heartbeat`` is the stored
+    heartbeat, and only a request for it needs it — or reads anything else.
+    Nothing here contacts a store, so the whole boundary is decidable without
+    one — which is what lets a Worker, a test and a review all evaluate the
+    same function.
     """
 
     if method not in ALLOWED_METHODS:
@@ -318,6 +341,26 @@ def resolve(
             "namespace and never falls back to another prefix",
         )
     rest = url_path[len(MOUNT) :]
+
+    if rest == HEARTBEAT_NAME:
+        # Before the pointer, and without it: the heartbeat says when the
+        # automation last tried, which matters most exactly when nothing is
+        # promoted or the pointer cannot be read.
+        if heartbeat is None:
+            raise _refuse(
+                "heartbeat_absent",
+                "the green automation has not recorded an attempt yet",
+            )
+        if not isinstance(heartbeat, Mapping) or heartbeat.get("schema") != HEARTBEAT_SCHEMA:
+            raise _refuse(
+                "heartbeat_unusable",
+                f"{HEARTBEAT_KEY} is not a {HEARTBEAT_SCHEMA} document, so this "
+                "route will not answer it under the heartbeat's name",
+            )
+        return Served(
+            key=HEARTBEAT_KEY,
+            headers=_headers("application/json", CACHE_POINTER),
+        )
 
     if rest == POINTER_NAME:
         if pointer is None:
@@ -458,10 +501,13 @@ def public_keys(manifest: Mapping[str, Any]) -> tuple[str, ...]:
 
     Useful to a reviewer and to the retention planner: it is the complete
     answer to "what is public right now", derived from the same manifest the
-    resolver uses rather than restated.
+    resolver uses rather than restated.  The heartbeat is reachable with or
+    without a release, and is listed with the pointer.
     """
 
     prefix = manifest["release_prefix"]
-    return (POINTER_KEY, prefix + MANIFEST_NAME, prefix + LEDGER_NAME) + tuple(
+    return (
+        POINTER_KEY, HEARTBEAT_KEY, prefix + MANIFEST_NAME, prefix + LEDGER_NAME
+    ) + tuple(
         _object_key(manifest, item, item["path"]) for item in manifest["objects"]
     )

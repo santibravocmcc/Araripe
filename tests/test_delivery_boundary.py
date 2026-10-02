@@ -72,6 +72,9 @@ def refusal_code(path, method="GET", **kwargs):
         ("promotion-identity-probe/run-1/pointer.json", db.PRIVATE, "verification_artifact"),
         ("readonly-identity-probe/run-1/write-attempt.json", db.PRIVATE, "verification_artifact"),
         ("pointers/green/history/0000000011.json", db.PRIVATE, "promotion_history"),
+        ("status/green/heartbeat.json", db.PUBLIC, "heartbeat"),
+        ("status/green/heartbeat.json.bak", db.PRIVATE, "unclassified"),
+        ("status/green/other.json", db.PRIVATE, "unclassified"),
     ],
 )
 def test_every_known_prefix_classifies_to_its_documented_exposure(key, exposure, reason):
@@ -330,7 +333,7 @@ def test_the_media_types_this_project_actually_publishes_are_accepted(content_ty
 # ── the layout's own names ───────────────────────────────────────────────────
 
 
-@pytest.mark.parametrize("path", ["release.json", "ledger.json"])
+@pytest.mark.parametrize("path", ["release.json", "ledger.json", "current.json", "heartbeat.json"])
 def test_a_product_may_not_be_published_at_a_reserved_layout_name(path):
     """Reachable, and not a re-check of the schema.
 
@@ -354,11 +357,12 @@ def test_the_public_surface_is_derived_from_the_manifest_not_restated():
     keys = db.public_keys(MANIFEST)
     assert keys == (
         db.POINTER_KEY,
+        db.HEARTBEAT_KEY,
         f"releases/{LIVE}/release.json",
         f"releases/{LIVE}/ledger.json",
         f"releases/{LIVE}/{DECLARED}",
     )
-    for key in keys[1:]:
+    for key in keys:
         assert db.classify_key(key, live_release_id=LIVE).is_public
 
 
@@ -376,12 +380,13 @@ def test_no_resolved_key_ever_leaves_the_live_release_or_the_pointer():
     allowed = set(db.public_keys(MANIFEST))
     paths = [
         "/data/green/current.json",
+        "/data/green/heartbeat.json",
         "/data/green/release.json",
         "/data/green/ledger.json",
         f"/data/green/{DECLARED}",
     ]
     for path in paths:
-        assert serve(path).key in allowed
+        assert serve(path, heartbeat=FIXTURE["heartbeat"]).key in allowed
 
 
 def test_the_committed_vectors_match_the_authority():
@@ -402,7 +407,7 @@ def test_every_vector_case_is_named_for_a_property_and_none_repeats():
     assert len(names) == len(set(names))
     assert stored["mount"] == db.MOUNT
     assert stored["fixtures"] == FIXTURES
-    assert {case["fixture"] for case in stored["cases"]} == {"release", "chain"}
+    assert {case["fixture"] for case in stored["cases"]} == set(FIXTURES)
     outcomes = {case["expect"]["outcome"] for case in stored["cases"]}
     assert outcomes == {"served", "refused"}
 
@@ -454,6 +459,7 @@ def test_the_public_surface_of_a_chain_release_is_its_index_and_its_members_obje
     keys = set(db.public_keys(manifest))
     assert keys == {
         db.POINTER_KEY,
+        db.HEARTBEAT_KEY,
         manifest["release_prefix"] + "release.json",
         manifest["release_prefix"] + "ledger.json",
         *(f"releases/{o['release_id']}/{o['path']}" for o in manifest["objects"]),
@@ -471,3 +477,57 @@ def test_a_member_of_the_live_release_is_public_and_another_release_is_not():
                                live_members=members).is_public
     assert db.live_member_ids(None) == frozenset()
     assert db.live_member_ids(FIXTURE["manifest"]) == frozenset()
+
+
+# ── the automation heartbeat (GREEN_HEARTBEAT_CONTRACT_V1.md §5) ────────────
+
+
+HEARTBEAT = FIXTURE["heartbeat"]
+
+
+def test_the_heartbeat_is_resolved_without_a_pointer_or_a_manifest():
+    served = db.resolve("GET", "/data/green/heartbeat.json", pointer=None,
+                        manifest=None, heartbeat=HEARTBEAT)
+    assert served.key == db.HEARTBEAT_KEY
+    assert served.headers["Cache-Control"] == "no-store"
+    assert served.sha256 is None and served.bytes is None
+    assert "X-Araripe-Release-Id" not in served.headers
+
+
+def test_the_heartbeat_is_resolved_before_any_release_name():
+    """A manifest declaring ``heartbeat.json`` cannot take the name over."""
+
+    manifest = json.loads(json.dumps(MANIFEST))
+    manifest["objects"][0]["path"] = "heartbeat.json"
+    served = db.resolve("GET", "/data/green/heartbeat.json", pointer=POINTER,
+                        manifest=manifest, heartbeat=HEARTBEAT)
+    assert served.key == db.HEARTBEAT_KEY
+
+
+@pytest.mark.parametrize(
+    "heartbeat, code",
+    [
+        (None, "heartbeat_absent"),
+        ({**HEARTBEAT, "schema": "araripe.green.pointer/2"}, "heartbeat_unusable"),
+        ({k: v for k, v in HEARTBEAT.items() if k != "schema"}, "heartbeat_unusable"),
+        (["araripe.green.heartbeat/1"], "heartbeat_unusable"),
+    ],
+)
+def test_a_missing_or_foreign_heartbeat_is_refused_under_its_own_code(heartbeat, code):
+    with pytest.raises(db.DeliveryRefused) as excinfo:
+        db.resolve("GET", "/data/green/heartbeat.json", pointer=POINTER,
+                   manifest=MANIFEST, heartbeat=heartbeat)
+    assert excinfo.value.codes == (code,)
+
+
+def test_no_other_request_depends_on_the_heartbeat():
+    """The release half of the route answers the same with or without one."""
+
+    for path in ("/data/green/current.json", "/data/green/release.json", f"/data/green/{DECLARED}"):
+        assert serve(path) == serve(path, heartbeat=HEARTBEAT)
+
+
+def test_the_vector_heartbeat_is_a_valid_heartbeat():
+    from src.publication import heartbeat as hb
+
+    hb.check_heartbeat(HEARTBEAT)

@@ -101,13 +101,15 @@
   },
   "operations": [
     {
-      "operation": "deposit a run prefix runs/<run-id>/",
+      "operation": "deposit a run prefix runs/<run-id>/, and record every attempt in status/green/heartbeat.json",
       "moves_the_pointer": false,
+      "heartbeat_added_on": "2026-10-02, GREEN_HEARTBEAT_CONTRACT_V1.md: the heartbeat job holds the same candidate identity and writes one fixed key by compare-and-swap; it names no release",
       "today": {
         "workflow": "v2_green_deposit_lane.yml",
         "jobs": [
           "detect",
-          "deposit"
+          "deposit",
+          "heartbeat"
         ],
         "environment": "v2-staging",
         "trigger": "workflow_dispatch"

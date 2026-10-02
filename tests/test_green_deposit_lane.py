@@ -101,10 +101,11 @@ def test_manual_only_read_only_and_unscheduled():
     assert d["permissions"] == {"contents": "read"}
 
 
-def test_two_jobs_the_deposit_after_the_detection():
+def test_three_jobs_the_deposit_after_the_detection_and_the_beat_after_both():
     jobs = doc()["jobs"]
-    assert list(jobs) == ["detect", "deposit"]
+    assert list(jobs) == ["detect", "deposit", "heartbeat"]
     assert jobs["deposit"]["needs"] == "detect"
+    assert jobs["heartbeat"]["needs"] == ["detect", "deposit"]
 
 
 def test_both_jobs_use_the_existing_environment_only():
@@ -129,7 +130,7 @@ def test_the_writing_job_holds_the_candidate_lane_and_nothing_cancels():
 
 
 def test_no_step_holds_both_identities():
-    for job in ("detect", "deposit"):
+    for job in doc()["jobs"]:
         for step in steps(job):
             held = step_secrets(step)
             assert not (held & GREEN_EE and held & R2_STAGING), step["name"]
@@ -190,7 +191,7 @@ def test_every_step_holding_r2_runs_only_scripts_clear_of_the_dotenv():
     WITH one is in the guarded list of ``tests/test_assemble_green_run.py``.
     """
 
-    for job in ("detect", "deposit"):
+    for job in doc()["jobs"]:
         for step in steps(job):
             if step_secrets(step) & R2_STAGING:
                 names = {Path(s).name for s in step_scripts(step)}
@@ -298,8 +299,8 @@ def test_the_detection_environment_is_pinned_exactly():
     assert "earthengine-api" in pins
 
 
-@pytest.mark.parametrize("job", ["detect", "deposit"])
-def test_both_jobs_refuse_any_bucket_but_staging_first(job):
+@pytest.mark.parametrize("job", ["detect", "deposit", "heartbeat"])
+def test_every_job_refuses_any_bucket_but_staging_first(job):
     first = steps(job)[0]
     assert first["name"] == "Fail closed unless the target is exactly the approved staging bucket"
     assert "araripe-v2-staging" in first["run"]
@@ -418,3 +419,49 @@ def test_the_lane_ceiling_is_the_chains():
 
     assert sc.WINDOW_MAX_DAYS == 16
     assert "(b - a).days <= %d" % sc.WINDOW_MAX_DAYS in step_named("detect", WINDOW)["run"]
+
+
+# ─── the heartbeat (GREEN_HEARTBEAT_CONTRACT_V1.md) ─────────────────────────
+
+BEAT = "Record this attempt in the heartbeat"
+
+
+def test_the_heartbeat_runs_after_every_outcome_and_only_where_the_lane_runs():
+    """``always()``: a failed or cancelled detection skips ``deposit``, never the beat."""
+
+    jobs = doc()["jobs"]
+    condition = jobs["heartbeat"]["if"]
+    assert condition.startswith("always() && ")
+    assert condition[len("always() && "):] == jobs["detect"]["if"]
+
+
+def test_the_heartbeat_holds_only_the_candidate_identity_in_one_step():
+    holders = [s for s in steps("heartbeat") if step_secrets(s)]
+    assert [s["name"] for s in holders] == [BEAT]
+    assert step_secrets(holders[0]) == R2_STAGING
+    assert step_scripts(holders[0]) == {"scripts/write_green_heartbeat.py"}
+
+
+def test_the_heartbeat_reads_both_results_and_both_outputs():
+    env = step_named("heartbeat", BEAT)["env"]
+    assert env["DETECT_RESULT"] == "${{ needs.detect.result }}"
+    assert env["DEPOSIT_RESULT"] == "${{ needs.deposit.result }}"
+    assert env["PROCEED"] == "${{ needs.detect.outputs.proceed }}"
+    assert env["WILL_DEPOSIT"] == "${{ needs.detect.outputs.deposit }}"
+    outputs = doc()["jobs"]["detect"]["outputs"]
+    assert outputs["proceed"] == "${{ steps.window.outputs.proceed }}"
+
+
+def test_the_heartbeat_joins_no_queue():
+    """A queued job can be cancelled by a newer one; a cancelled beat is lost.
+
+    Two lanes finishing together are handled by the compare-and-swap and the
+    commutative merge, not by serialising them.
+    """
+
+    assert "concurrency" not in doc()["jobs"]["heartbeat"]
+
+
+def test_the_heartbeat_installs_the_conditional_write_floor():
+    (install,) = [s for s in steps("heartbeat") if "pip install" in (s.get("run") or "")]
+    assert "'botocore>=1.36.0'" in install["run"] and "'jsonschema>=4.23.0'" in install["run"]

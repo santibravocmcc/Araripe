@@ -5,7 +5,7 @@ name: v2 green deposit lane (detect a window, deposit runs/<run-id>/)
 # run prefix in araripe-v2-staging -- the step that until now only the owner's
 # machine could do, with the local staging key.
 #
-# Two jobs, one authority each (PHASE_6E §3, refined in PHASE_6F §3):
+# Three jobs, one authority each (PHASE_6E §3, refined in PHASE_6F §3):
 #
 #   detect   Earth Engine as the GREEN account (GEE_GREEN_SA_KEY, proven
 #            compute-only by v2_gee_green_identity_probe.yml: assets.create and
@@ -17,11 +17,17 @@ name: v2 green deposit lane (detect a window, deposit runs/<run-id>/)
 #   deposit  R2_STAGING_* only: assemble_green_run.py apply writes
 #            runs/<run-id>/ with put_if_absent, run.json last, then
 #            stage_green_run.py re-reads the prefix and writes nothing.
+#   heartbeat  R2_STAGING_* only, after both and under always(): records
+#            this attempt -- deposited, nothing to do, no acquisition, failed,
+#            cancelled -- in status/green/heartbeat.json by compare-and-swap
+#            (docs/contracts/phase2b/GREEN_HEARTBEAT_CONTRACT_V1.md). A job,
+#            not a step: `deposit` is skipped whenever the detection fails or
+#            finds nothing, and a skipped job runs no step.
 #
 # The detection's outputs cross between the jobs as a workflow artifact.
 #
-# What it never does: move a pointer (no pointer is read or written by either
-# script), promote (that is v2_operational_publish.yml), delete anything, touch
+# What it never does: move a pointer (no pointer is read or written by any
+# script; the heartbeat names no release), promote (that is v2_operational_publish.yml), delete anything, touch
 # araripe-cogs, reference a blue secret, or run on a schedule -- scheduling is
 # Phase 6 §4.5 and comes with the cutover.
 #
@@ -99,6 +105,7 @@ jobs:
     outputs:
       run_id: ${{ steps.window.outputs.run_id }}
       from_run: ${{ steps.window.outputs.from_run }}
+      proceed: ${{ steps.window.outputs.proceed }}
       deposit: ${{ steps.enumerated.outputs.deposit }}
     env:
       R2_STAGING_BUCKET: ${{ vars.R2_STAGING_BUCKET }}
@@ -419,3 +426,50 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/stage_green_run.py --run "$RUN_ID"
+
+  heartbeat:
+    needs: [detect, deposit]
+    # Every attempt leaves a beat, whatever the two jobs before it did -- the
+    # one thing a stopped automation cannot fake is an old finished_utc
+    # (GREEN_HEARTBEAT_CONTRACT_V1.md §2, §6). No concurrency group: the write
+    # is a compare-and-swap of a commutative merge, so two lanes finishing
+    # together converge instead of queueing, and a queued job can be cancelled.
+    if: always() && github.event_name == 'workflow_dispatch' && github.repository == 'santibravocmcc/Araripe'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: v2-staging
+    env:
+      R2_STAGING_BUCKET: ${{ vars.R2_STAGING_BUCKET }}
+      R2_ENDPOINT_URL: ${{ vars.R2_ENDPOINT_URL }}
+
+    steps:
+      - name: Fail closed unless the target is exactly the approved staging bucket
+        run: |
+          set -euo pipefail
+          test "$R2_STAGING_BUCKET" = "araripe-v2-staging" || {
+            echo "::error::refusing: R2_STAGING_BUCKET is not araripe-v2-staging" >&2; exit 1; }
+          test "$R2_ENDPOINT_URL" = "https://9416750169311ee4afc18a8ff3c771d4.r2.cloudflarestorage.com" || {
+            echo "::error::refusing: R2_ENDPOINT_URL is not the approved account endpoint" >&2; exit 1; }
+
+      - name: Check out the lane code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Install the dependencies the heartbeat writer needs
+        # The deposit job's floor: botocore <1.36 cannot express If-Match.
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet --disable-pip-version-check \
+            'jsonschema>=4.23.0' 'boto3>=1.36.0' 'botocore>=1.36.0'
+
+      - name: Record this attempt in the heartbeat
+        env:
+          R2_STAGING_ACCESS_KEY_ID: ${{ secrets.R2_STAGING_ACCESS_KEY_ID }}
+          R2_STAGING_SECRET_ACCESS_KEY: ${{ secrets.R2_STAGING_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          DETECT_RESULT: ${{ needs.detect.result }}
+          DEPOSIT_RESULT: ${{ needs.deposit.result }}
+          PROCEED: ${{ needs.detect.outputs.proceed }}
+          WILL_DEPOSIT: ${{ needs.detect.outputs.deposit }}
+        run: |
+          set -euo pipefail
+          python3 scripts/write_green_heartbeat.py

@@ -43,6 +43,9 @@ MODULOS_DE_PUBLICACAO = (
     "delivery_boundary",
     "findings",
     "green_release",
+    # Phase 6: when the green automation last tried, and what happened
+    # (docs/contracts/phase2b/GREEN_HEARTBEAT_CONTRACT_V1.md).
+    "heartbeat",
     "ledger_binding",
     "ledger_gate",
     # Phase 6, D5: the durable promotion history — one immutable copy per
