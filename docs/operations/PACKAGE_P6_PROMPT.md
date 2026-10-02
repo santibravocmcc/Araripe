@@ -186,6 +186,13 @@ Duas consequências que esta fase **tem** de resolver ou registrar como aceitas:
 > (3) reescrever `CLOUDFLARE_STAGING_ACCESS_FOR_CLAUDE.md`, que já carrega uma
 > nota da decisão no topo. O texto abaixo é o de 2026-09-17, mantido como
 > estava.
+>
+> **2026-10-02 — a condição (2) tem uma reescrita PROPOSTA, não decidida.**
+> `config/phase6_publication_authority_v1.json`, proposta P1: a promoção fica
+> sem revisor no `v2-promotion` (é a publicação de rotina, e o código já a
+> impede de andar para trás); o **rollback** vai para um Environment novo,
+> `v2-rollback`, com o dono como revisor. Até o dono responder, a condição (2)
+> continua como ele a escreveu. Base: PHASE_6P §3.
 
 Apareceu ao responder uma pergunta do dono em 2026-09-17, e a varredura não
 achou nenhum documento que a resolva.
@@ -240,6 +247,30 @@ produto do site, e nenhuma lane verde escreve baseline.
 Na ordem em que se sustenta. **Cada passo que muta produção para e pergunta.**
 
 ### 4.1 O que dá para fazer sem nenhum portão aberto — comece por aqui
+
+> **Reescrita contra o presente em 2026-10-02** (PHASE_6P §5). Cada "feito"
+> foi lido por conteúdo na `main` do repositório indicado, não por título de
+> PR. O texto de 2026-09-17 segue abaixo, sem mudança, para o diff ficar
+> visível.
+>
+> | item | estado em 2026-10-02 | evidência |
+> | --- | --- | --- |
+> | 1. checklist da §7 do runbook | **feito** | revisão do dono registrada em `PHASE_3_REVIEW_2026-09-18.md`, portão 1 fechado (`Araripe#69`) |
+> | 2. produtos do site a partir da release | **feito para a página de alertas, atrás de `?dados=verde`**; **não** para a página inicial | `site#28`: índice, pontos, visões completa/forte e download compostos pela rota (`site_artifact.py compose --from-route`). `site#29` **não** conta: `src/js/home-alertas.js` diz *"Só o caminho azul"* — a página inicial ainda lê o manifesto azul e precisa do verde na virada |
+> | 3. linguagem do método | **feito** | `site#30` na `main`: `worker/metodo.js`, cada número preso à fonte do backend |
+> | 3b. datas sem análise com o motivo | **NÃO está na `main`** — `site#31` foi mesclada na branch da `#30`, não na `main`; recuperada em `site#32`, aberta | `git grep datasSemAnalise origin/main` vazio; `main` do site com 11 falhas de vetor contra a `Araripe#91` |
+> | 4. as três datas | **parado no contrato** | duas saem do índice; "última tentativa de automação" não existe em release nem ponteiro (PHASE_6P §6) |
+> | 5. fontes e atribuição | **parcial, não auditado** | existem `CITATION.cff`, `DATA_LICENSE`, `NOTICE` no backend e menções de CC-BY em `alertas.html`, `dados-abertos.html`, `sobre.html`, `colabore.html`; ninguém conferiu contra a lista do bullet |
+> | 6. resumos, status, frescor | **parcial** | frescor por produto existe **só no azul** (`site/scripts/freshness.py`, `public/data/freshness/`); no verde há `run.json` por rodada e `publish_green_release.py status/history`, nada público |
+>
+> **Acrescentado por 2026-10-02, e que a lista original não tinha:** quem
+> publica sem clique — o desenho está em
+> `config/phase6_publication_authority_v1.json`, proposto ao dono (P1 e P2) —
+> e o fato de que **cada promoção pede um deploy do site** para ficar
+> visível, e de que a página, ao recusar, cai num azul que a §4.4 vai
+> desligar (PHASE_6P §5).
+
+*Texto de 2026-09-17, mantido:*
 
 1. **Reescrever a checklist da §7 do runbook contra o presente** (§2a), com o
    diff visível, para que a revisão do dono seja sobre fatos atuais.
