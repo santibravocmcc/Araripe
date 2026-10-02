@@ -266,6 +266,7 @@ Na ordem em que se sustenta. **Cada passo que muta produção para e pergunta.**
 > | --- | --- | --- |
 > | 1. checklist da §7 do runbook | **feito** | revisão do dono registrada em `PHASE_3_REVIEW_2026-09-18.md`, portão 1 fechado (`Araripe#69`) |
 > | 2. produtos do site a partir da release | **feito para a página de alertas, atrás de `?dados=verde`**; **não** para a página inicial | `site#28`: índice, pontos, visões completa/forte e download compostos pela rota (`site_artifact.py compose --from-route`). `site#29` **não** conta: `src/js/home-alertas.js` diz *"Só o caminho azul"* — a página inicial ainda lê o manifesto azul e precisa do verde na virada |
+> | 2. — atualizado em 2026-10-02, à noite | **feito também para a página inicial, atrás de `?dados=verde`**; não mesclada | `site#37` aberta: `home-alertas.js` abre a fonte por `abreFonte`, e o link do cartão leva a fonte quando ela não é o padrão; PHASE_6S |
 > | 3. linguagem do método | **feito** | `site#30` na `main`: `worker/metodo.js`, cada número preso à fonte do backend |
 > | 3b. datas sem análise com o motivo | **NÃO está na `main`** — `site#31` foi mesclada na branch da `#30`, não na `main`; recuperada em `site#32`, aberta | `git grep datasSemAnalise origin/main` vazio; `main` do site com 11 falhas de vetor contra a `Araripe#91` |
 > | 4. as três datas | **parado no contrato** | duas saem do índice; "última tentativa de automação" não existe em release nem ponteiro (PHASE_6P §6) |
