@@ -413,3 +413,81 @@ The conservative version-1 rule treats 10 m class `0` as NoData and 30 m class
 therefore close Phase 1 as an evidence-backed design with assigned follow-up,
 but it is not a claim that existing public artifacts already have complete
 provenance or that the later scientific gates have passed.
+
+---
+
+## Addition dated 2026-10-04 — re-read against the green system and the public site
+
+The register above was written for the 2026-07-24 system and was not
+re-read against the green system until now. Nothing above is rewritten; this
+section records what the code, the providers' pages, and the public site say
+on 2026-10-04. Full audit, with every file:line, in
+`docs/implementation/PHASE_6T_2026-10-04.md`. Site corrections in
+`observatorio-site#38`.
+
+Evidence base: backend `origin/main` and site `origin/main` read with
+`git show`; provider pages fetched on 2026-10-04.
+
+### A1. What the green system actually consumes
+
+| Source | Where the green runtime takes it | Differs from the register? |
+| --- | --- | --- |
+| Sentinel-2 L2A, `COPERNICUS/S2_SR_HARMONIZED` | `scripts/replay_2026.py` `_base_collection`, run by `v2_green_deposit_lane.yml` | No (§2.1). Scene IDs are now recorded per acquisition (`AcquisitionV3.scene_ids`, `src/detection/identity_v3.py`, written to the v3 ledger). |
+| MapBiomas 10 m context | `config/settings.py` `LANDCOVER_RASTERS["mapbiomas10m"]` = `data/landcover/mapbiomas10m_araripe_2023.tif`, applied by `annotate_alerts_all_collections` in `replay_2026.py` | **Yes.** It is **Collection 2 (beta), year 2023**, cropped from `mapbiomas_10m_collection2_integration_v1-classification_2023.tif` (its `.report.json`). §3 registers Collection 3 (beta) **2024**, and ROADMAP topic 27 says Collection 3 beta 10 m is the primary context. The frozen replay (`config/phase3_replay_freeze_v1.json`, group `mapbiomas`) photographs the 2023 file, so the release is consistent with its freeze — but not with topic 27. Access date and source checksum of the national 2023 file are **not recorded**. |
+| MapBiomas "30 m" context | `LANDCOVER_RASTERS["mapbiomas30m"]` = `data/landcover/mapbiomas30m_araripe_2023.tif` | **Yes.** Header measured: 816 × 445 px at 0.0026949° (≈ 300 m), EPSG:4326, NoData 0; SHA-256 `a080e65ed8cacc39bb6d14d44907faa4d2d0b5ddbcbaf02a123298cfa4a10222`. It is not 30 m and is neither file in §3; `config/settings.py` calls it the territory crop "~300 m aggregated", which places it in the §5 legacy row whose lineage is unrecovered. |
+| CHIRPS | not consumed: `drought.operationally_applied` is `false` in the freeze | Register §2.2 obligations are dormant, not met. |
+| Monitoring extent | `araripe-implementation-rectangle-v1` (freeze) | No. |
+
+### A2. Licences re-read at the source on 2026-10-04
+
+- **MapBiomas.** The terms URL in §3.3 (`/termos-de-uso/`) now answers
+  **404**. The current page is <https://brasil.mapbiomas.org/uso-de-dados/>:
+  public, open, free use "mediante referência", **CC BY 4.0**. The reference
+  format is in the FAQ (question 18): "Projeto MapBiomas – Coleção [versão]
+  da Série Anual de Mapas de Cobertura e Uso da Terra do Brasil, acessado em
+  [data] através do link: [LINK]". CC BY 4.0 §3(a)(1) also requires the
+  licence link and an indication of modification; the site regroups classes.
+- **Copernicus Sentinel.** The Sentinel Data Legal Notice requires
+  "Contains modified Copernicus Sentinel data [Year]" when the data are
+  adapted. The alerts are; the public site carried the notice **nowhere**
+  before `observatorio-site#38`.
+- **OpenStreetMap / CARTO.** OSMF attribution guidelines: "OpenStreetMap"
+  linked to `/copyright`, in a map corner. carto.com/attributions:
+  "© OpenStreetMap contributors, © CARTO", both linked. **CARTO basemaps now
+  require an API key** (carto.com/basemaps/apikey); every tile request
+  without one returns an "API KEY REQUIRED" image, so the light basemap on the
+  public site is broken today. Not caused by, and not fixed by, this addition.
+- **Esri World Imagery.** The service's own `copyrightText` is now
+  "Source: Esri, Vantor, Earthstar Geographics, and the GIS User Community".
+- **Terrain Tiles.** tilezen/joerd `docs/attribution.md` requires "SRTM
+  terrain data courtesy of the U.S. Geological Survey" (and GMTED2010).
+- **GPM IMERG.** DataCite confirms `10.5067/GPM/IMERGDL/DAY/07` (Late, 1 day,
+  V07) and `10.5067/GPM/IMERG/3B-MONTH/07` (Final, 1 month, V07), both 2023,
+  Huffman, Stocker, Bolvin, Nelkin, Tan. NASA's data-use terms were **not**
+  re-read in this pass.
+
+### A3. Status of the §7 gates on 2026-10-04
+
+| §7 gate | Status |
+| --- | --- |
+| APA/FLONA publisher, edition, URL, terms | **open.** `educacao.html` credits "ICMBio" for the limits; no evidence in either repository supports that attribution. |
+| Legacy `observatorio_atual` MapBiomas lineage | **open, and now wider**: the green "30 m" context crop is that lineage (A1). |
+| CHIRPS licence/citation and CHIRPS 3 plan | open; dormant while drought stays disabled. CHIRPS 2.0 production ends after December 2026 per its README (§2.2). |
+| GPM Daily Late unit fixtures | not re-examined here. |
+| Exact Earth Engine scene lineage in the ledger | **scene IDs recorded** per acquisition in the v3 ledger (`AcquisitionV3.scene_ids`); whether processing baselines and source ETags/checksums are also recorded was **not** checked here. |
+| Terrain Tiles source-specific attribution | **text corrected** on the site; tile-set source list still not recorded. |
+| Wrong GPM DOI / Collection labels in site artifacts | **DOI corrected** in `observatorio-site#38`; Collection labels now match the files actually drawn (A1). |
+| MapBiomas class-0 interpretation | not re-examined here. |
+
+### A4. Gaps that are decisions, not text
+
+1. The green release (`release.json`, alert GeoJSON) carries **no source or
+   attribution record**, though §3.3 and §6.1 require the manifest to carry
+   it. Adding it is a release-contract change.
+2. Which MapBiomas files the green context should use (A1) is a scientific
+   decision under topic 27, with consequences for the strong subset, which
+   filters on `lc_natural_frac_10m >= 0.5`.
+3. The licence of the project's own data products: the site says
+   CC-BY-SA 4.0. CC BY 4.0 inputs may be adapted under BY-SA; the Copernicus
+   terms impose only the notice. No incompatibility was found, but the choice
+   is the owner's.
