@@ -40,16 +40,21 @@ from rasterio.mask import mask as rio_mask
 #     (Photovoltaic Power Plant).
 # Codes not listed fall through to "other" at the call site.
 
-# Collection 2 beta (10 m) — Sentinel-2
+# Collection 2 beta (10 m) — Sentinel-2. Extended 2026-10-06 with the codes the
+# 10 m Collection 4 legend (published 2026-08-21) adds: 7 flooded savanna, 77
+# herbaceous-shrub formation, 84 salt marsh (natural); 75 photovoltaic and 91
+# wind farm (infrastructure). None of them occurs in the 2023 crop, so the
+# annotation of that crop is unchanged.
 _GROUP_OF_CLASS_10M = {
     # natural vegetation (forest + natural herbaceous/shrub)
-    3: "natural", 4: "natural", 5: "natural", 6: "natural", 11: "natural",
-    12: "natural", 49: "natural", 50: "natural",
+    3: "natural", 4: "natural", 5: "natural", 6: "natural", 7: "natural",
+    11: "natural", 12: "natural", 49: "natural", 50: "natural", 77: "natural",
+    84: "natural",
     # farming: pasture, agriculture (18/19/36), forest plantation, mosaic
     9: "farming", 15: "farming", 18: "farming", 19: "farming", 21: "farming",
     36: "farming",
-    # urban / mining
-    24: "urban", 30: "urban",
+    # urban / mining / photovoltaic / wind farm
+    24: "urban", 30: "urban", 75: "urban", 91: "urban",
     # other non-vegetated (beach/dune, other non-veg, rocky outcrop, tidal flat)
     23: "other", 25: "other", 29: "other", 32: "other",
     # water
@@ -58,16 +63,19 @@ _GROUP_OF_CLASS_10M = {
     0: "nodata", 27: "nodata",
 }
 
-# Collection 10.1 (30 m) — Landsat (with level-4 crop + photovoltaic codes)
+# Collection 10.1 (30 m) — Landsat (with level-4 crop + photovoltaic codes).
+# Extended 2026-10-06 with the Collection 11 legend (published 2026-08-13):
+# 7, 77, 84 natural; 91 wind farm. Of these, none occurs in the 2023 crop.
 _GROUP_OF_CLASS_30M = {
-    3: "natural", 4: "natural", 5: "natural", 6: "natural", 11: "natural",
-    12: "natural", 49: "natural", 50: "natural",
+    3: "natural", 4: "natural", 5: "natural", 6: "natural", 7: "natural",
+    11: "natural", 12: "natural", 49: "natural", 50: "natural", 77: "natural",
+    84: "natural",
     # farming incl. crop subdivisions unique to Collection 10
     9: "farming", 15: "farming", 18: "farming", 19: "farming", 20: "farming",
     21: "farming", 35: "farming", 36: "farming", 39: "farming", 40: "farming",
     41: "farming", 46: "farming", 47: "farming", 48: "farming", 62: "farming",
-    # urban / mining / photovoltaic (75 is Collection 10 only)
-    24: "urban", 30: "urban", 75: "urban",
+    # urban / mining / photovoltaic / wind farm
+    24: "urban", 30: "urban", 75: "urban", 91: "urban",
     23: "other", 25: "other", 29: "other", 32: "other",
     26: "water", 31: "water", 33: "water",
     0: "nodata", 27: "nodata",
