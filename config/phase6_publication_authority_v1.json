@@ -273,6 +273,13 @@
       "environment": "v2-promotion",
       "moves_the_pointer": false,
       "note": "one-time verification; writes under promotion-identity-probe/run-<id>/ and never touches pointers/green/current.json. After the cutover those writes land in the canonical bucket (unreachable through the route, which serves only what the live release declares). Its own header says Package 2B.2C may retire it; worth retiring before the cutover."
+    },
+    {
+      "workflow": "v2_green_context.yml",
+      "job": "context",
+      "environment": "v2-promotion",
+      "moves_the_pointer": false,
+      "note": "added 2026-10-06 with GREEN_CONTEXT_CONTRACT_V1.md, after the owner chose (2026-10-06) to re-label the published history with MapBiomas 2025 as a separate layer. Writes contexts/objects/<sha256> (put_if_absent) and swaps contexts/current.json (context_pointer.move); never the release pointer. Publishing a context is a publication act, so it holds the same identity that promotes, with no reviewer, as the 2026-10-02 decision sets for every publication."
     }
   ],
   "what_this_design_does_not_protect": [

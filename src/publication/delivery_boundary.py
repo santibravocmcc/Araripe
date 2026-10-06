@@ -56,8 +56,10 @@ from typing import Any, Mapping
 
 from src.publication.findings import Finding, Rejected
 
-#: Contract version of the exposure policy.
-BOUNDARY_SCHEMA = "araripe.green.delivery/1"
+#: Contract version of the exposure policy.  ``/2`` adds the land-cover
+#: context (``GREEN_CONTEXT_CONTRACT_V1.md``): one more mutable key, one more
+#: immutable family, and one more mount directory, under the same allowlist rule.
+BOUNDARY_SCHEMA = "araripe.green.delivery/2"
 
 #: The single mutable object.  Public, because a consumer cannot find the live
 #: release without it, and never cached — see ``CACHE_POINTER``.
@@ -97,6 +99,22 @@ VERIFICATION_ROOTS = (
 #: the old paths for rollback*, and a mount that shadowed ``/data/alerts/…``
 #: would switch every consumer the moment it deployed.
 MOUNT = "/data/green/"
+
+# ── the land-cover context (GREEN_CONTEXT_CONTRACT_V1.md) ────────────────────
+#: The mutable key naming the context of the live release.  Read by the
+#: resolver, never served under a mount name: the page learns the context id
+#: from the index and from the response headers.
+CONTEXT_CURRENT_KEY = "contexts/current.json"
+CONTEXT_POINTER_SCHEMA = "araripe.green.context-pointer/1"
+CONTEXT_SCHEMA = "araripe.green.context/1"
+CONTEXTS_ROOT = "contexts/"
+#: Context objects are stored by content (GREEN_CONTEXT_CONTRACT_V1.md §3).
+CONTEXT_OBJECTS_ROOT = "contexts/objects/"
+SHA256_HEX = re.compile(r"^[0-9a-f]{64}$")
+#: The mount directory a context is served under: ``/data/green/context/<path>``.
+CONTEXT_DIR = "context/"
+CONTEXT_DOCUMENT_NAME = "context.json"
+CONTEXT_ID = re.compile(r"^ctx-g1-[0-9a-f]{64}$")
 
 #: Reserved names directly under the mount.  They are the three documents a
 #: consumer needs to verify what it received, and none of them is a product.
@@ -218,7 +236,12 @@ class Served:
 
 
 def classify_key(
-    key: str, *, live_release_id: str | None, live_members: frozenset[str] = frozenset()
+    key: str,
+    *,
+    live_release_id: str | None,
+    live_members: frozenset[str] = frozenset(),
+    live_context_id: str | None = None,
+    live_context_objects: frozenset[str] = frozenset(),
 ) -> Exposure:
     """Classify one stored key against the exposure policy, failing closed.
 
@@ -233,8 +256,19 @@ def classify_key(
         return Exposure(key, PUBLIC, "pointer")
     if key == HEARTBEAT_KEY:
         return Exposure(key, PUBLIC, "heartbeat")
+    if key == CONTEXT_CURRENT_KEY:
+        return Exposure(key, PRIVATE, "context_pointer")
     if key.startswith(HISTORY_ROOT):
         return Exposure(key, PRIVATE, "promotion_history")
+    if key.startswith(CONTEXT_OBJECTS_ROOT):
+        if key[len(CONTEXT_OBJECTS_ROOT) :] in live_context_objects:
+            return Exposure(key, PUBLIC, "declared_by_the_live_context")
+        return Exposure(key, PRIVATE, "context_object_not_live")
+    if key.startswith(CONTEXTS_ROOT):
+        context_id, _, remainder = key[len(CONTEXTS_ROOT) :].partition("/")
+        if remainder == CONTEXT_DOCUMENT_NAME and live_context_id is not None and context_id == live_context_id:
+            return Exposure(key, PUBLIC, "live_context")
+        return Exposure(key, PRIVATE, "context_not_live")
     if key.startswith(RUNS_ROOT):
         return Exposure(key, PRIVATE, "processing_input")
     for root in VERIFICATION_ROOTS:
@@ -277,6 +311,15 @@ def check_release_layout(manifest: Mapping[str, Any]) -> None:
         )
         for index, item in enumerate(manifest["objects"])
         if item["path"] in RESERVED_MOUNT_NAMES
+    ] + [
+        Finding(
+            "product_shadows_context",
+            f"{item['path']!r} is under {CONTEXT_DIR!r}, which the route answers "
+            "from the land-cover context; a release product there is unreachable",
+            f"objects/{index}",
+        )
+        for index, item in enumerate(manifest["objects"])
+        if item["path"].startswith(CONTEXT_DIR)
     ]
     if findings:
         raise BoundaryViolation(findings)
@@ -317,6 +360,8 @@ def resolve(
     manifest: Mapping[str, Any] | None,
     heartbeat: Mapping[str, Any] | None = None,
     download: bool = False,
+    context_pointer: Mapping[str, Any] | None = None,
+    context: Mapping[str, Any] | None = None,
 ) -> Served:
     """Resolve one request into exactly one object key, or refuse it.
 
@@ -395,6 +440,15 @@ def resolve(
             headers=_headers("application/json", CACHE_RESOLVED),
         )
 
+    if rest.startswith(CONTEXT_DIR):
+        return _resolve_context(
+            rest[len(CONTEXT_DIR) :],
+            manifest=manifest,
+            context_pointer=context_pointer,
+            context=context,
+            download=download,
+        )
+
     entry = _declared(manifest).get(rest)
     if entry is None:
         raise _refuse(
@@ -422,6 +476,87 @@ def resolve(
         )
     return Served(
         key=key,
+        headers=headers,
+        sha256=entry["sha256"],
+        bytes=entry["bytes"],
+    )
+
+
+def _resolve_context(
+    rest: str,
+    *,
+    manifest: Mapping[str, Any],
+    context_pointer: Mapping[str, Any] | None,
+    context: Mapping[str, Any] | None,
+    download: bool,
+) -> Served:
+    """One request under ``/data/green/context/``, against the live context.
+
+    The same allowlist rule as a release: the key is ``contexts/<id>/`` plus a
+    path the context document declares, never the request.  A context is only
+    served for the **live** release — a context pointer naming any other
+    release (the normal state right after a promotion, before the new context
+    is written) is refused as ``context_not_live``, and the page falls back to
+    the release's own labels and says so.
+    """
+
+    if context_pointer is None:
+        raise _refuse(
+            "context_absent",
+            "no land-cover context has been published for any release",
+        )
+    if context_pointer.get("release_id") != manifest["release_id"]:
+        raise _refuse(
+            "context_not_live",
+            f"the context pointer describes {context_pointer.get('release_id')} "
+            f"while the live release is {manifest['release_id']}; a context is "
+            "served only for the release it was computed from",
+        )
+    context_id = context_pointer.get("context_id")
+    if not isinstance(context_id, str) or not CONTEXT_ID.match(context_id):
+        raise _refuse(
+            "context_unusable",
+            f"the context pointer names {context_id!r}, which is not a context id",
+        )
+    if (
+        context is None
+        or context.get("schema") != CONTEXT_SCHEMA
+        or context.get("context_id") != context_id
+        or context.get("release_id") != manifest["release_id"]
+    ):
+        raise _refuse(
+            "context_document_mismatch",
+            "the context document offered is not the one the context pointer "
+            "names for the live release",
+        )
+    prefix = f"{CONTEXTS_ROOT}{context_id}/"
+    if rest == CONTEXT_DOCUMENT_NAME:
+        return Served(
+            key=prefix + CONTEXT_DOCUMENT_NAME,
+            headers=_headers("application/json", CACHE_RESOLVED),
+        )
+    entry = {item["path"]: item for item in context.get("objects", [])}.get(rest)
+    if entry is None:
+        raise _refuse(
+            "not_declared_by_the_live_context",
+            f"{rest!r} is not one of the object paths the live context declares",
+        )
+    if not isinstance(entry.get("sha256"), str) or not SHA256_HEX.match(entry["sha256"]):
+        raise _refuse(
+            "context_unusable",
+            f"{rest!r} is declared with sha256 {entry.get('sha256')!r}, which cannot name a stored object",
+        )
+    headers = _headers(_media_type(entry["content_type"], f"context/{rest}"), CACHE_RESOLVED)
+    headers["ETag"] = '"' + entry["sha256"] + '"'
+    headers["X-Araripe-Sha256"] = entry["sha256"]
+    headers["X-Araripe-Release-Id"] = manifest["release_id"]
+    headers["X-Araripe-Context-Id"] = context_id
+    if download:
+        headers["Content-Disposition"] = (
+            'attachment; filename="' + _filename(rest) + '"'
+        )
+    return Served(
+        key=CONTEXT_OBJECTS_ROOT + entry["sha256"],
         headers=headers,
         sha256=entry["sha256"],
         bytes=entry["bytes"],

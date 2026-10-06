@@ -519,19 +519,25 @@ def test_the_pointer_has_exactly_one_writer_and_it_keeps_the_history():
     would replace versions without recording them, and nothing else in this
     file would notice.  The two other callers swap keys of their own and never
     name the pointer: the identity probe, under ``promotion-identity-probe/``,
-    and the automation heartbeat, at ``status/green/heartbeat.json``
-    (GREEN_HEARTBEAT_CONTRACT_V1.md).
+    the automation heartbeat, at ``status/green/heartbeat.json``
+    (GREEN_HEARTBEAT_CONTRACT_V1.md), and the land-cover context pointer, at
+    ``contexts/current.json`` (GREEN_CONTEXT_CONTRACT_V1.md).
     """
 
     assert _mutating_pointer_calls() == {
         ("src/publication/atomic_publish.py", "_move_pointer"),
         ("scripts/probe_promotion_identity.py", "main"),
         ("src/publication/heartbeat.py", "record"),
+        ("src/publication/context_pointer.py", "move"),
     }
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[1]
-    for other in ("scripts/probe_promotion_identity.py", "src/publication/heartbeat.py"):
+    for other in (
+        "scripts/probe_promotion_identity.py",
+        "src/publication/heartbeat.py",
+        "src/publication/context_pointer.py",
+    ):
         source = (root / other).read_text(encoding="utf-8")
         assert "POINTER_KEY" not in source and "pointers/green" not in source, other
 

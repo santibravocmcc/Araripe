@@ -49,6 +49,7 @@ GREEN_WORKFLOWS = (
     "v2_promotion_identity_probe.yml",
     "v2_gee_green_identity_probe.yml",
     "v2_green_deposit_lane.yml",
+    "v2_green_context.yml",
     "cloudflare_green_control.yml",
 )
 

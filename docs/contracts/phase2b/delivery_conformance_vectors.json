@@ -1,7 +1,8 @@
 {
-  "boundary_schema": "araripe.green.delivery/1",
+  "boundary_schema": "araripe.green.delivery/2",
   "cases": [
     {
+      "context": "none",
       "download": false,
       "expect": {
         "bytes": null,
@@ -23,6 +24,7 @@
       "path": "/data/green/current.json"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "bytes": null,
@@ -44,6 +46,7 @@
       "path": "/data/green/release.json"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "bytes": null,
@@ -65,6 +68,7 @@
       "path": "/data/green/ledger.json"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "bytes": 78,
@@ -89,6 +93,7 @@
       "path": "/data/green/alerts/2026-04-07/19741870aa21.geojson"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "bytes": 12,
@@ -113,6 +118,7 @@
       "path": "/data/green/series.json"
     },
     {
+      "context": "none",
       "download": true,
       "expect": {
         "bytes": 12,
@@ -138,6 +144,7 @@
       "path": "/data/green/series.json"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "code": "not_declared_by_the_live_release",
@@ -151,6 +158,7 @@
       "path": "/data/green/alerts/2026-04-08/other.geojson"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "code": "not_declared_by_the_live_release",
@@ -164,6 +172,7 @@
       "path": "/data/green/runs/proof-a-2026-09-07/run.json"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "code": "not_declared_by_the_live_release",
@@ -177,6 +186,7 @@
       "path": "/data/green/releases/rel-g1-a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1/release.json"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "code": "not_declared_by_the_live_release",
@@ -190,6 +200,7 @@
       "path": "/data/green/../../pointers/green/current.json"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "code": "not_declared_by_the_live_release",
@@ -203,6 +214,7 @@
       "path": "/data/green//etc/passwd"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "code": "outside_mount",
@@ -216,6 +228,7 @@
       "path": "/data/alerts/manifest.json"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "code": "content_type_unusable",
@@ -231,6 +244,7 @@
       "path": "/data/green/alerts/2026-04-07/19741870aa21.geojson"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "code": "content_type_unusable",
@@ -246,6 +260,7 @@
       "path": "/data/green/alerts/2026-04-07/19741870aa21.geojson"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "code": "content_type_unusable",
@@ -261,6 +276,7 @@
       "path": "/data/green/alerts/2026-04-07/19741870aa21.geojson"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "code": "content_type_unusable",
@@ -276,6 +292,7 @@
       "path": "/data/green/alerts/2026-04-07/19741870aa21.geojson"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "bytes": 78,
@@ -302,6 +319,7 @@
       "path": "/data/green/alerts/2026-04-07/19741870aa21.geojson"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "code": "method_not_allowed",
@@ -315,6 +333,7 @@
       "path": "/data/green/series.json"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "code": "method_not_allowed",
@@ -328,6 +347,7 @@
       "path": "/data/green/series.json"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "bytes": null,
@@ -349,6 +369,7 @@
       "path": "/data/green/release.json"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "bytes": null,
@@ -370,6 +391,7 @@
       "path": "/data/green/ledger.json"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "bytes": 29539158,
@@ -394,6 +416,7 @@
       "path": "/data/green/alerts/run-2026-08-30.geojson"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "bytes": 19325375,
@@ -418,6 +441,7 @@
       "path": "/data/green/alerts/run-2026-09-24.geojson"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "code": "not_declared_by_the_live_release",
@@ -431,6 +455,7 @@
       "path": "/data/green/releases/rel-g1-e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5/alerts/run-2026-08-30.geojson"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "code": "object_release_unusable",
@@ -446,6 +471,7 @@
       "path": "/data/green/alerts/run-2026-08-30.geojson"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "code": "object_release_unusable",
@@ -461,6 +487,7 @@
       "path": "/data/green/alerts/run-2026-08-30.geojson"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "code": "object_release_unusable",
@@ -476,6 +503,7 @@
       "path": "/data/green/alerts/run-2026-08-30.geojson"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "code": "object_release_unusable",
@@ -491,6 +519,7 @@
       "path": "/data/green/alerts/run-2026-08-30.geojson"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "bytes": null,
@@ -512,6 +541,7 @@
       "path": "/data/green/heartbeat.json"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "bytes": null,
@@ -533,6 +563,7 @@
       "path": "/data/green/heartbeat.json"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "bytes": null,
@@ -554,6 +585,7 @@
       "path": "/data/green/heartbeat.json"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "code": "pointer_absent",
@@ -567,6 +599,7 @@
       "path": "/data/green/current.json"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "code": "heartbeat_absent",
@@ -580,6 +613,7 @@
       "path": "/data/green/heartbeat.json"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "code": "heartbeat_unusable",
@@ -595,6 +629,7 @@
       "path": "/data/green/heartbeat.json"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "code": "not_declared_by_the_live_release",
@@ -608,6 +643,7 @@
       "path": "/data/green/status/green/heartbeat.json"
     },
     {
+      "context": "none",
       "download": false,
       "expect": {
         "code": "method_not_allowed",
@@ -619,8 +655,418 @@
       "name": "a write to the heartbeat is refused before anything is resolved",
       "object_patch": null,
       "path": "/data/green/heartbeat.json"
+    },
+    {
+      "context": "live",
+      "download": false,
+      "expect": {
+        "bytes": 4012345,
+        "headers": {
+          "Cache-Control": "public, max-age=60, must-revalidate",
+          "Content-Type": "application/json",
+          "ETag": "\"d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1\"",
+          "X-Araripe-Context-Id": "ctx-g1-c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9",
+          "X-Araripe-Release-Id": "rel-g3-d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4",
+          "X-Araripe-Sha256": "d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1",
+          "X-Content-Type-Options": "nosniff"
+        },
+        "key": "contexts/objects/d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1",
+        "outcome": "served",
+        "sha256": "d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1",
+        "status": 200
+      },
+      "fixture": "chain",
+      "heartbeat_patch": null,
+      "method": "GET",
+      "name": "the live context's labels are served from their content key",
+      "object_patch": null,
+      "path": "/data/green/context/alerts/run-2026-08-30.lc.json"
+    },
+    {
+      "context": "live",
+      "download": false,
+      "expect": {
+        "bytes": 2512345,
+        "headers": {
+          "Cache-Control": "public, max-age=60, must-revalidate",
+          "Content-Type": "application/geo+json",
+          "ETag": "\"e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2\"",
+          "X-Araripe-Context-Id": "ctx-g1-c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9",
+          "X-Araripe-Release-Id": "rel-g3-d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4",
+          "X-Araripe-Sha256": "e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2",
+          "X-Content-Type-Options": "nosniff"
+        },
+        "key": "contexts/objects/e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2",
+        "outcome": "served",
+        "sha256": "e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2",
+        "status": 200
+      },
+      "fixture": "chain",
+      "heartbeat_patch": null,
+      "method": "GET",
+      "name": "the live context's strong subset is served, not the release's",
+      "object_patch": null,
+      "path": "/data/green/context/alerts/run-2026-08-30.strong.geojson"
+    },
+    {
+      "context": "live",
+      "download": false,
+      "expect": {
+        "bytes": null,
+        "headers": {
+          "Cache-Control": "public, max-age=60, must-revalidate",
+          "Content-Type": "application/json",
+          "X-Content-Type-Options": "nosniff"
+        },
+        "key": "contexts/ctx-g1-c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9/context.json",
+        "outcome": "served",
+        "sha256": null,
+        "status": 200
+      },
+      "fixture": "chain",
+      "heartbeat_patch": null,
+      "method": "GET",
+      "name": "the live context's own document is public",
+      "object_patch": null,
+      "path": "/data/green/context/context.json"
+    },
+    {
+      "context": "live",
+      "download": false,
+      "expect": {
+        "code": "not_declared_by_the_live_context",
+        "outcome": "refused"
+      },
+      "fixture": "chain",
+      "heartbeat_patch": null,
+      "method": "GET",
+      "name": "a context path the live context does not declare is refused",
+      "object_patch": null,
+      "path": "/data/green/context/alerts/run-2026-09-24.lc.json"
+    },
+    {
+      "context": "live",
+      "download": false,
+      "expect": {
+        "code": "not_declared_by_the_live_context",
+        "outcome": "refused"
+      },
+      "fixture": "chain",
+      "heartbeat_patch": null,
+      "method": "GET",
+      "name": "a release object is not reachable through the context directory",
+      "object_patch": null,
+      "path": "/data/green/context/alerts/run-2026-08-30.geojson"
+    },
+    {
+      "context": "stale",
+      "download": false,
+      "expect": {
+        "code": "context_not_live",
+        "outcome": "refused"
+      },
+      "fixture": "chain",
+      "heartbeat_patch": null,
+      "method": "GET",
+      "name": "a context computed for another release is not served",
+      "object_patch": null,
+      "path": "/data/green/context/alerts/run-2026-08-30.lc.json"
+    },
+    {
+      "context": "none",
+      "download": false,
+      "expect": {
+        "code": "context_absent",
+        "outcome": "refused"
+      },
+      "fixture": "chain",
+      "heartbeat_patch": null,
+      "method": "GET",
+      "name": "with no context published, the context directory is refused as absent",
+      "object_patch": null,
+      "path": "/data/green/context/alerts/run-2026-08-30.lc.json"
+    },
+    {
+      "context": "mismatch",
+      "download": false,
+      "expect": {
+        "code": "context_document_mismatch",
+        "outcome": "refused"
+      },
+      "fixture": "chain",
+      "heartbeat_patch": null,
+      "method": "GET",
+      "name": "a context document that is not the pointer's is not served",
+      "object_patch": null,
+      "path": "/data/green/context/alerts/run-2026-08-30.lc.json"
+    },
+    {
+      "context": "malformed",
+      "download": false,
+      "expect": {
+        "code": "context_unusable",
+        "outcome": "refused"
+      },
+      "fixture": "chain",
+      "heartbeat_patch": null,
+      "method": "GET",
+      "name": "a context pointer naming anything but a context id chooses no prefix",
+      "object_patch": null,
+      "path": "/data/green/context/alerts/run-2026-08-30.lc.json"
+    },
+    {
+      "context": "bad_sha",
+      "download": false,
+      "expect": {
+        "code": "context_unusable",
+        "outcome": "refused"
+      },
+      "fixture": "chain",
+      "heartbeat_patch": null,
+      "method": "GET",
+      "name": "a context object's key is its declared sha256, and a non-digest names nothing",
+      "object_patch": null,
+      "path": "/data/green/context/alerts/run-2026-08-30.lc.json"
+    },
+    {
+      "context": "live",
+      "download": false,
+      "expect": {
+        "code": "not_declared_by_the_live_release",
+        "outcome": "refused"
+      },
+      "fixture": "chain",
+      "heartbeat_patch": null,
+      "method": "GET",
+      "name": "the context's prefix cannot be addressed directly",
+      "object_patch": null,
+      "path": "/data/green/contexts/objects/d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1"
+    },
+    {
+      "context": "live",
+      "download": false,
+      "expect": {
+        "code": "not_declared_by_the_live_release",
+        "outcome": "refused"
+      },
+      "fixture": "chain",
+      "heartbeat_patch": null,
+      "method": "GET",
+      "name": "the context pointer's key cannot be addressed as a path",
+      "object_patch": null,
+      "path": "/data/green/contexts/current.json"
+    },
+    {
+      "context": "live",
+      "download": false,
+      "expect": {
+        "bytes": 29539158,
+        "headers": {
+          "Cache-Control": "public, max-age=60, must-revalidate",
+          "Content-Type": "application/geo+json",
+          "ETag": "\"a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7\"",
+          "X-Araripe-Release-Id": "rel-g3-d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4",
+          "X-Araripe-Sha256": "a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7",
+          "X-Content-Type-Options": "nosniff"
+        },
+        "key": "releases/rel-g1-e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5/alerts/run-2026-08-30.geojson",
+        "outcome": "served",
+        "sha256": "a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7",
+        "status": 200
+      },
+      "fixture": "chain",
+      "heartbeat_patch": null,
+      "method": "GET",
+      "name": "release objects are unaffected by a live context",
+      "object_patch": null,
+      "path": "/data/green/alerts/run-2026-08-30.geojson"
+    },
+    {
+      "context": "live",
+      "download": true,
+      "expect": {
+        "bytes": 2512345,
+        "headers": {
+          "Cache-Control": "public, max-age=60, must-revalidate",
+          "Content-Disposition": "attachment; filename=\"run-2026-08-30.strong.geojson\"",
+          "Content-Type": "application/geo+json",
+          "ETag": "\"e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2\"",
+          "X-Araripe-Context-Id": "ctx-g1-c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9",
+          "X-Araripe-Release-Id": "rel-g3-d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4",
+          "X-Araripe-Sha256": "e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2",
+          "X-Content-Type-Options": "nosniff"
+        },
+        "key": "contexts/objects/e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2",
+        "outcome": "served",
+        "sha256": "e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2",
+        "status": 200
+      },
+      "fixture": "chain",
+      "heartbeat_patch": null,
+      "method": "GET",
+      "name": "a context download names the file from the declared path",
+      "object_patch": null,
+      "path": "/data/green/context/alerts/run-2026-08-30.strong.geojson"
+    },
+    {
+      "context": "live",
+      "download": false,
+      "expect": {
+        "code": "method_not_allowed",
+        "outcome": "refused"
+      },
+      "fixture": "chain",
+      "heartbeat_patch": null,
+      "method": "PUT",
+      "name": "a write under the context directory is refused before anything is resolved",
+      "object_patch": null,
+      "path": "/data/green/context/alerts/run-2026-08-30.lc.json"
     }
   ],
+  "contexts": {
+    "bad_sha": {
+      "document": {
+        "context_id": "ctx-g1-c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9",
+        "objects": [
+          {
+            "bytes": 4012345,
+            "content_type": "application/json",
+            "observed_on": "2026-08-30",
+            "path": "alerts/run-2026-08-30.lc.json",
+            "sha256": "../../pointers/green/current.json"
+          }
+        ],
+        "release_id": "rel-g3-d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4",
+        "schema": "araripe.green.context/1"
+      },
+      "pointer": {
+        "context_id": "ctx-g1-c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9",
+        "release_id": "rel-g3-d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4",
+        "schema": "araripe.green.context-pointer/1",
+        "sequence": 1
+      }
+    },
+    "live": {
+      "document": {
+        "context_id": "ctx-g1-c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9",
+        "objects": [
+          {
+            "bytes": 4012345,
+            "content_type": "application/json",
+            "observed_on": "2026-08-30",
+            "path": "alerts/run-2026-08-30.lc.json",
+            "sha256": "d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1"
+          },
+          {
+            "bytes": 2512345,
+            "content_type": "application/geo+json",
+            "observed_on": "2026-08-30",
+            "path": "alerts/run-2026-08-30.strong.geojson",
+            "sha256": "e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2"
+          }
+        ],
+        "release_id": "rel-g3-d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4",
+        "schema": "araripe.green.context/1"
+      },
+      "pointer": {
+        "context_id": "ctx-g1-c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9",
+        "release_id": "rel-g3-d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4",
+        "schema": "araripe.green.context-pointer/1",
+        "sequence": 1
+      }
+    },
+    "malformed": {
+      "document": {
+        "context_id": "ctx-g1-c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9",
+        "objects": [
+          {
+            "bytes": 4012345,
+            "content_type": "application/json",
+            "observed_on": "2026-08-30",
+            "path": "alerts/run-2026-08-30.lc.json",
+            "sha256": "d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1"
+          },
+          {
+            "bytes": 2512345,
+            "content_type": "application/geo+json",
+            "observed_on": "2026-08-30",
+            "path": "alerts/run-2026-08-30.strong.geojson",
+            "sha256": "e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2"
+          }
+        ],
+        "release_id": "rel-g3-d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4",
+        "schema": "araripe.green.context/1"
+      },
+      "pointer": {
+        "context_id": "../runs/ci-1",
+        "release_id": "rel-g3-d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4",
+        "schema": "araripe.green.context-pointer/1",
+        "sequence": 1
+      }
+    },
+    "mismatch": {
+      "document": {
+        "context_id": "ctx-g1-0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a",
+        "objects": [
+          {
+            "bytes": 4012345,
+            "content_type": "application/json",
+            "observed_on": "2026-08-30",
+            "path": "alerts/run-2026-08-30.lc.json",
+            "sha256": "d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1"
+          },
+          {
+            "bytes": 2512345,
+            "content_type": "application/geo+json",
+            "observed_on": "2026-08-30",
+            "path": "alerts/run-2026-08-30.strong.geojson",
+            "sha256": "e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2"
+          }
+        ],
+        "release_id": "rel-g3-d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4",
+        "schema": "araripe.green.context/1"
+      },
+      "pointer": {
+        "context_id": "ctx-g1-c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9",
+        "release_id": "rel-g3-d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4",
+        "schema": "araripe.green.context-pointer/1",
+        "sequence": 1
+      }
+    },
+    "none": {
+      "document": null,
+      "pointer": null
+    },
+    "stale": {
+      "document": {
+        "context_id": "ctx-g1-c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9",
+        "objects": [
+          {
+            "bytes": 4012345,
+            "content_type": "application/json",
+            "observed_on": "2026-08-30",
+            "path": "alerts/run-2026-08-30.lc.json",
+            "sha256": "d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1d1"
+          },
+          {
+            "bytes": 2512345,
+            "content_type": "application/geo+json",
+            "observed_on": "2026-08-30",
+            "path": "alerts/run-2026-08-30.strong.geojson",
+            "sha256": "e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2"
+          }
+        ],
+        "release_id": "rel-g3-d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4",
+        "schema": "araripe.green.context/1"
+      },
+      "pointer": {
+        "context_id": "ctx-g1-c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9c9",
+        "release_id": "rel-g3-0000000000000000000000000000000000000000000000000000000000000000",
+        "schema": "araripe.green.context-pointer/1",
+        "sequence": 1
+      }
+    }
+  },
   "fixtures": {
     "chain": {
       "heartbeat": {
@@ -755,5 +1201,5 @@
   },
   "mount": "/data/green/",
   "note": "Generated by scripts/check_delivery_boundary.py. Any implementation of the /data/... route \u2014 the Python authority here, the Worker Package 2B.4 writes \u2014 must reproduce every expectation exactly. Regenerate with `vectors --write` and review the diff; a silent change to this file is a change to what the project publishes.",
-  "schema": "araripe.green.delivery-vectors/3"
+  "schema": "araripe.green.delivery-vectors/4"
 }
