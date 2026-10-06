@@ -491,3 +491,56 @@ Evidence base: backend `origin/main` and site `origin/main` read with
    CC-BY-SA 4.0. CC BY 4.0 inputs may be adapted under BY-SA; the Copernicus
    terms impose only the notice. No incompatibility was found, but the choice
    is the owner's.
+
+---
+
+## Addition dated 2026-10-06 — MapBiomas 2025 (10 m Collection 4, Collection 11)
+
+The owner downloaded both national 2025 coverage files on 2026-10-06 from the
+official bucket. They were cropped on the same day by
+`scripts/crop_mapbiomas_national.py` to the display window
+`(-41.0, -8.0, -38.8, -6.8)` — a window read on the native grid, no
+resampling — and the national files were then moved to the system Trash, not
+kept. Each crop's `.report.json` is the binding to the national bytes.
+
+| | 10 m Collection 4 | Collection 11 (30 m) |
+| --- | --- | --- |
+| Origin URL | `https://storage.googleapis.com/mapbiomas-public/initiatives/brasil/lulc_10m/collection4/coverage/brazil_coverage/brazil_coverage-col4_10m_2025.tif` | `https://storage.googleapis.com/mapbiomas-public/initiatives/brasil/collection11/lulc/coverage/brazil_coverage/brazil_coverage-col11_2025.tif` |
+| National bytes | 4,707,906,958 | 763,286,575 |
+| National MD5 = bucket ETag | `17dbc582322190b9f8e7a40c16348006` | `1c8ee63d2752b08463d703b6ae585101` |
+| National SHA-256 | `58a2debdcd37ae2d4d66100272e52214fba4dbcd6da5958a766653c528d73040` | `0035bf482e8e6fab6c623275485d2891ed19713b5f258d194a7bb0764d8392db` |
+| Bucket `last-modified` | 2026-08-20 00:11:03 GMT | 2026-08-18 21:38:54 GMT |
+| National header | 487854 × 467490, uint8, EPSG:4326, 0.0000898°, NoData unset | 154470 × 146501, uint8, EPSG:4326, 0.0002695°, NoData unset |
+| Crop | `data/landcover/mapbiomas_col4_10m_2025_araripe.tif`, 24490 × 13358, SHA-256 `d8ba1b38104fc9a441b8a58f75bd0814b8bdb49f384038d0c75ba5aba7715fc8` | `data/landcover/mapbiomas_col11_30m_2025_araripe.tif`, 8163 × 4453, SHA-256 `f3d8db14951ee383e4d805e5c4a3f7918c2db0d0d785383df6e4a74c6c1c2179` |
+| Class 0 in crop | none (full coverage) | none |
+| Legend | "Códigos das classes da legenda", 10 m Collection 4, published 2026-08-21, levels 1–3 | Collection 11, published 2026-08-13, levels 1–4 |
+
+Both legends were read from `brasil.mapbiomas.org/codigos-de-legenda/`.
+Required reference, MapBiomas FAQ format: "Projeto MapBiomas – Coleção 4 de
+Mapas Anuais de Cobertura e Uso da Terra do Brasil com 10 metros de resolução
+espacial, acessado em 06/10/2026 através do link: [URL above]" and
+"Projeto MapBiomas – Coleção 11 da Série Anual de Mapas de Cobertura e Uso da
+Terra do Brasil, acessado em 06/10/2026 através do link: [URL above]". Licence
+CC BY 4.0 (A2).
+
+**Measured against the crops in use, inside the monitoring extent:** the 10 m
+crops share the grid exactly; 84.01% of pixels keep their project group;
+natural goes 63.55% → 69.65% (10.28% farming→natural, 3.97% natural→farming).
+The legacy "30 m" (≈ 300 m) crop has natural 68.36%, Collection 11 65.41%.
+
+**What uses them on 2026-10-06:** the public map overlay only
+(`observatorio-site#40`). The detector's annotation — and therefore
+`lc_natural_frac_10m` and the strong subset — still reads the 2023 crops
+(`config/settings.py` `LANDCOVER_RASTERS`, unchanged). Switching it is open:
+releases already published were annotated with the 2023 crops, so a switch
+without re-annotating them would make one release carry two land-cover
+versions. The class tables in `src/detection/landcover.py` gained the codes
+the 2026 legends add (7, 77, 84 natural; 75 and 91 infrastructure); none of
+them occurs in the 2023 crops, so today's annotation is unchanged
+(`tests/test_mapbiomas_2025_crops.py`).
+
+**The project's five groups are not MapBiomas level 1.** Level 1 is Forest /
+Herbaceous and shrub vegetation / Farming / Non-vegetated / Water; the project
+joins forest and natural herbaceous vegetation as "natural", and keeps rocky
+outcrop (29) and hypersaline tidal flat (32), which MapBiomas files under
+herbaceous vegetation, in "other". The site now offers both.

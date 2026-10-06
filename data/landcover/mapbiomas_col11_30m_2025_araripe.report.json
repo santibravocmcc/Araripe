@@ -1,0 +1,76 @@
+{
+  "collection": "Coleção 11",
+  "year": 2025,
+  "origin_url": "https://storage.googleapis.com/mapbiomas-public/initiatives/brasil/collection11/lulc/coverage/brazil_coverage/brazil_coverage-col11_2025.tif",
+  "source": {
+    "path_at_crop_time": "/Users/sbravo/Downloads/brazil_coverage-col11_2025.tif",
+    "bytes": 763286575,
+    "sha256": "0035bf482e8e6fab6c623275485d2891ed19713b5f258d194a7bb0764d8392db",
+    "md5": "1c8ee63d2752b08463d703b6ae585101",
+    "width": 154470,
+    "height": 146501,
+    "res_deg": [
+      0.00026949458523585647,
+      0.00026949458523585647
+    ],
+    "bounds": [
+      -74.02099974839176,
+      -34.05818669293707,
+      -32.39217116700901,
+      5.42303953870114
+    ],
+    "nodata": null,
+    "compression": "Compression.lzw"
+  },
+  "window_requested": [
+    -41.0,
+    -8.0,
+    -38.8,
+    -6.8
+  ],
+  "window_contains_extent": "araripe-implementation-rectangle-v1",
+  "resampling": "none (native grid window read)",
+  "crop": {
+    "path": "data/landcover/mapbiomas_col11_30m_2025_araripe.tif",
+    "bytes": 2786714,
+    "sha256": "f3d8db14951ee383e4d805e5c4a3f7918c2db0d0d785383df6e4a74c6c1c2179",
+    "width": 8163,
+    "height": 4453,
+    "bounds": [
+      -41.000097714027504,
+      -7.999946762726399,
+      -38.800213414747205,
+      -6.79988737467113
+    ],
+    "transform": [
+      0.00026949458523585647,
+      0.0,
+      -41.000097714027504,
+      0.0,
+      -0.00026949458523585647,
+      -6.79988737467113
+    ],
+    "nodata": 0,
+    "histogram": {
+      "3": 1624198,
+      "4": 22149577,
+      "12": 9252,
+      "15": 9911914,
+      "21": 500911,
+      "24": 269457,
+      "25": 23680,
+      "29": 1089,
+      "30": 9537,
+      "33": 132443,
+      "39": 879,
+      "41": 1673899,
+      "75": 22510,
+      "91": 20493
+    }
+  },
+  "cropped_utc": "2026-10-06T18:16:59Z",
+  "software": {
+    "rasterio": "1.4.4",
+    "numpy": "2.4.2"
+  }
+}

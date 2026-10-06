@@ -265,6 +265,11 @@ data/landcover/updated/
 # annotate alerts with land cover (both collections). Committed (16 MB + 64 KB).
 !data/landcover/mapbiomas10m_araripe_2023.tif
 !data/landcover/mapbiomas30m_araripe_2023.tif
+# MapBiomas 2025 crops (10 m Collection 4, Collection 11), cropped 2026-10-06 by
+# scripts/crop_mapbiomas_national.py; the national files are not kept. Each has a
+# .report.json binding it to the national bytes. Not read by the runtime yet.
+!data/landcover/mapbiomas_col4_10m_2025_araripe.tif
+!data/landcover/mapbiomas_col11_30m_2025_araripe.tif
 data/chirps_aoi/*.tif
 
 # Alerts live in Cloudflare R2, not git (see .gitattributes). Never commit them.

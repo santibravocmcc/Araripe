@@ -1,0 +1,79 @@
+{
+  "collection": "Coleção 4 (10 m)",
+  "year": 2025,
+  "origin_url": "https://storage.googleapis.com/mapbiomas-public/initiatives/brasil/lulc_10m/collection4/coverage/brazil_coverage/brazil_coverage-col4_10m_2025.tif",
+  "source": {
+    "path_at_crop_time": "/Users/sbravo/Downloads/brazil_coverage-col4_10m_2025.tif",
+    "bytes": 4707906958,
+    "sha256": "58a2debdcd37ae2d4d66100272e52214fba4dbcd6da5958a766653c528d73040",
+    "md5": "17dbc582322190b9f8e7a40c16348006",
+    "width": 487854,
+    "height": 467490,
+    "res_deg": [
+      8.983152841195215e-05,
+      8.983152841195215e-05
+    ],
+    "bounds": [
+      -75.62664848722697,
+      -35.208120088138465,
+      -31.80197802534247,
+      6.787221129165045
+    ],
+    "nodata": null,
+    "compression": "Compression.lzw"
+  },
+  "window_requested": [
+    -41.0,
+    -8.0,
+    -38.8,
+    -6.8
+  ],
+  "window_contains_extent": "araripe-implementation-rectangle-v1",
+  "resampling": "none (native grid window read)",
+  "crop": {
+    "path": "data/landcover/mapbiomas_col4_10m_2025_araripe.tif",
+    "bytes": 17203648,
+    "sha256": "d8ba1b38104fc9a441b8a58f75bd0814b8bdb49f384038d0c75ba5aba7715fc8",
+    "width": 24490,
+    "height": 13358,
+    "bounds": [
+      -41.00000788249908,
+      -7.999946762726399,
+      -38.80003375169037,
+      -6.799977206199542
+    ],
+    "transform": [
+      8.983152841195215e-05,
+      0.0,
+      -41.00000788249908,
+      0.0,
+      -8.983152841195215e-05,
+      -6.799977206199542
+    ],
+    "nodata": 0,
+    "histogram": {
+      "3": 14688893,
+      "4": 214529023,
+      "9": 15812,
+      "12": 16577,
+      "15": 64183360,
+      "19": 18211721,
+      "21": 7494576,
+      "23": 810,
+      "24": 2995354,
+      "25": 1234758,
+      "29": 11842,
+      "30": 326,
+      "31": 2356,
+      "33": 3259754,
+      "36": 186057,
+      "75": 196736,
+      "91": 109465
+    }
+  },
+  "cropped_utc": "2026-10-06T18:17:10Z",
+  "software": {
+    "rasterio": "1.4.4",
+    "numpy": "2.4.2"
+  }
+}

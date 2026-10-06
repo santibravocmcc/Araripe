@@ -82,12 +82,18 @@ def test_collection_taxonomies_differ_for_soybean(tmp_path):
 
 
 def test_collection_photovoltaic_75(tmp_path):
-    """Code 75 (Photovoltaic) is urban in Collection 10.1, 'other' in Collection 2."""
+    """Code 75 (Photovoltaic) is urban in both tables.
+
+    Until 2026-10-06 it was 'other' under the 10 m table, because Collection 2
+    had no class 75. The 10 m Collection 4 legend (published 2026-08-21) has
+    it, so the 10 m table maps it like the 30 m one. The 2023 10 m crop has no
+    pixel of class 75 (tests/test_mapbiomas_2025_crops.py), so no alert
+    annotated from it changes."""
     lc = _make_single_class_raster(tmp_path / "pv.tif", 75)
     ann30 = annotate_alerts_with_landcover(_one_alert(), lc, collection="mapbiomas30m")
     ann10 = annotate_alerts_with_landcover(_one_alert(), lc, collection="mapbiomas10m")
     assert ann30.iloc[0]["lc_group"] == "urban"
-    assert ann10.iloc[0]["lc_group"] == "other"
+    assert ann10.iloc[0]["lc_group"] == "urban"
 
 
 def test_unknown_collection_raises(tmp_path):
