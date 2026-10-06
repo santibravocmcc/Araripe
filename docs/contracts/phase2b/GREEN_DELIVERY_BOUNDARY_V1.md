@@ -269,3 +269,18 @@ fixtures — `unpromoted` (no pointer, a heartbeat) and `nothing` (an empty
 bucket) — every fixture carries a `heartbeat`, and a case may carry a
 `heartbeat_patch`.
 
+
+---
+
+## Addition dated 2026-10-06 — `araripe.green.delivery/2`, the land-cover context
+
+`BOUNDARY_SCHEMA` is now `araripe.green.delivery/2` and the vectors
+`araripe.green.delivery-vectors/4` (51 cases, a `contexts` fixture block and a
+`context` name per case). Everything above holds unchanged for release
+objects; the addition is one mount directory under the same allowlist rule:
+`/data/green/context/<path>` resolves to `contexts/objects/<sha256>` for a path
+the **live context document** declares, and only while `contexts/current.json`
+names the live release. The new refusal codes, their statuses and the reason
+the context is a separate layer are in
+[`GREEN_CONTEXT_CONTRACT_V1.md`](GREEN_CONTEXT_CONTRACT_V1.md) §5. A release
+may no longer declare a product under `context/` (`product_shadows_context`).

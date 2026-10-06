@@ -1,0 +1,101 @@
+name: v2 green land-cover context (serialized with promotion)
+
+# GREEN_CONTEXT_CONTRACT_V1.md. Computes the land-cover context of the LIVE
+# green release from the committed MapBiomas crops, and — in mode `publish` —
+# writes it under contexts/ and moves contexts/current.json to it.
+#
+#   plan     fetch the live release's full alert objects, annotate, check;
+#            writes nothing to the store
+#   publish  the same, then put_if_absent every object (by content) and
+#            compare-and-swap contexts/current.json
+#
+# Order after a promotion (contract §7): promote → this lane → site compose.
+# Its own concurrency group (every group is unique to its lane,
+# tests/test_workflow_lanes.py). A promotion that lands while this runs is
+# harmless: `apply` refuses unless the live pointer still names the release
+# the context describes, and a context pointer left naming an older release is
+# `context_not_live` — the site falls back to the release's labels and says so.
+#
+# Environment `v2-promotion`: publishing a context is a publication act, the
+# same authority that promotes (config/phase6_publication_authority_v1.json;
+# no reviewer, decided by the owner 2026-10-02). The key is bucket-scoped to
+# araripe-v2-staging; the first step refuses any other target.
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "plan | publish"
+        required: false
+        default: "plan"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: araripe-green-context
+  cancel-in-progress: false
+
+jobs:
+  context:
+    if: github.event_name == 'workflow_dispatch' && github.repository == 'santibravocmcc/Araripe' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: v2-promotion
+    env:
+      R2_STAGING_BUCKET: ${{ vars.R2_STAGING_BUCKET }}
+      R2_ENDPOINT_URL: ${{ vars.R2_ENDPOINT_URL }}
+    steps:
+      - name: Refuse an unknown mode
+        env:
+          MODE: ${{ github.event.inputs.mode }}
+        run: |
+          set -euo pipefail
+          case "${MODE}" in
+            plan|publish) echo "mode: ${MODE}" ;;
+            *) echo "::error::unknown mode ${MODE}" >&2; exit 1 ;;
+          esac
+
+      - name: Fail closed unless the target is exactly the approved staging bucket
+        run: |
+          set -euo pipefail
+          test "$R2_STAGING_BUCKET" = "araripe-v2-staging" || {
+            echo "::error::R2_STAGING_BUCKET is not araripe-v2-staging" >&2; exit 1; }
+          test "$R2_ENDPOINT_URL" = "https://9416750169311ee4afc18a8ff3c771d4.r2.cloudflarestorage.com" || {
+            echo "::error::R2_ENDPOINT_URL is not the approved account endpoint" >&2; exit 1; }
+
+      - name: Check out the publication code and the committed crops
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.11"
+
+      - name: Install the pinned dependencies
+        # The green detection pins: rasterio/geopandas for the annotation, and
+        # boto3/botocore 1.42 for IfMatch (the compare-and-swap of the pointer).
+        run: |
+          set -euo pipefail
+          python -m pip install --quiet --disable-pip-version-check -r requirements-green-detect.txt
+          python -m pip freeze | grep -iE '^(rasterio|geopandas|numpy|boto3|botocore)=='
+
+      - name: Fetch the live release's full alert objects
+        env:
+          R2_PROMOTION_ACCESS_KEY_ID: ${{ secrets.R2_PROMOTION_ACCESS_KEY_ID }}
+          R2_PROMOTION_SECRET_ACCESS_KEY: ${{ secrets.R2_PROMOTION_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+        run: python scripts/publish_green_context.py fetch --out "$RUNNER_TEMP/context-input"
+
+      - name: Annotate and check the context (no store)
+        run: |
+          python scripts/publish_green_context.py plan \
+            --input "$RUNNER_TEMP/context-input" --out "$RUNNER_TEMP/context-output"
+
+      - name: Publish the context and move contexts/current.json
+        if: github.event.inputs.mode == 'publish'
+        env:
+          R2_PROMOTION_ACCESS_KEY_ID: ${{ secrets.R2_PROMOTION_ACCESS_KEY_ID }}
+          R2_PROMOTION_SECRET_ACCESS_KEY: ${{ secrets.R2_PROMOTION_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+        run: python scripts/publish_green_context.py apply --context "$RUNNER_TEMP/context-output"

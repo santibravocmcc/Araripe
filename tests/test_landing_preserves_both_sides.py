@@ -40,8 +40,14 @@ MODULOS_DE_PUBLICACAO = (
     # the head (docs/implementation/PHASE_6I_2026-09-28.md).
     "chain_release",
     "conditional_store",
+    # Phase 6: the single writer of the land-cover context pointer
+    # (docs/contracts/phase2b/GREEN_CONTEXT_CONTRACT_V1.md).
+    "context_pointer",
     "delivery_boundary",
     "findings",
+    # Phase 6: the land-cover context of a green release, beside it
+    # (docs/contracts/phase2b/GREEN_CONTEXT_CONTRACT_V1.md).
+    "green_context",
     "green_release",
     # Phase 6: when the green automation last tried, and what happened
     # (docs/contracts/phase2b/GREEN_HEARTBEAT_CONTRACT_V1.md).

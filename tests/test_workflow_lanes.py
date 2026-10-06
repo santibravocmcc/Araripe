@@ -37,6 +37,10 @@ GREEN_GROUPS = {
     # must not queue behind a candidate deposit (PHASE_6E_2026-09-28.md).
     "v2_gee_green_identity_probe.yml": "araripe-green-gee-probe",
     "cloudflare_green_control.yml": "araripe-cloudflare-green-control",
+    # The land-cover context (GREEN_CONTEXT_CONTRACT_V1.md): its own group. It
+    # writes contexts/ and contexts/current.json, never the release pointer,
+    # and `apply` refuses a context for a release that is no longer live.
+    "v2_green_context.yml": "araripe-green-context",
 }
 # The blue detection cadence is load-bearing (ROADMAP.md §6); pin it so a
 # schedule change has to be deliberate.

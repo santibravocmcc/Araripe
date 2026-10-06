@@ -382,6 +382,7 @@ def compose_alert_index(
     object_base: str,
     source: str,
     strong_points_file: str,
+    land_cover: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Compose the index from per-run rows, without reading a feature.
 
@@ -412,6 +413,12 @@ def compose_alert_index(
     order — is required, never defaulted: a caller that forgot it would
     silently drop every refused date again, which is the defect it exists to
     remove.  It touches no total and no ``last_run``.
+
+    ``land_cover`` names the context whose labels the rows were computed under
+    (``GREEN_CONTEXT_CONTRACT_V1.md``), and is omitted when the rows used the
+    release's own labels.  Defaulted to ``None`` on purpose, unlike
+    ``unanalyzed_dates``: absence is the truthful statement for every index
+    composed without a context.
     """
 
     totals = {
@@ -452,7 +459,10 @@ def compose_alert_index(
         "totals": totals,
         "last_run": runs[-1]["date"] if runs else None,
         "source": source,
-    }
+    } | ({"land_cover": {
+        "context_id": land_cover["context_id"],
+        "collections": dict(land_cover["collections"]),
+    }} if land_cover is not None else {})
 
 
 # ── the validator: what composition alone cannot guarantee ───────────────────

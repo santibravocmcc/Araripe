@@ -157,6 +157,53 @@ HEARTBEAT = {
 FIXTURE["heartbeat"] = HEARTBEAT
 CHAIN_FIXTURE["heartbeat"] = HEARTBEAT
 
+#: The land-cover context of the chain fixture (GREEN_CONTEXT_CONTRACT_V1.md):
+#: labels and a recomputed strong subset for one date.
+_CONTEXT_ID = "ctx-g1-" + "c9" * 32
+CONTEXT_POINTER = {
+    "schema": "araripe.green.context-pointer/1",
+    "sequence": 1,
+    "context_id": _CONTEXT_ID,
+    "release_id": _CHAIN_ID,
+}
+CONTEXT_DOCUMENT = {
+    "schema": "araripe.green.context/1",
+    "context_id": _CONTEXT_ID,
+    "release_id": _CHAIN_ID,
+    "objects": [
+        {
+            "path": "alerts/run-2026-08-30.lc.json",
+            "bytes": 4012345,
+            "sha256": "d1" * 32,
+            "content_type": "application/json",
+            "observed_on": "2026-08-30",
+        },
+        {
+            "path": "alerts/run-2026-08-30.strong.geojson",
+            "bytes": 2512345,
+            "sha256": "e2" * 32,
+            "content_type": "application/geo+json",
+            "observed_on": "2026-08-30",
+        },
+    ],
+}
+#: Which context each case sees, by name.
+CONTEXTS = {
+    "live": (CONTEXT_POINTER, CONTEXT_DOCUMENT),
+    # The normal state right after a promotion: the pointer still describes
+    # the previous release.
+    "stale": ({**CONTEXT_POINTER, "release_id": "rel-g3-" + "00" * 32}, CONTEXT_DOCUMENT),
+    "none": (None, None),
+    # The document read is not the one the pointer names.
+    "mismatch": (CONTEXT_POINTER, {**CONTEXT_DOCUMENT, "context_id": "ctx-g1-" + "0a" * 32}),
+    "malformed": ({**CONTEXT_POINTER, "context_id": "../runs/ci-1"}, CONTEXT_DOCUMENT),
+    # The key of a context object is its declared sha256: a declaration that is
+    # not one must not become a key.
+    "bad_sha": (CONTEXT_POINTER, {**CONTEXT_DOCUMENT, "objects": [
+        {**CONTEXT_DOCUMENT["objects"][0], "sha256": "../../pointers/green/current.json"},
+    ]}),
+}
+
 FIXTURES = {
     "release": FIXTURE,
     "chain": CHAIN_FIXTURE,
@@ -257,6 +304,52 @@ CASES: list[dict] = [
      "method": "GET", "path": "/data/green/status/green/heartbeat.json"},
     {"name": "a write to the heartbeat is refused before anything is resolved",
      "method": "PUT", "path": "/data/green/heartbeat.json"},
+    # ── the land-cover context (GREEN_CONTEXT_CONTRACT_V1.md) ───────────────
+    {"name": "the live context's labels are served from their content key",
+     "fixture": "chain", "context": "live", "method": "GET",
+     "path": "/data/green/context/alerts/run-2026-08-30.lc.json"},
+    {"name": "the live context's strong subset is served, not the release's",
+     "fixture": "chain", "context": "live", "method": "GET",
+     "path": "/data/green/context/alerts/run-2026-08-30.strong.geojson"},
+    {"name": "the live context's own document is public",
+     "fixture": "chain", "context": "live", "method": "GET",
+     "path": "/data/green/context/context.json"},
+    {"name": "a context path the live context does not declare is refused",
+     "fixture": "chain", "context": "live", "method": "GET",
+     "path": "/data/green/context/alerts/run-2026-09-24.lc.json"},
+    {"name": "a release object is not reachable through the context directory",
+     "fixture": "chain", "context": "live", "method": "GET",
+     "path": "/data/green/context/alerts/run-2026-08-30.geojson"},
+    {"name": "a context computed for another release is not served",
+     "fixture": "chain", "context": "stale", "method": "GET",
+     "path": "/data/green/context/alerts/run-2026-08-30.lc.json"},
+    {"name": "with no context published, the context directory is refused as absent",
+     "fixture": "chain", "context": "none", "method": "GET",
+     "path": "/data/green/context/alerts/run-2026-08-30.lc.json"},
+    {"name": "a context document that is not the pointer's is not served",
+     "fixture": "chain", "context": "mismatch", "method": "GET",
+     "path": "/data/green/context/alerts/run-2026-08-30.lc.json"},
+    {"name": "a context pointer naming anything but a context id chooses no prefix",
+     "fixture": "chain", "context": "malformed", "method": "GET",
+     "path": "/data/green/context/alerts/run-2026-08-30.lc.json"},
+    {"name": "a context object's key is its declared sha256, and a non-digest names nothing",
+     "fixture": "chain", "context": "bad_sha", "method": "GET",
+     "path": "/data/green/context/alerts/run-2026-08-30.lc.json"},
+    {"name": "the context's prefix cannot be addressed directly",
+     "fixture": "chain", "context": "live", "method": "GET",
+     "path": f"/data/green/contexts/objects/{'d1' * 32}"},
+    {"name": "the context pointer's key cannot be addressed as a path",
+     "fixture": "chain", "context": "live", "method": "GET",
+     "path": "/data/green/contexts/current.json"},
+    {"name": "release objects are unaffected by a live context",
+     "fixture": "chain", "context": "live", "method": "GET",
+     "path": "/data/green/alerts/run-2026-08-30.geojson"},
+    {"name": "a context download names the file from the declared path",
+     "fixture": "chain", "context": "live", "method": "GET", "download": True,
+     "path": "/data/green/context/alerts/run-2026-08-30.strong.geojson"},
+    {"name": "a write under the context directory is refused before anything is resolved",
+     "fixture": "chain", "context": "live", "method": "PUT",
+     "path": "/data/green/context/alerts/run-2026-08-30.lc.json"},
 ]
 
 
@@ -303,6 +396,8 @@ def _evaluate(case: dict) -> dict:
             manifest=_manifest_or_none(case),
             heartbeat=_heartbeat_for(case),
             download=case.get("download", False),
+            context_pointer=CONTEXTS[case.get("context", "none")][0],
+            context=CONTEXTS[case.get("context", "none")][1],
         )
     except db.DeliveryRefused as exc:
         return {"outcome": "refused", "code": exc.codes[0]}
@@ -318,7 +413,7 @@ def _evaluate(case: dict) -> dict:
 
 def build_vectors() -> dict:
     return {
-        "schema": "araripe.green.delivery-vectors/3",
+        "schema": "araripe.green.delivery-vectors/4",
         "boundary_schema": db.BOUNDARY_SCHEMA,
         "mount": db.MOUNT,
         "note": (
@@ -329,6 +424,10 @@ def build_vectors() -> dict:
             "change to this file is a change to what the project publishes."
         ),
         "fixtures": FIXTURES,
+        "contexts": {
+            name: {"pointer": pointer, "document": document}
+            for name, (pointer, document) in CONTEXTS.items()
+        },
         "cases": [
             {
                 "name": case["name"],
@@ -338,6 +437,7 @@ def build_vectors() -> dict:
                 "download": case.get("download", False),
                 "object_patch": case.get("object_patch"),
                 "heartbeat_patch": case.get("heartbeat_patch"),
+                "context": case.get("context", "none"),
                 "expect": _evaluate(case),
             }
             for case in CASES

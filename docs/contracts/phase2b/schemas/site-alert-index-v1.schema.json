@@ -66,6 +66,41 @@
       "description": "Mount the per-run objects are served from, prepended to `file`/`file_strong`. It is `/data/green/` for the route Package 2B.4A built, so `/data/green/` + `alerts/run-2026-04-04.geojson` is exactly the request that route resolves. Required, and NOT defaulted: an index that did not say where its objects live would leave the page guessing, and the wrong guess is a 404 on the default view. The per-run objects are never copied into the deploy — they stay in the immutable release, which is the whole reason the 25 MiB per-asset limit and the 247 MiB of committed history stop being the site's problem.",
       "type": "string",
       "pattern": "^/([A-Za-z0-9][A-Za-z0-9._@+-]*/)*$"
+    },
+    "land_cover": {
+      "description": "The land-cover context the strong subset and the natural fractions were taken from (GREEN_CONTEXT_CONTRACT_V1.md). Additive in /1 (2026-10-06): absent when the index used the release's own labels — no live context, or the blue path — and present when the composer applied a live context. `collections` captions the 10 m and 30 m fractions for the page.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "context_id",
+        "collections"
+      ],
+      "properties": {
+        "context_id": {
+          "type": "string",
+          "pattern": "^ctx-g1-[0-9a-f]{64}$"
+        },
+        "collections": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "10",
+            "30"
+          ],
+          "properties": {
+            "10": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "30": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            }
+          }
+        }
+      }
     }
   },
   "$defs": {
