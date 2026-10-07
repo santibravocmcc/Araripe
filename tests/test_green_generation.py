@@ -235,3 +235,40 @@ def test_o_guarda_compara_a_versao_que_o_ledger_sela():
         with pytest.raises(sc.ChainRejected):
             sc.check_generation(
                 sc.Predecessor("r", "a" * 64, 1, "2026-09-07", algorithm_version=other), "1.1.0")
+
+
+# ── a raiz cujas datas foram todas recusadas (run 37659861235) ──────────────
+
+
+def test_um_lote_sem_data_aceita_deixa_um_estado_vazio_equivalente_ao_nenhum(tmp_path):
+    """A 1ª janela da raiz 1.1.0 (2026-01-01..01-17) teve 7 aquisições, todas
+    recusadas; o replay não gravou estado e o montador recusou a rodada. O
+    estado vazio gravado tem de ser lido de volta como o `update_tracks` trata
+    `None`: nenhuma linha, nenhuma marca d'água, nenhuma geração carimbada."""
+
+    from src.detection import persistence as ps
+
+    replay = load_script("replay_2026")
+    path = tmp_path / "persistence_state.geojson"
+    ps.save_persistence_state(replay.state_to_save(None), path)
+    loaded = ps.load_persistence_state(path)
+    assert loaded is not None and len(loaded) == 0
+    fresh = ps.empty_persistence_state()
+    assert ps._state_metadata(loaded) == ps._state_metadata(fresh)
+    assert ps._state_metadata(loaded).get("algorithm_version") is None
+    kept = ps.empty_persistence_state()
+    assert replay.state_to_save(kept) is kept
+
+
+def test_o_replay_grava_o_estado_sempre():
+    saves = [
+        node for node in ast.walk(_replay_tree())
+        if isinstance(node, ast.Call) and getattr(node.func, "id", None) == "save_persistence_state"
+    ]
+    assert len(saves) == 1
+    (call,) = saves
+    assert getattr(call.args[0].func, "id", None) == "state_to_save"
+    for node in ast.walk(_replay_tree()):
+        if isinstance(node, ast.If):
+            inside = [n for n in ast.walk(ast.Module(body=node.body, type_ignores=[])) if n is call]
+            assert not inside, "o estado não pode depender de uma condição"
