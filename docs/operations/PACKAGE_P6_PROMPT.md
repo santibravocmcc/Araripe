@@ -275,6 +275,7 @@ Na ordem em que se sustenta. **Cada passo que muta produção para e pergunta.**
 > | 5. fontes e atribuição | **parcial, não auditado** | existem `CITATION.cff`, `DATA_LICENSE`, `NOTICE` no backend e menções de CC-BY em `alertas.html`, `dados-abertos.html`, `sobre.html`, `colabore.html`; ninguém conferiu contra a lista do bullet |
 > | 5. — atualizado em 2026-10-04 | **auditado; créditos exigidos corrigidos no site**, não mesclado | `site#38` aberta: aviso Copernicus (não existia), crédito MapBiomas CC BY 4.0 no mapa de alertas, links OSM/CARTO, DOIs GPM certos; adição datada no registro de fontes; PHASE_6T. Ficam com o dono: chave da CARTO (tiles quebrados hoje), contexto MapBiomas 2023 × topic 27, fontes no `release.json` |
 > | 6. resumos, status, frescor | **parcial** | frescor por produto existe **só no azul** (`site/scripts/freshness.py`, `public/data/freshness/`); no verde há `run.json` por rodada e `publish_green_release.py status/history`, nada público |
+> | ordem dos deploys — atualizado em 2026-10-07 | **desenhada, medida e implementada nas branches**; nada mesclado | `site#42` (rascunho): o build compõe o índice atrás de `COMPOR = False`, o compositor sem `sqlite3` (a imagem do Workers Builds não o tem — medido), um reconciliador agendado que segue o ponteiro e o contexto, e a recusa sem azul atrás de `?dados=verde`; `Araripe#102`: o contexto publicado logo depois de cada promoção; PHASE_6U |
 >
 > **Acrescentado por 2026-10-02, e que a lista original não tinha:** quem
 > publica sem clique — o desenho está em
@@ -351,6 +352,18 @@ implanta o Worker verde implanta o de produção.
 3. **só então** desabilitar o acesso público gerenciado em `araripe-cogs`;
 4. verificar o site de novo — a visão completa tem de continuar funcionando,
    agora same-origin.
+
+> **Acrescentado em 2026-10-07** (PHASE_6U §6). Entre os passos 1 e 2, dois
+> deploys do site, nesta ordem: primeiro a rota no ar e verificada; depois
+> `COMPOR = True` em `site/scripts/indice_no_build.py` (um diff de uma linha),
+> que liga a composição do índice no build e, no mesmo diff, o reconciliador
+> `green_site_rebuild.yml`. Com `FONTE_PADRAO` ainda azul, `?dados=verde`
+> passa a funcionar no domínio final e é conferido antes do passo 2. O primeiro
+> build com a composição ligada lê a rota da versão anterior — por isso são
+> dois deploys. Condição: `Araripe#102` mesclada antes, senão cada promoção
+> mostra por algumas horas o subconjunto forte dos rótulos da própria release.
+> Depois do passo 3, uma recusa não cai mais no azul: mostra o quadro da
+> PHASE_6U §4.
 
 Antes do passo 3, cada uma destas tem de ser verdade e todas são checáveis:
 
