@@ -138,8 +138,19 @@ Environment `v2-promotion`, runnable only from `main`, with its own concurrency
 group `araripe-green-context`. It does not share the promotion group: `apply`
 refuses unless the live pointer still names the context's release, and losing
 that race leaves at worst a `context_not_live` pointer, which is the fallback,
-not an error. Wiring it to run after every promotion is part of the deploy-order
-work (`PACKAGE_P6_DEPLOY_ORDER_PROMPT.md`).
+not an error.
+
+**Wired after every promotion (2026-10-07, PHASE_6U §5).** The lane also
+accepts `workflow_call`, and `v2_operational_publish.yml` calls it with mode
+`publish` in a job that `needs: promote`, so the first two steps of the order
+above run in one dispatch. It reads its mode from `inputs.mode`: called, the
+`github` context belongs to the caller. A rollback (`v2_promotion_lane.yml`)
+does **not** call it — a rolled-back release keeps the release's own labels
+until the context lane is dispatched for it, the fallback described above. The
+third step, the site compose, is the site's reconciler
+(`observatorio-site` `.github/workflows/green_site_rebuild.yml`), which rebuilds
+whenever the live release or context differs from the one the deployed index
+was built from.
 
 ## 8. What this contract does not do
 

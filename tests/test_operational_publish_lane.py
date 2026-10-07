@@ -76,15 +76,46 @@ def jobs(lane):
     return lane["jobs"]
 
 
+#: The only workflow this lane may call: the land-cover context lane, after a
+#: promotion (GREEN_CONTEXT_CONTRACT_V1.md §7, PHASE_6U §5).
+CONTEXT_LANE = "./.github/workflows/v2_green_context.yml"
+
+
+def called(job) -> dict | None:
+    """The workflow a job calls, parsed — only a local file, never a remote one."""
+
+    if "uses" not in job:
+        return None
+    assert job["uses"] == CONTEXT_LANE, f"this lane may call only {CONTEXT_LANE}, not {job['uses']}"
+    return yaml.safe_load((REPO / job["uses"][2:]).read_text(encoding="utf-8"))
+
+
 def steps(job):
-    return job["steps"]
+    """What a job EXECUTES: its own steps, or the steps of the workflow it calls.
+
+    Seeing through the call is what keeps every sweep below honest: a step
+    moved into a called file must still pass the no-git, no-blue-file and
+    repository-guard checks, instead of escaping them by indirection.
+    """
+
+    target = called(job)
+    if target is None:
+        return job["steps"]
+    return [step for inner in target["jobs"].values() for step in inner["steps"]]
+
+
+def job_if(job) -> str:
+    target = called(job)
+    if target is None:
+        return job["if"]
+    return " && ".join(inner["if"] for inner in target["jobs"].values())
 
 
 def all_executed(lane) -> str:
     return "\n".join(
         executed(step.get("run", ""))
         for job in lane["jobs"].values()
-        for step in job["steps"]
+        for step in steps(job)
     )
 
 
@@ -199,9 +230,15 @@ def test_the_promotion_job_keeps_the_bucket_and_endpoint_guards(lane):
 
 
 def test_both_jobs_allowlist_the_run_id_before_it_becomes_a_key(lane):
-    """Each job builds object keys from it, so each has to check it."""
+    """Each job that builds object keys from it has to check it.
+
+    The context job does not receive it at all: it reads the LIVE pointer, so
+    there is no run id for it to turn into a key."""
 
     for name, job in jobs(lane).items():
+        if called(job) is not None:
+            assert "run_id" not in json.dumps(job.get("with", {})), name
+            continue
         step = next(step for step in steps(job) if "run id" in step["name"])
         assert "*[!A-Za-z0-9._-]*" in executed(step["run"]), name
 
@@ -331,7 +368,7 @@ def test_the_staging_job_keeps_the_bucket_and_endpoint_guards(lane):
 
 def test_the_repository_guard_is_kept(lane):
     for job in jobs(lane).values():
-        assert "github.repository == 'santibravocmcc/Araripe'" in job["if"]
+        assert "github.repository == 'santibravocmcc/Araripe'" in job_if(job)
 
 
 def test_the_lane_does_not_install_the_blue_environment_file(lane):
@@ -349,10 +386,44 @@ def test_the_lane_does_not_install_the_blue_environment_file(lane):
 
 
 def test_actions_are_pinned_by_the_sha_the_green_lanes_already_use(lane_text):
-    used = set(re.findall(r"uses:\s*(\S+)", lane_text))
+    # The called context lane is not an action: it is this repository's file
+    # at the caller's commit, and `tests/test_action_pinning.py` sweeps it.
+    used = set(re.findall(r"uses:\s*(\S+)", lane_text)) - {CONTEXT_LANE}
     pinned = set(re.findall(r"uses:\s*(\S+)", PROMOTION_LANE.read_text(encoding="utf-8")))
     assert used, "the lane should check the code out"
     assert used <= pinned, f"unpinned or unfamiliar action: {used - pinned}"
+
+
+# ── the context, after the promotion (PHASE_6U §5) ───────────────────────────
+
+def test_the_context_is_published_only_after_a_promotion(lane):
+    """GREEN_CONTEXT_CONTRACT_V1.md §7, as structure: promote → context."""
+
+    context = jobs(lane)["context"]
+    assert context["needs"] == "promote"
+    assert context["uses"] == CONTEXT_LANE
+    assert context["with"] == {"mode": "publish"}
+    # a failed promotion skips it; nothing overrides that
+    assert "if" not in context
+
+
+def test_the_context_job_passes_no_secret_and_borrows_no_identity(lane):
+    """Environment secrets reach a called workflow only through its own
+    `environment:`; passing or inheriting secrets here would hand the called
+    file whatever this caller holds."""
+
+    context = jobs(lane)["context"]
+    assert "secrets" not in context
+    assert "environment" not in context and "permissions" not in context
+    inner = called(context)["jobs"]
+    assert {job["environment"] for job in inner.values()} == {"v2-promotion"}
+
+
+def test_only_the_promotion_job_feeds_the_context(lane):
+    """The context lane is called from exactly one place in this file."""
+
+    callers = [name for name, job in jobs(lane).items() if "uses" in job]
+    assert callers == ["context"]
 
 
 # ── lane distinctness, counting job-level groups ─────────────────────────────

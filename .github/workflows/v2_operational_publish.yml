@@ -307,3 +307,27 @@ jobs:
             chain) python3 scripts/publish_green_release.py publish-chain --expect "${RELEASE_ID}" ;;
             *)     echo "::error::source must be run or chain" >&2; exit 1 ;;
           esac
+
+  # ── the land-cover context of the release just promoted ─────────────────────
+  #
+  # GREEN_CONTEXT_CONTRACT_V1.md §7: promote → context → site compose. Until
+  # this job, the middle step was a separate manual dispatch, and between a
+  # promotion and that dispatch the live context is `context_not_live` — the
+  # site, rebuilt then, shows the release's own 2023 labels and a different
+  # strong subset, and flips again when someone remembers the context
+  # (PHASE_6U §5). `needs: promote` makes the order structural.
+  #
+  # It calls the context lane itself (`workflow_call`) instead of copying its
+  # steps: one definition, one bucket guard, one Environment binding. The
+  # called job binds `v2-promotion` on its own — environment secrets reach a
+  # called workflow only through its own `environment:` — so nothing is passed
+  # from here, and no `secrets: inherit`.
+  #
+  # Idempotent by construction: objects are put by content and the context
+  # pointer move returns "unchanged" when it already names the same context
+  # (scripts/publish_green_context.py `apply`, src/publication/context_pointer.py).
+  context:
+    needs: promote
+    uses: ./.github/workflows/v2_green_context.yml
+    with:
+      mode: publish
