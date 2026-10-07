@@ -14,8 +14,9 @@ context, when there is one; without it the document carries no 2025 record.
 
 Before building, the records in ``config/green_sources_v1.json`` are checked
 against the repository — the replay freeze for what a release does not seal
-(the 2023 crops, the baseline years, the Sentinel-2 collection), and each
-tracked crop and its ``.report.json`` by sha256.  A record that disagrees with
+(the annotation crops, by sha256 since freeze v2; the baseline years; the
+Sentinel-2 collection), and each tracked crop and its ``.report.json`` by
+sha256.  A record that disagrees with
 the file it names stops the plan.
 
 There is deliberately no ``apply``: publishing a sources document is the
@@ -75,21 +76,25 @@ def repository_findings(spec: dict, root: Path = ROOT) -> list[str]:
         if path.stat().st_size != crop["bytes"] or _sha256(path) != crop["sha256"]:
             problems.append(f"{sid}: {crop['path']} does not have the bytes and sha256 the record names")
         if record["role"] == gs.ROLE_RELEASE:
+            # Bound to the freeze the replay detected under, by sha256 since
+            # freeze v2 (PHASE_6W) -- version 1 photographed path and bytes only.
             frozen = rasters[record["collection_key"]]
-            if frozen["path"] != crop["path"] or frozen["bytes"] != crop["bytes"]:
-                problems.append(f"{sid}: the freeze photographs {frozen['path']} ({frozen['bytes']} bytes) for {record['collection_key']}")
-        else:
-            report = json.loads(path.with_suffix(".report.json").read_text(encoding="utf-8"))
-            pairs = (
-                ("crop sha256", crop["sha256"], report["crop"]["sha256"]),
-                ("source md5", record["source_checksum"]["md5"], report["source"]["md5"]),
-                ("source sha256", record["source_checksum"]["sha256"], report["source"]["sha256"]),
-                ("origin_url", record["origin_url"], report["origin_url"]),
-                ("collection", record["collection"], report["collection"]),
-                ("year", record["year"], report["year"]),
-            )
-            problems += [f"{sid}: {name} {ours!r} but the crop report says {theirs!r}"
-                         for name, ours, theirs in pairs if ours != theirs]
+            if (frozen["path"], frozen["bytes"], frozen.get("sha256")) != (crop["path"], crop["bytes"], crop["sha256"]):
+                problems.append(f"{sid}: the freeze photographs {frozen['path']} ({frozen['bytes']} bytes, "
+                                f"sha256 {frozen.get('sha256')}) for {record['collection_key']}")
+        # Both annotation roles now name a crop with a report (the 2023 crops,
+        # which had none, are no longer a record of any role).
+        report = json.loads(path.with_suffix(".report.json").read_text(encoding="utf-8"))
+        pairs = (
+            ("crop sha256", crop["sha256"], report["crop"]["sha256"]),
+            ("source md5", record["source_checksum"]["md5"], report["source"]["md5"]),
+            ("source sha256", record["source_checksum"]["sha256"], report["source"]["sha256"]),
+            ("origin_url", record["origin_url"], report["origin_url"]),
+            ("collection", record["collection"], report["collection"]),
+            ("year", record["year"], report["year"]),
+        )
+        problems += [f"{sid}: {name} {ours!r} but the crop report says {theirs!r}"
+                     for name, ours, theirs in pairs if ours != theirs]
     return problems
 
 
