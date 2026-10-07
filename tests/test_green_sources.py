@@ -162,7 +162,7 @@ def test_a_record_that_disagrees_with_its_crop_is_caught():
     edited["sources"][1]["crop"]["sha256"] = "0" * 64
     edited["sources"][3]["origin_url"] = "https://example.org/other.tif"
     problems = _script().repository_findings(edited)
-    assert any("mapbiomas-10m-col2-beta-2023" in p for p in problems)
+    assert any("mapbiomas-10m-col4-2025:" in p for p in problems)
     assert any("origin_url" in p for p in problems)
 
 
@@ -366,3 +366,32 @@ def test_plan_writes_a_document_that_checks_and_touches_no_store(tmp_path, publi
         elif isinstance(node, ast.Import):
             imported |= {alias.name for alias in node.names}
     assert not any("conditional_store" in name or name.startswith("config") for name in imported)
+
+
+# ── the 2025 generation (PHASE_6W) ───────────────────────────────────────────
+
+def test_the_shipped_records_name_no_2023_source_and_no_open_gap():
+    """The owner abandoned the 2023 crops (2026-10-07): every annotation record
+    is a 2025 crop with a report, so the seven open gaps PHASE_6V listed are
+    gone — and the spec is bound to freeze v2, which photographs them by sha256."""
+
+    text = json.dumps(SPEC, ensure_ascii=False)
+    assert "_2023" not in text and "col2-beta" not in text and "legacy-300m" not in text
+    assert all(record["open_gaps"] == [] for record in SPEC["sources"])
+    annotation = [r for r in SPEC["sources"] if r["role"] != gs.ROLE_DETECTION]
+    assert {r["year"] for r in annotation} == {2025}
+    assert SPEC["basis"]["freeze_path"] == "config/phase3_replay_freeze_v2.json"
+
+
+def test_a_release_record_off_the_freeze_sha256_is_caught():
+    """Same path and bytes, different sha256: version 1 of the freeze could not
+    tell these apart."""
+
+    freeze = json.loads((ROOT / SPEC["basis"]["freeze_path"]).read_text(encoding="utf-8"))
+    edited = deepcopy(SPEC)
+    record = next(r for r in edited["sources"] if r["role"] == gs.ROLE_RELEASE)
+    frozen = freeze["mapbiomas"]["rasters"][record["collection_key"]]
+    assert frozen["sha256"] == record["crop"]["sha256"]
+    record["crop"]["sha256"] = "f" * 64
+    problems = _script().repository_findings(edited)
+    assert any("the freeze photographs" in p and record["source_id"] in p for p in problems)

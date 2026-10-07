@@ -275,6 +275,7 @@ Na ordem em que se sustenta. **Cada passo que muta produção para e pergunta.**
 > | 5. fontes e atribuição | **parcial, não auditado** | existem `CITATION.cff`, `DATA_LICENSE`, `NOTICE` no backend e menções de CC-BY em `alertas.html`, `dados-abertos.html`, `sobre.html`, `colabore.html`; ninguém conferiu contra a lista do bullet |
 > | 5. — atualizado em 2026-10-04 | **auditado; créditos exigidos corrigidos no site**, não mesclado | `site#38` aberta: aviso Copernicus (não existia), crédito MapBiomas CC BY 4.0 no mapa de alertas, links OSM/CARTO, DOIs GPM certos; adição datada no registro de fontes; PHASE_6T. Ficam com o dono: chave da CARTO (tiles quebrados hoje), contexto MapBiomas 2023 × topic 27, fontes no `release.json` |
 > | 5. — atualizado em 2026-10-07 | **fontes na publicação: desenhado e implementado numa branch; nada publicado** | um documento AO LADO da release (`sources/<id>/sources.json`), não um campo do `release.json` — a identidade da release não lê o manifesto, todo schema de release é fechado, e a atribuição muda; `GREEN_SOURCES_CONTRACT_V1.md`, PHASE_6V. Decisão do dono no mesmo dia: abandonar o MapBiomas 2023 antes da virada (geração nova anotada com 2025, histórico refeito), e só então publicar as fontes — `PACKAGE_P6_LANDCOVER_2025_PROMPT.md` |
+> | 5. — atualizado em 2026-10-07, à noite | **MapBiomas 2023 abandonado no verde; fontes prontas, não publicadas** | geração `1.1.0` anotada só com 2025 (`Araripe#105`–`#107`), histórico refeito em 19 rodadas da lane de depósito, release `rel-g3-76601bbf…` promovida (ponteiro seq. 18, 107 datas até 2026-10-04) e contexto `ctx-g1-dd374bac…`; registros de fontes sem 2023 e sem lacunas, documento `src-g1-c9dcba55…` construído localmente; `site#43` aberta (o caminho verde nunca nomeia 2023); o job `context` da `#102` falha por credencial; PHASE_6W. Próximo: `PACKAGE_P6_SOURCES_PUBLISH_PROMPT.md` |
 > | 6. resumos, status, frescor | **parcial** | frescor por produto existe **só no azul** (`site/scripts/freshness.py`, `public/data/freshness/`); no verde há `run.json` por rodada e `publish_green_release.py status/history`, nada público |
 > | ordem dos deploys — atualizado em 2026-10-07 | **desenhada, medida e implementada nas branches**; nada mesclado | `site#42` (rascunho): o build compõe o índice atrás de `COMPOR = False`, o compositor sem `sqlite3` (a imagem do Workers Builds não o tem — medido), um reconciliador agendado que segue o ponteiro e o contexto, e a recusa sem azul atrás de `?dados=verde`; `Araripe#102`: o contexto publicado logo depois de cada promoção; PHASE_6U |
 >
@@ -365,6 +366,13 @@ implanta o Worker verde implanta o de produção.
 > mostra por algumas horas o subconjunto forte dos rótulos da própria release.
 > Depois do passo 3, uma recusa não cai mais no azul: mostra o quadro da
 > PHASE_6U §4.
+
+> **Acrescentado em 2026-10-07, à noite** (PHASE_6W §9). O deploy que trocar
+> `FONTE_PADRAO` para o verde tem de levar junto os textos estáticos que hoje
+> descrevem o azul anotado com 2023: o seletor de coleção e a frase "versões
+> anteriores … 2023" em `alertas.html`, a mesma frase em `dados-abertos.html`
+> e a explicação em `worker/knowledge.js`. Antes da virada eles são verdade;
+> depois dela, não.
 
 Antes do passo 3, cada uma destas tem de ser verdade e todas são checáveis:
 
