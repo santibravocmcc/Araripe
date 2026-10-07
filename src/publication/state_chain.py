@@ -66,6 +66,7 @@ from src.publication.conditional_store import ConditionalStore, ObjectStoreError
 from src.publication.findings import Finding, Rejected
 from src.publication.green_release import sha256_bytes
 from src.publication.ledger_gate import check_processing_ledger
+from src.replay.generation import GREEN_ALGORITHM_VERSION
 from src.publication.run_inputs import (
     LEDGER_PATH,
     RUN_MANIFEST_PATH,
@@ -480,7 +481,17 @@ def confirm_link(store: ConditionalStore, link: Mapping[str, str]) -> None:
 #: declared here.  A new generation (a backfill from empty, which
 #: ``update_tracks`` requires below the watermark) is a new root, and that is
 #: a reviewed code change, not a dispatch input (PHASE_6H §1, §5).
-CHAIN_ROOT = "rep-2026-08-30-v3"
+#:
+#: One root per generation (PHASE_6W).  ``1.0.0`` is the 2026 replay annotated
+#: with MapBiomas 2023; ``1.1.0`` was deposited from an empty state by
+#: ``v2_green_deposit_lane.yml`` run 37660908253 (chain=empty,
+#: 2026-01-01..2026-01-17).  The old chain stays in the bucket, private, and is
+#: never deleted; the generation the replay detects under picks the root.
+CHAIN_ROOTS = {
+    "1.0.0": "rep-2026-08-30-v3",
+    "1.1.0": "ci-37660908253",
+}
+CHAIN_ROOT = CHAIN_ROOTS[GREEN_ALGORITHM_VERSION]
 
 #: The lane's window ceiling, the ``(b - a).days <= 16`` of
 #: ``v2_green_deposit_lane.yml``; ``tests/test_green_deposit_lane.py`` keeps
