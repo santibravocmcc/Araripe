@@ -16,6 +16,19 @@ name: v2 green land-cover context (serialized with promotion)
 # the context describes, and a context pointer left naming an older release is
 # `context_not_live` — the site falls back to the release's labels and says so.
 #
+# Called after every promotion (PHASE_6U §5). `v2_operational_publish.yml`
+# calls this file through `workflow_call` with mode `publish`, in a job that
+# `needs: promote` — the order of contract §7 by construction, not by an
+# operator remembering it. Called, the `github` context is the CALLER's (its
+# event and ref; GitHub's reusable-workflow reference), so the mode is read
+# from `inputs.mode`, which both triggers fill, and never from
+# `github.event.inputs`, which in a call would be the caller's inputs. Whether
+# the workflow-level `concurrency` below also serializes a CALLED run is not
+# stated by GitHub's documentation and was not measured; nothing depends on it:
+# two publishes for the same release write the same objects by content
+# (`put_if_absent`) and race on a compare-and-swap of contexts/current.json,
+# and `apply` refuses a release that is no longer live.
+#
 # Environment `v2-promotion`: publishing a context is a publication act, the
 # same authority that promotes (config/phase6_publication_authority_v1.json;
 # no reviewer, decided by the owner 2026-10-02). The key is bucket-scoped to
@@ -26,6 +39,13 @@ on:
     inputs:
       mode:
         description: "plan | publish"
+        required: false
+        default: "plan"
+  workflow_call:
+    inputs:
+      mode:
+        description: "plan | publish"
+        type: string
         required: false
         default: "plan"
 
@@ -48,7 +68,7 @@ jobs:
     steps:
       - name: Refuse an unknown mode
         env:
-          MODE: ${{ github.event.inputs.mode }}
+          MODE: ${{ inputs.mode }}
         run: |
           set -euo pipefail
           case "${MODE}" in
@@ -93,7 +113,7 @@ jobs:
             --input "$RUNNER_TEMP/context-input" --out "$RUNNER_TEMP/context-output"
 
       - name: Publish the context and move contexts/current.json
-        if: github.event.inputs.mode == 'publish'
+        if: inputs.mode == 'publish'
         env:
           R2_PROMOTION_ACCESS_KEY_ID: ${{ secrets.R2_PROMOTION_ACCESS_KEY_ID }}
           R2_PROMOTION_SECRET_ACCESS_KEY: ${{ secrets.R2_PROMOTION_SECRET_ACCESS_KEY }}

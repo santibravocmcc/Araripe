@@ -71,13 +71,23 @@ def workflows() -> list[Path]:
     return sorted(WORKFLOWS.glob("*.yml"))
 
 
+#: Um workflow deste repositório chamado por ``jobs.<id>.uses: ./…`` não é
+#: action: roda o arquivo daqui, no commit de quem chama, e ele mesmo é varrido
+#: por este arquivo — por isso tem de ser uma lane verde inventariada.
+LOCAL_WORKFLOW = "./.github/workflows/"
+
+
 def uses(path: Path) -> set[str]:
-    """Toda referência ``uses:`` do arquivo, em qualquer job ou passo."""
+    """Toda referência ``uses:`` a uma ACTION, em qualquer job ou passo.
+
+    As chamadas a workflow local saem daqui e são conferidas por
+    ``test_um_workflow_chamado_e_local_e_e_uma_lane_verde``.
+    """
 
     document = yaml.safe_load(path.read_text(encoding="utf-8"))
     found: set[str] = set()
     for job in (document.get("jobs") or {}).values():
-        if isinstance(job.get("uses"), str):
+        if isinstance(job.get("uses"), str) and not job["uses"].startswith(LOCAL_WORKFLOW):
             found.add(job["uses"])
         for step in job.get("steps") or []:
             if isinstance(step.get("uses"), str):
@@ -145,3 +155,17 @@ def test_nenhuma_lane_verde_usa_action_de_terceiro():
                 f"{name} usa {ref}, de {owner!r}; uma lane verde com credencial "
                 "roda só actions publicadas pelo próprio GitHub"
             )
+
+
+def test_um_workflow_chamado_e_local_e_e_uma_lane_verde():
+    """Uma lane verde só chama workflow deste repositório, pelo caminho local, e
+    só um que esteja no inventário verde — que este arquivo varre. Um
+    ``owner/repo/.github/workflows/x.yml@ref`` seria código de outro, e cai em
+    ``uses`` e nas regras de pino e de publicador."""
+
+    for name in GREEN_WORKFLOWS:
+        document = yaml.safe_load((WORKFLOWS / name).read_text(encoding="utf-8"))
+        for job in (document.get("jobs") or {}).values():
+            ref = job.get("uses")
+            if isinstance(ref, str) and ref.startswith(LOCAL_WORKFLOW):
+                assert ref[len(LOCAL_WORKFLOW):] in GREEN_WORKFLOWS, (name, ref)
