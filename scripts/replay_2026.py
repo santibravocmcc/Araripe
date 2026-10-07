@@ -775,8 +775,13 @@ def command_run(args):
                 observation_ids=observation_ids, terminal_at=_utc_now(),
                 artifact_sha256=carry["artifact_sha256"])
 
-    if state is not None:
-        save_persistence_state(state, Path(args.state_path))
+    # Always a state, even when no date of the batch reached persistence: a
+    # chained run deposits one and its successor starts from it. Measured on
+    # 2026-10-07 (run 37659861235): the new 1.1.0 root, 2026-01-01..01-17,
+    # had seven acquisitions and all seven were rejected, so nothing was saved
+    # and the assembler refused the run. An empty state is what update_tracks
+    # starts from when it is given None, so the successor sees no difference.
+    save_persistence_state(state_to_save(state), Path(args.state_path))
 
     # Rows accumulate ACROSS batches. The ledger is bound to the whole
     # window's 107 expected acquisitions and ``to_dict`` refuses to serialize
@@ -833,6 +838,12 @@ def command_run(args):
         print("ledger        : not serialized; %d acquisition(s) still to process"
               % len(finding["missing"]))
     return 0
+
+
+def state_to_save(state):
+    """The state a batch leaves behind: ``state``, or an empty one if it never began."""
+    from src.detection.persistence import empty_persistence_state
+    return empty_persistence_state() if state is None else state
 
 
 #: Per-acquisition carry between the two passes.  Module level so the two
