@@ -1,0 +1,156 @@
+{
+  "schema": "araripe.green.sources-spec/1",
+  "derivation": "araripe.green.sources-derivation/1",
+  "basis": {
+    "register": "docs/contracts/phase1/DATA_SOURCE_AND_ATTRIBUTION_REGISTER_2026-07-24.md",
+    "freeze_path": "config/phase3_replay_freeze_v1.json",
+    "freeze_sha256": "e877e9b1b1150d64c5ac71aeaf7bb23ff7c8b59b29984bd301bfdc3f8611a577"
+  },
+  "sources": [
+    {
+      "source_id": "copernicus-sentinel-2-l2a",
+      "role": "detection",
+      "provider": "European Union / ESA, Copernicus Sentinel-2, read through Google Earth Engine",
+      "dataset": "COPERNICUS/S2_SR_HARMONIZED",
+      "edition": "Sentinel-2 MSI Level-2A surface reflectance, harmonized",
+      "resolution": "10 m, 20 m and 60 m bands; the detector reads a 20 m grid",
+      "official_url": "https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_S2_SR_HARMONIZED",
+      "licence": {
+        "name": "Copernicus Sentinel Data Terms and Conditions (Sentinel Data Legal Notice)",
+        "url": "https://sentinels.copernicus.eu/documents/247904/690755/Sentinel_Data_Legal_Notice"
+      },
+      "terms_read_on": "2026-10-07",
+      "notice_template": "Contains modified Copernicus Sentinel data {years}",
+      "baseline_years": [2017, 2019, 2021, 2022, 2025],
+      "modification": "Monthly baselines (median and standard deviation) and per-date mosaics on a 20 m grid, spectral indices, and change detection; the alerts are derived vectors, not imagery.",
+      "open_gaps": []
+    },
+    {
+      "source_id": "mapbiomas-10m-col2-beta-2023",
+      "role": "release_annotation",
+      "collection_key": "mapbiomas10m",
+      "provider": "Projeto MapBiomas",
+      "dataset": "Mapas Anuais de Cobertura e Uso da Terra do Brasil com 10 metros de resolução espacial",
+      "collection": "Coleção 2 (beta)",
+      "year": 2023,
+      "resolution": "10 m",
+      "official_url": "https://brasil.mapbiomas.org/",
+      "licence": {
+        "name": "CC BY 4.0",
+        "url": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      "terms_url": "https://brasil.mapbiomas.org/uso-de-dados/",
+      "origin_url": null,
+      "accessed_on": null,
+      "source_checksum": null,
+      "crop": {
+        "path": "data/landcover/mapbiomas10m_araripe_2023.tif",
+        "bytes": 16258902,
+        "sha256": "013bcf870482a3ad2d85d6dee73b17f59fa7eeac1cc76ea75c070aa826ad22d5"
+      },
+      "citation": "Projeto MapBiomas – Coleção 2 (beta) de Mapas Anuais de Cobertura e Uso da Terra do Brasil com 10 metros de resolução espacial, ano 2023.",
+      "modification": "Cropped to the area of interest; classes regrouped into the project's five groups; the fraction of natural vegetation under each alert computed from the crop.",
+      "applies_to_fields": ["lc_class_10m", "lc_group_10m", "lc_natural_frac_10m", "lc_class", "lc_group", "lc_natural_frac"],
+      "open_gaps": [
+        "origin_url: the national 2023 file was cropped from a local download whose URL was not recorded (its crop .report.json names only a local path)",
+        "accessed_on: not recorded for the national 2023 file",
+        "source_checksum: not recorded for the national 2023 file (register, addition dated 2026-10-04, A1)"
+      ]
+    },
+    {
+      "source_id": "mapbiomas-legacy-300m-2023",
+      "role": "release_annotation",
+      "collection_key": "mapbiomas30m",
+      "provider": "Projeto MapBiomas",
+      "dataset": "Série Anual de Mapas de Cobertura e Uso da Terra do Brasil",
+      "collection": null,
+      "year": 2023,
+      "resolution": "about 300 m (0.0026949 degree), although the collection key says 30 m",
+      "official_url": "https://brasil.mapbiomas.org/",
+      "licence": {
+        "name": "CC BY 4.0",
+        "url": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      "terms_url": "https://brasil.mapbiomas.org/uso-de-dados/",
+      "origin_url": null,
+      "accessed_on": null,
+      "source_checksum": null,
+      "crop": {
+        "path": "data/landcover/mapbiomas30m_araripe_2023.tif",
+        "bytes": 62822,
+        "sha256": "a080e65ed8cacc39bb6d14d44907faa4d2d0b5ddbcbaf02a123298cfa4a10222"
+      },
+      "citation": "Projeto MapBiomas – Série Anual de Mapas de Cobertura e Uso da Terra do Brasil, ano 2023, agregado a cerca de 300 m; coleção não registrada.",
+      "modification": "Aggregated to about 300 m before it reached this project; classes regrouped into the project's five groups; the fraction of natural vegetation under each alert computed from the crop.",
+      "applies_to_fields": ["lc_class_30m", "lc_group_30m", "lc_natural_frac_30m"],
+      "open_gaps": [
+        "collection: config/settings.py says Collection 10, but the file is the legacy territory crop whose lineage is unrecovered (register §5 legacy row; addition dated 2026-10-04, A1)",
+        "origin_url: lineage unrecovered",
+        "accessed_on: lineage unrecovered",
+        "source_checksum: lineage unrecovered"
+      ]
+    },
+    {
+      "source_id": "mapbiomas-10m-col4-2025",
+      "role": "context_annotation",
+      "collection_key": "mapbiomas10m",
+      "provider": "Projeto MapBiomas",
+      "dataset": "Mapas Anuais de Cobertura e Uso da Terra do Brasil com 10 metros de resolução espacial",
+      "collection": "Coleção 4 (10 m)",
+      "year": 2025,
+      "resolution": "10 m",
+      "official_url": "https://brasil.mapbiomas.org/",
+      "licence": {
+        "name": "CC BY 4.0",
+        "url": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      "terms_url": "https://brasil.mapbiomas.org/uso-de-dados/",
+      "origin_url": "https://storage.googleapis.com/mapbiomas-public/initiatives/brasil/lulc_10m/collection4/coverage/brazil_coverage/brazil_coverage-col4_10m_2025.tif",
+      "accessed_on": "2026-10-06",
+      "source_checksum": {
+        "md5": "17dbc582322190b9f8e7a40c16348006",
+        "sha256": "58a2debdcd37ae2d4d66100272e52214fba4dbcd6da5958a766653c528d73040"
+      },
+      "crop": {
+        "path": "data/landcover/mapbiomas_col4_10m_2025_araripe.tif",
+        "bytes": 17203648,
+        "sha256": "d8ba1b38104fc9a441b8a58f75bd0814b8bdb49f384038d0c75ba5aba7715fc8"
+      },
+      "citation": "Projeto MapBiomas – Coleção 4 de Mapas Anuais de Cobertura e Uso da Terra do Brasil com 10 metros de resolução espacial, acessado em 06/10/2026 através do link: https://storage.googleapis.com/mapbiomas-public/initiatives/brasil/lulc_10m/collection4/coverage/brazil_coverage/brazil_coverage-col4_10m_2025.tif",
+      "modification": "Cropped to the window (-41.0, -8.0, -38.8, -6.8) on the native grid; classes regrouped into the project's five groups; the fraction of natural vegetation under each alert computed from the crop.",
+      "applies_to_fields": ["lc_class_10m", "lc_group_10m", "lc_natural_frac_10m", "lc_class", "lc_group", "lc_natural_frac"],
+      "open_gaps": []
+    },
+    {
+      "source_id": "mapbiomas-col11-2025",
+      "role": "context_annotation",
+      "collection_key": "mapbiomas30m",
+      "provider": "Projeto MapBiomas",
+      "dataset": "Série Anual de Mapas de Cobertura e Uso da Terra do Brasil",
+      "collection": "Coleção 11",
+      "year": 2025,
+      "resolution": "30 m",
+      "official_url": "https://brasil.mapbiomas.org/",
+      "licence": {
+        "name": "CC BY 4.0",
+        "url": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      "terms_url": "https://brasil.mapbiomas.org/uso-de-dados/",
+      "origin_url": "https://storage.googleapis.com/mapbiomas-public/initiatives/brasil/collection11/lulc/coverage/brazil_coverage/brazil_coverage-col11_2025.tif",
+      "accessed_on": "2026-10-06",
+      "source_checksum": {
+        "md5": "1c8ee63d2752b08463d703b6ae585101",
+        "sha256": "0035bf482e8e6fab6c623275485d2891ed19713b5f258d194a7bb0764d8392db"
+      },
+      "crop": {
+        "path": "data/landcover/mapbiomas_col11_30m_2025_araripe.tif",
+        "bytes": 2786714,
+        "sha256": "f3d8db14951ee383e4d805e5c4a3f7918c2db0d0d785383df6e4a74c6c1c2179"
+      },
+      "citation": "Projeto MapBiomas – Coleção 11 da Série Anual de Mapas de Cobertura e Uso da Terra do Brasil, acessado em 06/10/2026 através do link: https://storage.googleapis.com/mapbiomas-public/initiatives/brasil/collection11/lulc/coverage/brazil_coverage/brazil_coverage-col11_2025.tif",
+      "modification": "Cropped to the window (-41.0, -8.0, -38.8, -6.8) on the native grid; classes regrouped into the project's five groups; the fraction of natural vegetation under each alert computed from the crop.",
+      "applies_to_fields": ["lc_class_30m", "lc_group_30m", "lc_natural_frac_30m"],
+      "open_gaps": []
+    }
+  ]
+}

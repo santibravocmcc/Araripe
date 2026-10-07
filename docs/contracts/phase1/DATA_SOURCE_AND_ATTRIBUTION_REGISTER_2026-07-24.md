@@ -544,3 +544,35 @@ Herbaceous and shrub vegetation / Farming / Non-vegetated / Water; the project
 joins forest and natural herbaceous vegetation as "natural", and keeps rocky
 outcrop (29) and hypersaline tidal flat (32), which MapBiomas files under
 herbaceous vegetation, in "other". The site now offers both.
+
+---
+
+## Addition dated 2026-10-07 — the publication carries its sources (A4.1)
+
+Nothing above is rewritten. Gap A4.1 (the release carries no source or
+attribution record) has a design and an implementation on a branch, **not yet
+published**: `docs/contracts/phase2b/GREEN_SOURCES_CONTRACT_V1.md`, decision
+record `docs/implementation/PHASE_6V_2026-10-07.md`.
+
+- **Where.** Not inside `release.json`: a release's id does not read its
+  manifest, every release schema is closed, and attribution changes (§A2).
+  A document beside the release, `sources/<sources-id>/sources.json`, whose id
+  is a function of the release, the land-cover context it covers, and the
+  reviewed records in `config/green_sources_v1.json`.
+- **§6.1 read as it can be met.** "A release may reference only source
+  versions present in its immutable manifest" holds for Sentinel-2 — the
+  ledgers seal `collection_id` per acquisition, and the document is refused
+  unless the ledgers read exactly the declared collection — and for the 2025
+  context, whose recipe seals each crop. It cannot hold for the 2023 crops:
+  nothing a release seals names them. Their records are **asserted**, checked
+  against the replay freeze (path and bytes) and the tracked files (sha256).
+  The freeze photographs the 2023 crops by path and bytes, **not** by sha256.
+- **§6.4 enforced.** A record may leave a required field empty only by naming
+  it in `open_gaps`. Seven gaps, all on the two 2023 crops (origin URL, access
+  date and national checksum of both; the collection of the ≈300 m one).
+- **Copernicus terms URL**, read on 2026-10-07 from the Earth Engine catalog
+  page of `COPERNICUS/S2_SR_HARMONIZED`:
+  <https://sentinels.copernicus.eu/documents/247904/690755/Sentinel_Data_Legal_Notice>.
+  The notice years are the baseline's source years (2017, 2019, 2021, 2022,
+  2025, from the freeze) together with the years of the release's dates that
+  had a usable acquisition, written `first–last`, as the site already does.

@@ -49,6 +49,9 @@ MODULOS_DE_PUBLICACAO = (
     # (docs/contracts/phase2b/GREEN_CONTEXT_CONTRACT_V1.md).
     "green_context",
     "green_release",
+    # Phase 6: the sources and attributions of a green publication, beside it
+    # (docs/contracts/phase2b/GREEN_SOURCES_CONTRACT_V1.md).
+    "green_sources",
     # Phase 6: when the green automation last tried, and what happened
     # (docs/contracts/phase2b/GREEN_HEARTBEAT_CONTRACT_V1.md).
     "heartbeat",
@@ -61,6 +64,9 @@ MODULOS_DE_PUBLICACAO = (
     "run_assembler",
     "run_inputs",
     "site_artifact",
+    # Phase 6: the single writer of the sources pointer
+    # (docs/contracts/phase2b/GREEN_SOURCES_CONTRACT_V1.md).
+    "sources_pointer",
     # Phase 6: where a run's persistence state lives and how the next run
     # continues from it (docs/implementation/PHASE_6G_2026-09-28.md).
     "state_chain",
