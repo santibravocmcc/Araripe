@@ -6,7 +6,7 @@
 
 Read-only. Nothing here writes to R2, to git, or to the site; the only writes
 are the three local documents named by ``--out-dir``, plus the freeze at
-``config/phase3_replay_freeze_v1.json`` when ``--write-freeze`` is passed.
+``config/phase3_replay_freeze_v2.json`` when ``--write-freeze`` is passed.
 
 Why this is not a fourth audit tool
 -----------------------------------
@@ -136,7 +136,7 @@ def _read_r2_alerts(bucket: str, endpoint: str, prefix: str = ALERT_PREFIX) -> d
 @click.option(
     "--write-freeze",
     is_flag=True,
-    help="Write config/phase3_replay_freeze_v1.json as well.",
+    help="Write config/phase3_replay_freeze_v2.json as well.",
 )
 def main(
     site_root: Path | None,

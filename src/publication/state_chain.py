@@ -122,6 +122,8 @@ class Predecessor:
     #: ``persistence_state.stored`` of a version-3 run, or ``None`` for the
     #: uncompressed object at ``STATE_PATH``.
     stored: Mapping[str, Any] | None = None
+    #: The ``algorithm_version`` its ledger seals — its generation (PHASE_6W).
+    algorithm_version: str | None = None
 
     @property
     def next_start(self) -> str:
@@ -238,7 +240,34 @@ def read_predecessor(store: ConditionalStore, run_id: str) -> Predecessor:
         persistence_state_bytes=state["bytes"],
         last_observed_on=dates[-1],
         stored=state.get("stored"),
+        algorithm_version=acceptance.algorithm_version,
     )
+
+
+def check_generation(predecessor: Predecessor, algorithm_version: str) -> None:
+    """Refuse to continue a run of another generation (PHASE_6W).
+
+    ``update_tracks`` stamps the version it is given and never compares it with
+    the state's, so nothing downstream would notice a 1.1.0 run continuing a
+    1.0.0 state until the chain release refuses to mix them — after the run is
+    deposited and the old chain has a second child.  A new generation is a new
+    root (PHASE_6H §1): ``chain=empty``, then ``CHAIN_ROOT`` moves in a reviewed
+    change.
+    """
+
+    if predecessor.algorithm_version != algorithm_version:
+        raise ChainRejected(
+            [
+                Finding(
+                    "predecessor_other_generation",
+                    f"{predecessor.run_id} was detected under algorithm_version "
+                    f"{predecessor.algorithm_version!r} and this run detects under "
+                    f"{algorithm_version!r}. A new generation starts from an empty "
+                    "state, as a new chain root.",
+                    run_key(predecessor.run_id, LEDGER_PATH),
+                )
+            ]
+        )
 
 
 def check_window(predecessor: Predecessor, start: str) -> None:

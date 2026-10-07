@@ -42,15 +42,15 @@ from src.publication import context_pointer  # noqa: E402
 from src.publication import green_context as gc  # noqa: E402
 from src.publication import site_artifact as sa  # noqa: E402
 from src.publication.findings import Rejected  # noqa: E402
+from src.replay.generation import GREEN_LANDCOVER_CROPS  # noqa: E402
 
 LANDCOVER = ROOT / "data" / "landcover"
-#: The recipe: one crop per collection key.  The annotator's own default
-#: rasters (``config.settings.LANDCOVER_RASTERS``) are deliberately NOT read —
+#: The recipe: one crop per collection key — the green generation's own
+#: (``src/replay/generation.py``, PHASE_6W), so the context and the release's
+#: labels cannot name different crops.  The annotator's blue default rasters
+#: (``config.settings.LANDCOVER_RASTERS``) are deliberately NOT read —
 #: importing config.settings loads the production ``.env``.
-CROPS = {
-    "mapbiomas10m": "mapbiomas_col4_10m_2025_araripe",
-    "mapbiomas30m": "mapbiomas_col11_30m_2025_araripe",
-}
+CROPS = dict(GREEN_LANDCOVER_CROPS)
 POINTER_KEY = "pointers/green/current.json"
 
 #: The same names ``publish_green_release.py`` reads, from the same Environment

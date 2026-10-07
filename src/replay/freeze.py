@@ -69,6 +69,7 @@ from src.detection.identity import canonical_sha256
 from src.detection.identity_v3 import SCHEMA_VERSION as IDENTITY_SCHEMA_VERSION
 from src.detection.ledger_v3 import TERMINAL_STATUSES
 from src.detection.persistence import CONFIRMED_MIN, DEFAULT_MIN_OVERLAP_FRAC, GRACE_DAYS
+from src.replay import generation
 from src.processing.composition_v2 import (
     COMPOSITION_METHOD_ID,
     COMPOSITION_SCOPE_VERSION,
@@ -88,11 +89,16 @@ from src.publication.green_release import POINTER_KEY, POINTER_SCHEMA, RELEASE_S
 from src.publication.site_artifact import INDEX_SCHEMA, STATS_POLICY_VERSION
 from src.timeseries.schema import TIMESERIES_SCHEMA_VERSION
 
-#: Version token of the freeze document itself.
-REPLAY_FREEZE_VERSION = "phase3-replay-freeze-v1"
+#: Version token of the freeze document itself.  Version 2 (PHASE_6W,
+#: 2026-10-07) is the green generation annotated with MapBiomas 2025: the
+#: algorithm group carries the replay's own ``algorithm_version`` beside the
+#: blue runtime default, and the MapBiomas group photographs the 2025 crops by
+#: sha256.  ``config/phase3_replay_freeze_v1.json`` stays in the repository as
+#: the record of what the 2023 generation was frozen against; nothing loads it.
+REPLAY_FREEZE_VERSION = "phase3-replay-freeze-v2"
 
 #: Where the checked-in freeze lives.
-FREEZE_PATH = Path(settings.ROOT_DIR) / "config" / "phase3_replay_freeze_v1.json"
+FREEZE_PATH = Path(settings.ROOT_DIR) / "config" / "phase3_replay_freeze_v2.json"
 
 #: The owner's recorded decision about which baseline generation the replay
 #: composes against.  Absent until the owner answers; the freeze then reads it
@@ -163,7 +169,10 @@ def _monitoring_extent() -> dict[str, Any]:
 
 def _algorithm() -> dict[str, Any]:
     return {
-        "detection_algorithm_version": settings.DETECTION_ALGORITHM_VERSION,
+        # The replay's generation, and beside it the blue default it does not
+        # move -- the same two-values-side-by-side as the baseline group.
+        "detection_algorithm_version": generation.GREEN_ALGORITHM_VERSION,
+        "runtime_default_algorithm_version": settings.DETECTION_ALGORITHM_VERSION,
         "indices": ["ndmi", "nbr", "evi2"],
         "confidence_levels": {"0": "none", "1": "low", "2": "medium", "3": "high"},
         "z_thresholds": {
@@ -347,13 +356,22 @@ def _drought() -> dict[str, Any]:
 
 
 def _mapbiomas() -> dict[str, Any]:
+    # The replay's crops (src/replay/generation.py), by sha256 -- version 1
+    # photographed config.settings.LANDCOVER_RASTERS by path and bytes only.
+    # The blue runtime rasters are not the replay's and are not recorded here.
     rasters = {}
-    for name, path in sorted(settings.LANDCOVER_RASTERS.items()):
-        path = Path(path)
+    for name, entry in generation.landcover_crops(Path(settings.ROOT_DIR)).items():
+        report = entry["report"]
         rasters[name] = {
-            "path": path.relative_to(settings.ROOT_DIR).as_posix(),
-            "present_locally": path.exists(),
-            "bytes": path.stat().st_size if path.exists() else None,
+            "path": entry["path"].relative_to(settings.ROOT_DIR).as_posix(),
+            "bytes": entry["bytes"],
+            "sha256": entry["sha256"],
+            "report_path": entry["report_path"].relative_to(settings.ROOT_DIR).as_posix(),
+            "report_sha256": _sha256_of(entry["report_path"]),
+            "collection": report["collection"],
+            "year": report["year"],
+            "origin_url": report["origin_url"],
+            "source_md5": report["source"]["md5"],
         }
     manifest_path = (
         Path(settings.ROOT_DIR)
@@ -362,7 +380,7 @@ def _mapbiomas() -> dict[str, Any]:
     )
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     return {
-        "default_collection": settings.DEFAULT_LANDCOVER_COLLECTION,
+        "default_collection": generation.GREEN_DEFAULT_LANDCOVER_COLLECTION,
         "natural_vegetation_minimum_fraction": _decimal(
             settings.NATURAL_VEG_MIN_FRAC
         ),
