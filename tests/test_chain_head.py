@@ -212,8 +212,15 @@ def test_an_absent_root_is_refused():
     assert excinfo.value.codes == ("chain_root_absent",)
 
 
-def test_the_root_is_the_seed():
-    assert sc.CHAIN_ROOT == "rep-2026-08-30-v3"
+def test_the_root_is_the_generations_own():
+    """PHASE_6W: the 1.1.0 root is the empty-state deposit of run 37660908253;
+    the 1.0.0 root, the replay's seed, stays recorded beside it."""
+
+    from src.replay.generation import GREEN_ALGORITHM_VERSION
+
+    assert sc.CHAIN_ROOTS["1.0.0"] == "rep-2026-08-30-v3"
+    assert sc.CHAIN_ROOTS["1.1.0"] == "ci-37660908253"
+    assert sc.CHAIN_ROOT == sc.CHAIN_ROOTS[GREEN_ALGORITHM_VERSION] == "ci-37660908253"
 
 
 # ── §2 the second child ──────────────────────────────────────────────────────
