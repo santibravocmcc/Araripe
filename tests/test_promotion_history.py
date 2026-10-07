@@ -520,8 +520,9 @@ def test_the_pointer_has_exactly_one_writer_and_it_keeps_the_history():
     file would notice.  The two other callers swap keys of their own and never
     name the pointer: the identity probe, under ``promotion-identity-probe/``,
     the automation heartbeat, at ``status/green/heartbeat.json``
-    (GREEN_HEARTBEAT_CONTRACT_V1.md), and the land-cover context pointer, at
-    ``contexts/current.json`` (GREEN_CONTEXT_CONTRACT_V1.md).
+    (GREEN_HEARTBEAT_CONTRACT_V1.md), the land-cover context pointer, at
+    ``contexts/current.json`` (GREEN_CONTEXT_CONTRACT_V1.md), and the sources
+    pointer, at ``sources/current.json`` (GREEN_SOURCES_CONTRACT_V1.md).
     """
 
     assert _mutating_pointer_calls() == {
@@ -529,6 +530,7 @@ def test_the_pointer_has_exactly_one_writer_and_it_keeps_the_history():
         ("scripts/probe_promotion_identity.py", "main"),
         ("src/publication/heartbeat.py", "record"),
         ("src/publication/context_pointer.py", "move"),
+        ("src/publication/sources_pointer.py", "move"),
     }
     from pathlib import Path
 
@@ -537,6 +539,7 @@ def test_the_pointer_has_exactly_one_writer_and_it_keeps_the_history():
         "scripts/probe_promotion_identity.py",
         "src/publication/heartbeat.py",
         "src/publication/context_pointer.py",
+        "src/publication/sources_pointer.py",
     ):
         source = (root / other).read_text(encoding="utf-8")
         assert "POINTER_KEY" not in source and "pointers/green" not in source, other

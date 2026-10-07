@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "araripe.green.sources/1",
+  "title": "The sources and attributions of a green publication",
+  "description": "GREEN_SOURCES_CONTRACT_V1.md. A document beside a release (and its land-cover context), never inside it. Every value is a function of the release, the context and the sealed spec; check_sources re-derives it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "sources_id",
+    "sources_prefix",
+    "release_id",
+    "context_id",
+    "spec",
+    "spec_sha256",
+    "derived",
+    "attribution"
+  ],
+  "properties": {
+    "schema": {"const": "araripe.green.sources/1"},
+    "sources_id": {"type": "string", "pattern": "^src-g1-[0-9a-f]{64}$"},
+    "sources_prefix": {"type": "string", "pattern": "^sources/src-g1-[0-9a-f]{64}/$"},
+    "release_id": {"type": "string", "pattern": "^rel-g[123]-[0-9a-f]{64}$"},
+    "context_id": {
+      "oneOf": [
+        {"type": "null"},
+        {"type": "string", "pattern": "^ctx-g1-[0-9a-f]{64}$"}
+      ]
+    },
+    "spec_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "spec": {
+      "type": "object",
+      "required": ["schema", "derivation", "basis", "sources"],
+      "properties": {
+        "schema": {"const": "araripe.green.sources-spec/1"},
+        "derivation": {"const": "araripe.green.sources-derivation/1"},
+        "basis": {"type": "object"},
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["source_id", "role", "licence", "open_gaps"],
+            "properties": {
+              "source_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+              "role": {"enum": ["detection", "release_annotation", "context_annotation"]},
+              "licence": {
+                "type": "object",
+                "required": ["name", "url"],
+                "properties": {
+                  "name": {"type": "string", "minLength": 1},
+                  "url": {"type": "string", "pattern": "^https://"}
+                }
+              },
+              "open_gaps": {"type": "array", "items": {"type": "string", "minLength": 3}}
+            }
+          }
+        }
+      }
+    },
+    "derived": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["detection", "release_coverage"],
+      "properties": {
+        "detection": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["collection_ids", "observation_years", "baseline_years", "notice_years"],
+          "properties": {
+            "collection_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+            "observation_years": {"type": "array", "items": {"type": "integer"}},
+            "baseline_years": {"type": "array", "items": {"type": "integer"}},
+            "notice_years": {"type": "string", "pattern": "^[0-9]{4}(–[0-9]{4})?$"}
+          }
+        },
+        "release_coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["first_observed_on", "last_observed_on"],
+          "properties": {
+            "first_observed_on": {"type": "string", "format": "date"},
+            "last_observed_on": {"type": "string", "format": "date"}
+          }
+        }
+      }
+    },
+    "attribution": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source_id", "applies_to", "text", "licence", "modified"],
+        "properties": {
+          "source_id": {"type": "string"},
+          "applies_to": {"enum": ["release", "context"]},
+          "text": {"type": "string", "minLength": 1},
+          "licence": {
+            "type": "object",
+            "required": ["name", "url"],
+            "properties": {
+              "name": {"type": "string", "minLength": 1},
+              "url": {"type": "string", "pattern": "^https://"}
+            }
+          },
+          "modified": {"type": "boolean"}
+        }
+      }
+    }
+  }
+}
