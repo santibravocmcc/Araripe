@@ -11,8 +11,10 @@ writes ``<out-dir>/persistence_state.geojson`` and ``<out-dir>/predecessor.json`
 
 1. read and validate ``runs/<from-run>/run.json`` and its ledger (two small
    documents; the ledger through the Package 2B.2A gate);
-2. refuse any ``--start`` but the day after the last date that ledger covers
-   (§4) — before a byte of the state is downloaded;
+2. refuse a predecessor whose ledger seals another ``algorithm_version`` than
+   the green generation's (``src/replay/generation.py``, PHASE_6W), and any
+   ``--start`` but the day after the last date that ledger covers (§4) —
+   before a byte of the state is downloaded;
 3. refuse a predecessor another run already continues
    (``PHASE_6H_2026-09-28.md`` §2) — the deposit asks again and decides; asking
    here only keeps an hour of detection from being spent on a refused run;
@@ -45,6 +47,7 @@ from src.publication import state_chain as sc  # noqa: E402
 from src.publication.findings import Rejected  # noqa: E402
 from src.publication.ledger_binding import ContractBindingError  # noqa: E402
 from src.publication.run_inputs import ReadOnlyStore  # noqa: E402
+from src.replay.generation import GREEN_ALGORITHM_VERSION  # noqa: E402
 
 ACCESS_KEY_VAR = "R2_STAGING_ACCESS_KEY_ID"
 SECRET_KEY_VAR = "R2_STAGING_SECRET_ACCESS_KEY"
@@ -76,6 +79,7 @@ def build_reader() -> ReadOnlyStore:
 
 def fetch(store, from_run: str, start: str, out_dir: Path, run_id: str | None = None) -> sc.Predecessor:
     predecessor = sc.read_predecessor(store, from_run)
+    sc.check_generation(predecessor, GREEN_ALGORITHM_VERSION)
     sc.check_window(predecessor, start)
     sc.check_not_continued(store, from_run, run_id)
     body = sc.fetch_state(store, predecessor)

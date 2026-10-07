@@ -41,6 +41,7 @@ from src.publication import state_chain as sc  # noqa: E402
 from src.publication.findings import Rejected  # noqa: E402
 from src.publication.ledger_binding import ContractBindingError  # noqa: E402
 from src.publication.run_inputs import ReadOnlyStore  # noqa: E402
+from src.replay.generation import GREEN_ALGORITHM_VERSION  # noqa: E402
 
 ACCESS_KEY_VAR = "R2_STAGING_ACCESS_KEY_ID"
 SECRET_KEY_VAR = "R2_STAGING_SECRET_ACCESS_KEY"
@@ -79,6 +80,7 @@ def emit(outputs: dict[str, str]) -> None:
 def resolve(store, today: str) -> tuple[sc.ChainHead, sc.Predecessor, sc.Window | None]:
     head = sc.resolve_head(store)
     predecessor = sc.read_predecessor(store, head.run_id)
+    sc.check_generation(predecessor, GREEN_ALGORITHM_VERSION)
     return head, predecessor, sc.automatic_window(predecessor, today)
 
 

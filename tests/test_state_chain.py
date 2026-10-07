@@ -32,10 +32,19 @@ STATE = b'{"type":"FeatureCollection","features":[]}\n' * 3
 STATE_KEY = f"runs/{PRED}/persistence_state.geojson"
 
 
+FIXTURE_GENERATION = build_ledger({"2026-04-11": [ZERO]})[0]["algorithm_version"]
+
+
 def load_script(name: str):
     spec = importlib.util.spec_from_file_location(name, ROOT / "scripts" / f"{name}.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
+    if hasattr(module, "GREEN_ALGORITHM_VERSION"):
+        # The fixture ledgers seal another algorithm_version than the green
+        # generation's (measured: 2.0.0), and these tests are
+        # about the chain, not the generation: the refusal to continue
+        # another generation has its own tests in test_green_generation.py.
+        module.GREEN_ALGORITHM_VERSION = FIXTURE_GENERATION
     return module
 
 

@@ -427,16 +427,23 @@ def command_run(args):
     import pandas as pd
 
     export = _load_export()
-    from config.settings import (
-        DETECTION_ALGORITHM_VERSION, MONITORING_EXTENT_ID,
-        SCENE_ANOMALY_REJECT_FRAC, DEFAULT_LANDCOVER_COLLECTION,
+    from config.settings import MONITORING_EXTENT_ID, SCENE_ANOMALY_REJECT_FRAC
+    # The green generation, not the blue defaults in config.settings: the
+    # replay is annotated with the MapBiomas 2025 crops only and detects under
+    # its own algorithm_version (src/replay/generation.py, PHASE_6W). The blue
+    # DETECTION_ALGORITHM_VERSION and LANDCOVER_RASTERS stay where production
+    # left them.
+    from src.replay.generation import (
+        GREEN_ALGORITHM_VERSION as DETECTION_ALGORITHM_VERSION,
+        GREEN_DEFAULT_LANDCOVER_COLLECTION as DEFAULT_LANDCOVER_COLLECTION,
+        landcover_rasters,
     )
     from src.detection.alerts import save_alerts, summarize_alerts, vectorize_alerts
     from src.detection.baseline import load_baseline_pair
     from src.detection.baseline_selection import resolve_baseline
     from src.detection.change_detect import detect_deforestation
     from src.detection.identity import create_acquisition_identity
-    from src.detection.landcover import annotate_alerts_all_collections
+    from src.detection.landcover_core import annotate_alerts_all_collections
     from src.detection.ledger_v3 import ProcessingLedgerV3
     from src.detection.persistence import (
         AmbiguousLineageError, load_persistence_state, save_persistence_state,
@@ -452,10 +459,16 @@ def command_run(args):
 
     frozen, baseline_decision, decision, overlap, lineage = _preflight()
     baseline = resolve_baseline(args.baseline_version)
+    # Verified against each crop's report before a single EECU-second: a
+    # missing or different crop would annotate every alert wrongly and quietly.
+    rasters = landcover_rasters(Path(__file__).resolve().parents[1])
     out = Path(args.out_dir); out.mkdir(parents=True, exist_ok=True)
     composites = out / "composites"; composites.mkdir(exist_ok=True)
     alerts_dir = out / "alerts"; alerts_dir.mkdir(exist_ok=True)
 
+    print("green generation    %s, land cover %s"
+          % (DETECTION_ALGORITHM_VERSION,
+             ", ".join("%s=%s" % (k, v.name) for k, v in sorted(rasters.items()))))
     print("baseline generation %s from %s" % (baseline.version, baseline.directory))
     print("composition unit    %s under %s" % (decision.unit, decision.composite_method_id))
     print("overlap rule        %s (%s, majority rule: %s)"
@@ -648,11 +661,19 @@ def command_run(args):
             frame["source_datatake_id"] = item.acquisition.datatake_id
             frame["source_platform"] = item.acquisition.platform
             frame["source_acquisition_id_v3"] = item.acquisition_id
-            try:
-                frame = annotate_alerts_all_collections(
-                    frame, default_collection=DEFAULT_LANDCOVER_COLLECTION)
-            except Exception as exc:
-                print("     land-cover annotation failed (%s)" % exc)
+            # No try: an alert without its land cover would publish a release
+            # whose strong filter (lc_natural_frac_10m) silently drops it. The
+            # blue path swallows this failure; the green run stops instead,
+            # and the lane deposits nothing.
+            frame = annotate_alerts_all_collections(
+                frame, rasters=rasters,
+                default_collection=DEFAULT_LANDCOVER_COLLECTION)
+            unlabelled = [key for key in rasters
+                          if "lc_natural_frac_" + key.replace("mapbiomas", "")
+                          not in frame.columns]
+            if unlabelled:
+                raise SystemExit("land-cover annotation produced no column for %s"
+                                 % ", ".join(unlabelled))
             frames_by_date.setdefault(item.observed_on, []).append(frame)
         # The terminal row waits for persistence: observation IDs are minted
         # there, and complete_with_alerts requires them.
