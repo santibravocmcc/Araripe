@@ -294,22 +294,16 @@ def test_the_lane_is_serialized_and_runs_only_from_main():
     assert publish["if"] == "inputs.mode == 'publish'"
 
 
-def test_the_lane_is_callable_after_a_promotion_and_reads_its_own_mode():
-    """PHASE_6U §5: `v2_operational_publish.yml` calls this lane after
-    `promote`. Called, the `github` context is the caller's, so
-    `github.event.inputs.mode` would be the CALLER's inputs — which have no
-    `mode` — and the lane would refuse every call. `inputs.mode` is filled by
-    both triggers."""
+def test_the_lane_is_dispatched_only_and_reads_its_own_mode():
+    """PHASE_6W §8: the lane is no longer called by v2_operational_publish.yml
+    (its Environment secrets arrived empty in the call); that lane runs the
+    same steps in a job of its own. This one stays for a manual re-publish."""
 
     import yaml
 
-    text = (ROOT / ".github/workflows/v2_green_context.yml").read_text()
-    lane = yaml.safe_load(text)
+    lane = yaml.safe_load((ROOT / ".github/workflows/v2_green_context.yml").read_text())
     on = lane[True]
-    assert set(on) == {"workflow_dispatch", "workflow_call"}
-    for trigger in on.values():
-        assert trigger["inputs"]["mode"]["default"] == "plan"
-    assert on["workflow_call"]["inputs"]["mode"]["type"] == "string"
-    assert "github.event.inputs" not in yaml.dump(lane["jobs"])
+    assert set(on) == {"workflow_dispatch"}
+    assert on["workflow_dispatch"]["inputs"]["mode"]["default"] == "plan"
     mode = next(s for s in lane["jobs"]["context"]["steps"] if s["name"] == "Refuse an unknown mode")
     assert mode["env"]["MODE"] == "${{ inputs.mode }}"

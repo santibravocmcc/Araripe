@@ -310,24 +310,76 @@ jobs:
 
   # ── the land-cover context of the release just promoted ─────────────────────
   #
-  # GREEN_CONTEXT_CONTRACT_V1.md §7: promote → context → site compose. Until
-  # this job, the middle step was a separate manual dispatch, and between a
-  # promotion and that dispatch the live context is `context_not_live` — the
-  # site, rebuilt then, shows the release's own 2023 labels and a different
-  # strong subset, and flips again when someone remembers the context
-  # (PHASE_6U §5). `needs: promote` makes the order structural.
+  # GREEN_CONTEXT_CONTRACT_V1.md §7: promote → context → site compose.
+  # `needs: promote` makes the order structural.
   #
-  # It calls the context lane itself (`workflow_call`) instead of copying its
-  # steps: one definition, one bucket guard, one Environment binding. The
-  # called job binds `v2-promotion` on its own — environment secrets reach a
-  # called workflow only through its own `environment:` — so nothing is passed
-  # from here, and no `secrets: inherit`.
+  # A job of THIS workflow, not a `workflow_call` of v2_green_context.yml.
+  # Araripe#102 called that lane, on the premise that the called job's own
+  # `environment: v2-promotion` would bring the Environment's secrets. Measured
+  # on its first real run (37688757241): they arrived empty, "missing R2
+  # credentials in the environment". The one-line fix, `secrets: inherit`,
+  # would hand the called workflow every REPOSITORY secret too — the blue
+  # production keys among them. So the steps live here, bound to the
+  # Environment directly, and tests/test_operational_publish_lane.py keeps them
+  # identical to the standalone lane's, which stays for a manual re-publish
+  # (PHASE_6W §8, decided by the owner on 2026-10-08: option b).
   #
-  # Idempotent by construction: objects are put by content and the context
-  # pointer move returns "unchanged" when it already names the same context
-  # (scripts/publish_green_context.py `apply`, src/publication/context_pointer.py).
+  # Same concurrency group as the standalone lane, so the two never write the
+  # context pointer at once. Idempotent by construction: objects are put by
+  # content and the pointer move returns "unchanged" when it already names the
+  # same context (scripts/publish_green_context.py `apply`).
   context:
     needs: promote
-    uses: ./.github/workflows/v2_green_context.yml
-    with:
-      mode: publish
+    if: github.event_name == 'workflow_dispatch' && github.repository == 'santibravocmcc/Araripe' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: v2-promotion
+    concurrency:
+      group: araripe-green-context
+      cancel-in-progress: false
+    env:
+      R2_STAGING_BUCKET: ${{ vars.R2_STAGING_BUCKET }}
+      R2_ENDPOINT_URL: ${{ vars.R2_ENDPOINT_URL }}
+    steps:
+      - name: Fail closed unless the target is exactly the approved staging bucket
+        run: |
+          set -euo pipefail
+          test "$R2_STAGING_BUCKET" = "araripe-v2-staging" || {
+            echo "::error::R2_STAGING_BUCKET is not araripe-v2-staging" >&2; exit 1; }
+          test "$R2_ENDPOINT_URL" = "https://9416750169311ee4afc18a8ff3c771d4.r2.cloudflarestorage.com" || {
+            echo "::error::R2_ENDPOINT_URL is not the approved account endpoint" >&2; exit 1; }
+
+      - name: Check out the publication code and the committed crops
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.11"
+
+      - name: Install the pinned dependencies
+        # The green detection pins: rasterio/geopandas for the annotation, and
+        # boto3/botocore 1.42 for IfMatch (the compare-and-swap of the pointer).
+        run: |
+          set -euo pipefail
+          python -m pip install --quiet --disable-pip-version-check -r requirements-green-detect.txt
+          python -m pip freeze | grep -iE '^(rasterio|geopandas|numpy|boto3|botocore)=='
+
+      - name: Fetch the live release's full alert objects
+        env:
+          R2_PROMOTION_ACCESS_KEY_ID: ${{ secrets.R2_PROMOTION_ACCESS_KEY_ID }}
+          R2_PROMOTION_SECRET_ACCESS_KEY: ${{ secrets.R2_PROMOTION_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+        run: python scripts/publish_green_context.py fetch --out "$RUNNER_TEMP/context-input"
+
+      - name: Annotate and check the context (no store)
+        run: |
+          python scripts/publish_green_context.py plan \
+            --input "$RUNNER_TEMP/context-input" --out "$RUNNER_TEMP/context-output"
+
+      - name: Publish the context and move contexts/current.json
+        env:
+          R2_PROMOTION_ACCESS_KEY_ID: ${{ secrets.R2_PROMOTION_ACCESS_KEY_ID }}
+          R2_PROMOTION_SECRET_ACCESS_KEY: ${{ secrets.R2_PROMOTION_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+        run: python scripts/publish_green_context.py apply --context "$RUNNER_TEMP/context-output"

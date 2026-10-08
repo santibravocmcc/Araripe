@@ -280,6 +280,13 @@
       "environment": "v2-promotion",
       "moves_the_pointer": false,
       "note": "added 2026-10-06 with GREEN_CONTEXT_CONTRACT_V1.md, after the owner chose (2026-10-06) to re-label the published history with MapBiomas 2025 as a separate layer. Writes contexts/objects/<sha256> (put_if_absent) and swaps contexts/current.json (context_pointer.move); never the release pointer. Publishing a context is a publication act, so it holds the same identity that promotes, with no reviewer, as the 2026-10-02 decision sets for every publication."
+    },
+    {
+      "workflow": "v2_operational_publish.yml",
+      "job": "context",
+      "environment": "v2-promotion",
+      "moves_the_pointer": false,
+      "note": "added 2026-10-08 (PHASE_6W §8, owner chose option b): the same steps as v2_green_context.yml's job, run right after promote in the same workflow. Replaces Araripe#102's workflow_call, whose Environment secrets arrived empty (run 37688757241); secrets: inherit was refused because it would hand the called workflow the blue repository keys. Same writes as the standalone context lane; never the release pointer."
     }
   ],
   "what_this_design_does_not_protect": [

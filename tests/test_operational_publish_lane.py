@@ -236,8 +236,8 @@ def test_both_jobs_allowlist_the_run_id_before_it_becomes_a_key(lane):
     there is no run id for it to turn into a key."""
 
     for name, job in jobs(lane).items():
-        if called(job) is not None:
-            assert "run_id" not in json.dumps(job.get("with", {})), name
+        if name == "context":
+            assert "run_id" not in json.dumps(job), name
             continue
         step = next(step for step in steps(job) if "run id" in step["name"])
         assert "*[!A-Za-z0-9._-]*" in executed(step["run"]), name
@@ -386,44 +386,13 @@ def test_the_lane_does_not_install_the_blue_environment_file(lane):
 
 
 def test_actions_are_pinned_by_the_sha_the_green_lanes_already_use(lane_text):
-    # The called context lane is not an action: it is this repository's file
-    # at the caller's commit, and `tests/test_action_pinning.py` sweeps it.
-    used = set(re.findall(r"uses:\s*(\S+)", lane_text)) - {CONTEXT_LANE}
+    # The context job (PHASE_6W §8) sets up Python as the standalone context
+    # lane does, so the familiar pins are the promotion lane's and that lane's.
+    used = set(re.findall(r"uses:\s*(\S+)", lane_text))
     pinned = set(re.findall(r"uses:\s*(\S+)", PROMOTION_LANE.read_text(encoding="utf-8")))
+    pinned |= set(re.findall(r"uses:\s*(\S+)", (WORKFLOWS / "v2_green_context.yml").read_text(encoding="utf-8")))
     assert used, "the lane should check the code out"
     assert used <= pinned, f"unpinned or unfamiliar action: {used - pinned}"
-
-
-# ── the context, after the promotion (PHASE_6U §5) ───────────────────────────
-
-def test_the_context_is_published_only_after_a_promotion(lane):
-    """GREEN_CONTEXT_CONTRACT_V1.md §7, as structure: promote → context."""
-
-    context = jobs(lane)["context"]
-    assert context["needs"] == "promote"
-    assert context["uses"] == CONTEXT_LANE
-    assert context["with"] == {"mode": "publish"}
-    # a failed promotion skips it; nothing overrides that
-    assert "if" not in context
-
-
-def test_the_context_job_passes_no_secret_and_borrows_no_identity(lane):
-    """Environment secrets reach a called workflow only through its own
-    `environment:`; passing or inheriting secrets here would hand the called
-    file whatever this caller holds."""
-
-    context = jobs(lane)["context"]
-    assert "secrets" not in context
-    assert "environment" not in context and "permissions" not in context
-    inner = called(context)["jobs"]
-    assert {job["environment"] for job in inner.values()} == {"v2-promotion"}
-
-
-def test_only_the_promotion_job_feeds_the_context(lane):
-    """The context lane is called from exactly one place in this file."""
-
-    callers = [name for name, job in jobs(lane).items() if "uses" in job]
-    assert callers == ["context"]
 
 
 # ── lane distinctness, counting job-level groups ─────────────────────────────
@@ -631,3 +600,36 @@ def test_the_publication_cli_exposes_publish_from_a_run(capsys):
     with pytest.raises(SystemExit):
         publish_cli.main(["publish"])  # --run is required
     assert "--run" in capsys.readouterr().err
+
+
+# ── the context job (PHASE_6W §8, option b) ──────────────────────────────────
+
+def test_the_context_job_is_bound_to_its_environment_not_called(lane):
+    """Araripe#102 called v2_green_context.yml; its Environment secrets arrived
+    empty (run 37688757241). The job now binds v2-promotion itself, and no
+    job of this lane calls another workflow — a call would need
+    ``secrets: inherit``, which hands over the blue repository keys."""
+
+    job = jobs(lane)["context"]
+    assert "uses" not in job and job["needs"] == "promote"
+    assert job["environment"] == "v2-promotion"
+    assert job["concurrency"] == {"group": "araripe-green-context", "cancel-in-progress": False}
+    assert "github.ref == 'refs/heads/main'" in job["if"]
+    assert not any("uses" in j or "secrets" in j for j in jobs(lane).values())
+
+
+def test_the_context_job_runs_the_standalone_lanes_steps(lane):
+    """One recipe in two places only if a test holds them equal: the
+    standalone lane keeps its mode check and its plan/publish switch, and
+    every other step is the same, in the same order."""
+
+    import yaml
+
+    standalone = yaml.safe_load((WORKFLOWS / "v2_green_context.yml").read_text())
+    theirs = [dict(s) for s in standalone["jobs"]["context"]["steps"]
+              if s["name"] != "Refuse an unknown mode"]
+    for step in theirs:
+        step.pop("if", None)
+    ours = jobs(lane)["context"]["steps"]
+    assert ours == theirs
+    assert "apply" in ours[-1]["run"] and "if" not in ours[-1]
