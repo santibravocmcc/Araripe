@@ -416,3 +416,62 @@ def test_the_script_does_not_opt_into_the_profile_or_name_another_identity():
             assert not any(k.arg == "profile_fallback" for k in node.keywords)
     assert "R2_PROMOTION" not in source
     assert "ReadOnlyStore" not in source
+
+
+# ── the run summary (PHASE_6Y_2026-10-10.md §2.4) ────────────────────────────
+
+
+def _summarise(monkeypatch, tmp_path, env, *, fake=None):
+    script = _load_script()
+    fake = fake or FakeS3()
+
+    def build_client(bucket, endpoint, credentials, **kwargs):
+        cs.assert_staging_target(bucket, endpoint)
+        return fake
+
+    monkeypatch.setattr(cs, "build_client", build_client)
+    summary = tmp_path / "summary.md"
+    code = script.main(LANE_ENV | {"GITHUB_STEP_SUMMARY": str(summary)} | env)
+    return code, summary.read_text(), fake
+
+
+DEPOSITED = {"DETECT_RESULT": "success", "DEPOSIT_RESULT": "success", "PROCEED": "true",
+             "WILL_DEPOSIT": "true", "CHAIN": "head", "WINDOW_START": "2026-10-05",
+             "WINDOW_END": "2026-10-09", "FROM_RUN": "ci-37686447368", "EXPECTED": "3"}
+
+
+def test_a_deposit_summary_names_the_window_the_predecessor_and_the_prefix(monkeypatch, tmp_path):
+    code, text, fake = _summarise(monkeypatch, tmp_path, DEPOSITED)
+    assert code == 0
+    assert "## Green deposit lane — ci-36500000009" in text
+    assert "| outcome | **deposited** — deposited a run prefix and re-validated it |" in text
+    assert "| window | 2026-10-05 .. 2026-10-09 (end exclusive) |" in text
+    assert "| continues | ci-37686447368 |" in text
+    assert "| acquisitions expected | 3 |" in text
+    assert "| deposited | `runs/ci-36500000009/` |" in text
+    assert "| heartbeat | recorded (created after 1 read(s)) |" in text
+    # The window is in the summary and never in the beat (contract §4.2).
+    assert "2026-10-05" not in fake.body(db.HEARTBEAT_KEY).decode()
+
+
+def test_a_run_with_nothing_to_do_has_no_window_and_no_prefix(monkeypatch, tmp_path):
+    env = {"DETECT_RESULT": "success", "DEPOSIT_RESULT": "skipped", "PROCEED": "false",
+           "WILL_DEPOSIT": "", "CHAIN": "head", "FROM_RUN": "ci-37686447368"}
+    code, text, _ = _summarise(monkeypatch, tmp_path, env)
+    assert code == 0
+    assert "**nothing_to_do**" in text
+    assert "| window | — |" in text and "| continues | — |" in text and "| deposited | — |" in text
+
+
+def test_the_summary_is_written_when_the_beat_is_not(monkeypatch, tmp_path):
+    fake = FakeS3(fail_on={db.HEARTBEAT_KEY})
+    env = DEPOSITED | {"DEPOSIT_RESULT": "failure"}
+    code, text, _ = _summarise(monkeypatch, tmp_path, env, fake=fake)
+    assert code == 1
+    assert "| outcome | **failed** at deposit — failed |" in text
+    assert "| heartbeat | **not recorded**:" in text
+
+
+def test_every_outcome_has_words_in_the_summary():
+    script = _load_script()
+    assert set(script.SAID) == set(hb.SUCCESSES) | {hb.FAILED, hb.CANCELLED}

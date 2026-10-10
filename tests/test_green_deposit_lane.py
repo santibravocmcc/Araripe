@@ -393,6 +393,8 @@ def test_an_empty_window_deposits_nothing_unless_it_is_full(tmp_path, expected, 
     got, out = run_inline(step_named("detect", ENUMERATED), tmp=tmp_path, FULL=full)
     assert (got == 0) == (code == 0)
     assert out.get("deposit") == deposit
+    # The count travels to the run summary (PHASE_6Y §2.4), zero included.
+    assert out.get("expected") == (str(expected) if code == 0 else None)
 
 
 def test_every_step_after_the_screen_needs_something_to_deposit():
@@ -465,3 +467,27 @@ def test_the_heartbeat_joins_no_queue():
 def test_the_heartbeat_installs_the_conditional_write_floor():
     (install,) = [s for s in steps("heartbeat") if "pip install" in (s.get("run") or "")]
     assert "'botocore>=1.36.0'" in install["run"] and "'jsonschema>=4.23.0'" in install["run"]
+
+
+# ─── the run summary (PHASE_6Y_2026-10-10.md §2.4) ───────────────────────────
+
+
+def test_the_detection_hands_the_summary_what_the_run_tried():
+    outputs = doc()["jobs"]["detect"]["outputs"]
+    assert outputs["chain"] == "${{ steps.inputs.outputs.chain }}"
+    assert outputs["start"] == "${{ steps.window.outputs.start }}"
+    assert outputs["end"] == "${{ steps.window.outputs.end }}"
+    assert outputs["expected"] == "${{ steps.enumerated.outputs.expected }}"
+    env = step_named("heartbeat", BEAT)["env"]
+    assert env["CHAIN"] == "${{ needs.detect.outputs.chain }}"
+    assert env["WINDOW_START"] == "${{ needs.detect.outputs.start }}"
+    assert env["WINDOW_END"] == "${{ needs.detect.outputs.end }}"
+    assert env["FROM_RUN"] == "${{ needs.detect.outputs.from_run }}"
+    assert env["EXPECTED"] == "${{ needs.detect.outputs.expected }}"
+
+
+def test_the_status_of_every_product_stays_out_of_this_lane():
+    """It reads three pointers, and this lane reads none (test above)."""
+
+    text = "\n".join(executable_lines(WORKFLOW.read_text(encoding="utf-8")))
+    assert "green_status" not in text

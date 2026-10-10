@@ -1,0 +1,66 @@
+name: v2 green status (every green product, read-only)
+
+# docs/implementation/PHASE_6Y_2026-10-10.md, item 6 of PACKAGE_P6_PROMPT.md
+# §4.1: the status of every green product, readable without a terminal.
+#
+# One job, one step that holds a credential, one script:
+# scripts/green_status.py reads the pointer, the live release, the heartbeat,
+# the context and sources pointers and the chain head, and prints one line per
+# product -- here, into the job summary. Nothing is written: the store is a
+# ReadOnlyStore, and no status document exists in the bucket, by design (every
+# fact already has one owner; a stored copy would be a second answer that goes
+# stale).
+#
+# The identity is the CANDIDATE one (v2-staging, R2_STAGING_*), never the
+# promotion one: reading the state must not need the key that moves the
+# pointer. The Environment admits only `main`.
+#
+# No concurrency group: it writes nothing, and a pending run in a group is
+# cancelled when another queues. No schedule: no green lane carries a cron
+# before the cutover (Package 2B.0). At the cutover this is the lane that gets
+# the agenda -- and, once the owner decides the limits (PHASE_6Y §4), fails the
+# way the blue site robot fails when a product is late. Until then an age never
+# fails it; only a broken document, chain or route answer does.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  status:
+    if: github.repository == 'santibravocmcc/Araripe'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: v2-staging
+    env:
+      R2_STAGING_BUCKET: ${{ vars.R2_STAGING_BUCKET }}
+      R2_ENDPOINT_URL: ${{ vars.R2_ENDPOINT_URL }}
+
+    steps:
+      - name: Fail closed unless the target is exactly the approved staging bucket
+        run: |
+          set -euo pipefail
+          test "$R2_STAGING_BUCKET" = "araripe-v2-staging" || {
+            echo "::error::refusing: R2_STAGING_BUCKET is not araripe-v2-staging" >&2; exit 1; }
+          test "$R2_ENDPOINT_URL" = "https://9416750169311ee4afc18a8ff3c771d4.r2.cloudflarestorage.com" || {
+            echo "::error::refusing: R2_ENDPOINT_URL is not the approved account endpoint" >&2; exit 1; }
+
+      - name: Check out the lane code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Install the dependencies the reader needs
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet --disable-pip-version-check \
+            'jsonschema>=4.23.0' 'boto3>=1.36.0' 'botocore>=1.36.0'
+
+      - name: Read every green product's status
+        env:
+          R2_STAGING_ACCESS_KEY_ID: ${{ secrets.R2_STAGING_ACCESS_KEY_ID }}
+          R2_STAGING_SECRET_ACCESS_KEY: ${{ secrets.R2_STAGING_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+        run: |
+          set -euo pipefail
+          python3 scripts/green_status.py
