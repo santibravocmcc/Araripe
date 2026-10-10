@@ -19,9 +19,10 @@ Two rules, both from measurements in that record:
   answer**, computed by calling ``delivery_boundary.resolve`` itself — so this
   reading and the Worker cannot disagree about what the page receives.
 
-No age becomes "late" here.  Which age counts as late is the owner's decision
-(PHASE_6Y §4); this module reports, and judges only what is a fact rather than
-a limit: a document that cannot be read or does not check, a chain the head
+Two ages are judged, against the limits the owner decided on 2026-10-10
+(``LIMITS_DAYS``, PHASE_6Y §4): the last attempt and the last date looked at.
+No other age is.  Beyond those, this module judges only what is a fact rather
+than a limit: a document that cannot be read or does not check, a chain the head
 resolution refuses, a route refusal that is not "waiting for a lane".
 
 Nothing here touches a store: ``scripts/green_status.py`` reads, and hands the
@@ -30,7 +31,7 @@ documents — or the reason one could not be read — to :func:`assess`.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime, timezone
 from typing import Any, Mapping, Sequence
 
@@ -45,8 +46,23 @@ PENDING = "pending"
 ABSENT = "absent"
 #: A fact the producer promises against: unreadable, unchecked, refused.
 BROKEN = "broken"
+#: Readable and current, but older than the limit the owner set for it.
+LATE = "late"
 
-STATES = (OK, PENDING, ABSENT, BROKEN)
+#: The owner's limits, decided 2026-10-10 (PHASE_6Y §4, the recommendation):
+#: whole days, strictly more than this is late. Only these two products are
+#: judged — the date shown has no limit (30 days was normal in the 2026 rainy
+#: season), and the wait between lanes is decided at the cutover.
+LIMITS_DAYS = {
+    # Monday/Thursday cadence: 4 days is the longest normal gap; 5 is one
+    # missed attempt.
+    "automation.latest": 5,
+    # Longest gap between dates looked at in 2026: 12 days; seen by the next
+    # run after one settle day, up to 4 days later (~17); 21 lets one run slip.
+    "alerts.observed": 21,
+}
+
+STATES = (OK, LATE, PENDING, ABSENT, BROKEN)
 
 STAMP = "%Y-%m-%dT%H:%M:%SZ"
 
@@ -263,11 +279,22 @@ def assess(reading: Reading, now: datetime) -> list[Row]:
                             reading, release, ("context_pointer", "context"), context_text))
     rows.append(_served_row("sources", db.MOUNT + db.SOURCES_NAME, reading, release,
                             ("context_pointer", "sources_pointer", "sources"), sources_text))
-    return rows
+    return [_judged(row) for row in rows]
+
+
+def _judged(row: Row) -> Row:
+    limit = LIMITS_DAYS.get(row.product)
+    if row.state != OK or limit is None or row.age_days is None or row.age_days <= limit:
+        return row
+    return replace(row, state=LATE, detail=f"{row.age_days} days, past the owner's limit of {limit}; {row.detail}")
 
 
 def broken(rows: Sequence[Row]) -> bool:
     return any(row.state == BROKEN for row in rows)
+
+
+def late(rows: Sequence[Row]) -> bool:
+    return any(row.state == LATE for row in rows)
 
 
 # ── rendering ────────────────────────────────────────────────────────────────
@@ -280,7 +307,7 @@ def _age(row: Row) -> str:
 def as_text(rows: Sequence[Row], now: datetime) -> str:
     width = max(len(row.product) for row in rows)
     lines = [f"green status at {now.astimezone(timezone.utc).strftime(STAMP)} "
-             "(read-only; no age is judged — the limits are the owner's)"]
+             "(read-only; limits: last attempt 5 d, last date looked at 21 d)"]
     for row in rows:
         lines.append(f"{row.product.ljust(width)}  {row.state.ljust(7)}  "
                      f"{(row.since or '—').ljust(20)}  {_age(row).rjust(5)}  {row.detail}")
@@ -295,9 +322,9 @@ def as_markdown(rows: Sequence[Row], now: datetime) -> str:
     lines = [
         "## Green status",
         "",
-        f"Read at {now.astimezone(timezone.utc).strftime(STAMP)}, read-only. Ages are "
-        "reported, not judged: which age counts as late is the owner's decision "
-        "(PHASE_6Y §4).",
+        f"Read at {now.astimezone(timezone.utc).strftime(STAMP)}, read-only. Late means "
+        "past the owner's limits (PHASE_6Y §4): last attempt 5 days, last date "
+        "looked at 21; no other age is judged.",
         "",
         "| product | state | since | age | detail |",
         "| --- | --- | --- | --- | --- |",

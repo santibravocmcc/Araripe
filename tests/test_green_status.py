@@ -6,8 +6,8 @@ What carries it, each proven here rather than argued:
   at — and never from an object's stamp (``max_terminal_at``, ``promoted_utc``);
 * whether a context or a sources document is current is what
   ``delivery_boundary.resolve`` answers, so the status and the route agree;
-* no age is judged: a very old product is reported, not failed — the limits
-  are the owner's decision;
+* only the two ages the owner limited are judged (attempt 5 d, date looked at
+  21 d, PHASE_6Y §4); a late product fails the script;
 * only facts fail: an unreadable document, a refused chain, a route refusal
   that is not "a lane has not caught up";
 * the script reads with the candidate identity, through ``ReadOnlyStore``,
@@ -133,6 +133,7 @@ def rows_by_product(r):
 
 def test_everything_live_is_ok_with_one_row_per_product_in_a_fixed_order():
     rows = st.assess(reading(), NOW)
+    assert not st.late(rows)
     assert [row.product for row in rows] == [
         "alerts.shown", "alerts.observed", "deposits.unpublished",
         "automation.latest", "automation.last_success", "context", "sources",
@@ -160,15 +161,38 @@ def test_an_age_never_comes_from_an_objects_stamp():
     assert rows["alerts.observed"].age_days == 268
 
 
-def test_no_age_is_judged_and_a_product_months_old_is_still_ok():
-    """The limit is the owner's decision (PHASE_6Y §4). A coded limit fails here."""
+def test_only_the_two_limited_ages_are_judged():
+    """The owner's limits (PHASE_6Y §4, 2026-10-10): attempt 5 d, date looked at
+    21 d. The date shown and the instants of last_success stay unjudged."""
 
     old = release([_date("2025-01-01", ["alerts/run-2025-01-01.geojson"])])
     stale_beat = heartbeat(attempt("deposited", "2025-01-02T06:00:00Z"))
-    rows = st.assess(reading(release=old, pointer=pointer(through="2025-01-01"), heartbeat=stale_beat,
-                             head=st.Head("ci-1", "2025-01-01")), NOW)
-    assert {row.state for row in rows} == {st.OK}
-    assert min(row.age_days for row in rows if row.age_days is not None) > 600
+    rows = rows_by_product(reading(release=old, pointer=pointer(through="2025-01-01"), heartbeat=stale_beat,
+                                   head=st.Head("ci-1", "2025-01-01")))
+    late = {p for p, r in rows.items() if r.state == st.LATE}
+    assert late == {"automation.latest", "alerts.observed"}
+    assert rows["alerts.shown"].state == st.OK and rows["automation.last_success"].state == st.OK
+    assert "past the owner's limit of 5" in rows["automation.latest"].detail
+
+
+@pytest.mark.parametrize("product, field, ok_age", [("automation.latest", "beat", 5),
+                                                     ("alerts.observed", "observed", 21)])
+def test_a_limit_is_strictly_more_than_its_days(product, field, ok_age):
+    from datetime import timedelta
+
+    def at(age):
+        day = (NOW - timedelta(days=age))
+        if field == "beat":
+            return reading(heartbeat=heartbeat(attempt("no_acquisition", day.strftime(st.STAMP))))
+        d = day.date().isoformat()
+        return reading(release=release([_date(d, [])]), pointer=pointer(through=d), head=st.Head("ci-1", d))
+
+    assert rows_by_product(at(ok_age))[product].state == st.OK
+    assert rows_by_product(at(ok_age + 1))[product].state == st.LATE
+
+
+def test_the_limits_are_exactly_the_owners():
+    assert st.LIMITS_DAYS == {"automation.latest": 5, "alerts.observed": 21}
 
 
 def test_a_release_with_no_product_says_so_without_a_date():
@@ -319,7 +343,7 @@ def live():
         fake.objects[key] = (body, "application/json")
         return _sha(body)
 
-    put(db.HEARTBEAT_KEY, heartbeat())
+    put(db.HEARTBEAT_KEY, heartbeat(attempt("no_acquisition", "2026-04-16T06:00:00Z")))
     ctx = _context_for(live_release)
     digest = put(ctx["context_prefix"] + gc.CONTEXT_DOCUMENT_NAME, ctx)
     put(gc.CONTEXT_CURRENT_KEY, gc.pointer_document(
@@ -332,12 +356,16 @@ def live():
     return fake
 
 
+#: The fixture chain covers April 2026, so its reading happens then.
+LIVE_NOW = datetime(2026, 4, 17, 12, 0, 0, tzinfo=timezone.utc)
+
+
 def _run(fake, tmp_path, monkeypatch):
     script = _script()
     summary = tmp_path / "summary.md"
     monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary))
     writes = len(fake.writes)
-    code = script.main([], store=ReadOnlyStore(fake, cs.STAGING_BUCKET), now=NOW)
+    code = script.main([], store=ReadOnlyStore(fake, cs.STAGING_BUCKET), now=LIVE_NOW)
     assert len(fake.writes) == writes, "the status writes nothing"
     return code, summary.read_text() if summary.exists() else ""
 
@@ -368,6 +396,14 @@ def test_sources_with_another_digest_are_broken_not_served(live, tmp_path, monke
     live.objects[key] = (body + b"\n", kind)
     code, summary = _run(live, tmp_path, monkeypatch)
     assert code == 1 and "| `sources` | broken |" in summary and "| `context` | ok |" in summary
+
+
+def test_a_late_automation_fails_the_script(live, tmp_path, monkeypatch):
+    late_now = datetime(2026, 4, 22, 12, 0, 0, tzinfo=timezone.utc)
+    script = _script()
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(tmp_path / "s.md"))
+    code = script.main([], store=ReadOnlyStore(live, cs.STAGING_BUCKET), now=late_now)
+    assert code == 1 and "| `automation.latest` | late |" in (tmp_path / "s.md").read_text()
 
 
 def test_a_forked_chain_fails_the_script(live, tmp_path, monkeypatch):
