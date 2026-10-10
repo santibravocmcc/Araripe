@@ -41,6 +41,12 @@ GREEN_GROUPS = {
     # writes contexts/ and contexts/current.json, never the release pointer,
     # and `apply` refuses a context for a release that is no longer live.
     "v2_green_context.yml": "araripe-green-context",
+    # The sources document (GREEN_SOURCES_CONTRACT_V1.md, PHASE_6X): its own
+    # group, NOT the promotion's -- a pending run in a group is cancelled when
+    # another queues, so sharing it could displace a waiting promotion. It
+    # writes sources/ and sources/current.json only, and `apply` refuses a
+    # document for a release or context that is no longer live.
+    "v2_green_sources.yml": "araripe-green-sources",
 }
 # The blue detection cadence is load-bearing (ROADMAP.md §6); pin it so a
 # schedule change has to be deliberate.

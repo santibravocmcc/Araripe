@@ -287,6 +287,20 @@
       "environment": "v2-promotion",
       "moves_the_pointer": false,
       "note": "added 2026-10-08 (PHASE_6W §8, owner chose option b): the same steps as v2_green_context.yml's job, run right after promote in the same workflow. Replaces Araripe#102's workflow_call, whose Environment secrets arrived empty (run 37688757241); secrets: inherit was refused because it would hand the called workflow the blue repository keys. Same writes as the standalone context lane; never the release pointer."
+    },
+    {
+      "workflow": "v2_green_sources.yml",
+      "job": "sources",
+      "environment": "v2-promotion",
+      "moves_the_pointer": false,
+      "note": "added 2026-10-10 with PHASE_6X (GREEN_SOURCES_CONTRACT_V1.md): the sources document of the live release and live context. Writes sources/<src-g1-id>/sources.json (put_if_absent) and swaps sources/current.json (sources_pointer.move); never the release pointer and never contexts/current.json. Publishing the sources is a publication act, so it holds the same identity that promotes and publishes the context, with no reviewer, as the 2026-10-02 decision sets for every publication."
+    },
+    {
+      "workflow": "v2_operational_publish.yml",
+      "job": "sources",
+      "environment": "v2-promotion",
+      "moves_the_pointer": false,
+      "note": "added 2026-10-10 with PHASE_6X: the same steps as v2_green_sources.yml's job, run after the context job (needs: context), bound to the Environment directly for the reason the context job is. Writes sources/<src-g1-id>/sources.json (put_if_absent) and swaps sources/current.json (sources_pointer.move); never the release pointer and never contexts/current.json. Publishing the sources is a publication act, so it holds the same identity that promotes and publishes the context, with no reviewer, as the 2026-10-02 decision sets for every publication."
     }
   ],
   "what_this_design_does_not_protect": [

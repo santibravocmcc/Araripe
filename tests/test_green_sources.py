@@ -277,11 +277,16 @@ def test_the_ledgers_of_each_release_version_are_found():
 # ── exposure and retention: a new family is private and kept until classified ─
 
 @pytest.mark.parametrize("key", ["sources/current.json", "sources/src-g1-" + "a" * 64 + "/sources.json"])
-def test_the_sources_family_is_private_and_never_eligible_today(key):
+def test_the_sources_family_is_private_unless_live_and_never_eligible(key):
+    """delivery/3 (PHASE_6X) makes the LIVE document public — and nothing else:
+    the pointer stays private, and retention still never deletes the family."""
+
     from src.publication import delivery_boundary as db
     from src.publication import retention as rt
 
     assert db.classify_key(key, live_release_id="rel-g3-" + "b" * 64).exposure == db.PRIVATE
+    live = db.classify_key(key, live_release_id="rel-g3-" + "b" * 64, live_sources_id="src-g1-" + "a" * 64)
+    assert live.exposure == (db.PRIVATE if key == "sources/current.json" else db.PUBLIC)
     entry = rt.classify(rt.StoredKey(key, 1, datetime(2026, 1, 1, tzinfo=timezone.utc)),
                         pointer=None, runs={}, as_of=datetime(2026, 10, 7, tzinfo=timezone.utc))
     assert (entry.action, entry.reason) == (rt.REVIEW, "unclassified_prefix")

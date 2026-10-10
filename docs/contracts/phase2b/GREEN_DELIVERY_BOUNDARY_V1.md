@@ -284,3 +284,18 @@ names the live release. The new refusal codes, their statuses and the reason
 the context is a separate layer are in
 [`GREEN_CONTEXT_CONTRACT_V1.md`](GREEN_CONTEXT_CONTRACT_V1.md) §5. A release
 may no longer declare a product under `context/` (`product_shadows_context`).
+
+---
+
+## Addition dated 2026-10-10 — `araripe.green.delivery/3`, the sources document
+
+`BOUNDARY_SCHEMA` is now `araripe.green.delivery/3` and the vectors
+`araripe.green.delivery-vectors/5` (68 cases, a `sources` fixture block and a
+`sources` name per case). Everything above holds unchanged. The addition is
+one reserved name, `/data/green/sources.json`, resolved to
+`sources/<id>/sources.json` for the id `sources/current.json` names, only
+while that pointer names the live release **and** the live context. The rule,
+the refusal codes and the headers are in
+[`GREEN_SOURCES_CONTRACT_V1.md`](GREEN_SOURCES_CONTRACT_V1.md) (addition dated
+2026-10-10). The key is still never built from the request: the id comes from
+the pointer and is validated before it becomes part of a key.

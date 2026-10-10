@@ -59,7 +59,10 @@ from src.publication.findings import Finding, Rejected
 #: Contract version of the exposure policy.  ``/2`` adds the land-cover
 #: context (``GREEN_CONTEXT_CONTRACT_V1.md``): one more mutable key, one more
 #: immutable family, and one more mount directory, under the same allowlist rule.
-BOUNDARY_SCHEMA = "araripe.green.delivery/2"
+#: ``/3`` adds the sources document (``GREEN_SOURCES_CONTRACT_V1.md`` §6): one
+#: more mutable key read by the resolver, one more family, and one reserved
+#: name under the mount, served only for the live release and the live context.
+BOUNDARY_SCHEMA = "araripe.green.delivery/3"
 
 #: The single mutable object.  Public, because a consumer cannot find the live
 #: release without it, and never cached — see ``CACHE_POINTER``.
@@ -116,10 +119,22 @@ CONTEXT_DIR = "context/"
 CONTEXT_DOCUMENT_NAME = "context.json"
 CONTEXT_ID = re.compile(r"^ctx-g1-[0-9a-f]{64}$")
 
+# ── the sources document (GREEN_SOURCES_CONTRACT_V1.md §6) ───────────────────
+#: The mutable key naming the sources document of a (release, context) pair.
+#: Read by the resolver, never served under a mount name — like the context's.
+SOURCES_CURRENT_KEY = "sources/current.json"
+SOURCES_SCHEMA = "araripe.green.sources/1"
+SOURCES_ROOT = "sources/"
+SOURCES_DOCUMENT_NAME = "sources.json"
+SOURCES_ID = re.compile(r"^src-g1-[0-9a-f]{64}$")
+
 #: Reserved names directly under the mount.  They are the three documents a
 #: consumer needs to verify what it received, and none of them is a product.
 POINTER_NAME = "current.json"
 HEARTBEAT_NAME = "heartbeat.json"
+#: The sources of the live release (delivery/3): who made the data it carries,
+#: under which licence, and the citations — one small document per pair.
+SOURCES_NAME = "sources.json"
 MANIFEST_NAME = "release.json"
 LEDGER_NAME = "ledger.json"
 
@@ -135,7 +150,7 @@ RESERVED_RELEASE_PATHS = frozenset({MANIFEST_NAME, LEDGER_NAME})
 #: name with something else — so ``check_release_layout`` refuses it.
 #: ``current.json`` had the same latent shadowing before the heartbeat
 #: existed; naming both here closes it for both.
-RESERVED_MOUNT_NAMES = RESERVED_RELEASE_PATHS | {POINTER_NAME, HEARTBEAT_NAME}
+RESERVED_MOUNT_NAMES = RESERVED_RELEASE_PATHS | {POINTER_NAME, HEARTBEAT_NAME, SOURCES_NAME}
 
 ALLOWED_METHODS = ("GET", "HEAD")
 
@@ -242,6 +257,7 @@ def classify_key(
     live_members: frozenset[str] = frozenset(),
     live_context_id: str | None = None,
     live_context_objects: frozenset[str] = frozenset(),
+    live_sources_id: str | None = None,
 ) -> Exposure:
     """Classify one stored key against the exposure policy, failing closed.
 
@@ -258,6 +274,15 @@ def classify_key(
         return Exposure(key, PUBLIC, "heartbeat")
     if key == CONTEXT_CURRENT_KEY:
         return Exposure(key, PRIVATE, "context_pointer")
+    if key == SOURCES_CURRENT_KEY:
+        return Exposure(key, PRIVATE, "sources_pointer")
+    if key.startswith(SOURCES_ROOT):
+        # ``live_sources_id`` is the one the resolver would serve: the sources
+        # pointer's, and only while it names the live release and live context.
+        sources_id, _, remainder = key[len(SOURCES_ROOT) :].partition("/")
+        if remainder == SOURCES_DOCUMENT_NAME and live_sources_id is not None and sources_id == live_sources_id:
+            return Exposure(key, PUBLIC, "live_sources")
+        return Exposure(key, PRIVATE, "sources_not_live")
     if key.startswith(HISTORY_ROOT):
         return Exposure(key, PRIVATE, "promotion_history")
     if key.startswith(CONTEXT_OBJECTS_ROOT):
@@ -362,6 +387,8 @@ def resolve(
     download: bool = False,
     context_pointer: Mapping[str, Any] | None = None,
     context: Mapping[str, Any] | None = None,
+    sources_pointer: Mapping[str, Any] | None = None,
+    sources: Mapping[str, Any] | None = None,
 ) -> Served:
     """Resolve one request into exactly one object key, or refuse it.
 
@@ -438,6 +465,14 @@ def resolve(
         return Served(
             key=prefix + LEDGER_NAME,
             headers=_headers("application/json", CACHE_RESOLVED),
+        )
+
+    if rest == SOURCES_NAME:
+        return _resolve_sources(
+            manifest=manifest,
+            context_pointer=context_pointer,
+            sources_pointer=sources_pointer,
+            sources=sources,
         )
 
     if rest.startswith(CONTEXT_DIR):
@@ -560,6 +595,78 @@ def _resolve_context(
         headers=headers,
         sha256=entry["sha256"],
         bytes=entry["bytes"],
+    )
+
+
+def live_context_id(manifest: Mapping[str, Any], context_pointer: Mapping[str, Any] | None) -> str | None:
+    """The context the route treats as live: the context pointer's, only while it
+    describes the live release.  ``None`` otherwise — the normal state right
+    after a promotion — and then no context is live at all."""
+
+    if context_pointer is None or context_pointer.get("release_id") != manifest["release_id"]:
+        return None
+    return context_pointer.get("context_id")
+
+
+def _resolve_sources(
+    *,
+    manifest: Mapping[str, Any],
+    context_pointer: Mapping[str, Any] | None,
+    sources_pointer: Mapping[str, Any] | None,
+    sources: Mapping[str, Any] | None,
+) -> Served:
+    """``/data/green/sources.json``: the sources of the live release and context.
+
+    GREEN_SOURCES_CONTRACT_V1.md §6.  The document credits the data the page is
+    showing, so it is served only for **that** pair: the release the pointer
+    names, and the context that is live for it (or none, when none is).  A
+    sources pointer for any other pair — after a promotion, or after a new
+    context, before the sources lane runs — is ``sources_not_live``, and the
+    page keeps its own credits.  The key is ``sources/<id>/sources.json`` for
+    an id the pointer names and this module validates; never the request.
+    """
+
+    if sources_pointer is None:
+        raise _refuse("sources_absent", "no sources document has been published for any release")
+    live_context = live_context_id(manifest, context_pointer)
+    if (
+        sources_pointer.get("release_id") != manifest["release_id"]
+        or sources_pointer.get("context_id") != live_context
+    ):
+        raise _refuse(
+            "sources_not_live",
+            f"the sources pointer describes release {sources_pointer.get('release_id')} with context "
+            f"{sources_pointer.get('context_id')!r}, while the live pair is {manifest['release_id']} with "
+            f"{live_context!r}; sources are served only for what the page is showing",
+        )
+    sources_id = sources_pointer.get("sources_id")
+    digest = sources_pointer.get("sources_document_sha256")
+    if not isinstance(sources_id, str) or not SOURCES_ID.match(sources_id):
+        raise _refuse("sources_unusable", f"the sources pointer names {sources_id!r}, which is not a sources id")
+    if not isinstance(digest, str) or not SHA256_HEX.match(digest):
+        raise _refuse("sources_unusable", f"the sources pointer declares sha256 {digest!r}, which is not a digest")
+    if (
+        sources is None
+        or sources.get("schema") != SOURCES_SCHEMA
+        or sources.get("sources_id") != sources_id
+        or sources.get("release_id") != manifest["release_id"]
+        or sources.get("context_id") != live_context
+    ):
+        raise _refuse(
+            "sources_document_mismatch",
+            "the sources document offered is not the one the sources pointer names for the live pair",
+        )
+    headers = _headers("application/json", CACHE_RESOLVED)
+    headers["ETag"] = '"' + digest + '"'
+    headers["X-Araripe-Sha256"] = digest
+    headers["X-Araripe-Release-Id"] = manifest["release_id"]
+    headers["X-Araripe-Sources-Id"] = sources_id
+    if live_context is not None:
+        headers["X-Araripe-Context-Id"] = live_context
+    return Served(
+        key=f"{SOURCES_ROOT}{sources_id}/{SOURCES_DOCUMENT_NAME}",
+        headers=headers,
+        sha256=digest,
     )
 
 

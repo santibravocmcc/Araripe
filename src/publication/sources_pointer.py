@@ -8,8 +8,8 @@ pointer's.
 
 Compare-and-swap, as everywhere a mutable key is replaced: a lost race raises
 ``PreconditionFailed`` rather than retrying a decision made about a stale
-version.  Nothing calls this yet — the lane that will is the next package, and
-publishing is the owner's decision (PHASE_6V §5).
+version.  Its one caller is ``scripts/publish_green_sources.py`` ``apply``
+(PHASE_6X), after it has re-read the live release and live context.
 """
 
 from __future__ import annotations

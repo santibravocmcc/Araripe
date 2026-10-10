@@ -232,11 +232,11 @@ def test_the_promotion_job_keeps_the_bucket_and_endpoint_guards(lane):
 def test_both_jobs_allowlist_the_run_id_before_it_becomes_a_key(lane):
     """Each job that builds object keys from it has to check it.
 
-    The context job does not receive it at all: it reads the LIVE pointer, so
-    there is no run id for it to turn into a key."""
+    The context and sources jobs do not receive it at all: they read the LIVE
+    pointer, so there is no run id for them to turn into a key."""
 
     for name, job in jobs(lane).items():
-        if name == "context":
+        if name in ("context", "sources"):
             assert "run_id" not in json.dumps(job), name
             continue
         step = next(step for step in steps(job) if "run id" in step["name"])
@@ -631,5 +631,34 @@ def test_the_context_job_runs_the_standalone_lanes_steps(lane):
     for step in theirs:
         step.pop("if", None)
     ours = jobs(lane)["context"]["steps"]
+    assert ours == theirs
+    assert "apply" in ours[-1]["run"] and "if" not in ours[-1]
+
+
+# ── the sources job (PHASE_6X) ───────────────────────────────────────────────
+
+def test_the_sources_job_follows_the_context_and_binds_its_environment(lane):
+    """promote → context → sources: the document names the live context, so it
+    is built only after the context is. Bound to v2-promotion directly, like the
+    context job, and in its own group — not the promotion's, where a queued run
+    would cancel a pending promotion."""
+
+    job = jobs(lane)["sources"]
+    assert "uses" not in job and job["needs"] == "context"
+    assert job["environment"] == "v2-promotion"
+    assert job["concurrency"] == {"group": "araripe-green-sources", "cancel-in-progress": False}
+    assert "github.ref == 'refs/heads/main'" in job["if"]
+
+
+def test_the_sources_job_runs_the_standalone_lanes_steps(lane):
+    """The same recipe in two places, held equal: the standalone lane keeps its
+    input check and its plan/publish switch; every other step is identical."""
+
+    standalone = yaml.safe_load((WORKFLOWS / "v2_green_sources.yml").read_text())
+    theirs = [dict(s) for s in standalone["jobs"]["sources"]["steps"]
+              if s["name"] != "Refuse an unknown mode or a malformed expected id"]
+    for step in theirs:
+        step.pop("if", None)
+    ours = jobs(lane)["sources"]["steps"]
     assert ours == theirs
     assert "apply" in ours[-1]["run"] and "if" not in ours[-1]
