@@ -10,10 +10,11 @@ and the sources documents are the ones the route serves.  Inside Actions the
 same table goes to the job summary.  ``docs/implementation/PHASE_6Y_2026-10-10.md``
 is the design.
 
-Exit 1 only when something is **broken** — a document that cannot be read or
+Exit 1 when something is **broken** — a document that cannot be read or
 does not check, a chain the head resolution refuses, a route refusal that is
-not "a lane has not caught up".  An age never fails it: which age counts as
-late is the owner's decision (PHASE_6Y §4).
+not "a lane has not caught up" — or **late**: the last attempt older than 5
+days, or the last date looked at older than 21 (the owner's limits,
+2026-10-10, PHASE_6Y §4). No other age fails it.
 
 The identity, and what it can do from here
 ------------------------------------------
@@ -177,9 +178,9 @@ def main(argv=None, store=None, now: datetime | None = None) -> int:
         with open(summary, "a", encoding="utf-8") as handle:
             handle.write(st.as_markdown(rows, now))
     print("read-only — nothing was written to the bucket")
-    if st.broken(rows):
+    if st.broken(rows) or st.late(rows):
         for row in rows:
-            if row.state == st.BROKEN:
+            if row.state in (st.BROKEN, st.LATE):
                 message = f"{row.product}: {row.detail}"
                 print(f"::error::{message}" if os.environ.get("GITHUB_ACTIONS") else f"erro: {message}",
                       file=sys.stderr)

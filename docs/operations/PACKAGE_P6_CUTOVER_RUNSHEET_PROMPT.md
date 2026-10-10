@@ -51,9 +51,12 @@ corpo é para o agente executor e a **seção final é para o dono**.
     (`v2_operational_publish.yml`, jobs `context` e `sources`) — `#109`, `#110`;
   - ordem dos deploys do site (`site#42`: compor no build atrás de
     `COMPOR = False`, reconciliador, recusa sem azul) — PHASE_6U.
-- **Aberto, e é do dono:** os limites de idade (PHASE_6Y §4 — recomendação
-  5 / 21 / nenhum / decidir na virada). Se ele tiver respondido, codificá-los é
-  pequeno e vem primeiro (§3.1); se não, a folha os deixa como pergunta.
+- **Limites de idade decididos pelo dono em 2026-10-10** (PHASE_6Y §9): última
+  tentativa > 5 dias, última data olhada > 21 dias, data mostrada sem limite,
+  espera entre lanes decidida na virada. **Já codificados no backend** — a lane
+  de status falha com `late`, e vai acusar a automação atrasada a partir de
+  2026-10-13 porque o depósito é manual até a virada. Falta o aviso na página
+  (§3.1).
 - **O azul está parado desde 2026-09-03** (`LegacyPersistenceStateError`); o
   robô do site falha no job `alertas` desde 02/10 recusando uma release de 31
   dias. O conserto é a virada, não um patch.
@@ -88,11 +91,12 @@ produção é executado nesta sessão.**
    `site/scripts/verify_green_route.sh` / `verify_green_route_remote.sh`,
    que já existem.
 
-### 3.1 Se o dono respondeu aos limites
+### 3.1 Antes da folha: o aviso "dados atrasados" na página
 
-Codifique-os antes da folha, aditivos e inertes: na leitura de status (um
-veredito por linha, só onde o dono pôs limite) e, se ele pediu, na página
-(site, PR **não mesclada**). Nenhum limite que ele não deu.
+O dono decidiu que a página diz "dados atrasados" **só** quando a última data
+olhada (`coverage.last_observed_on` do índice verde, não o último `runs[]`)
+passa de 21 dias. Site, atrás de `?dados=verde`, PR **não mesclada**. Nenhum
+outro aviso: a automação parada já tem o texto da 3ª data e não muda.
 
 **Fora de escopo:** executar qualquer passo de produção; criar, renomear ou
 reconfigurar Environment; ligar cron em lane verde; Fase 5.
@@ -143,24 +147,20 @@ Se aparecer evidência contra qualquer uma, **pare e pergunte**.
 
 ### O que ficou pendente da tarefa atual
 
-Só uma decisão sua: a partir de quantos dias cada parte do sistema novo conta
-como atrasada. O resto está pronto e já roda: um botão no GitHub mostra, para
-cada parte, até quando vão os dados e se está em dia, e cada rodada da coleta
-agora explica o que tentou.
+Nada. Os limites que você escolheu já estão valendo na verificação do GitHub;
+falta só o aviso "dados atrasados" na página, que a próxima sessão faz.
 
 ### O que você precisa fazer
 
-1. **Responder às quatro perguntas dos limites** (registro da sessão, §4). A
-   recomendação: a coleta parece parada depois de 5 dias sem tentar; a série
-   está atrasada depois de 21 dias sem olhar data nova; a data com alertas não
-   entra em limite, porque fica um mês parada na chuva sem nada estar errado;
-   a espera entre etapas se decide na virada. Pode esperar, mas a virada
-   precisa da resposta.
+1. **Nada agora.** Saiba só que, a partir de segunda (13/10), a verificação
+   do GitHub vai acusar a coleta como parada — porque até a virada ela só roda
+   quando alguém aperta o botão. É o aviso funcionando, não um problema novo.
 
 ### Tem algo preocupante?
 
 Não. O sistema antigo segue parado desde setembro e o robô do site segue
-recusando publicar dado velho, que é o comportamento certo até a virada.
+recusando publicar dado velho, que é o comportamento certo até a virada. O
+aviso de coleta parada que vai aparecer na segunda é esperado.
 
 ### O que ainda falta no caminho
 

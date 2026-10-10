@@ -18,9 +18,11 @@ name: v2 green status (every green product, read-only)
 # No concurrency group: it writes nothing, and a pending run in a group is
 # cancelled when another queues. No schedule: no green lane carries a cron
 # before the cutover (Package 2B.0). At the cutover this is the lane that gets
-# the agenda -- and, once the owner decides the limits (PHASE_6Y §4), fails the
-# way the blue site robot fails when a product is late. Until then an age never
-# fails it; only a broken document, chain or route answer does.
+# the agenda. It fails the way the blue site robot fails when a product is
+# late, against the limits the owner decided on 2026-10-10 (PHASE_6Y §4): last
+# attempt older than 5 days, last date looked at older than 21. Before the
+# cutover the deposit lane is manual, so a late automation here is the truth.
+# It also fails on a broken document, chain or route answer.
 
 on:
   workflow_dispatch:
