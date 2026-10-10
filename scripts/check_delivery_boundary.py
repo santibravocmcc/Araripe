@@ -204,6 +204,48 @@ CONTEXTS = {
     ]}),
 }
 
+#: The sources document of the chain fixture (GREEN_SOURCES_CONTRACT_V1.md,
+#: delivery/3): served only for the live release AND the live context.
+_SOURCES_ID = "src-g1-" + "5a" * 32
+SOURCES_POINTER = {
+    "schema": "araripe.green.sources-pointer/1",
+    "sequence": 1,
+    "sources_id": _SOURCES_ID,
+    "release_id": _CHAIN_ID,
+    "context_id": _CONTEXT_ID,
+    "sources_path": f"sources/{_SOURCES_ID}/sources.json",
+    "sources_document_sha256": "f3" * 32,
+}
+SOURCES_DOCUMENT = {
+    "schema": "araripe.green.sources/1",
+    "sources_id": _SOURCES_ID,
+    "release_id": _CHAIN_ID,
+    "context_id": _CONTEXT_ID,
+}
+_BARE_ID = "src-g1-" + "6b" * 32
+#: Which sources each case sees, by name.
+SOURCES = {
+    "live": (SOURCES_POINTER, SOURCES_DOCUMENT),
+    "none": (None, None),
+    # A document for the live release that covers no context: right when no
+    # context is live for it.
+    "bare": (
+        {**SOURCES_POINTER, "sources_id": _BARE_ID, "context_id": None,
+         "sources_path": f"sources/{_BARE_ID}/sources.json"},
+        {**SOURCES_DOCUMENT, "sources_id": _BARE_ID, "context_id": None},
+    ),
+    # Right after a promotion: the pointer still describes the previous release.
+    "stale_release": ({**SOURCES_POINTER, "release_id": "rel-g3-" + "00" * 32},
+                      {**SOURCES_DOCUMENT, "release_id": "rel-g3-" + "00" * 32}),
+    # Right after a new context, before the sources lane ran.
+    "stale_context": ({**SOURCES_POINTER, "context_id": "ctx-g1-" + "0a" * 32},
+                      {**SOURCES_DOCUMENT, "context_id": "ctx-g1-" + "0a" * 32}),
+    # The document read is not the one the pointer names.
+    "mismatch": (SOURCES_POINTER, {**SOURCES_DOCUMENT, "sources_id": _BARE_ID}),
+    "malformed": ({**SOURCES_POINTER, "sources_id": "../runs/ci-1"}, SOURCES_DOCUMENT),
+    "bad_sha": ({**SOURCES_POINTER, "sources_document_sha256": "\r\nX-Injected: yes"}, SOURCES_DOCUMENT),
+}
+
 FIXTURES = {
     "release": FIXTURE,
     "chain": CHAIN_FIXTURE,
@@ -350,6 +392,58 @@ CASES: list[dict] = [
     {"name": "a write under the context directory is refused before anything is resolved",
      "fixture": "chain", "context": "live", "method": "PUT",
      "path": "/data/green/context/alerts/run-2026-08-30.lc.json"},
+    # ── the sources document (GREEN_SOURCES_CONTRACT_V1.md §6, delivery/3) ──
+    {"name": "the sources of the live release and live context are served from their own key",
+     "fixture": "chain", "context": "live", "sources": "live", "method": "GET",
+     "path": "/data/green/sources.json"},
+    {"name": "HEAD on the sources resolves identically",
+     "fixture": "chain", "context": "live", "sources": "live", "method": "HEAD",
+     "path": "/data/green/sources.json"},
+    {"name": "with no context published, the sources that cover no context are served",
+     "fixture": "chain", "context": "none", "sources": "bare", "method": "GET",
+     "path": "/data/green/sources.json"},
+    {"name": "a context computed for another release is no context, for the sources too",
+     "fixture": "chain", "context": "stale", "sources": "bare", "method": "GET",
+     "path": "/data/green/sources.json"},
+    {"name": "sources covering no context are not served while a context is live",
+     "fixture": "chain", "context": "live", "sources": "bare", "method": "GET",
+     "path": "/data/green/sources.json"},
+    {"name": "sources naming a context are not served when no context is live",
+     "fixture": "chain", "context": "none", "sources": "live", "method": "GET",
+     "path": "/data/green/sources.json"},
+    {"name": "sources computed for another release are not served",
+     "fixture": "chain", "context": "live", "sources": "stale_release", "method": "GET",
+     "path": "/data/green/sources.json"},
+    {"name": "sources computed for a superseded context are not served",
+     "fixture": "chain", "context": "live", "sources": "stale_context", "method": "GET",
+     "path": "/data/green/sources.json"},
+    {"name": "with no sources published, the name is refused as absent",
+     "fixture": "chain", "context": "live", "sources": "none", "method": "GET",
+     "path": "/data/green/sources.json"},
+    {"name": "a sources document that is not the pointer's is not served",
+     "fixture": "chain", "context": "live", "sources": "mismatch", "method": "GET",
+     "path": "/data/green/sources.json"},
+    {"name": "a sources pointer naming anything but a sources id chooses no key",
+     "fixture": "chain", "context": "live", "sources": "malformed", "method": "GET",
+     "path": "/data/green/sources.json"},
+    {"name": "a sources digest that is not a digest never reaches a header",
+     "fixture": "chain", "context": "live", "sources": "bad_sha", "method": "GET",
+     "path": "/data/green/sources.json"},
+    {"name": "the sources prefix cannot be addressed directly",
+     "fixture": "chain", "context": "live", "sources": "live", "method": "GET",
+     "path": f"/data/green/sources/{_SOURCES_ID}/sources.json"},
+    {"name": "the sources pointer's key cannot be addressed as a path",
+     "fixture": "chain", "context": "live", "sources": "live", "method": "GET",
+     "path": "/data/green/sources/current.json"},
+    {"name": "with nothing promoted, the sources are not served",
+     "fixture": "unpromoted", "context": "none", "sources": "live", "method": "GET",
+     "path": "/data/green/sources.json"},
+    {"name": "a version-1 release refuses the sources of another release by the same rule",
+     "fixture": "release", "context": "none", "sources": "live", "method": "GET",
+     "path": "/data/green/sources.json"},
+    {"name": "a write to the sources is refused before anything is resolved",
+     "fixture": "chain", "context": "live", "sources": "live", "method": "PUT",
+     "path": "/data/green/sources.json"},
 ]
 
 
@@ -398,6 +492,8 @@ def _evaluate(case: dict) -> dict:
             download=case.get("download", False),
             context_pointer=CONTEXTS[case.get("context", "none")][0],
             context=CONTEXTS[case.get("context", "none")][1],
+            sources_pointer=SOURCES[case.get("sources", "none")][0],
+            sources=SOURCES[case.get("sources", "none")][1],
         )
     except db.DeliveryRefused as exc:
         return {"outcome": "refused", "code": exc.codes[0]}
@@ -413,7 +509,7 @@ def _evaluate(case: dict) -> dict:
 
 def build_vectors() -> dict:
     return {
-        "schema": "araripe.green.delivery-vectors/4",
+        "schema": "araripe.green.delivery-vectors/5",
         "boundary_schema": db.BOUNDARY_SCHEMA,
         "mount": db.MOUNT,
         "note": (
@@ -428,6 +524,10 @@ def build_vectors() -> dict:
             name: {"pointer": pointer, "document": document}
             for name, (pointer, document) in CONTEXTS.items()
         },
+        "sources": {
+            name: {"pointer": pointer, "document": document}
+            for name, (pointer, document) in SOURCES.items()
+        },
         "cases": [
             {
                 "name": case["name"],
@@ -438,6 +538,7 @@ def build_vectors() -> dict:
                 "object_patch": case.get("object_patch"),
                 "heartbeat_patch": case.get("heartbeat_patch"),
                 "context": case.get("context", "none"),
+                "sources": case.get("sources", "none"),
                 "expect": _evaluate(case),
             }
             for case in CASES

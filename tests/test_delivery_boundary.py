@@ -333,7 +333,7 @@ def test_the_media_types_this_project_actually_publishes_are_accepted(content_ty
 # ── the layout's own names ───────────────────────────────────────────────────
 
 
-@pytest.mark.parametrize("path", ["release.json", "ledger.json", "current.json", "heartbeat.json"])
+@pytest.mark.parametrize("path", ["release.json", "ledger.json", "current.json", "heartbeat.json", "sources.json"])
 def test_a_product_may_not_be_published_at_a_reserved_layout_name(path):
     """Reachable, and not a re-check of the schema.
 
@@ -531,3 +531,57 @@ def test_the_vector_heartbeat_is_a_valid_heartbeat():
     from src.publication import heartbeat as hb
 
     hb.check_heartbeat(HEARTBEAT)
+
+
+# ── the sources document (delivery/3, GREEN_SOURCES_CONTRACT_V1.md §6) ───────
+
+SOURCES_ID = "src-g1-" + "5a" * 32
+SOURCES_KEY = f"sources/{SOURCES_ID}/sources.json"
+
+
+def _sources(context_id=None, **pointer_overrides):
+    pointer = {"schema": "araripe.green.sources-pointer/1", "sequence": 1, "sources_id": SOURCES_ID,
+               "release_id": LIVE, "context_id": context_id,
+               "sources_document_sha256": "f3" * 32, **pointer_overrides}
+    document = {"schema": "araripe.green.sources/1", "sources_id": SOURCES_ID,
+                "release_id": LIVE, "context_id": context_id}
+    return {"sources_pointer": pointer, "sources": document}
+
+
+def test_the_live_sources_are_public_and_every_other_sources_key_is_private():
+    assert db.classify_key(SOURCES_KEY, live_release_id=LIVE, live_sources_id=SOURCES_ID) == db.Exposure(
+        SOURCES_KEY, db.PUBLIC, "live_sources")
+    other = "sources/src-g1-" + "6b" * 32 + "/sources.json"
+    assert db.classify_key(other, live_release_id=LIVE, live_sources_id=SOURCES_ID).reason == "sources_not_live"
+    # the pointer is read by the resolver and never public, live or not
+    assert db.classify_key(db.SOURCES_CURRENT_KEY, live_release_id=LIVE,
+                           live_sources_id=SOURCES_ID).reason == "sources_pointer"
+    # a sibling of the document under the live id is not the document
+    sibling = f"sources/{SOURCES_ID}/sources.json.bak"
+    assert db.classify_key(sibling, live_release_id=LIVE, live_sources_id=SOURCES_ID).exposure == db.PRIVATE
+    # with no live sources named, nothing under sources/ is public
+    assert db.classify_key(SOURCES_KEY, live_release_id=LIVE).exposure == db.PRIVATE
+
+
+def test_the_sources_resolve_to_the_key_their_pointer_names_never_the_request():
+    served = serve("/data/green/sources.json", **_sources())
+    assert served.key == SOURCES_KEY
+    assert served.headers["X-Araripe-Sources-Id"] == SOURCES_ID
+    assert served.headers["ETag"] == '"' + "f3" * 32 + '"'
+    assert "X-Araripe-Context-Id" not in served.headers
+    assert served.headers["Cache-Control"] == db.CACHE_RESOLVED
+
+
+def test_the_sources_name_the_live_context_when_one_is_live():
+    context_id = "ctx-g1-" + "c9" * 32
+    context_pointer = {"release_id": LIVE, "context_id": context_id}
+    served = serve("/data/green/sources.json", context_pointer=context_pointer, **_sources(context_id))
+    assert served.headers["X-Araripe-Context-Id"] == context_id
+    # the same document, with that context no longer live, is not served
+    assert refusal_code("/data/green/sources.json", **_sources(context_id)) == "sources_not_live"
+
+
+def test_the_live_context_is_the_pointers_only_for_the_live_release():
+    assert db.live_context_id(MANIFEST, None) is None
+    assert db.live_context_id(MANIFEST, {"release_id": OTHER, "context_id": "ctx-g1-" + "c9" * 32}) is None
+    assert db.live_context_id(MANIFEST, {"release_id": LIVE, "context_id": "x"}) == "x"

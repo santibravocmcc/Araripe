@@ -1,0 +1,124 @@
+name: v2 green sources (the attribution of the live release)
+
+# GREEN_SOURCES_CONTRACT_V1.md. Builds the sources document of the LIVE green
+# release — the release the pointer names, and the land-cover context that
+# describes it, if one does — and, in mode `publish`, writes it under
+# sources/<id>/ and moves sources/current.json to it.
+#
+#   plan     read the live release, its ledgers and its context; check the
+#            records against this checkout; build and check; writes nothing
+#   publish  the same, then put_if_absent the document and compare-and-swap
+#            sources/current.json
+#
+# `expect` (optional) refuses unless the document built has that id: the first
+# publication names the id built offline (PHASE_6X), so a reading that changed
+# in between stops the lane instead of publishing something nobody looked at.
+#
+# Order after a promotion: promote → context → sources. v2_operational_publish.yml
+# runs these same steps in a job of its own (`sources`, `needs: context`), and
+# tests/test_operational_publish_lane.py keeps the two step lists equal. This
+# lane is for the first publication, for a manual re-publish, and for after a
+# manual run of v2_green_context.yml (a new context makes the current sources
+# document stale, and the route stops serving it until this runs).
+#
+# Its own concurrency group, shared with that job — not the promotion's. A
+# pending run in a group is CANCELLED when another one queues, so sharing the
+# promotion group would let a sources run displace a waiting promotion. The
+# order that matters is enforced elsewhere: `apply` re-reads the live release
+# and the live context right before it writes and refuses a document for any
+# other pair, and a pair that changes after that is refused by the route
+# (`sources_not_live`, delivery/3) — never served for the wrong release.
+#
+# Environment `v2-promotion`: publishing is a publication act, the same
+# authority that promotes and that publishes the context
+# (config/phase6_publication_authority_v1.json; no reviewer, decided by the
+# owner 2026-10-02). The key is bucket-scoped to araripe-v2-staging; the first
+# step that runs refuses any other target.
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "plan | publish"
+        required: false
+        default: "plan"
+      expect:
+        description: "optional: refuse unless the document built has this src-g1- id"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: araripe-green-sources
+  cancel-in-progress: false
+
+jobs:
+  sources:
+    if: github.event_name == 'workflow_dispatch' && github.repository == 'santibravocmcc/Araripe' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: v2-promotion
+    env:
+      R2_STAGING_BUCKET: ${{ vars.R2_STAGING_BUCKET }}
+      R2_ENDPOINT_URL: ${{ vars.R2_ENDPOINT_URL }}
+    steps:
+      - name: Refuse an unknown mode or a malformed expected id
+        env:
+          MODE: ${{ inputs.mode }}
+          EXPECT: ${{ inputs.expect }}
+        run: |
+          set -euo pipefail
+          case "${MODE}" in
+            plan|publish) echo "mode: ${MODE}" ;;
+            *) echo "::error::unknown mode ${MODE}" >&2; exit 1 ;;
+          esac
+          if [ -n "${EXPECT}" ]; then
+            [[ "${EXPECT}" =~ ^src-g1-[0-9a-f]{64}$ ]] || {
+              echo "::error::expect must be a src-g1- id" >&2; exit 1; }
+            echo "expect: ${EXPECT}"
+          fi
+
+      - name: Fail closed unless the target is exactly the approved staging bucket
+        run: |
+          set -euo pipefail
+          test "$R2_STAGING_BUCKET" = "araripe-v2-staging" || {
+            echo "::error::R2_STAGING_BUCKET is not araripe-v2-staging" >&2; exit 1; }
+          test "$R2_ENDPOINT_URL" = "https://9416750169311ee4afc18a8ff3c771d4.r2.cloudflarestorage.com" || {
+            echo "::error::R2_ENDPOINT_URL is not the approved account endpoint" >&2; exit 1; }
+
+      - name: Check out the publication code, the records and the committed crops
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Install the dependencies publication needs
+        # The promotion job's measured floor (v2_operational_publish.yml):
+        # boto3/botocore 1.36 is the earliest measured to carry IfMatch, the
+        # compare-and-swap of the pointer. Nothing else is imported — the
+        # records are checked against the crops by sha256, not read as rasters.
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet --disable-pip-version-check \
+            'jsonschema>=4.23.0' 'boto3>=1.36.0' 'botocore>=1.36.0'
+
+      - name: Read the live release, its ledgers and its context
+        env:
+          R2_PROMOTION_ACCESS_KEY_ID: ${{ secrets.R2_PROMOTION_ACCESS_KEY_ID }}
+          R2_PROMOTION_SECRET_ACCESS_KEY: ${{ secrets.R2_PROMOTION_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+        run: python3 scripts/publish_green_sources.py fetch --out "$RUNNER_TEMP/sources-input"
+
+      - name: Check the records, build and check the document (no store)
+        env:
+          EXPECT: ${{ inputs.expect }}
+        run: |
+          python3 scripts/publish_green_sources.py plan --expect "${EXPECT:-}" \
+            --input "$RUNNER_TEMP/sources-input" --out "$RUNNER_TEMP/sources-output"
+
+      - name: Publish the document and move sources/current.json
+        if: inputs.mode == 'publish'
+        env:
+          R2_PROMOTION_ACCESS_KEY_ID: ${{ secrets.R2_PROMOTION_ACCESS_KEY_ID }}
+          R2_PROMOTION_SECRET_ACCESS_KEY: ${{ secrets.R2_PROMOTION_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+        run: python3 scripts/publish_green_sources.py apply --sources "$RUNNER_TEMP/sources-output"

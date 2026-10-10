@@ -19,10 +19,11 @@ Sentinel-2 collection), and each tracked crop and its ``.report.json`` by
 sha256.  A record that disagrees with
 the file it names stops the plan.
 
-There is deliberately no ``apply``: publishing a sources document is the
-owner's decision (PHASE_6V §5), and the lane that will do it is the next
-package.  ``config.settings`` is never imported — it loads the production
-``.env``.
+This script writes only a local file.  Publishing is
+``scripts/publish_green_sources.py`` (PHASE_6X), whose ``plan`` runs this
+module's ``repository_findings`` before it builds; its lane is
+``.github/workflows/v2_green_sources.yml``.  ``config.settings`` is never
+imported — it loads the production ``.env``.
 """
 
 from __future__ import annotations

@@ -383,3 +383,76 @@ jobs:
           R2_PROMOTION_SECRET_ACCESS_KEY: ${{ secrets.R2_PROMOTION_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ vars.AWS_REGION }}
         run: python scripts/publish_green_context.py apply --context "$RUNNER_TEMP/context-output"
+
+  # ── the sources document of the release and context just published ──────────
+  #
+  # GREEN_SOURCES_CONTRACT_V1.md: promote → context → sources. `needs: context`
+  # makes the order structural — the document names the live context, so it is
+  # built only after that context is. If the context job fails, this is skipped
+  # and sources/current.json keeps naming the previous pair, which the route
+  # refuses (`sources_not_live`, delivery/3): the page keeps its own credits.
+  #
+  # A job of this workflow, bound to v2-promotion directly, for the reason the
+  # context job is (Araripe#102, run 37688757241). Its steps are the standalone
+  # lane's (v2_green_sources.yml) minus the mode check, and
+  # tests/test_operational_publish_lane.py holds them equal. `inputs.expect`
+  # does not exist here and evaluates empty, so `plan` expects nothing.
+  #
+  # Same concurrency group as the standalone lane, not the promotion's: see the
+  # header of v2_green_sources.yml for why a shared promotion group would be
+  # worse. Idempotent: the document is put by content and the pointer move
+  # returns "unchanged" when it already names the same document.
+  sources:
+    needs: context
+    if: github.event_name == 'workflow_dispatch' && github.repository == 'santibravocmcc/Araripe' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: v2-promotion
+    concurrency:
+      group: araripe-green-sources
+      cancel-in-progress: false
+    env:
+      R2_STAGING_BUCKET: ${{ vars.R2_STAGING_BUCKET }}
+      R2_ENDPOINT_URL: ${{ vars.R2_ENDPOINT_URL }}
+    steps:
+      - name: Fail closed unless the target is exactly the approved staging bucket
+        run: |
+          set -euo pipefail
+          test "$R2_STAGING_BUCKET" = "araripe-v2-staging" || {
+            echo "::error::R2_STAGING_BUCKET is not araripe-v2-staging" >&2; exit 1; }
+          test "$R2_ENDPOINT_URL" = "https://9416750169311ee4afc18a8ff3c771d4.r2.cloudflarestorage.com" || {
+            echo "::error::R2_ENDPOINT_URL is not the approved account endpoint" >&2; exit 1; }
+
+      - name: Check out the publication code, the records and the committed crops
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Install the dependencies publication needs
+        # The promotion job's measured floor (v2_operational_publish.yml):
+        # boto3/botocore 1.36 is the earliest measured to carry IfMatch, the
+        # compare-and-swap of the pointer. Nothing else is imported — the
+        # records are checked against the crops by sha256, not read as rasters.
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet --disable-pip-version-check \
+            'jsonschema>=4.23.0' 'boto3>=1.36.0' 'botocore>=1.36.0'
+
+      - name: Read the live release, its ledgers and its context
+        env:
+          R2_PROMOTION_ACCESS_KEY_ID: ${{ secrets.R2_PROMOTION_ACCESS_KEY_ID }}
+          R2_PROMOTION_SECRET_ACCESS_KEY: ${{ secrets.R2_PROMOTION_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+        run: python3 scripts/publish_green_sources.py fetch --out "$RUNNER_TEMP/sources-input"
+
+      - name: Check the records, build and check the document (no store)
+        env:
+          EXPECT: ${{ inputs.expect }}
+        run: |
+          python3 scripts/publish_green_sources.py plan --expect "${EXPECT:-}" \
+            --input "$RUNNER_TEMP/sources-input" --out "$RUNNER_TEMP/sources-output"
+
+      - name: Publish the document and move sources/current.json
+        env:
+          R2_PROMOTION_ACCESS_KEY_ID: ${{ secrets.R2_PROMOTION_ACCESS_KEY_ID }}
+          R2_PROMOTION_SECRET_ACCESS_KEY: ${{ secrets.R2_PROMOTION_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+        run: python3 scripts/publish_green_sources.py apply --sources "$RUNNER_TEMP/sources-output"
