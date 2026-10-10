@@ -51,6 +51,7 @@ GREEN_WORKFLOWS = (
     "v2_green_deposit_lane.yml",
     "v2_green_context.yml",
     "v2_green_sources.yml",
+    "v2_green_status.yml",
     "cloudflare_green_control.yml",
 )
 

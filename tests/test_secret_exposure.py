@@ -48,6 +48,7 @@ GREEN_WORKFLOWS = (
     "v2_green_deposit_lane.yml",
     "v2_green_context.yml",
     "v2_green_sources.yml",
+    "v2_green_status.yml",
 )
 
 SECRET_REFERENCE = re.compile(r"\$\{\{\s*secrets\.([A-Za-z0-9_]+)\s*\}\}")

@@ -301,6 +301,13 @@
       "environment": "v2-promotion",
       "moves_the_pointer": false,
       "note": "added 2026-10-10 with PHASE_6X: the same steps as v2_green_sources.yml's job, run after the context job (needs: context), bound to the Environment directly for the reason the context job is. Writes sources/<src-g1-id>/sources.json (put_if_absent) and swaps sources/current.json (sources_pointer.move); never the release pointer and never contexts/current.json. Publishing the sources is a publication act, so it holds the same identity that promotes and publishes the context, with no reviewer, as the 2026-10-02 decision sets for every publication."
+    },
+    {
+      "workflow": "v2_green_status.yml",
+      "job": "status",
+      "environment": "v2-staging",
+      "moves_the_pointer": false,
+      "note": "added 2026-10-10 with PHASE_6Y: the status of every green product, read-only. One step holds the candidate key and runs scripts/green_status.py, which opens it through ReadOnlyStore (no write is expressible) without the local profile, and reads the pointer, the live release, the heartbeat, the context and sources pointers and the chain head. Writes nothing. The candidate identity, never the promotion one: reading the state must not need the key that moves the pointer."
     }
   ],
   "what_this_design_does_not_protect": [

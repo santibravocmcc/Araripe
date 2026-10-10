@@ -116,7 +116,10 @@ The producer therefore promises — and `check_heartbeat` enforces on every read
    one: promotion is a different lane with a different identity.
 2. **No window and no covered date.** "Attempted 2026-09-28 to 2026-10-01"
    would be read as "data up to 2026-10-01", and a deposit is not a
-   publication. The window is one click away, in `run_url`.
+   publication. The window is one click away, in `run_url` — and, since
+   `PHASE_6Y_2026-10-10.md`, written on that run's summary page by the same
+   `heartbeat` job, beside the outcome. The summary is a log; this document
+   still names no window.
 3. **No alert statistic.** The index is the only place a count is shown, and
    its numbers are defined by the release (`SITE_ARTIFACT_CONTRACT_V1.md` §1).
 4. **No start time.** The detection runs on another runner, and nothing

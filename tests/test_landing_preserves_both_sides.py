@@ -52,6 +52,9 @@ MODULOS_DE_PUBLICACAO = (
     # Phase 6: the sources and attributions of a green publication, beside it
     # (docs/contracts/phase2b/GREEN_SOURCES_CONTRACT_V1.md).
     "green_sources",
+    # Phase 6: the status of every green product, derived and never stored
+    # (docs/implementation/PHASE_6Y_2026-10-10.md).
+    "green_status",
     # Phase 6: when the green automation last tried, and what happened
     # (docs/contracts/phase2b/GREEN_HEARTBEAT_CONTRACT_V1.md).
     "heartbeat",

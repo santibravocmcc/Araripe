@@ -22,7 +22,10 @@ name: v2 green deposit lane (detect a window, deposit runs/<run-id>/)
 #            cancelled -- in status/green/heartbeat.json by compare-and-swap
 #            (docs/contracts/phase2b/GREEN_HEARTBEAT_CONTRACT_V1.md). A job,
 #            not a step: `deposit` is skipped whenever the detection fails or
-#            finds nothing, and a skipped job runs no step.
+#            finds nothing, and a skipped job runs no step. It also writes the
+#            run summary -- mode, window, acquisitions, outcome -- to the job
+#            summary (PHASE_6Y). The status of every product is NOT here: it
+#            reads pointers, and this lane reads none; v2_green_status.yml.
 #
 # The detection's outputs cross between the jobs as a workflow artifact.
 #
@@ -107,6 +110,12 @@ jobs:
       from_run: ${{ steps.window.outputs.from_run }}
       proceed: ${{ steps.window.outputs.proceed }}
       deposit: ${{ steps.enumerated.outputs.deposit }}
+      # For the run summary only (PHASE_6Y §2.4): the heartbeat names no
+      # window, the summary of the run it links to does.
+      chain: ${{ steps.inputs.outputs.chain }}
+      start: ${{ steps.window.outputs.start }}
+      end: ${{ steps.window.outputs.end }}
+      expected: ${{ steps.enumerated.outputs.expected }}
     env:
       R2_STAGING_BUCKET: ${{ vars.R2_STAGING_BUCKET }}
       R2_ENDPOINT_URL: ${{ vars.R2_ENDPOINT_URL }}
@@ -259,6 +268,7 @@ jobs:
                                "would repeat forever")
           with open(os.environ["GITHUB_OUTPUT"], "a") as out:
               out.write("deposit=%s\n" % ("true" if expected else "false"))
+              out.write("expected=%d\n" % expected)
           print("%d expected acquisition(s); detecting" % expected if expected else
                 "no acquisition in the window; nothing to deposit, the head is unchanged")
           PY
@@ -470,6 +480,13 @@ jobs:
           DEPOSIT_RESULT: ${{ needs.deposit.result }}
           PROCEED: ${{ needs.detect.outputs.proceed }}
           WILL_DEPOSIT: ${{ needs.detect.outputs.deposit }}
+          # The run summary (PHASE_6Y §2.4): what this run tried, beside what
+          # happened. Written to the job summary, never into the heartbeat.
+          CHAIN: ${{ needs.detect.outputs.chain }}
+          WINDOW_START: ${{ needs.detect.outputs.start }}
+          WINDOW_END: ${{ needs.detect.outputs.end }}
+          FROM_RUN: ${{ needs.detect.outputs.from_run }}
+          EXPECTED: ${{ needs.detect.outputs.expected }}
         run: |
           set -euo pipefail
           python3 scripts/write_green_heartbeat.py
