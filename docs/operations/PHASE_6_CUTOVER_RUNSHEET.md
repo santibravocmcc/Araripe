@@ -199,6 +199,16 @@ UTC estaria rodando) e fora de terça e sexta (o robô do site). Quarta ou sába
 
 ### A2. A rota no Worker de produção (L1, se D0 = a)
 
+> **Feito em 2026-10-13, não mesclado:** `observatorio-site#48` (rascunho,
+> branch `claude/p6-rota-producao`, commit `95148a8`), junto com A3. É a PR
+> que o passo B1 mescla. Medido localmente contra `wrangler dev` da
+> configuração de produção, com `env -i` e `HOME` vazio: antes/depois
+> idênticos em `/`, `/data/alerts/manifest.json` e `/api/chat` — só
+> `/data/green/current.json` muda; mutação 12/12; `npm run test:worker`
+> 216 → 225, `pytest` 227 → 247. **Não medido:** se o token do Workers Builds
+> aceita o binding de R2 no deploy — o check de branch da PR passou, mas o
+> comando de deploy de branch é `exit 0`, então ele não exercita o binding.
+
 - **Quem:** agente.
 - **Aprovação:** nenhuma para a PR; o merge é o passo B1.
 - **Antes:** `git -C site show origin/main:wrangler.jsonc` sem `r2_buckets`; `tests/test_green_worker_config.py` passando.
@@ -207,6 +217,15 @@ UTC estaria rodando) e fora de terça e sexta (o robô do site). Quarta ou sába
 - **Volta:** fechar a PR.
 
 ### A3. O verificador ao vivo versionado (L2)
+
+> **Feito em 2026-10-13, não mesclado:** na mesma `observatorio-site#48`.
+> `scripts/verifica_rota_ao_vivo.py` só manda GET e HEAD — as recusas por
+> método não são pedidas ao domínio público; estão nos vetores e no arnês
+> verde. `scripts/verifica_rota_producao_local.sh` o prova contra a
+> configuração de produção: 53/53 PASS, e três adulterações (sha256 do
+> manifesto no ponteiro, um byte de um produto com mesmo tamanho, sha256 das
+> fontes) derrubam cada uma exatamente a checagem que a nomeia. Nos passos B1,
+> B3 e B5: `python3 scripts/verifica_rota_ao_vivo.py --base https://observatoriodachapadadoararipe.com/data/green/`.
 
 - **Quem:** agente.
 - **Aprovação:** nenhuma.
