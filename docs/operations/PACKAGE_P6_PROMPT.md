@@ -309,6 +309,15 @@ Na ordem em que se sustenta. **Cada passo que muta produção para e pergunta.**
 
 ### 4.2 Portão 2 — o hostname do Worker verde
 
+> **2026-10-13 — as §4.2–§4.5 viraram roteiro em
+> [`PHASE_6_CUTOVER_RUNSHEET.md`](PHASE_6_CUTOVER_RUNSHEET.md)** (PHASE_6Z).
+> Execute a folha, não este texto: a §1 dela diz, item a item, o que daqui
+> envelheceu — o portão 2 fechou em 2026-09-27 sem mudança de broker, o portão
+> 3 deixou de ser caminho (o Environment do site não tem mais segredo), a fila
+> do corte já foi processada — e a §2 dela, o que faltava: o Worker de
+> produção ainda não serve `/data/green/*`, e nenhuma PR o constrói. O texto
+> abaixo fica como estava.
+
 O passo 4 da migração está bloqueado e **o bloqueio é a isolação funcionando**:
 `public_subdomain_enabled` é `false`, `custom_domain_count` é `0`,
 `route_count` é `0`, e `cloudflare_green_control.py::audit` afirma os três
