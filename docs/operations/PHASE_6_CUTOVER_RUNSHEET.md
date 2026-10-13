@@ -281,6 +281,18 @@ UTC estaria rodando) e fora de terça e sexta (o robô do site). Quarta ou sába
 
 ### A6. `FONTE_PADRAO` verde e os textos estáticos, em PR mesclada no passo B5
 
+> **Feito em 2026-10-13, não mesclado:** `observatorio-site#49` (rascunho,
+> branch `claude/p6-fonte-padrao-verde`, ramificada da `#42` e com a PR
+> apontando para ela; rebasear sobre a `main` do site depois do B2). Registro:
+> [`PHASE_6ZD_2026-10-13.md`](../implementation/PHASE_6ZD_2026-10-13.md).
+> O texto estático das duas páginas virou o **neutro** (é o que a recusa
+> mostra) e o azul leva os rótulos de 2023 do código; a aba "Séries" diz a
+> data lida do próprio `series.json`. A mais do que este passo pedia:
+> `dados-abertos.html` lia `/data/alerts/manifest.json` sem chave e agora
+> abre pela mesma porta da página de alertas. `main` + `#48` + `#42` + `#49`:
+> `npm run test:worker` 251/251, `pytest` 290, build ok. Sobre elas a `#21`
+> falha de propósito em `test_a_pagina_ainda_le_a_base_estatica` (C4).
+
 - **Quem:** agente.
 - **Aprovação:** nenhuma para a PR.
 - **Antes:** `git -C site grep -n "FONTE_PADRAO = 'azul'" origin/main` acha a linha.
@@ -388,7 +400,7 @@ Cada passo desta fase **para e pergunta** antes de agir.
 - **Aprovação:** dono, explícita — **é o passo que muda o que o público vê**.
 - **Antes:** B1–B4 verificados; A9 feito há menos de 3 dias.
 - **Faz:** merge da PR de A6 (`FONTE_PADRAO = 'verde'` e os textos estáticos).
-- **Depois:** sem parâmetro, `alertas.html` e `/` mostram o verde, as três datas, os créditos das fontes; a aba de rede da carga padrão não tem pedido a `pub-5eb389cffff54421916187be69dd659b.r2.dev` nem a `/data/alerts/manifest.json`; A3 de novo; `?dados=azul` ainda mostra o azul congelado em 2026-08-30.
+- **Depois:** sem parâmetro, `alertas.html` e `/` mostram o verde, as três datas, os créditos das fontes; a aba de rede da carga padrão não tem pedido a `pub-5eb389cffff54421916187be69dd659b.r2.dev` nem a `/data/alerts/manifest.json`; `dados-abertos.html` sem parâmetro oferece a última execução verde (`?download=1`) e também não pede `/data/alerts/` (acréscimo de 2026-10-13, `PHASE_6ZD` §3); A3 de novo; `?dados=azul` ainda mostra o azul congelado em 2026-08-30.
 - **Volta:** revert da PR (~70 s): a página volta ao azul, que ainda está inteiro no deploy e no `r2.dev`.
 
 ### B6. A agenda verde (merge da PR de A5)
