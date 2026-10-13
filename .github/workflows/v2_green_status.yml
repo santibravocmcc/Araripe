@@ -16,15 +16,21 @@ name: v2 green status (every green product, read-only)
 # pointer. The Environment admits only `main`.
 #
 # No concurrency group: it writes nothing, and a pending run in a group is
-# cancelled when another queues. No schedule: no green lane carries a cron
-# before the cutover (Package 2B.0). At the cutover this is the lane that gets
-# the agenda. It fails the way the blue site robot fails when a product is
-# late, against the limits the owner decided on 2026-10-10 (PHASE_6Y §4): last
-# attempt older than 5 days, last date looked at older than 21. Before the
-# cutover the deposit lane is manual, so a late automation here is the truth.
-# It also fails on a broken document, chain or route answer.
+# cancelled when another queues. It fails the way the blue site robot fails
+# when a product is late, against the limits the owner decided: last attempt
+# older than 5 days and last date looked at older than 21 (2026-10-10,
+# PHASE_6Y §4), and a deposit waiting for the promotion more than 1 day
+# (2026-10-13, decision D2 of PHASE_6_CUTOVER_RUNSHEET.md). It also fails on a
+# broken document, chain or route answer.
+#
+# The schedule is decision D3 (runsheet step A5, merged only at step B6 by the
+# owner): every day at 12:00 UTC, far from the deposit's 06:00. A red
+# scheduled run is GitHub's e-mail to whoever last edited the cron line; it
+# repairs nothing -- the public warning is the page's "dados atrasados".
 
 on:
+  schedule:
+    - cron: '0 12 * * *'   # every day 12:00 UTC (D3)
   workflow_dispatch:
 
 permissions:

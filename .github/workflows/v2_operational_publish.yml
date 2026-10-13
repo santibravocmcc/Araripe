@@ -63,12 +63,25 @@ name: v2 green operational publication (candidate then promotion)
 # (tests/fake_object_store.py). Running it against real objects is a separate
 # step after this package merges, because the branch policy admits only `main`.
 #
-# Trigger: workflow_dispatch only. A green lane may not carry a cron before
-# the Phase 6 cutover (Package 2B.0 inertness, pinned by
-# tests/test_workflow_lanes.py::test_green_lanes_cannot_inherit_a_schedule),
-# and there is no producer emitting runs on a schedule yet — a cron would fire
-# twice a week onto an empty prefix. What this package removes from the data
-# path is the pull request and the merge, not the operator's decision to run.
+# Triggers: workflow_dispatch, and the chained promotion (decision D1 of
+# PHASE_6_CUTOVER_RUNSHEET.md, runsheet step A5, merged only at step B6)
+# -------------------------------------------------------------------------
+# No cron here: the deposit lane has the schedule, and this lane follows it by
+# workflow_run, so the promotion waits for the deposit instead of guessing a
+# time (GitHub started the 06:00 blue cron 5 to 9 hours late in Sep-Oct 2026).
+# `workflow_run` hands over the deposit run's CONCLUSION, which is not the
+# answer: a run that found no acquisition concludes `success` and deposits
+# nothing. The `gate` job reads the triggering attempt's jobs and promotes only
+# when its `deposit` job succeeded, only for a SCHEDULED run on main
+# (scripts/chained_promotion_gate.py, with the measured runs in its docstring).
+# A dispatched deposit is promoted by hand, as before. The chained path always
+# promotes `source=chain`, the only source a routine may use.
+#
+# The gate is the one job holding `actions: read`, to read that jobs list with
+# the workflow's own token; it holds no Environment and no secret. Every other
+# job keeps the workflow's `contents: read` and nothing more. `workflow_run`
+# runs on the default branch, which is the only branch `v2-promotion` admits;
+# its jobs bind the Environment themselves, never by a called workflow.
 
 #
 # Two sources (Phase 6, docs/implementation/PHASE_6I_2026-09-28.md)
@@ -90,6 +103,11 @@ name: v2 green operational publication (candidate then promotion)
 # per-run one.
 
 on:
+  workflow_run:
+    # The deposit lane's `name:`, exactly; the gate checks its path as well.
+    workflows: ["v2 green deposit lane (detect a window, deposit runs/<run-id>/)"]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
     inputs:
       source:
@@ -109,9 +127,82 @@ permissions:
   contents: read
 
 jobs:
+  # ── what to promote, and whether: the operator's inputs, or the deposit ────
+  gate:
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_run') && github.repository == 'santibravocmcc/Araripe'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      promote: ${{ steps.dispatch.outputs.promote || steps.chained.outputs.promote }}
+      source: ${{ steps.dispatch.outputs.source || steps.chained.outputs.source }}
+      run_id: ${{ steps.dispatch.outputs.run_id }}
+
+    steps:
+      - name: Accept only a run id that addresses one prefix, from the operator
+        id: dispatch
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          SOURCE: ${{ github.event.inputs.source }}
+          RUN_ID: ${{ github.event.inputs.run_id }}
+        run: |
+          set -euo pipefail
+          case "${SOURCE}" in
+            run)
+              case "${RUN_ID}" in
+                ''|*[!A-Za-z0-9._-]*)
+                  echo "::error::run_id must be one path segment of [A-Za-z0-9._-]" >&2
+                  exit 1 ;;
+              esac ;;
+            chain)
+              test -z "${RUN_ID}" || {
+                echo "::error::source=chain takes no run_id: the chain is derived from the bucket" >&2
+                exit 1; } ;;
+            *)
+              echo "::error::source must be run or chain" >&2
+              exit 1 ;;
+          esac
+          {
+            echo "promote=true"
+            echo "source=${SOURCE}"
+            echo "run_id=${RUN_ID}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Check out the gate
+        if: github.event_name == 'workflow_run'
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Promote only what a scheduled run deposited
+        # The attempt that triggered, not the latest: a later re-run is its
+        # own workflow_run event. Every value reaches the shell as an
+        # environment variable, never interpolated into the script.
+        id: chained
+        if: github.event_name == 'workflow_run'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TRIGGER_RUN_ID: ${{ github.event.workflow_run.id }}
+          TRIGGER_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+          TRIGGER_EVENT: ${{ github.event.workflow_run.event }}
+          TRIGGER_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          TRIGGER_REPOSITORY: ${{ github.event.workflow_run.head_repository.full_name }}
+          TRIGGER_PATH: ${{ github.event.workflow_run.path }}
+        run: |
+          set -euo pipefail
+          for value in "${TRIGGER_RUN_ID}" "${TRIGGER_RUN_ATTEMPT}"; do
+            case "${value}" in
+              ''|*[!0-9]*) echo "::error::the triggering run id and attempt must be numbers" >&2; exit 1 ;;
+            esac
+          done
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${TRIGGER_RUN_ID}/attempts/${TRIGGER_RUN_ATTEMPT}/jobs?per_page=100" \
+            > "$RUNNER_TEMP/deposit-jobs.json"
+          python3 scripts/chained_promotion_gate.py --jobs "$RUNNER_TEMP/deposit-jobs.json"
+
   # ── lane 2: the candidate identity decides whether the run is publishable ──
   stage:
-    if: github.event_name == 'workflow_dispatch' && github.repository == 'santibravocmcc/Araripe'
+    needs: gate
+    if: github.repository == 'santibravocmcc/Araripe' && needs.gate.outputs.promote == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: v2-staging
@@ -120,6 +211,10 @@ jobs:
       cancel-in-progress: false
     outputs:
       release_id: ${{ steps.stage.outputs.release_id }}
+      # Handed on as the gate gave them, so the promotion uses exactly what
+      # this job checked and staged.
+      source: ${{ needs.gate.outputs.source }}
+      run_id: ${{ needs.gate.outputs.run_id }}
     env:
       R2_STAGING_BUCKET: ${{ vars.R2_STAGING_BUCKET }}
       R2_ENDPOINT_URL: ${{ vars.R2_ENDPOINT_URL }}
@@ -143,8 +238,8 @@ jobs:
         # refuses the same shapes; this stops it before Python starts.
         # A chain takes none: its members are derived, never named.
         env:
-          SOURCE: ${{ github.event.inputs.source }}
-          RUN_ID: ${{ github.event.inputs.run_id }}
+          SOURCE: ${{ needs.gate.outputs.source }}
+          RUN_ID: ${{ needs.gate.outputs.run_id }}
         run: |
           set -euo pipefail
           case "${SOURCE}" in
@@ -211,8 +306,8 @@ jobs:
           R2_STAGING_ACCESS_KEY_ID: ${{ secrets.R2_STAGING_ACCESS_KEY_ID }}
           R2_STAGING_SECRET_ACCESS_KEY: ${{ secrets.R2_STAGING_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ vars.AWS_REGION }}
-          SOURCE: ${{ github.event.inputs.source }}
-          RUN_ID: ${{ github.event.inputs.run_id }}
+          SOURCE: ${{ needs.gate.outputs.source }}
+          RUN_ID: ${{ needs.gate.outputs.run_id }}
         run: |
           set -euo pipefail
           case "${SOURCE}" in
@@ -224,7 +319,7 @@ jobs:
   # ── lane 3: the promotion identity, serialized ────────────────────────────
   promote:
     needs: stage
-    if: github.event_name == 'workflow_dispatch' && github.repository == 'santibravocmcc/Araripe'
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_run') && github.repository == 'santibravocmcc/Araripe'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     environment: v2-promotion
@@ -246,8 +341,8 @@ jobs:
 
       - name: Accept only a run id that addresses one prefix
         env:
-          SOURCE: ${{ github.event.inputs.source }}
-          RUN_ID: ${{ github.event.inputs.run_id }}
+          SOURCE: ${{ needs.stage.outputs.source }}
+          RUN_ID: ${{ needs.stage.outputs.run_id }}
         run: |
           set -euo pipefail
           case "${SOURCE}" in
@@ -292,8 +387,8 @@ jobs:
           R2_PROMOTION_ACCESS_KEY_ID: ${{ secrets.R2_PROMOTION_ACCESS_KEY_ID }}
           R2_PROMOTION_SECRET_ACCESS_KEY: ${{ secrets.R2_PROMOTION_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ vars.AWS_REGION }}
-          SOURCE: ${{ github.event.inputs.source }}
-          RUN_ID: ${{ github.event.inputs.run_id }}
+          SOURCE: ${{ needs.stage.outputs.source }}
+          RUN_ID: ${{ needs.stage.outputs.run_id }}
           RELEASE_ID: ${{ needs.stage.outputs.release_id }}
         run: |
           set -euo pipefail
@@ -330,7 +425,7 @@ jobs:
   # same context (scripts/publish_green_context.py `apply`).
   context:
     needs: promote
-    if: github.event_name == 'workflow_dispatch' && github.repository == 'santibravocmcc/Araripe' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_run') && github.repository == 'santibravocmcc/Araripe' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     environment: v2-promotion
@@ -404,7 +499,7 @@ jobs:
   # returns "unchanged" when it already names the same document.
   sources:
     needs: context
-    if: github.event_name == 'workflow_dispatch' && github.repository == 'santibravocmcc/Araripe' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_run') && github.repository == 'santibravocmcc/Araripe' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: v2-promotion

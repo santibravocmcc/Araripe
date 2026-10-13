@@ -52,6 +52,27 @@ GREEN_GROUPS = {
 # schedule change has to be deliberate.
 BLUE_DETECTION_CRON = "0 6 * * 1,4"
 
+#: EVERY cron in the repository, exactly. Package 2B.0 kept every green lane
+#: unscheduled; runsheet step A5 (PHASE_6ZB, merged only at step B6) adds the
+#: owner's agenda: the deposit with the blue cadence it replaces (D1 follows it
+#: by workflow_run, not by a cron), and the status every day at noon (D3).
+#: A cron not listed here fails; "any cron is fine" is never the rule.
+EXPECTED_SCHEDULES = {
+    "detect_gee.yml": [BLUE_DETECTION_CRON],
+    "esa_reprocessing_watch.yml": ["0 7 1 * *"],
+    "v2_green_deposit_lane.yml": [BLUE_DETECTION_CRON],
+    "v2_green_status.yml": ["0 12 * * *"],
+}
+
+#: Every trigger that runs a workflow without a click, exactly.
+EXPECTED_UNATTENDED_TRIGGERS = {
+    "detect_gee.yml": {"schedule"},
+    "esa_reprocessing_watch.yml": {"schedule"},
+    "v2_green_deposit_lane.yml": {"schedule"},
+    "v2_green_status.yml": {"schedule"},
+    "v2_operational_publish.yml": {"workflow_run"},
+}
+
 
 def load(name):
     return yaml.safe_load((WORKFLOWS / name).read_text())
@@ -108,10 +129,44 @@ def test_every_declared_group_is_unique_to_its_lane():
             assert len(members) == 1, f"{group} is shared by {members}"
 
 
+def executable_lines(text: str) -> list[str]:
+    """Lines with YAML comments removed — a cron in a comment schedules nothing."""
+
+    return [line.split("#", 1)[0] for line in text.splitlines()
+            if not line.lstrip().startswith("#")]
+
+
 def test_green_lanes_cannot_inherit_a_schedule():
-    """Inertness of the green route (Package 2B.0) still holds."""
+    """Inertness of the green route (Package 2B.0) still holds for every lane
+    the agenda does not name."""
     for name in GREEN_GROUPS:
+        assert name not in EXPECTED_SCHEDULES
         assert "schedule" not in load(name)[True], name
+
+
+def test_every_cron_is_exactly_the_listed_one():
+    """Read twice: as YAML, and as the executable text, so a cron hidden in a
+    form the parser reads differently, or in a file the list forgot, fails."""
+    found = {}
+    for name in all_workflows():
+        entries = load(name)[True].get("schedule")
+        text_crons = [line for line in executable_lines((WORKFLOWS / name).read_text())
+                      if "cron" in line]
+        if entries is None:
+            assert not text_crons, (name, text_crons)
+            continue
+        crons = [entry["cron"] for entry in entries]
+        assert len(text_crons) == len(crons), (name, text_crons)
+        for line, cron in zip(text_crons, crons):
+            assert line.split("cron:", 1)[1].strip().strip("'\"") == cron, (name, line)
+        found[name] = crons
+    assert found == EXPECTED_SCHEDULES
+
+
+def test_nothing_else_runs_without_a_click():
+    for name in all_workflows():
+        unattended = set(load(name)[True]) - {"workflow_dispatch", "workflow_call"}
+        assert unattended == EXPECTED_UNATTENDED_TRIGGERS.get(name, set()), name
 
 
 # ─── blue-lane guards ────────────────────────────────────────────────────────

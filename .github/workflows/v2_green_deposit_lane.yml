@@ -30,9 +30,10 @@ name: v2 green deposit lane (detect a window, deposit runs/<run-id>/)
 # The detection's outputs cross between the jobs as a workflow artifact.
 #
 # What it never does: move a pointer (no pointer is read or written by any
-# script; the heartbeat names no release), promote (that is v2_operational_publish.yml), delete anything, touch
-# araripe-cogs, reference a blue secret, or run on a schedule -- scheduling is
-# Phase 6 §4.5 and comes with the cutover.
+# script; the heartbeat names no release), promote (that is v2_operational_publish.yml,
+# which a SCHEDULED run of this lane triggers by workflow_run when its deposit
+# job succeeded -- decision D1 of PHASE_6_CUTOVER_RUNSHEET.md), delete anything,
+# touch araripe-cogs, or reference a blue secret.
 #
 # run_id is ci-<github.run_id> WITHOUT the attempt (PHASE_6E §4): re-running
 # only the deposit job reuses the same artifact, so every object is `unchanged`
@@ -56,7 +57,7 @@ name: v2 green deposit lane (detect a window, deposit runs/<run-id>/)
 #
 # Who picks the predecessor (PHASE_6H_2026-09-28.md) -- the `chain` input:
 #
-#   head      (the default, and what a schedule will use) no dates, no from_run.
+#   head      (the default, and what the schedule uses) no dates, no from_run.
 #             resolve_chain_head.py derives the head from the bucket -- the one
 #             leaf the run.json `predecessor` fields draw from the chain root --
 #             and the window: the day after its last covered date to today - 1,
@@ -71,11 +72,19 @@ name: v2 green deposit lane (detect a window, deposit runs/<run-id>/)
 # first byte and again right before run.json: two children of one run is a
 # fork, and the next head resolution would refuse the whole chain.
 #
-# Still no `schedule:` -- wiring the cadence comes with the cutover. When it
-# does, a scheduled event carries no inputs and runs as `head`; the jobs'
-# `github.event_name == 'workflow_dispatch'` guard changes with it.
+# The schedule (runsheet step A5, merged only at step B6 by the owner): Monday
+# and Thursday 06:00 UTC, the cron of the blue detect_gee.yml -- which keeps
+# the 24 h gap before the site robot's Tuesday/Friday 06:00 (../AGENTS.md).
+# The two run side by side until step C1 disables the blue one; they share no
+# concurrency group (tests/test_workflow_lanes.py), no bucket, and no Earth
+# Engine identity, only the project ee-araripe's monthly quota (PHASE_6ZB §2).
+# A scheduled event carries no inputs: the first step runs it as `head` from
+# GITHUB_EVENT_NAME alone and refuses one that somehow carries any. Every job
+# accepts exactly the two events below, and nothing else.
 
 on:
+  schedule:
+    - cron: '0 6 * * 1,4'   # Monday & Thursday 06:00 UTC, as detect_gee.yml
   workflow_dispatch:
     inputs:
       chain:
@@ -101,7 +110,7 @@ permissions:
 
 jobs:
   detect:
-    if: github.event_name == 'workflow_dispatch' && github.repository == 'santibravocmcc/Araripe'
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && github.repository == 'santibravocmcc/Araripe'
     runs-on: ubuntu-latest
     timeout-minutes: 150
     environment: v2-staging
@@ -140,9 +149,19 @@ jobs:
           set -euo pipefail
           python3 - <<'PY'
           import os, re
-          # A scheduled event carries no inputs: it is `head`.
-          chain = os.environ.get("CHAIN") or "head"
-          from_run, start, end = (os.environ.get(k, "") for k in ("FROM_RUN", "START", "END"))
+          event = os.environ.get("GITHUB_EVENT_NAME", "")
+          given = {k: os.environ.get(k, "") for k in ("CHAIN", "FROM_RUN", "START", "END")}
+          if event == "schedule":
+              # A scheduled event carries no inputs: it is `head`, decided
+              # here from the event, never read from an input.
+              if any(given.values()):
+                  raise SystemExit("::error::a scheduled run carries no inputs; refusing these")
+              chain = "head"
+          elif event == "workflow_dispatch":
+              chain = given["CHAIN"] or "head"
+          else:
+              raise SystemExit("::error::this lane runs only on workflow_dispatch or schedule")
+          from_run, start, end = given["FROM_RUN"], given["START"], given["END"]
           if chain not in ("head", "from_run", "empty"):
               raise SystemExit("::error::chain must be head, from_run or empty")
           if chain == "head" and (from_run or start or end):
@@ -359,7 +378,7 @@ jobs:
   deposit:
     needs: detect
     # Only when the detection found something to deposit (PHASE_6H §3).
-    if: github.event_name == 'workflow_dispatch' && github.repository == 'santibravocmcc/Araripe' && needs.detect.outputs.deposit == 'true'
+    if: (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && github.repository == 'santibravocmcc/Araripe' && needs.detect.outputs.deposit == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     environment: v2-staging
@@ -444,7 +463,7 @@ jobs:
     # (GREEN_HEARTBEAT_CONTRACT_V1.md §2, §6). No concurrency group: the write
     # is a compare-and-swap of a commutative merge, so two lanes finishing
     # together converge instead of queueing, and a queued job can be cancelled.
-    if: always() && github.event_name == 'workflow_dispatch' && github.repository == 'santibravocmcc/Araripe'
+    if: always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && github.repository == 'santibravocmcc/Araripe'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: v2-staging

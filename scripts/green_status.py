@@ -14,7 +14,8 @@ Exit 1 when something is **broken** — a document that cannot be read or
 does not check, a chain the head resolution refuses, a route refusal that is
 not "a lane has not caught up" — or **late**: the last attempt older than 5
 days, or the last date looked at older than 21 (the owner's limits,
-2026-10-10, PHASE_6Y §4). No other age fails it.
+2026-10-10, PHASE_6Y §4), or a deposit waiting for the promotion more than 1
+day (2026-10-13, decision D2; PHASE_6ZB). No other age fails it.
 
 The identity, and what it can do from here
 ------------------------------------------
@@ -149,8 +150,18 @@ def read(store) -> st.Reading:
 
     try:
         chain = sc.resolve_head(store)
-        predecessor = sc.read_predecessor(store, chain.run_id)
-        head = st.Head(chain.run_id, predecessor.last_observed_on)
+        # Back from the head until a run the pointer already covers: those are
+        # the deposits waiting, and the oldest one's wait is judged (D2). With
+        # the promotion chained to the deposit, that is the head alone, or
+        # nothing past it; reading every run would only cost more.
+        through = st.finalized_through(pointer) if isinstance(pointer, dict) else None
+        deposits = []
+        for run_id in reversed(chain.path):
+            found = sc.read_predecessor(store, run_id)
+            deposits.append(st.Deposit(run_id, found.last_observed_on, found.last_terminal_at))
+            if through is None or found.last_observed_on <= through:
+                break
+        head = st.Head(chain.run_id, deposits[0].last_observed_on, tuple(reversed(deposits)))
     except Rejected as exc:
         head = None if exc.codes == ("chain_root_absent",) else st.Unreadable(str(exc))
     except (cs.ObjectStoreError, RuntimeError, ValueError) as exc:
