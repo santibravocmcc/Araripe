@@ -245,6 +245,19 @@ UTC estaria rodando) e fora de terça e sexta (o robô do site). Quarta ou sába
 
 ### A5. A agenda verde, em PR que só é mesclada no passo B6
 
+> **Feito em 2026-10-13, não mesclado:** `Araripe#118` (rascunho, branch
+> `claude/p6-agenda-verde`), registro
+> [`PHASE_6ZB_2026-10-13.md`](../implementation/PHASE_6ZB_2026-10-13.md). A
+> promoção encadeada **não** lê a conclusão do run de depósito — medido: uma
+> rodada sem aquisição termina `success` com o job `deposit` `skipped` —, e
+> sim o job `deposit` da tentativa que disparou, só para rodada agendada. Um
+> depósito despachado à mão continua promovido à mão (A9). D2 conta do
+> `terminal_at` da rodada pendente mais antiga: com o status das 12:00, uma
+> promoção que não veio fica vermelha entre 48 e 72 h depois da detecção.
+> `pytest` 2840 → 2909; 25 mutações derrubadas. **Só a primeira rodada
+> agendada depois do B6 prova** o `workflow_run`, o `actions: read` e o
+> `v2-promotion` aceitando esse evento.
+
 - **Quem:** agente.
 - **Aprovação:** nenhuma para a PR.
 - **Antes:** D1, D2, D3 registradas (A1).
