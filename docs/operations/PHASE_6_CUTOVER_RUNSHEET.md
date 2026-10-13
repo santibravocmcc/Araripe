@@ -124,6 +124,15 @@ Fronteiras que valem para a folha inteira, e não se repetem em cada passo:
 Nenhum passo de produção começa antes de D0–D5 estarem respondidas e
 registradas no passo A1.
 
+> **DECIDIDAS pelo dono em 2026-10-13 — todas as recomendações**, nas palavras
+> dele: *"Pode anotar todas as suas recomendacoes."* Ficam assim:
+> D0 = (a), o Worker de produção serve `/data/green/*`; D1 = 1, promoção
+> encadeada por `workflow_run`; D2 = depósito pendente por mais de 1 dia é
+> `late`; D3 = lane de status todo dia às 12:00 UTC, falhando em vermelho;
+> D4 = 1, virar com a data da série dita na página e a série verde como
+> pacote logo depois; D5 = virar como está e medir no passo B4; D6 = quarta
+> ou sábado de manhã, dia exato a marcar no passo A11. Passo A1 feito.
+
 **D0 — onde mora a rota no domínio final.**
 
 | | (a) o Worker de produção serve `/data/green/*` (**recomendado**) | (b) uma rota de zona `observatoriodachapadadoararipe.com/data/green/*` → o Worker verde |
