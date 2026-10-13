@@ -236,6 +236,20 @@ UTC estaria rodando) e fora de terça e sexta (o robô do site). Quarta ou sába
 
 ### A4. Rebasear `site#47`, `site#42` e `site#21` (L3)
 
+> **Feito em 2026-10-13, nada mesclado:** a `#47` mesclada pelo dono às
+> 17:11 UTC; sobre a `main` do site em `a0c3390`, a `#42` foi de `f3c9c85`
+> para `e2a33f5` e a `#21` de `d8c02c0` para `ab65a55` (`--force-with-lease`;
+> o SHA anterior inteiro e o comando de volta estão no corpo do último commit
+> de cada uma). As duas continuam rascunho, 0 atrás da `main`, e
+> `git merge-tree` limpo. Registro:
+> [`PHASE_6ZC_2026-10-13.md`](../implementation/PHASE_6ZC_2026-10-13.md).
+> A `#42` ganhou três testes que prendem a recusa **sem** aviso de atraso e a
+> abertura com data olhada velha **com** aviso. A `#21` teve o seu alarme
+> reapontado: a base azul mudou de `alertas.js` para `alertas-fonte.js`, e o
+> teste agora confere `FONTE_PADRAO = 'azul'` — ele **falha de propósito**
+> depois do B5 (ver C4). As três branches juntas sobre a `main` (`#48`, `#42`,
+> `#21`, nessa ordem): `npm run test:worker` 240/240, `pytest` 297, build ok.
+
 - **Quem:** agente; o merge da `#47` é do dono.
 - **Aprovação:** dono, explícita, só para mesclar a `#47` (inerte para o público: atrás de `?dados=verde`).
 - **Antes:** `gh pr view 47 -R santibravocmcc/observatorio-site --json state` aberta; `git merge-tree --write-tree origin/main origin/<branch>` mostra o conflito.
@@ -419,7 +433,7 @@ Cada passo desta fase **para e pergunta** antes de agir.
 
 - **Quem:** dono mescla.
 - **Aprovação:** dono, explícita.
-- **Antes:** B5 e C2 feitos; a `#21` rebaseada (A4); `src/js/alertas.js` resolve `object_base` (`site-pr21` na memória do projeto).
+- **Antes:** B5 e C2 feitos; a `#21` rebaseada de novo sobre a `main` do site depois do B5, e o teste `test_a_pagina_ainda_le_a_base_estatica` dela — que confere `FONTE_PADRAO = 'azul'` em `src/js/alertas-fonte.js` e falha de propósito quando o padrão vira verde — reescrito para registrar a condição cumprida. (Até 2026-10-13 este campo dizia "`src/js/alertas.js` resolve `object_base`": envelheceu sem mudar de palavra, porque a resolução mora em `alertas-fonte.js` desde a leitura verde, e só vale para `?dados=verde` até o B5 — `PHASE_6ZC` §3.)
 - **Faz:** merge da `#21`.
 - **Depois:** build `success`; a página padrão abre a data mais recente (não 404).
 - **Volta:** revert da PR.
