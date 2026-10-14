@@ -413,6 +413,15 @@ Cada passo desta fase **para e pergunta** antes de agir.
 
 ### B0. Fotografia e alvos de volta
 
+> **Feito em 2026-10-14:** status `38573085048` (13:36Z), as sete linhas
+> `ok`, ponteiro seq. 19; versão do Worker `observatorio-chapada` em produção
+> `3d910ec8` (lida pelo dono em Deployments, 100% do tráfego) — o alvo de
+> volta de B1/B2/B5; hostname público de `araripe-cogs` lido pelo dono nas
+> configurações do bucket: `pub-5eb389cffff54421916187be69dd659b.r2.dev`,
+> igual ao esperado; `detect_gee.yml` ativo. Linha de base às 14:33Z: o
+> `manifest.json` azul com sha256 `158f005f…cbd5505`, `/data/green/current.json`
+> 404. Registro: [`PHASE_6ZI_2026-10-14.md`](../implementation/PHASE_6ZI_2026-10-14.md).
+
 - **Quem:** agente lê; dono anota o que só o painel mostra.
 - **Aprovação:** nenhuma (leitura).
 - **Antes:** A11 feito.
@@ -421,6 +430,18 @@ Cada passo desta fase **para e pergunta** antes de agir.
 - **Volta:** nada a desfazer.
 
 ### B1. A rota no domínio final (merge da PR de A2)
+
+> **Feito em 2026-10-14:** a `site#48` rebaseada (`95148a8` → `b518bb0`) e
+> mesclada pelo dono às 14:35Z (`11d1b65`), nas palavras dele: *"Sim, mesclei
+> a #48"*. Check run do Workers Builds `success` às 14:37:16Z — **o token
+> aceitou o binding de R2** (era o não medido). `/data/green/current.json`
+> 200 `no-store`; o azul com o mesmo sha256; `/api/chat/models` 200; a página
+> sem parâmetro pediu `manifest.json` e `run-2026-08-30`. O verificador deu
+> 54 PASS e **1 FAIL que era dele**: pedia `X-Araripe-Context-Id` ao
+> documento `context/context.json`, que o vetor de conformidade e
+> `_resolve_context` servem sem esse header (ele vai nos objetos); o arnês
+> local roda `--sem-contexto` e não pegava. Corrigido em `site#51`
+> (rascunho, `ddf2599`): 61 PASS, 0 FAIL. Sem "Volta".
 
 - **Quem:** dono mescla.
 - **Aprovação:** dono, explícita (deploy de produção).
@@ -431,6 +452,15 @@ Cada passo desta fase **para e pergunta** antes de agir.
 
 ### B2. O índice composto no build e o reconciliador (merge da `site#42` com `COMPOR = True`)
 
+> **Feito em 2026-10-14:** a `#42` rebaseada sobre a `#48` (`e2a33f5` →
+> `ec92808`, com `COMPOR = True` e o teste que o fixa); antes do merge, o
+> build local contra o domínio real compôs o índice da release viva. Mesclada
+> pelo dono às 14:57Z (`198be57`): *"Sim, mesclei a #42"*. Build `success` às
+> 15:05:51Z; `built-from.json` = `rel-g3-b1913263…` + `ctx-g1-5b1ac5a0…`, o
+> mesmo do ponteiro; verificador 61 PASS; `alertas?dados=verde` com as três
+> datas e `/?dados=verde` com os alertas de 11/10, nenhum pedido a `r2.dev`;
+> `green_site_rebuild.yml` à mão (run `38586402108`): `em_dia`.
+
 - **Quem:** agente prepara o diff de uma linha na `#42`; dono mescla.
 - **Aprovação:** dono, explícita.
 - **Antes:** B1 verificado; a `#42` rebaseada (A4).
@@ -439,6 +469,17 @@ Cada passo desta fase **para e pergunta** antes de agir.
 - **Volta:** PR com `COMPOR = False` (desliga composição e reconciliador; a página volta a recusar `?dados=verde` e o padrão segue azul).
 
 ### B3 (recomendado). Ensaio de rollback com a página no ar
+
+> **Feito em 2026-10-14**, com o "sim" do dono: *"Sim, pode fazer o B3"*.
+> Histórico `38586517253`: `consistent`, seq. 10–19. Rollback `38593878442`
+> → seq. 20 `rel-g3-76601bbf…`: `?dados=verde` mostrou "Os alertas estão
+> sendo atualizados" (`indice_de_outra_release`); reconciliador `38594820364`
+> → commit vazio `91bffea` → build `success` 16:09:04Z → a página com a
+> release de 04/10 (contexto e fontes ausentes, como o contrato manda para
+> uma release que não é a deles). Volta `38595685474` → seq. 21
+> `rel-g3-b1913263…`; reconciliador `38596477365` → `a5bdad5` → build
+> 16:23:40Z. Ao fim: verificador 61 PASS; status `38597782742` sete `ok`,
+> ponteiro seq. 21; o azul com o mesmo sha256.
 
 - **Quem:** agente dispara, a pedido do dono.
 - **Aprovação:** dono, explícita (move o ponteiro que `?dados=verde` segue).
@@ -449,6 +490,15 @@ Cada passo desta fase **para e pergunta** antes de agir.
 
 ### B4. As checagens que só um navegador responde
 
+> **Feito em 2026-10-14:** visão completa de 11/10: 2,0 MiB transferidos
+> (7,0 MiB de corpo); a maior, 26/06: **27,9 MiB transferidos (89,1 MiB de
+> corpo), ~26 s**, renderizada (5.053 alertas). **D5:** a mediana das 47
+> visões completas é 26 MiB e 25 passam de 25 MiB — o aviso de tamanho antes
+> de baixar vira pacote do site, depois. `?download=1` →
+> `filename="run-2026-10-09.geojson"`; nenhum `Access-Control-*`, nenhum
+> preflight; `.creditos-dados` presente; 375 px sem rolagem lateral
+> (`scrollWidth` 375).
+
 - **Quem:** agente (navegador, só leitura).
 - **Aprovação:** nenhuma.
 - **Antes:** B2 verificado.
@@ -458,6 +508,15 @@ Cada passo desta fase **para e pergunta** antes de agir.
 
 ### B5. O público passa a ver o verde (merge da PR de A6)
 
+> **Feito em 2026-10-14:** a `#49` rebaseada só com o seu commit
+> (`6fc7491` → `008a27d`, mesmo patch) e com a base trocada para `main`;
+> mesclada pelo dono às 16:28Z (`1978b15`): *"Sim, mesclei a #49"*. Build
+> `success` 16:36:27Z. Sem parâmetro: `alertas` verde com as três datas e os
+> créditos, `/` com os alertas de 11/10, `dados-abertos` baixando
+> `/data/green/alerts/run-2026-10-11.geojson?download=1`; nas três, nenhum
+> pedido a `r2.dev` nem a `/data/alerts/`. Verificador 61 PASS;
+> `?dados=azul` mostra o azul de 30/08 (3.017 fortes).
+
 - **Quem:** dono mescla.
 - **Aprovação:** dono, explícita — **é o passo que muda o que o público vê**.
 - **Antes:** B1–B4 verificados; A9 feito há menos de 3 dias.
@@ -466,6 +525,15 @@ Cada passo desta fase **para e pergunta** antes de agir.
 - **Volta:** revert da PR (~70 s): a página volta ao azul, que ainda está inteiro no deploy e no `r2.dev`.
 
 ### B6. A agenda verde (merge da PR de A5)
+
+> **Feito em 2026-10-14:** a `#118` (`8e9c6e3`, 7 atrás da `main`, só
+> docs) testada rebaseada localmente: suíte 2924 passed, 6 failed e 14
+> errors — todos os de 2a5/2a6d que dependem de dados não rastreados num
+> worktree novo. Mesclada pelo dono às 16:50Z (`17cae38`): *"Sim, mesclei a
+> #118"*; o tree mesclado é o testado. Na `main`: `0 6 * * 1,4` no depósito,
+> `0 12 * * *` no status, `workflow_run` na publicação; os três `active`.
+> **A rodada agendada ainda não rodou:** a primeira é quinta 2026-10-15
+> 06:00 UTC (próxima sessão).
 
 - **Quem:** dono mescla.
 - **Aprovação:** dono, explícita (muda o que roda sem clique; a `main` do backend é só por PR).
