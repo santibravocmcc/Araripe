@@ -132,6 +132,12 @@ registradas no passo A1.
 > D4 = 1, virar com a data da série dita na página e a série verde como
 > pacote logo depois; D5 = virar como está e medir no passo B4; D6 = quarta
 > ou sábado de manhã, dia exato a marcar no passo A11. Passo A1 feito.
+>
+> **D6 marcado pelo dono em 2026-10-14 (passo A11): o dia é hoje, quarta
+> 2026-10-14**, a partir da manhã — nas palavras dele: *"Hoje estamos ainda
+> numa quarta-feira de manhã. Nao conseguimos fazer isso hoje? Caso tenha
+> algum empecilho, pode marcar para sab 17/10."* Reserva: sábado 2026-10-17,
+> com o A9 repetido na sexta 2026-10-16.
 
 **D0 — onde mora a rota no domínio final.**
 
@@ -381,6 +387,18 @@ UTC estaria rodando) e fora de terça e sexta (o robô do site). Quarta ou sába
 - **Volta:** `wrangler rollback` para a versão anterior, na máquina do dono.
 
 ### A11. A revisão desta folha pelo dono
+
+> **Feito em 2026-10-14:** a folha apresentada ao dono passo a passo (Fases B
+> e C, com quem age e como se volta); resposta dele, nas palavras dele:
+> *"1. Sim"*, e o dia: hoje, quarta 2026-10-14 (ver D6 na §3). Conferido antes,
+> às 13:05Z: status `38568924312` com as sete linhas `ok` (ponteiro seq. 19,
+> `alerts.observed` 2026-10-12); site em rascunho `#48` `95148a8`, `#42`
+> `e2a33f5`, `#49` `6fc7491` (base `#42`), `#50` `ad710d8`, `#21` `ab65a55`;
+> backend `#118` em rascunho. A `#48` está **1 commit atrás** da `main` do
+> site (`a0c3390`, a `#47`) com `git merge-tree` limpo — o "Antes" do B1 pede
+> rebaseá-la. O A9 de 2026-10-14 (12:54Z) vale para um B5 hoje; não é preciso
+> véspera. Registro:
+> [`PHASE_6ZH_2026-10-14.md`](../implementation/PHASE_6ZH_2026-10-14.md).
 
 - **Quem:** dono.
 - **Aprovação:** dono, explícita.
