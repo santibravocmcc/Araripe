@@ -347,6 +347,23 @@ UTC estaria rodando) e fora de terça e sexta (o robô do site). Quarta ou sába
 
 ### A9. Drenar a fila desde 2026-10-05, na véspera
 
+> **Feito em 2026-10-14 (antes do dia marcado — repetir na véspera):**
+> status `38560897858` sem `broken` (só `automation.latest late`, 6 d).
+> Lane de depósito `38561001665`, `chain=head`: continuou
+> `ci-37686447368`, janela 2026-10-05..2026-10-13 exclusiva (8 dias, até
+> `hoje − 2`, uma rodada bastou) e depositou `ci-38561001665` — 10-09 e
+> 10-11 com alertas, 10-07 e 10-12 sem cobertura válida. Publicação
+> `38562453035`, `source=chain`: `stage`, `promote`, `context` e `sources`
+> com sucesso; ponteiro na seq. 19 →
+> `rel-g3-b19132638d911f28ab8c711b68cd848849b57e5f679d373a34191285281e63fa`
+> (20 membros), contexto `ctx-g1-5b1ac5a0…` seq. 3, fontes
+> `src-g1-e9e0ba1a…` seq. 2. Status `38567568460`: tudo `ok` —
+> `alerts.observed` 2026-10-12 (2 d), `deposits.unpublished` nada espera,
+> `automation.latest` 0 d. A fila volta a crescer um dia por dia: o B5 pede
+> o A9 feito há menos de 3 dias, então **na véspera** roda-se de novo o
+> mesmo comando. Registro:
+> [`PHASE_6ZG_2026-10-14.md`](../implementation/PHASE_6ZG_2026-10-14.md).
+
 - **Quem:** agente.
 - **Aprovação:** nenhuma (staging; promoção sem revisor por decisão de 2026-10-02; nenhum consumidor público segue o ponteiro ainda).
 - **Antes:** `v2_green_status.yml` sem `broken`.
