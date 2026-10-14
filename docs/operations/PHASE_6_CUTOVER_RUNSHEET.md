@@ -325,6 +325,19 @@ UTC estaria rodando) e fora de terça e sexta (o robô do site). Quarta ou sába
 
 ### A8. Revogar a chave local de staging e reescrever o documento dela
 
+> **Feito em 2026-10-14:** o dono apagou (delete, não roll) o token
+> `claude-araripe-v2-staging-rw` no painel; o profile `araripe-r2-staging`
+> passou a receber `Unauthorized` às 11:51:46 UTC. A chave do Environment
+> `v2-staging` é `github-araripe-v2-staging-rw` (nomes e datas no painel,
+> `PHASE_2B0_2026-08-11.md`) e **não** foi revogada: `v2_green_status.yml`
+> da `main` (run `38559580150`) leu todos os produtos com ela. A run
+> terminou `failure` só por `automation.latest late` (6 dias desde
+> 2026-10-07, limite 5 — nenhuma agenda verde antes do B6), não por
+> credencial. O dono também apagou os dois profiles locais; esta máquina não
+> tem mais credencial do bucket. `CLOUDFLARE_STAGING_ACCESS_FOR_CLAUDE.md`
+> reescrito. Registro:
+> [`PHASE_6ZF_2026-10-14.md`](../implementation/PHASE_6ZF_2026-10-14.md).
+
 - **Quem:** dono revoga; agente prova e reescreve.
 - **Aprovação:** dono, explícita (credencial).
 - **Antes:** o dono confere no painel da Cloudflare (R2 → API tokens) que `claude-araripe-v2-staging-rw` **não** é a chave guardada no Environment `v2-staging` (nomes e datas de criação diferentes) — senão a revogação para a lane de depósito; agente confirma que nenhum passo desta folha depende de depósito local (todos usam as lanes).

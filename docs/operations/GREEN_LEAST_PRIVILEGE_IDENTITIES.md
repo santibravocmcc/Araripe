@@ -70,7 +70,7 @@ why that code's policy is a contract with conformance vectors
 
 | Identity | Held by | R2 level | Writes it performs | Needs write? |
 | --- | --- | --- | --- | --- |
-| `araripe-r2-staging` | the owner's workstation | Object R&W, one bucket | ad-hoc run uploads, proofs | yes |
+| ~~`araripe-r2-staging`~~ | revoked 2026-10-14 (A8, `PHASE_6ZF_2026-10-14.md`) | — | — | — |
 | `v2-staging` | GitHub Environment | Object R&W, one bucket | `green-isolation-proof/run-…/probe.json` only | **only for one probe step** |
 | `v2-promotion` | GitHub Environment | Object R&W, one bucket | `releases/…`, the pointer | yes |
 | `STAGING_BUCKET` | Worker binding | full CRUD, one bucket | none | **no** |
