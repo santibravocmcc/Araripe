@@ -192,7 +192,9 @@ def test_a_limit_is_strictly_more_than_its_days(product, field, ok_age):
 
 
 def test_the_limits_are_exactly_the_owners():
-    assert st.LIMITS_DAYS == {"automation.latest": 5, "alerts.observed": 21}
+    """2026-10-10 (PHASE_6Y §4) and 2026-10-13 (D2 of the cutover runsheet)."""
+    assert st.LIMITS_DAYS == {"automation.latest": 5, "alerts.observed": 21,
+                              "deposits.unpublished": 1}
 
 
 def test_a_release_with_no_product_says_so_without_a_date():
@@ -229,7 +231,74 @@ def test_a_failed_latest_keeps_the_last_success_apart():
 ])
 def test_the_queue_compares_the_head_with_the_pointers_watermark(covers, state):
     row = rows_by_product(reading(head=st.Head("ci-9", covers)))["deposits.unpublished"]
-    assert row.state == state and row.since == covers
+    assert row.state == state
+    # Nothing waits, or nothing whose wait is known: the date, and no age.
+    if state == st.OK:
+        assert row.since == covers and row.age_days is None
+    else:
+        assert row.age_days is None
+
+
+# ── D2: how long a deposit waits for the promotion ──────────────────────────
+
+
+def _deposits(*runs):
+    """``(run_id, last_observed_on, detected_utc)``, oldest first."""
+    return tuple(st.Deposit(*run) for run in runs)
+
+
+def _waiting(now, *runs, through="2026-10-02"):
+    head = st.Head(runs[-1][0], runs[-1][1], _deposits(*runs))
+    row = {r.product: r for r in st.assess(reading(head=head, pointer=pointer(through=through)), now)}
+    return row["deposits.unpublished"]
+
+
+@pytest.mark.parametrize("now, state, age", [
+    # Detected 2026-10-06 07:30; the reading's clock decides, in whole days.
+    (datetime(2026, 10, 6, 12, 0, tzinfo=timezone.utc), st.PENDING, 0),
+    (datetime(2026, 10, 8, 7, 29, 59, tzinfo=timezone.utc), st.PENDING, 1),
+    (datetime(2026, 10, 8, 7, 30, 0, tzinfo=timezone.utc), st.LATE, 2),
+])
+def test_a_deposit_waiting_more_than_one_whole_day_is_late(now, state, age):
+    row = _waiting(now, ("ci-1", "2026-10-02", "2026-10-03T07:00:00Z"),
+                   ("ci-2", "2026-10-05", "2026-10-06T07:30:00Z"))
+    assert (row.state, row.age_days, row.since) == (state, age, "2026-10-06T07:30:00Z")
+    assert "ci-2" in row.detail
+
+
+def test_the_wait_is_counted_from_the_oldest_unpublished_run_not_the_head():
+    """A promotion that failed on Monday is not forgiven by Thursday's deposit."""
+    row = _waiting(datetime(2026, 10, 9, 12, 0, tzinfo=timezone.utc),
+                   ("ci-1", "2026-10-02", "2026-10-03T07:00:00Z"),
+                   ("ci-2", "2026-10-05", "2026-10-06T07:30:00Z"),
+                   ("ci-3", "2026-10-08", "2026-10-09T08:00:00Z"))
+    assert row.state == st.LATE and row.since == "2026-10-06T07:30:00Z" and row.age_days == 3
+    assert "ci-2" in row.detail and "past the owner's limit of 1" in row.detail
+
+
+def test_a_ledger_instant_with_fractional_seconds_is_read():
+    row = _waiting(datetime(2026, 10, 8, 7, 30, 1, tzinfo=timezone.utc),
+                   ("ci-2", "2026-10-05", "2026-10-06T07:30:00.250Z"))
+    assert row.state == st.LATE and row.age_days == 2
+
+
+def test_a_head_behind_the_pointer_is_not_judged():
+    """A new generation's chain grows toward the published one (PHASE_6W)."""
+    row = _waiting(datetime(2026, 12, 1, tzinfo=timezone.utc),
+                   ("ci-9", "2026-04-15", "2026-04-16T07:00:00Z"))
+    assert row.state == st.PENDING and row.age_days is None
+
+
+def test_nothing_waiting_is_ok_whatever_the_deposits_age():
+    row = _waiting(datetime(2026, 12, 1, tzinfo=timezone.utc),
+                   ("ci-1", "2026-10-02", "2026-10-03T07:00:00Z"))
+    assert row.state == st.OK and row.age_days is None
+
+
+def test_the_deposit_limit_judges_only_the_deposit_row():
+    """Context and sources wait too, and have no limit: pending stays pending."""
+    old = st.Row("context", st.PENDING, "2026-01-01T00:00:00Z", 300, "waiting")
+    assert st._judged(old) == old
 
 
 def test_a_refused_chain_is_broken_and_a_missing_one_absent():
@@ -415,6 +484,51 @@ def test_a_forked_chain_fails_the_script(live, tmp_path, monkeypatch):
     assert code == 1 and "| `deposits.unpublished` | broken |" in summary
 
 
+def _chain_bucket():
+    """The root, then ci-a … ci-c, each covering one date, in a fake bucket."""
+    from tests.test_chain_head import bucket, chain
+
+    store, fake = bucket(*chain(("ci-a", "2026-09-07"), ("ci-b", "2026-09-22"),
+                                ("ci-c", "2026-10-01")))
+    return store, fake
+
+
+@pytest.mark.parametrize("through, read_back, oldest", [
+    # Promoted through ci-a: ci-b and ci-c wait, and ci-a is read to know so.
+    ("2026-09-07", ["ci-c", "ci-b", "ci-a"], "2026-09-22T18:00:00Z"),
+    # Everything promoted: the head alone is read, and nothing waits.
+    ("2026-10-01", ["ci-c"], None),
+])
+def test_the_script_reads_back_only_until_a_run_the_pointer_covers(monkeypatch, through, read_back, oldest):
+    script = _script()
+    store, fake = _chain_bucket()
+    live_pointer = pointer(through=through) | {"release_path": "releases/x/release.json",
+                                               "release_document_sha256": "0" * 64}
+    monkeypatch.setattr(script.ap, "read_live_pointer", lambda _store: (live_pointer, None))
+    head = script.read(store).head
+    assert [d.run_id for d in head.deposits] == list(reversed(read_back))
+    ledgers = [k.split("/")[1] for k in fake.reads if k.endswith("/ledger.json")]
+    assert ledgers == read_back, "the root, covered, is never read"
+    row = {r.product: r for r in st.assess(script.read(store),
+                                           datetime(2026, 10, 2, 12, tzinfo=timezone.utc))}
+    queue = row["deposits.unpublished"]
+    assert queue.since == (oldest or "2026-10-01")
+    assert queue.state == (st.LATE if oldest else st.OK)
+
+
+def test_a_runs_wait_starts_when_its_last_date_finished_detecting():
+    """``last_terminal_at`` is the latest of the run's dates, not the first."""
+    from tests.green_release_fixtures import ZERO, build_ledger
+    from tests.test_chain_head import ROOT_RUN, bucket, run_objects
+
+    layout = run_objects(ROOT_RUN, "2026-08-30", schema=1)
+    ledger, _ = build_ledger({"2026-08-29": [ZERO], "2026-08-30": [ZERO]})
+    layout[f"runs/{ROOT_RUN}/ledger.json"] = (json.dumps(ledger).encode(), "application/json")
+    store, _ = bucket(layout)
+    found = sc.read_predecessor(store, ROOT_RUN)
+    assert (found.last_observed_on, found.last_terminal_at) == ("2026-08-30", "2026-08-30T18:00:00Z")
+
+
 def test_the_script_reads_read_only_with_the_candidate_identity_and_no_profile():
     source = SCRIPT.read_text(encoding="utf-8")
     tree = ast.parse(source)
@@ -437,9 +551,11 @@ def _lane():
     return yaml.safe_load(LANE.read_text(encoding="utf-8"))
 
 
-def test_the_lane_is_manual_unscheduled_read_only_and_joins_no_queue():
+def test_the_lane_runs_daily_at_noon_read_only_and_joins_no_queue():
+    """D3 (runsheet step A5): every day 12:00 UTC, and by hand."""
     d = _lane()
-    assert set(d[True]) == {"workflow_dispatch"}, "no green lane has a cron before the cutover"
+    assert set(d[True]) == {"workflow_dispatch", "schedule"}
+    assert d[True]["schedule"] == [{"cron": "0 12 * * *"}]
     assert d["permissions"] == {"contents": "read"}
     assert "concurrency" not in d
     assert list(d["jobs"]) == ["status"]

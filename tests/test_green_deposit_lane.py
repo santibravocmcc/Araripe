@@ -95,10 +95,31 @@ def run_inline(step, tmp=None, **env):
 # ─── trigger and shape ───────────────────────────────────────────────────────
 
 
-def test_manual_only_read_only_and_unscheduled():
+#: The blue detection's cadence (detect_gee.yml): the deposit runs with it,
+#: keeping the 24 h gap before the site robot's Tue/Fri 06:00 (runsheet A5).
+DEPOSIT_CRON = "0 6 * * 1,4"
+EVENTS = "(github.event_name == 'workflow_dispatch' || github.event_name == 'schedule')"
+GUARD = EVENTS + " && github.repository == 'santibravocmcc/Araripe'"
+
+
+def test_scheduled_monday_and_thursday_dispatchable_and_read_only():
     d = doc()
-    assert set(d[True]) == {"workflow_dispatch"}, "scheduling is Phase 6 §4.5"
+    assert set(d[True]) == {"workflow_dispatch", "schedule"}
+    assert d[True]["schedule"] == [{"cron": DEPOSIT_CRON}]
     assert d["permissions"] == {"contents": "read"}
+
+
+def test_the_cron_is_the_blue_detections():
+    blue = yaml.safe_load((WORKFLOW.parent / "detect_gee.yml").read_text(encoding="utf-8"))
+    assert [c["cron"] for c in blue[True]["schedule"]] == [DEPOSIT_CRON]
+
+
+def test_every_job_accepts_exactly_the_two_events():
+    """No other event reaches a job: not push, not workflow_run, not a PR."""
+    jobs = doc()["jobs"]
+    assert jobs["detect"]["if"] == GUARD
+    assert jobs["deposit"]["if"] == GUARD + " && needs.detect.outputs.deposit == 'true'"
+    assert jobs["heartbeat"]["if"] == "always() && " + GUARD
 
 
 def test_three_jobs_the_deposit_after_the_detection_and_the_beat_after_both():
@@ -322,7 +343,7 @@ def test_head_is_the_default_mode_and_no_date_is_required():
 @pytest.mark.parametrize(
     "env, ok",
     [
-        ({}, True),  # a scheduled event carries no inputs: head
+        ({}, True),  # a dispatch without a chain (the API) is head
         ({"CHAIN": "head"}, True),
         ({"CHAIN": "head", "START": "2026-09-08"}, False),
         ({"CHAIN": "head", "FROM_RUN": "ci-1"}, False),
@@ -335,10 +356,32 @@ def test_head_is_the_default_mode_and_no_date_is_required():
     ],
 )
 def test_each_mode_accepts_exactly_its_own_inputs(env, ok):
-    code, outputs = run_inline(step_named("detect", INPUTS), **env)
+    code, outputs = run_inline(step_named("detect", INPUTS), GITHUB_EVENT_NAME="workflow_dispatch", **env)
     assert (code == 0) is ok, (env, code)
     if ok:
         assert outputs["chain"] == (env.get("CHAIN") or "head")
+
+
+def test_a_scheduled_run_is_head_from_the_event_alone():
+    code, outputs = run_inline(step_named("detect", INPUTS), GITHUB_EVENT_NAME="schedule")
+    assert code == 0
+    assert outputs == {"chain": "head", "from_run": "", "start": "", "end": ""}
+
+
+@pytest.mark.parametrize("env", [
+    {"CHAIN": "head"}, {"CHAIN": "from_run", "FROM_RUN": "ci-1"}, {"START": "2026-09-08"},
+    {"CHAIN": "empty", "START": "2026-09-08", "END": "2026-09-10"},
+])
+def test_a_scheduled_run_refuses_anything_an_input_could_say(env):
+    """A schedule carries no inputs; one that somehow does is not obeyed."""
+    code, outputs = run_inline(step_named("detect", INPUTS), GITHUB_EVENT_NAME="schedule", **env)
+    assert code != 0 and "chain" not in outputs
+
+
+@pytest.mark.parametrize("event", ["", "push", "workflow_run", "pull_request"])
+def test_any_other_event_is_refused_before_anything_is_spent(event):
+    code, outputs = run_inline(step_named("detect", INPUTS), GITHUB_EVENT_NAME=event)
+    assert code != 0 and "chain" not in outputs
 
 
 def test_the_window_step_takes_the_head_or_the_inputs():

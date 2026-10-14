@@ -1,0 +1,25 @@
+{
+ "jobs": [
+  {
+   "conclusion": "success",
+   "head_branch": "main",
+   "id": 109073264268,
+   "name": "detect",
+   "run_attempt": 1,
+   "run_id": 36465153281,
+   "status": "completed",
+   "workflow_name": "v2 green deposit lane (detect a window, deposit runs/<run-id>/)"
+  },
+  {
+   "conclusion": "failure",
+   "head_branch": "main",
+   "id": 109076208689,
+   "name": "deposit",
+   "run_attempt": 1,
+   "run_id": 36465153281,
+   "status": "completed",
+   "workflow_name": "v2 green deposit lane (detect a window, deposit runs/<run-id>/)"
+  }
+ ],
+ "total_count": 2
+}

@@ -130,7 +130,13 @@ def test_the_lane_cannot_write_to_the_repository(lane):
     """
 
     assert lane["permissions"] == {"contents": "read"}
-    for job in jobs(lane).values():
+    for name, job in jobs(lane).items():
+        if name == "gate":
+            # The chained promotion reads the deposit run's jobs (D1): read,
+            # never write, and the job holds no Environment and no secret.
+            assert job["permissions"] == {"actions": "read", "contents": "read"}
+            assert "environment" not in job and "secrets." not in yaml.dump(job)
+            continue
         assert "permissions" not in job, "a job must not widen the workflow's grant"
 
 
@@ -176,11 +182,159 @@ def test_the_data_path_is_the_object_store_not_a_repository_path(lane):
 
 # ── inertness, and why the promotion job names no Environment ────────────────
 
-def test_the_lane_is_dispatch_only(lane):
-    """A green lane may not carry a cron before the Phase 6 cutover."""
+DEPOSIT_LANE = WORKFLOWS / "v2_green_deposit_lane.yml"
+
+
+def test_the_lane_runs_by_hand_or_after_the_deposit_lane_and_has_no_cron(lane):
+    """D1 of the cutover runsheet: the promotion follows the deposit by
+    workflow_run, on main; the cron is the deposit lane's, never this one's."""
 
     triggers = lane[True] if True in lane else lane["on"]
-    assert list(triggers) == ["workflow_dispatch"]
+    assert set(triggers) == {"workflow_dispatch", "workflow_run"}
+    deposit_name = yaml.safe_load(DEPOSIT_LANE.read_text(encoding="utf-8"))["name"]
+    assert triggers["workflow_run"] == {
+        "workflows": [deposit_name], "types": ["completed"], "branches": ["main"],
+    }
+
+
+def test_every_job_after_the_gate_reads_the_gate_not_the_inputs(lane):
+    """Under workflow_run there are no inputs: one source of truth, the gate."""
+
+    for name, job in jobs(lane).items():
+        if name != "gate":
+            assert "github.event.inputs" not in yaml.dump(job), name
+    stage = jobs(lane)["stage"]
+    assert stage["needs"] == "gate"
+    assert stage["if"] == ("github.repository == 'santibravocmcc/Araripe' "
+                           "&& needs.gate.outputs.promote == 'true'")
+    assert stage["outputs"]["source"] == "${{ needs.gate.outputs.source }}"
+    assert stage["outputs"]["run_id"] == "${{ needs.gate.outputs.run_id }}"
+    for step in steps(jobs(lane)["promote"]):
+        if "SOURCE" in (step.get("env") or {}):
+            assert step["env"]["SOURCE"] == "${{ needs.stage.outputs.source }}"
+            assert step["env"]["RUN_ID"] == "${{ needs.stage.outputs.run_id }}"
+
+
+def test_a_skipped_stage_skips_everything_after_it(lane):
+    """No status function anywhere: when the gate says no, stage is skipped,
+    and the implicit success() skips promote, context and sources with it."""
+
+    for name, job in jobs(lane).items():
+        for function in ("always()", "failure()", "cancelled()", "success()"):
+            assert function not in job["if"], (name, function)
+    events = "(github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_run')"
+    for name in ("gate", "promote", "context", "sources"):
+        assert jobs(lane)[name]["if"].startswith(events), name
+
+
+def test_the_gate_reads_the_triggering_attempt_and_decides_in_the_script(lane):
+    gate = jobs(lane)["gate"]
+    assert "environment" not in gate and "concurrency" not in gate
+    assert gate["outputs"] == {
+        "promote": "${{ steps.dispatch.outputs.promote || steps.chained.outputs.promote }}",
+        "source": "${{ steps.dispatch.outputs.source || steps.chained.outputs.source }}",
+        "run_id": "${{ steps.dispatch.outputs.run_id }}",
+    }
+    (chained,) = [s for s in gate["steps"] if s.get("id") == "chained"]
+    assert chained["if"] == "github.event_name == 'workflow_run'"
+    assert chained["env"] == {
+        "GH_TOKEN": "${{ github.token }}",
+        "TRIGGER_RUN_ID": "${{ github.event.workflow_run.id }}",
+        "TRIGGER_RUN_ATTEMPT": "${{ github.event.workflow_run.run_attempt }}",
+        "TRIGGER_EVENT": "${{ github.event.workflow_run.event }}",
+        "TRIGGER_BRANCH": "${{ github.event.workflow_run.head_branch }}",
+        "TRIGGER_REPOSITORY": "${{ github.event.workflow_run.head_repository.full_name }}",
+        "TRIGGER_PATH": "${{ github.event.workflow_run.path }}",
+    }
+    script = executed(chained["run"])
+    assert "${{" not in chained["run"], "no event field is interpolated into the shell"
+    assert "/attempts/${TRIGGER_RUN_ATTEMPT}/jobs" in script
+    assert script.strip().splitlines()[-1].strip() == (
+        'python3 scripts/chained_promotion_gate.py --jobs "$RUNNER_TEMP/deposit-jobs.json"')
+    (dispatch,) = [s for s in gate["steps"] if s.get("id") == "dispatch"]
+    assert dispatch["if"] == "github.event_name == 'workflow_dispatch'"
+
+
+def _gate_step(lane, fixture, tmp_path, **trigger):
+    """Run the chained step as Actions would, with ``gh`` answering a fixture."""
+
+    import os
+    import shutil
+
+    (chained,) = [s for s in jobs(lane)["gate"]["steps"] if s.get("id") == "chained"]
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    calls = tmp_path / "gh-calls"
+    fake_gh = bin_dir / "gh"
+    fake_gh.write_text(f'#!/bin/sh\necho "$@" >> {calls}\ncat {fixture}\n')
+    fake_gh.chmod(0o755)
+    output = tmp_path / "output"
+    output.write_text("")
+    env = {
+        "PATH": f"{bin_dir}:{Path(sys.executable).parent}:/usr/bin:/bin",
+        "GITHUB_OUTPUT": str(output), "RUNNER_TEMP": str(tmp_path),
+        "GITHUB_REPOSITORY": "santibravocmcc/Araripe", "GH_TOKEN": "unused",
+        "TRIGGER_EVENT": "schedule", "TRIGGER_BRANCH": "main",
+        "TRIGGER_REPOSITORY": "santibravocmcc/Araripe",
+        "TRIGGER_PATH": ".github/workflows/v2_green_deposit_lane.yml",
+        **trigger,
+    }
+    import subprocess
+
+    shutil.copytree(REPO / "scripts", tmp_path / "scripts", ignore=shutil.ignore_patterns("__pycache__"))
+    done = subprocess.run(["bash", "-c", chained["run"].replace("python3 ", f"{sys.executable} ")],
+                          env=env, cwd=tmp_path, capture_output=True, text=True)
+    values = dict(line.split("=", 1) for line in output.read_text().splitlines() if line)
+    return done, values, (calls.read_text() if calls.exists() else "")
+
+
+GATE_FIXTURES = REPO / "tests" / "fixtures" / "deposit_lane_jobs"
+
+
+@pytest.mark.parametrize("run_id, promote", [
+    ("37020588408", "true"),   # deposited
+    ("37686447368", "true"),   # deposited
+    ("37021850688", "false"),  # no acquisition: the run concluded success
+    ("37688510058", "false"),  # nothing deposited: the run concluded success
+    ("37659861235", "false"),  # the detection failed
+])
+def test_the_chained_step_promotes_exactly_the_runs_that_deposited(lane, tmp_path, run_id, promote):
+    done, values, calls = _gate_step(lane, GATE_FIXTURES / f"{run_id}.json", tmp_path,
+                                     TRIGGER_RUN_ID=run_id, TRIGGER_RUN_ATTEMPT="1")
+    assert done.returncode == 0, done.stderr
+    assert values == {"promote": promote, "source": "chain", "run_id": ""}
+    assert calls.strip() == (f"api repos/santibravocmcc/Araripe/actions/runs/{run_id}"
+                             "/attempts/1/jobs?per_page=100")
+
+
+@pytest.mark.parametrize("trigger", [
+    {"TRIGGER_RUN_ID": "1;id", "TRIGGER_RUN_ATTEMPT": "1"},
+    {"TRIGGER_RUN_ID": "37020588408", "TRIGGER_RUN_ATTEMPT": ""},
+    {"TRIGGER_RUN_ID": "", "TRIGGER_RUN_ATTEMPT": "1"},
+])
+def test_the_chained_step_refuses_a_run_id_that_is_not_a_number_before_any_call(lane, tmp_path, trigger):
+    done, values, calls = _gate_step(lane, GATE_FIXTURES / "37020588408.json", tmp_path, **trigger)
+    assert done.returncode != 0 and values == {} and calls == ""
+
+
+def test_a_dispatched_deposit_is_not_promoted_by_the_chain(lane, tmp_path):
+    done, values, _ = _gate_step(lane, GATE_FIXTURES / "37020588408.json", tmp_path,
+                                 TRIGGER_RUN_ID="37020588408", TRIGGER_RUN_ATTEMPT="1",
+                                 TRIGGER_EVENT="workflow_dispatch")
+    assert done.returncode == 0 and values["promote"] == "false"
+
+
+@pytest.mark.parametrize("source, run_id, promote", [
+    ("run", "ci-36465147834", "true"), ("chain", "", "true"),
+])
+def test_the_dispatch_step_hands_the_operators_choice_on(lane, source, run_id, promote, tmp_path):
+    (dispatch,) = [s for s in jobs(lane)["gate"]["steps"] if s.get("id") == "dispatch"]
+    output = tmp_path / "output"
+    output.write_text("")
+    result = _bash(dispatch["run"], SOURCE=source, RUN_ID=run_id, GITHUB_OUTPUT=str(output))
+    assert result.returncode == 0, result.stderr
+    values = dict(line.split("=", 1) for line in output.read_text().splitlines())
+    assert values == {"promote": promote, "source": source, "run_id": run_id}
 
 
 def test_the_promotion_job_binds_the_protected_promotion_environment(lane):
@@ -267,7 +421,7 @@ def _bash(script, **env):
     )
 
 
-@pytest.mark.parametrize("job", ["stage", "promote"])
+@pytest.mark.parametrize("job", ["gate", "stage", "promote"])
 @pytest.mark.parametrize(
     "source,run_id,accepted",
     [
@@ -286,7 +440,7 @@ def test_each_source_accepts_exactly_its_own_run_id_shape(lane, job, source, run
     """Executed, not read: the allowlist is a shell case statement."""
 
     step = _step(lane, job, "run id")
-    result = _bash(step["run"], SOURCE=source, RUN_ID=run_id)
+    result = _bash(step["run"], SOURCE=source, RUN_ID=run_id, GITHUB_OUTPUT="/dev/null")
     assert (result.returncode == 0) is accepted, result.stderr
 
 
@@ -300,7 +454,7 @@ def test_each_source_accepts_exactly_its_own_run_id_shape(lane, job, source, run
 def test_the_staging_step_runs_the_gate_of_its_source(lane, source, expected):
     step = _step(lane, "stage", "Validate")
     assert expected in step["run"]
-    assert step["env"]["SOURCE"] == "${{ github.event.inputs.source }}"
+    assert step["env"]["SOURCE"] == "${{ needs.gate.outputs.source }}"
     shim = step["run"].replace("python3 ", "echo ")
     result = _bash(shim, SOURCE=source, RUN_ID="ci-1")
     assert result.returncode == 0 and "scripts/" in result.stdout
@@ -465,8 +619,11 @@ def test_no_declared_group_cancels_a_run_in_progress():
                 assert block["cancel-in-progress"] is False, path.name
 
 
-def test_no_green_lane_can_inherit_a_schedule():
-    """Package 2B.0 inertness, over job-level lanes too."""
+def test_no_green_lane_carries_a_cron_but_the_listed_ones():
+    """Package 2B.0 inertness, over job-level lanes too — until runsheet A5,
+    which lists the exceptions exactly (tests/test_workflow_lanes.py)."""
+
+    from tests.test_workflow_lanes import EXPECTED_SCHEDULES
 
     declared = every_declared_group()
     green = {
@@ -474,10 +631,11 @@ def test_no_green_lane_can_inherit_a_schedule():
         for (name, _), group in declared.items()
         if group != "araripe-legacy-state"
     }
-    assert LANE.name in green
+    assert LANE.name in green and "v2_green_deposit_lane.yml" in green
     for name in green:
         doc = yaml.safe_load((WORKFLOWS / name).read_text(encoding="utf-8"))
-        assert "schedule" not in doc[True], name
+        crons = [entry["cron"] for entry in doc[True].get("schedule", [])]
+        assert crons == EXPECTED_SCHEDULES.get(name, []), name
 
 
 # ── the two scripts cannot see each other's credential ───────────────────────

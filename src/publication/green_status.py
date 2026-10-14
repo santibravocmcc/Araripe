@@ -19,9 +19,13 @@ Two rules, both from measurements in that record:
   answer**, computed by calling ``delivery_boundary.resolve`` itself — so this
   reading and the Worker cannot disagree about what the page receives.
 
-Two ages are judged, against the limits the owner decided on 2026-10-10
-(``LIMITS_DAYS``, PHASE_6Y §4): the last attempt and the last date looked at.
-No other age is.  Beyond those, this module judges only what is a fact rather
+Three ages are judged, against the limits the owner decided (``LIMITS_DAYS``):
+the last attempt and the last date looked at (2026-10-10, PHASE_6Y §4), and how
+long a deposit has waited for the promotion (2026-10-13, decision D2 of
+``PHASE_6_CUTOVER_RUNSHEET.md``; PHASE_6ZB). No other age is. The wait is
+counted from the oldest unpublished run's own ledger — the latest
+``terminal_at`` of its dates, when its detection finished — never from an
+object's stamp.  Beyond those, this module judges only what is a fact rather
 than a limit: a document that cannot be read or does not check, a chain the head
 resolution refuses, a route refusal that is not "waiting for a lane".
 
@@ -49,17 +53,22 @@ BROKEN = "broken"
 #: Readable and current, but older than the limit the owner set for it.
 LATE = "late"
 
-#: The owner's limits, decided 2026-10-10 (PHASE_6Y §4, the recommendation):
-#: whole days, strictly more than this is late. Only these two products are
-#: judged — the date shown has no limit (30 days was normal in the 2026 rainy
-#: season), and the wait between lanes is decided at the cutover.
+#: The owner's limits: whole days, strictly more than this is late. Only these
+#: three products are judged — the date shown has no limit (30 days was normal
+#: in the 2026 rainy season).
 LIMITS_DAYS = {
-    # Monday/Thursday cadence: 4 days is the longest normal gap; 5 is one
-    # missed attempt.
+    # 2026-10-10 (PHASE_6Y §4). Monday/Thursday cadence: 4 days is the longest
+    # normal gap; 5 is one missed attempt.
     "automation.latest": 5,
-    # Longest gap between dates looked at in 2026: 12 days; seen by the next
-    # run after one settle day, up to 4 days later (~17); 21 lets one run slip.
+    # 2026-10-10. Longest gap between dates looked at in 2026: 12 days; seen by
+    # the next run after one settle day, up to 4 days later (~17); 21 lets one
+    # run slip.
     "alerts.observed": 21,
+    # 2026-10-13, D2. The promotion follows the deposit by workflow_run within
+    # minutes (D1), so any wait past the same round is a failure. In whole days
+    # with the daily 12:00 reading (D3), a promotion that did not follow is red
+    # 48 to 72 hours after the detection — before the next round's deposit.
+    "deposits.unpublished": 1,
 }
 
 STATES = (OK, LATE, PENDING, ABSENT, BROKEN)
@@ -75,11 +84,25 @@ class Unreadable:
 
 
 @dataclass(frozen=True)
+class Deposit:
+    """One run of the chain, as its own ``run.json`` and ledger say."""
+
+    run_id: str
+    last_observed_on: str
+    #: The latest ``terminal_at`` of its dates (``Predecessor.last_terminal_at``).
+    detected_utc: str | None
+
+
+@dataclass(frozen=True)
 class Head:
     """What the chain head covers — ``state_chain.resolve_head`` and the head's ledger."""
 
     run_id: str
     last_observed_on: str
+    #: The chain's last runs, oldest first, ending at the head: read back from
+    #: the head until one the pointer already covers (or the root). The oldest
+    #: one the pointer does not cover is the one whose wait is judged.
+    deposits: tuple[Deposit, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -120,6 +143,12 @@ def _days_since_date(day: str, now: datetime) -> int:
 
 def _days_since_instant(stamp: str, now: datetime) -> int:
     moment = datetime.strptime(stamp, STAMP).replace(tzinfo=timezone.utc)
+    return int((now - moment).total_seconds() // 86400)
+
+
+def _days_since_ledger_instant(stamp: str, now: datetime) -> int:
+    # A ledger timestamp may carry fractional seconds; parse, as ledger_gate does.
+    moment = datetime.fromisoformat(stamp[:-1] + "+00:00")
     return int((now - moment).total_seconds() // 86400)
 
 
@@ -172,7 +201,7 @@ def _release_rows(reading: Reading, now: datetime) -> tuple[list[Row], Mapping[s
     return rows, release
 
 
-def _queue_row(reading: Reading) -> Row:
+def _queue_row(reading: Reading, now: datetime) -> Row:
     head, pointer = reading.head, reading.pointer
     if isinstance(head, Unreadable):
         return Row("deposits.unpublished", BROKEN, None, None, f"the chain head is refused: {head.detail}")
@@ -186,9 +215,16 @@ def _queue_row(reading: Reading) -> Row:
         return Row("deposits.unpublished", OK, head.last_observed_on, None,
                    f"head {head.run_id} covers to {through}, as the pointer does: nothing waits")
     if through is None or head.last_observed_on > through:
-        return Row("deposits.unpublished", PENDING, head.last_observed_on, None,
-                   f"head {head.run_id} covers to {head.last_observed_on} and the pointer to "
-                   f"{through}: deposited dates wait for the operational publication")
+        waiting = [d for d in head.deposits
+                   if through is None or d.last_observed_on > through]
+        oldest = waiting[0] if waiting else None
+        since = oldest.detected_utc if oldest is not None else None
+        age = None if since is None else _days_since_ledger_instant(since, now)
+        detail = (f"head {head.run_id} covers to {head.last_observed_on} and the pointer to "
+                  f"{through}: deposited dates wait for the operational publication")
+        if oldest is not None and since is not None:
+            detail += f"; the oldest waiting run, {oldest.run_id}, finished detecting at {since}"
+        return Row("deposits.unpublished", PENDING, since, age, detail)
     # Not refused: a new generation's chain grows from its own root while the
     # pointer still names the old one (PHASE_6W), and nothing promises the head
     # is never behind.
@@ -262,7 +298,7 @@ def assess(reading: Reading, now: datetime) -> list[Row]:
 
     now = now.astimezone(timezone.utc)
     rows, release = _release_rows(reading, now)
-    rows.append(_queue_row(reading))
+    rows.append(_queue_row(reading, now))
     rows.extend(_heartbeat_rows(reading, now))
 
     def context_text():
@@ -283,8 +319,10 @@ def assess(reading: Reading, now: datetime) -> list[Row]:
 
 
 def _judged(row: Row) -> Row:
+    # A pending deposit is judged too: its age is the wait (D2). Every other
+    # pending row (context, sources) has no limit.
     limit = LIMITS_DAYS.get(row.product)
-    if row.state != OK or limit is None or row.age_days is None or row.age_days <= limit:
+    if row.state not in (OK, PENDING) or limit is None or row.age_days is None or row.age_days <= limit:
         return row
     return replace(row, state=LATE, detail=f"{row.age_days} days, past the owner's limit of {limit}; {row.detail}")
 
@@ -307,7 +345,8 @@ def _age(row: Row) -> str:
 def as_text(rows: Sequence[Row], now: datetime) -> str:
     width = max(len(row.product) for row in rows)
     lines = [f"green status at {now.astimezone(timezone.utc).strftime(STAMP)} "
-             "(read-only; limits: last attempt 5 d, last date looked at 21 d)"]
+             "(read-only; limits: last attempt 5 d, last date looked at 21 d, "
+             "unpublished deposit 1 d)"]
     for row in rows:
         lines.append(f"{row.product.ljust(width)}  {row.state.ljust(7)}  "
                      f"{(row.since or '—').ljust(20)}  {_age(row).rjust(5)}  {row.detail}")
@@ -323,8 +362,8 @@ def as_markdown(rows: Sequence[Row], now: datetime) -> str:
         "## Green status",
         "",
         f"Read at {now.astimezone(timezone.utc).strftime(STAMP)}, read-only. Late means "
-        "past the owner's limits (PHASE_6Y §4): last attempt 5 days, last date "
-        "looked at 21; no other age is judged.",
+        "past the owner's limits (PHASE_6Y §4; D2): last attempt 5 days, last date "
+        "looked at 21, a deposit waiting for the promotion 1; no other age is judged.",
         "",
         "| product | state | since | age | detail |",
         "| --- | --- | --- | --- | --- |",

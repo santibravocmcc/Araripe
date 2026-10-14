@@ -59,7 +59,7 @@ import gzip
 import re
 import zlib
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any, Mapping
 
 from src.publication.conditional_store import ConditionalStore, ObjectStoreError, PutOutcome
@@ -125,6 +125,12 @@ class Predecessor:
     stored: Mapping[str, Any] | None = None
     #: The ``algorithm_version`` its ledger seals — its generation (PHASE_6W).
     algorithm_version: str | None = None
+    #: The latest ``terminal_at`` of its accepted dates: when its detection
+    #: finished, which its deposit follows in the same lane run. The contract
+    #: says these record "when processing happened, not what the data covers"
+    #: (GREEN_RELEASE_CONTRACT_V1.md §4, non-requirement 5); the status reads
+    #: it as how long a deposit has waited (PHASE_6ZB, decision D2).
+    last_terminal_at: str | None = None
 
     @property
     def next_start(self) -> str:
@@ -212,6 +218,11 @@ def check_single_put(size: int, where: str) -> None:
         )
 
 
+def _instant(stamp: str) -> datetime:
+    # ``.`` sorts before ``Z``: parse, never compare the strings (ledger_gate).
+    return datetime.fromisoformat(stamp[:-1] + "+00:00")
+
+
 def read_predecessor(store: ConditionalStore, run_id: str) -> Predecessor:
     """The predecessor's declared state and last covered date, or a refusal.
 
@@ -242,6 +253,7 @@ def read_predecessor(store: ConditionalStore, run_id: str) -> Predecessor:
         last_observed_on=dates[-1],
         stored=state.get("stored"),
         algorithm_version=acceptance.algorithm_version,
+        last_terminal_at=max((entry.max_terminal_at for entry in acceptance.dates), key=_instant),
     )
 
 

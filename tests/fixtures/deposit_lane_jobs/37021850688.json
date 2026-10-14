@@ -1,0 +1,35 @@
+{
+ "jobs": [
+  {
+   "conclusion": "success",
+   "head_branch": "main",
+   "id": 110886631439,
+   "name": "detect",
+   "run_attempt": 1,
+   "run_id": 37021850688,
+   "status": "completed",
+   "workflow_name": "v2 green deposit lane (detect a window, deposit runs/<run-id>/)"
+  },
+  {
+   "conclusion": "success",
+   "head_branch": "main",
+   "id": 110887063221,
+   "name": "heartbeat",
+   "run_attempt": 1,
+   "run_id": 37021850688,
+   "status": "completed",
+   "workflow_name": "v2 green deposit lane (detect a window, deposit runs/<run-id>/)"
+  },
+  {
+   "conclusion": "skipped",
+   "head_branch": "main",
+   "id": 110887065489,
+   "name": "deposit",
+   "run_attempt": 1,
+   "run_id": 37021850688,
+   "status": "completed",
+   "workflow_name": "v2 green deposit lane (detect a window, deposit runs/<run-id>/)"
+  }
+ ],
+ "total_count": 3
+}
