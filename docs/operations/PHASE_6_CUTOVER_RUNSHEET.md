@@ -302,6 +302,20 @@ UTC estaria rodando) e fora de terça e sexta (o robô do site). Quarta ou sába
 
 ### A7. Tirar o job `alertas` do robô do site, em PR mesclada no passo C2
 
+> **Feito em 2026-10-14, não mesclado:** `observatorio-site#50` (rascunho,
+> branch `claude/p6-robo-sem-alertas`, commit `ad710d8`, ramificada da `main`
+> do site em `a0c3390`). Registro:
+> [`PHASE_6ZE_2026-10-14.md`](../implementation/PHASE_6ZE_2026-10-14.md).
+> Sai o job inteiro; `chuva`, cron, `workflow_dispatch`, `concurrency` e
+> `permissions` iguais pelo YAML carregado (na `chuva`, só um comentário de
+> shell). Os testes prendem que nenhum passo chama `check_backend_release.py`,
+> `freshness.py … alertas` nem `prepare_data.py alerts`/`timeseries`, nem
+> recebe `R2_*`; seis mutações derrubam. Ficam sem chamador, **não
+> apagados**: `check_backend_release.py`, os dois modos de `prepare_data.py` e
+> `public/data/freshness/alertas.json`. `npm run test:worker` 223/223,
+> `pytest` 227 → 225, build ok. Não toca nenhum arquivo das `#48`, `#42`,
+> `#49`, `#21`.
+
 - **Quem:** agente.
 - **Aprovação:** nenhuma para a PR.
 - **Antes:** `update-data.yml` tem os jobs `alertas,chuva`.
