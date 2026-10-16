@@ -534,6 +534,13 @@ Cada passo desta fase **para e pergunta** antes de agir.
 > `0 12 * * *` no status, `workflow_run` na publicação; os três `active`.
 > **A rodada agendada ainda não rodou:** a primeira é quinta 2026-10-15
 > 06:00 UTC (próxima sessão).
+>
+> **Primeira rodada lida em 2026-10-16** ([`PHASE_6ZJ`](../implementation/PHASE_6ZJ_2026-10-16.md)):
+> depósito `38724054754` (`schedule`) sem imagem na janela de um dia
+> (`deposit` `skipped`); publicação `38724206864` disparada por
+> `workflow_run`, o `gate` leu o job e não promoveu; status `38770513231`
+> (`schedule`) sete `ok`. A promoção vinda da agenda segue não exercitada:
+> o "Antes" do C1 espera a rodada de segunda 2026-10-19.
 
 - **Quem:** dono mescla.
 - **Aprovação:** dono, explícita (muda o que roda sem clique; a `main` do backend é só por PR).
