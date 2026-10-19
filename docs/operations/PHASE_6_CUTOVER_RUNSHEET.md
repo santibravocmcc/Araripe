@@ -561,6 +561,15 @@ Cada passo desta fase **para e pergunta** antes de agir.
 
 ### C1. Parar o agendamento azul
 
+> **Feito em 2026-10-19**, com o "sim" do dono: *"Sim, pode desligar o
+> agendamento azul (detect_gee.yml) agora."* `gh workflow disable
+> detect_gee.yml` às 23:03:30Z, saída 0; `gh workflow list --all`:
+> `detect_gee.yml` `disabled_manually`, as outras 14 lanes `active` como
+> antes; o arquivo não mudou. Último run azul `39255074543` (10-19,
+> `failure`). Registro:
+> [`PHASE_6ZL_2026-10-19.md`](../implementation/PHASE_6ZL_2026-10-19.md).
+> Falta ler a quinta 2026-10-22: nenhum run novo de `detect_gee.yml`.
+
 - **Quem:** dono (ou agente com o "sim" do dono para este passo).
 - **Aprovação:** dono, explícita (lane azul de produção).
 - **Antes:** a primeira rodada agendada de B6 lida e `ok`.
