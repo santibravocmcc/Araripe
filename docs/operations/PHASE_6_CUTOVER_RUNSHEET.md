@@ -541,6 +541,14 @@ Cada passo desta fase **para e pergunta** antes de agir.
 > `workflow_run`, o `gate` leu o job e não promoveu; status `38770513231`
 > (`schedule`) sete `ok`. A promoção vinda da agenda segue não exercitada:
 > o "Antes" do C1 espera a rodada de segunda 2026-10-19.
+>
+> **Rodada de segunda lida em 2026-10-19** ([`PHASE_6ZK`](../implementation/PHASE_6ZK_2026-10-19.md)):
+> depósito `39251503748` (`schedule`) com 3 aquisições na janela
+> 10-13..10-18; publicação `39253009226` por `workflow_run`, `stage`,
+> `promote`, `context`, `sources` `success`, ponteiro seq. 22
+> `rel-g3-0a788e76…`; o reconciliador reconstruiu o site e o domínio serve a
+> release nova; status `39303347681` sete `ok`. **O "Antes" do C1 está
+> cumprido.**
 
 - **Quem:** dono mescla.
 - **Aprovação:** dono, explícita (muda o que roda sem clique; a `main` do backend é só por PR).
