@@ -569,6 +569,9 @@ Cada passo desta fase **para e pergunta** antes de agir.
 > `failure`). Registro:
 > [`PHASE_6ZL_2026-10-19.md`](../implementation/PHASE_6ZL_2026-10-19.md).
 > Falta ler a quinta 2026-10-22: nenhum run novo de `detect_gee.yml`.
+> **Lido em 2026-10-22:** nenhum run depois de `39255074543`; o "Depois"
+> do C1 está fechado
+> ([`PHASE_6ZM_2026-10-22.md`](../implementation/PHASE_6ZM_2026-10-22.md) §1).
 
 - **Quem:** dono (ou agente com o "sim" do dono para este passo).
 - **Aprovação:** dono, explícita (lane azul de produção).
@@ -578,6 +581,15 @@ Cada passo desta fase **para e pergunta** antes de agir.
 - **Volta:** `gh workflow enable detect_gee.yml` (imediato; ele volta a falhar, porque é o `LegacyPersistenceStateError`).
 
 ### C2. Parar o robô azul do site (merge da PR de A7)
+
+> **Feito em 2026-10-22:** a `#50` (`ad710d8`) sem deriva — 9 commits atrás
+> da `main` do site (`e959123`), nenhum tocando os seus quatro arquivos; no
+> tree do merge, `pytest` 288 passed e `test:worker` 251/251. Mesclada pelo
+> dono às 18:04:09Z (`e0bd263`, mesmo tree testado): *"Mesclei a site#50."*
+> Build `success` 18:12:07Z; `built-from.json` e `/data/green/current.json`
+> seguem na seq. 23 (`rel-g3-7b69385c…`). Registro:
+> [`PHASE_6ZM_2026-10-22.md`](../implementation/PHASE_6ZM_2026-10-22.md).
+> Falta ler a sexta 2026-10-23: `update-data.yml` só com `chuva`, `success`.
 
 - **Quem:** dono mescla.
 - **Aprovação:** dono, explícita.
