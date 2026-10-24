@@ -590,6 +590,13 @@ Cada passo desta fase **para e pergunta** antes de agir.
 > seguem na seq. 23 (`rel-g3-7b69385c…`). Registro:
 > [`PHASE_6ZM_2026-10-22.md`](../implementation/PHASE_6ZM_2026-10-22.md).
 > Falta ler a sexta 2026-10-23: `update-data.yml` só com `chuva`, `success`.
+> **Lido em 2026-10-23:** `update-data.yml` `39942866107` com um job só,
+> `chuva`, `success`, nenhum `R2_` no log, commit `c3bae2d` de chuva na
+> `main` do site, build `success`. A página de chuva **não** mostra a data
+> nova: os três JSON de chuva de nome fixo seguem servidos com o conteúdo
+> de 2026-10-13 (`cf-cache-status: HIT`), desde antes da `#50` — achado
+> à parte, não do C2
+> ([`PHASE_6ZN_2026-10-23.md`](../implementation/PHASE_6ZN_2026-10-23.md) §2).
 
 - **Quem:** dono mescla.
 - **Aprovação:** dono, explícita.
@@ -599,6 +606,19 @@ Cada passo desta fase **para e pergunta** antes de agir.
 - **Volta:** revert da PR.
 
 ### C3. Desligar o acesso público de `araripe-cogs`
+
+> **Feito em 2026-10-23**, pelo dono no painel: *"Desliguei o acesso
+> público r2.dev do araripe-cogs."* Antes: nenhum pedido a `r2.dev` nas três
+> páginas padrão (rede do navegador); `site-full/run-2026-01-02.geojson`
+> `200` (16:52:19Z). Depois (16:59:33Z): o mesmo objeto `401` *"not
+> publicly accessible"*; as três páginas iguais; a visão completa padrão
+> pela rota (`/data/green/alerts/run-2026-10-19.geojson` `200`);
+> `?dados=azul` sem a visão completa (CORS bloqueia a resposta `401`) —
+> aceito. **O "Depois" abaixo estava errado:** `…/site-full/` é um
+> prefixo e já era `404` antes do clique, então passaria pelo motivo
+> errado; confira um objeto conhecido, como acima. Falta ler o status
+> verde de sábado 2026-10-24. Registro:
+> [`PHASE_6ZN_2026-10-23.md`](../implementation/PHASE_6ZN_2026-10-23.md).
 
 - **Quem:** dono, no painel (R2 → `araripe-cogs` → Settings → Public access → `r2.dev` Disable).
 - **Aprovação:** dono, explícita. **Não** vai para o broker.
