@@ -217,6 +217,16 @@ Na leitura de 2026-10-24 14:35Z, depois de o dono limpar o cache e pedir
 O único check run *"Workers Builds"* da `main` continuava sendo o de 10-23, e
 o retry não tinha ainda versão nova confirmada.
 
+Segundo log colado pelo dono (2026-10-24 15:00Z), depois de desligar o
+cache: não há mais `Restoring from …cache`, mas o build é de uma **branch de
+prévia**, não da `main`. O `dist/` tem `monitor.html`, que só existe em
+`claude/integracao-car-site` e `claude/monitor-no-ar` (site `#52`/`#53`,
+rascunhos). O compose tem `--eventos`, e o deploy é `exit 0`: o gatilho
+inerte de não-produção do Package 2B.0. Nada foi implantado:
+`/monitor.html` no domínio responde `404`, e os `ETag` da chuva às 15:08Z
+continuam os de 10-13. Falta o *Retry build* de um build **da `main`**
+(deploy `npx wrangler deploy`).
+
 Não foi medido quais diretórios o *build output cache* guarda nem por que o
 laço começou entre 10-13 e 10-16: o log não lista os caminhos.
 
