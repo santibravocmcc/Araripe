@@ -227,6 +227,31 @@ inerte de não-produção do Package 2B.0. Nada foi implantado:
 continuam os de 10-13. Falta o *Retry build* de um build **da `main`**
 (deploy `npx wrangler deploy`).
 
+### 5b. Corrigido — 2026-10-24 17:57Z
+
+Com o build cache desligado, o dono refez um build **da `main`**
+(`c3bae2d`). Lido às 17:57Z, no domínio e no `workers.dev`, com UA de
+navegador:
+
+| arquivo | `ETag` | esperado (`c3bae2d`, §2) |
+| --- | --- | --- |
+| `rain/manifest.json` | `4a286126332f4c834f40266b4147f05f` | ✔ |
+| `freshness/chuva.json` | `3e2304a889eff0d13ca1594a12fa1e77` | ✔ |
+| `chuva-historico.json` | `88e29289bc11adf4d77f673141bb36dd` | ✔ |
+| `alert-index/built-from.json` | `77e635e97ad0aa5a0d32378e07110c81` | o mesmo de antes: release `rel-g3-7b69385c…`, a do ponteiro |
+
+`rain/manifest.json` tem `last` `2026-10-22`; `chuva.json` diz
+`updated_utc` `2026-10-23T10:59:53Z`, `merge_7day_rainfall_2026_10_22.tif`.
+`/monitor.html` continua `404`: nada das branches do CAR foi ao ar. O
+Version ID do build não foi colado e não aparece em check run novo; a
+prova é o conteúdo servido.
+
+**O que fica:** o build cache tem de **continuar desligado**. Religado, o
+laço do §5a volta no primeiro build seguinte. A defesa C (o build falhar se
+um arquivo rastreado de `public/` chegar diferente ao `dist/`) segue como
+decisão do dono. O "Depois" de verdade é o próximo commit do robô (terça
+2026-10-27): a data nova tem de aparecer sem nenhum clique.
+
 Não foi medido quais diretórios o *build output cache* guarda nem por que o
 laço começou entre 10-13 e 10-16: o log não lista os caminhos.
 

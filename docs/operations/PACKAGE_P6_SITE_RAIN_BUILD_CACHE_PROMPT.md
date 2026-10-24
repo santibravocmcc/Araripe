@@ -11,6 +11,12 @@ corpo é para o agente executor e a **seção final é para o dono**.
 > mostrar, pede um clique por vez, e prova o "Depois" pelos `ETag`. Nada a
 > construir, a menos que o dono escolha a defesa C.
 
+> **Estado em 2026-10-24 17:57Z: corrigido** (`PHASE_6_CHUVA_PRESA` §5b). O
+> dono desligou o build cache e refez o build da `main`; os três `ETag` são
+> os de `c3bae2d`. O que resta a este briefing é o "Depois": conferir, no
+> primeiro commit do robô a partir de terça 2026-10-27, que a data nova
+> aparece **sem clique**, pelo §1. Se aparecer, registre e encerre.
+
 Este pacote é independente do C3/C4 da folha da virada. Não o misture com
 eles, e não segure o C4 por causa dele.
 
