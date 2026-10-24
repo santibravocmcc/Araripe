@@ -629,6 +629,20 @@ Cada passo desta fase **para e pergunta** antes de agir.
 
 ### C4. Parar de commitar alertas no git do site (merge da `site#21`)
 
+> **Feito em 2026-10-24**, mesclado pelo dono: *"Mesclei a site#21."*
+> Antes: o status verde de sábado `40107863057` com as sete linhas `ok`
+> (o "Depois" do C3 que faltava); `r2.dev` ainda `401`. A `#21` rebaseada
+> sem conflito (`ab65a55`, 11 atrás / 2 à frente → `50de81a`); o alarme
+> `test_a_pagina_ainda_le_a_base_estatica` virou
+> `test_a_pagina_padrao_le_o_verde`, que falha se o padrão voltar ao azul
+> (três mutações conferidas). pytest 295 na branch / 288 na `main`;
+> `test:worker` 251/251 nas duas. Merge `e8dcdc2` (18:33:25Z); Workers
+> Builds `success` (check run `120954776891`). Depois: `alertas.html`, `/`
+> e `dados-abertos.html` sem parâmetro abrem 19 out, sem pedido a `r2.dev`
+> nem a `/data/alerts/`; `/data/alerts/` segue no deploy para
+> `?dados=azul`. Falta ler o robô de terça 2026-10-27 (commit sem alerta).
+> Registro: [`PHASE_6ZO_2026-10-24.md`](../implementation/PHASE_6ZO_2026-10-24.md).
+
 - **Quem:** dono mescla.
 - **Aprovação:** dono, explícita.
 - **Antes:** B5 e C2 feitos; a `#21` rebaseada de novo sobre a `main` do site depois do B5, e o teste `test_a_pagina_ainda_le_a_base_estatica` dela — que confere `FONTE_PADRAO = 'azul'` em `src/js/alertas-fonte.js` e falha de propósito quando o padrão vira verde — reescrito para registrar a condição cumprida. (Até 2026-10-13 este campo dizia "`src/js/alertas.js` resolve `object_base`": envelheceu sem mudar de palavra, porque a resolução mora em `alertas-fonte.js` desde a leitura verde, e só vale para `?dados=verde` até o B5 — `PHASE_6ZC` §3.)
