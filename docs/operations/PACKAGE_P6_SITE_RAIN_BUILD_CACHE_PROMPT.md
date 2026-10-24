@@ -63,14 +63,20 @@ Tudo em `PHASE_6_CHUVA_PRESA` §§2–4, com os ids:
 
 ## 3. A tarefa
 
-1. **Pedir ao dono o log do build mais recente** (Workers & Pages →
-   `observatorio-chapada` → Deployments/Builds → o build da `main` mais novo;
-   o de `c3bae2d` é `d94a451c-9193-41b4-9f5f-a04a287c3b57`). Ele cola as
-   linhas do build cache (restauração e gravação) e a do upload de assets.
-   Ler é inofensivo. Registre o que diz.
-2. **Pedir o passo A** ao dono: Settings → Build → Build cache → *Clear
-   Cache*; depois *Retry build* no build mais recente da `main`. Um clique por
-   vez, com o "Antes" registrado. É deploy de produção do que a `main` já é:
+**Atualizado em 2026-10-24** (`PHASE_6_CHUVA_PRESA` §5a): o log do build já
+provou a causa. O *build output cache* é restaurado por cima do clone e
+regravado no fim, e o laço se perpetua. Limpar não basta; o passo é
+**desligar**.
+
+1. **Ler o log do build mais recente**, se o dono já pediu *Clear Cache* +
+   *Retry build*: se ainda disser `Build output restored from build cache`, ou
+   se o primeiro build depois da limpeza estiver certo e o seguinte não, é o
+   laço do §5a.
+2. **Pedir ao dono**: Settings → Build → Build cache → **desligar**; depois
+   *Retry build* no build mais recente da `main`. O log novo não pode ter
+   `Restoring from build output cache`, e o upload tem de enviar os três
+   hashes novos (`Uploaded N new or modified static assets`, não
+   `No updated asset files`). É deploy de produção do que a `main` já é:
    **sem o "sim" do dono no chat, não peça o clique.**
 3. **Provar o "Depois"** pela rede, sem credencial:
    - o check run *"Workers Builds: observatorio-chapada"* do retry `success`, e

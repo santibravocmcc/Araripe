@@ -184,6 +184,42 @@ painel, com permissão de conta, ou merge na `main` do site, que implanta.
 Nenhuma passa pelo broker (`cloudflare_green_control.yml` exclui produção), e
 nenhum agente tem, nem pode receber, a credencial.
 
+## 5a. O log do build, lido pelo dono em 2026-10-24 — causa provada
+
+O dono colou o log do build de `c3bae2d` (Version ID
+`10a5894d-268e-40cd-ba86-1daf0643ffea`). A ordem das linhas fecha a causa:
+
+| hora (10-23) | linha do log |
+| --- | --- |
+| 11:00:43Z | `Cloning repository...` |
+| 11:01:04Z | `Restoring from build output cache` |
+| 11:01:10Z | `Success: Build output restored from build cache.` |
+| 11:01:16Z | `Executing user build command: npm run build` |
+| 11:06:24Z | `No updated asset files to upload. Proceeding with deployment...` |
+| 11:06:31Z | `Success: Build output uploaded to build cache.` |
+
+- A restauração do *build output cache* vem **depois** do clone e **antes**
+  do build: ela escreve por cima do checkout.
+- `No updated asset files to upload`: se o `dist/` tivesse os bytes novos de
+  `c3bae2d`, os três hashes novos do §2 (nunca implantados antes) teriam de
+  subir. Nenhum subiu, então o `dist/` tinha só conteúdo que o serviço já
+  conhecia, o de 10-13.
+- No fim, o build grava o resultado de volta no cache. **O laço se
+  auto-perpetua:** restaura o velho, constrói com o velho, grava o velho. Por
+  isso ficou preso dez dias, e não um build atrás.
+
+Consequência para a correção: **limpar o cache não basta.** O primeiro build
+depois da limpeza sai certo e grava esse resultado; o seguinte restaura essa
+cópia por cima do commit novo do robô, e o laço recomeça uma versão adiante.
+A correção durável é **desligar** o build cache (o passo B vira o principal).
+Na leitura de 2026-10-24 14:35Z, depois de o dono limpar o cache e pedir
+*Retry build*, o domínio ainda servia `b490eaf7…`/`3f173174…`/`d9e2e801…`.
+O único check run *"Workers Builds"* da `main` continuava sendo o de 10-23, e
+o retry não tinha ainda versão nova confirmada.
+
+Não foi medido quais diretórios o *build output cache* guarda nem por que o
+laço começou entre 10-13 e 10-16: o log não lista os caminhos.
+
 ## 6. Observação à parte, não investigada
 
 27 dos 42 PNG de `rain/` são o mesmo blob (`git ls-tree`), todas as datas de
