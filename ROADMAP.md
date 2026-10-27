@@ -5,6 +5,33 @@
 **Planning branch:** `codex/technical-review-roadmap`
 **Primary evidence:** `TECHNICAL_REVIEW.md` and `TECHNICAL_REVIEW_SUMMARY.md`
 
+> ## Estado em 2026-10-27 — a virada da Phase 6 está feita
+>
+> Bloco acrescentado sem reescrever nada abaixo (nem o bloco de 2026-09-18,
+> nem as linhas `Implementation status`, pela regra da linha de base).
+> Registro completo, com cada PR, merge e run relidos na ferramenta:
+> [`docs/implementation/PHASE_6_CUTOVER_2026-10-27.md`](docs/implementation/PHASE_6_CUTOVER_2026-10-27.md).
+>
+> | fase / passo | estado | registro |
+> | --- | --- | --- |
+> | Phase 6 — folha da virada e decisões D0–D6 | 2026-10-13 | `docs/operations/PHASE_6_CUTOVER_RUNSHEET.md`, `PHASE_6Z` |
+> | Phase 6 — Fase A (preparação, A1–A11) | feita 2026-10-13/14 | `PHASE_6ZA`–`PHASE_6ZH` |
+> | **Phase 6 — Fase B: o público vê o verde** | **2026-10-14**: a rota `/data/green/*` no Worker de produção, o índice composto no build, `FONTE_PADRAO` verde, a agenda verde | `PHASE_6ZI` |
+> | Phase 6 — a primeira promoção pela agenda | 2026-10-19, e de novo em 10-22 e 10-26 (ponteiro seq. 24) | `PHASE_6ZJ`, `PHASE_6ZK` |
+> | **Phase 6 — Fase C: o azul desligado** | `detect_gee.yml` `disabled_manually` 2026-10-19; o robô do site sem `alertas` 2026-10-22; o `r2.dev` de `araripe-cogs` fechado 2026-10-23; alertas novos fora do git do site 2026-10-24 | `PHASE_6ZL`–`PHASE_6ZO` |
+> | Phase 6 — C5, o registro da virada | 2026-10-27 | `PHASE_6_CUTOVER_2026-10-27.md` |
+>
+> **A Phase 6 ainda não fechou:** falta o C6, duas semanas de vigia (quatro
+> rodadas seguidas sem `late` nem `broken`). Ficam fora dela e já com dono:
+> a série temporal verde (D4, pacote logo depois — a aba "Séries" parou em
+> 2026-09-07), o aviso de tamanho da visão completa (D5) e a frase da
+> automação na página (pacotes do site). A Phase 5 continua sendo a condição
+> de qualquer afirmação de acurácia.
+>
+> O "fato de produção" do bloco abaixo — a detecção azul parada desde o 2A.6
+> — está resolvido como ele previa: pela virada, não por patch. O azul fica
+> congelado em 2026-08-30 como material de auditoria e volta.
+
 > ## Estado em 2026-09-18 — leia antes das linhas de status abaixo
 >
 > **Este arquivo passou a viver na `main` em 2026-09-08**, quando o Package

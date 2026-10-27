@@ -103,6 +103,18 @@ base branch. See `docs/implementation/PHASE_2B0_2026-08-11.md`,
 `docs/operations/RESTRICTED_CLOUDFLARE_BROKER.md`, and
 `docs/operations/GREEN_CONCURRENCY_LANES.md`.
 
+**2026-10-27 — the cutover closed what "until the separately approved
+cutover" waited for** (`PHASE_6_CUTOVER_2026-10-27.md`). The public site
+reads green by default since 2026-10-14 (site `#49`); the production Worker
+serves `/data/green/*` from `araripe-v2-staging`, the bucket that became
+definitive under decision (a) (site `#48`); the green deposit, promotion and
+status lanes run on schedule (`#118`). `detect_gee.yml` is
+`disabled_manually` since 2026-10-19 — the file is unchanged; the site robot
+runs only `chuva` since 2026-10-22; the `r2.dev` public access of
+`araripe-cogs` is off since 2026-10-23, with no object deleted; new alert
+rounds no longer enter the site's git since 2026-10-24. Blue is frozen at
+2026-08-30 as audit and rollback material. The policy below still holds.
+
 Risk-based approval policy:
 
 - Autonomous (no repeated approval): local development and alternative local
@@ -125,6 +137,15 @@ Risk-based approval policy:
 
 **Status:** fixed 2026-08-17 on branch `fix/timeseries-pr-lane`; one manual
 repository setting is still required (below).
+
+**2026-10-27 — the lane has no producer any more.** Its only scheduled
+caller, `detect_gee.yml`, failed every run from 2026-09-03 and was disabled
+in cutover step C1 (2026-10-19); `update_data.yml` is manual-only. The last
+series commit on `main` is `5574b1f` (`chore: update time-series 2026-09-07
+(#30)`), and the site's "Séries" tab says that date (cutover decision D4).
+The green series is an approved package right after the cutover, not built;
+when it lands it must keep the series automated (ROADMAP §1.1) and still
+never push to `main` directly. See `PHASE_6_CUTOVER_2026-10-27.md` §8.
 
 On 2026-08-13 the repository ruleset "Protect main — pull requests only"
 (id 20803594, empty bypass list) was installed. The first scheduled run after

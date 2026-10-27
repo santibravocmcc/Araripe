@@ -642,6 +642,10 @@ Cada passo desta fase **para e pergunta** antes de agir.
 > nem a `/data/alerts/`; `/data/alerts/` segue no deploy para
 > `?dados=azul`. Falta ler o robô de terça 2026-10-27 (commit sem alerta).
 > Registro: [`PHASE_6ZO_2026-10-24.md`](../implementation/PHASE_6ZO_2026-10-24.md).
+> **Lido em 2026-10-27:** `update-data.yml` `40497194139` com um job só,
+> `chuva`, `success`; o commit dele, `aa3a859`, não traz arquivo sob
+> `public/data/alerts/` (`git show --stat`). O "Depois" do C4 está fechado
+> ([`PHASE_6_CUTOVER_2026-10-27.md`](../implementation/PHASE_6_CUTOVER_2026-10-27.md) §1).
 
 - **Quem:** dono mescla.
 - **Aprovação:** dono, explícita.
@@ -651,6 +655,19 @@ Cada passo desta fase **para e pergunta** antes de agir.
 - **Volta:** revert da PR.
 
 ### C5. Registrar a virada
+
+> **Feito em 2026-10-27:**
+> [`PHASE_6_CUTOVER_2026-10-27.md`](../implementation/PHASE_6_CUTOVER_2026-10-27.md),
+> uma tabela por fase, cada PR, merge, run e check run relido na ferramenta
+> (o que só o painel mostra está marcado "lido pelo dono"). Antes, sem
+> `late` nem `broken`: a rodada de segunda 2026-10-26 depositou
+> (`40322184487`) e promoveu (`40323697203`) — ponteiro seq. 24
+> `rel-g3-ee52a1f2…`; status `40378162474` sete `ok`; o robô de terça sem
+> alerta. `ROADMAP.md` ganhou o bloco datado; `PENDING_CAPABILITIES.md` §5 e
+> §6, o que a virada fechou. O "Depois" abaixo só se lê depois do merge da
+> PR de docs. Lateral: a chuva do robô de terça apareceu na página sem
+> clique (registro §7). Próximo: C6,
+> [`PACKAGE_P6_WATCH_PROMPT.md`](PACKAGE_P6_WATCH_PROMPT.md).
 
 - **Quem:** agente.
 - **Aprovação:** nenhuma.
