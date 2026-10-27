@@ -217,6 +217,7 @@ Intensity bands used below:
 | 32. Documentation, attribution, and repository hygiene | **Approved** | Data-source register, licence boundaries, MapBiomas attribution, current domain/method/source metadata, active/legacy/obsolete classification, secret/large-data/generated-document hygiene. | 14k–24k |
 | 33. Common workspace and repository consolidation | **Approved, priority prerequisite** | Move `Araripe` under the common parent; retain two independent repositories; inventory/classify other folders; secure credential-looking files first; update paths and verify behavior. | 30k–50k |
 | 34. Cross-tool operating contract and staged skills | **Approved, active** | Shared instructions are in place. `araripe-safe-handoff` is versioned for Codex and Claude in 2B.0; later release/science skills still wait for stable workflows. No permanent agent fleet. | 2k–6k remaining handoff verification; 10k–18k per later skill |
+| 35. Aba Clima no site | **Approved by owner 2026-10-15; scheduled as Phase 8** | Move the rainfall from Território to a new Clima tab and add temperature (SAMeT/CPTEC, BR-DWGD), drought index (SPI-12), the 2026–27 El Niño compared with past events (NOAA RONI/ONI, BR-DWGD 1961–2025), and a ≤ 6-month probabilistic forecast (Copernicus C3S ECMWF/CMCC/NCEP, skill measured on hindcasts). Site-only; never touches alerts, R2, the backend lanes, or `update-data.yml`. No repository change before Phase 6 closed (owner rule). Decades-to-2100 projections are a later package. | analysis done outside the repos; site PR `observatorio-site#56` |
 
 ---
 
@@ -846,6 +847,48 @@ automation continues without a PR or manual merge.
 improvements preserve ordinary behavior, and stable recurring procedures are
 available consistently in both Codex and Claude Code.
 
+### Phase 8 — Aba Clima (topic 35)
+
+**Priority:** owner request 2026-10-14; may run in parallel with Phase 7
+**Topics:** 35 (and 21C for the new page)
+**Record:** [`docs/implementation/PHASE_8_CLIMA_2026-10-27.md`](docs/implementation/PHASE_8_CLIMA_2026-10-27.md)
+
+The analysis, data acquisition and the page prototype were done outside both
+repositories (workspace folder `clima/`, plan `clima/PLANO.md`), by the owner's
+rule that nothing touches the repositories before the cutover. The site work
+lands as one PR, merged by the owner.
+
+#### 8.1 The page (`observatorio-site#56`)
+
+- `clima.html`: weekly and historical rainfall (moved unchanged from
+  Território), SPI-12, weekly temperature anomaly against the official CPTEC
+  daily normal, temperature 1961–2025 and hot days, the El Niño section with
+  an animated introduction, and the forecast.
+- `territorio.html` becomes "Território" at the same URL; the menu of every
+  page lists Território and Clima.
+- Every third-party credit required by a licence is shown and tested
+  (SAMeT; Copernicus clauses 5.1.2/5.1.3).
+
+#### 8.2 The robots (`observatorio-site#56`)
+
+- `update-clima.yml`, Tue/Fri 07:30 UTC: temperature, ENSO indices and
+  SPI-12, one job and one push (each push to the site `main` is a production
+  deploy); no secret; per-product freshness.
+- `previsao-clima.yml`, the 15th: the forecast; one secret, `CDSAPI_KEY`
+  (owner action); without it the run skips and records `skipped`.
+- `update-data.yml` is not modified (still only `chuva`).
+
+#### 8.3 Later
+
+- Decades-to-2100 projections from CLIMBra (19 CMIP6 models bias-corrected
+  against BR-DWGD), with model spread.
+- Dry spells (veranicos), composite maps, cross-validated forecast weights.
+
+**Exit gate P8:** the Clima tab is live; the first scheduled runs of both
+workflows publish (or skip with a recorded reason) without touching any
+other product; freshness of `temperatura`, `enso`, `spi` and `previsao`
+stays within its limit for two consecutive weeks.
+
 ---
 
 ## 5. Release gates at a glance
@@ -862,6 +905,7 @@ available consistently in both Codex and Claude Code.
 | P5 — Validation | Independent desktop review and uncertainty report are versioned; conditional methods are resolved. |
 | P6 — Canonical release | Main-domain/browser/download/health checks pass; pointer is promoted atomically; previous release remains recoverable. |
 | P7 — Hardening | Comprehensive CI, behavior-preserving accessibility, and cross-tool reusable skills are verified. |
+| P8 — Aba Clima | Tab live; first scheduled runs of `update-clima.yml` and `previsao-clima.yml` publish or skip with a reason; four freshness states within limits for two weeks. |
 
 ---
 
