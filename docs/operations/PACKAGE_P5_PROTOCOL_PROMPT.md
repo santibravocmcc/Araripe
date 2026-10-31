@@ -5,6 +5,12 @@ crítico do roadmap.
 
 > ## ⛔ ESTA FASE NÃO COMEÇA SEM REVISÃO DO DONO
 >
+> **Atualização de 2026-10-31: o portão abriu.** O dono decidiu (a), (b) e (c)
+> e a meta de precisão; ver o bloco datado de 2026-10-31 logo abaixo. A sessão
+> de execução tem o seu próprio briefing:
+> [`PACKAGE_P5_EXECUTION_PROMPT.md`](PACKAGE_P5_EXECUTION_PROMPT.md). O texto
+> deste quadro fica como o registro de por que o portão existiu.
+>
 > Registrado em 2026-09-08, depois de o dono ampliar o objetivo. **Não abra a
 > sessão de execução antes de a revisão da §0-bis acontecer.** O escopo mudou de
 > "medir a acurácia para uso interno" para "produzir um estudo válido para
@@ -23,6 +29,123 @@ crítico do roadmap.
 
 Segue o método em [`HANDOFF_PROMPT_METHOD.md`](HANDOFF_PROMPT_METHOD.md)
 versão 2: o corpo é para o agente executor, e a **seção final é para o dono**.
+
+---
+
+## Bloco datado de 2026-10-31 — o portão da §0-bis foi aberto
+
+Registrado em 2026-10-31, em conversa com o dono, sobre a base `origin/main` em
+`2949dba812d4826280d4bdf4966831fcf15e1bc2` (lida com `git rev-parse`). **Onde
+este bloco e o resto do documento discordarem, vale este bloco**, e depois dele
+o de 2026-09-17. As decisões abaixo foram ditas no chat; o repositório não tinha
+registro delas.
+
+### 1. As decisões, com as palavras do dono
+
+| decisão | palavras do dono (2026-10-31) | o que fica valendo |
+| --- | --- | --- |
+| **(a) quadro amostral** | "Seguimos com o recomendado pelo briefing" | Opção 3 (amostra estratificada por risco, pesos declarados, interpretada às cegas) como quadro **primário**; opção 1 (produto independente de alerta) como estrato **auxiliar**. A unidade é **pixel/área**, nunca polígono (Olofsson 2014 §4.3). |
+| **(b) drone** | "Vamos deixar o drone de fora por enquanto." | Sem estrato de drone **e sem análise de calibração com drone**. Nada no protocolo, no pacote ou no relatório depende dele. Reabrir só se o dono voltar com um orçamento de voos; aí a §0-bis b vale como está (sortear dentro de um estrato definido antes de voar). |
+| **(c) identidade dos revisores** | primeiro "Nome no dado"; depois, na mesma conversa: "reverta a decisao do (c), o nome vai so no artigo. No git em especifico para a fase 5 de revisao podemos usar pseudonimos." | **Caminho 1:** pseudônimo (`R1`, `R2`…) no dado e no git; o nome só no artigo. A primeira resposta foi revertida ao se ver que o repositório do backend é **público**, que o protocolo do 2A.3 (§5) proíbe dado pessoal de revisor no repositório e que o `AGENTS.md` trata identificadores pessoais como sensíveis. A tabela nome↔ID **não entra no git**. |
+| **meta de precisão** | o dono não sabia a resposta; pediu que se pesquisasse o que a literatura usa e, depois: "Sigamos com o que voce achar melhor e recomendar." | A recomendação da §2 abaixo. |
+
+### 2. A meta de precisão adotada
+
+1. **Acurácia global:** erro-padrão `S(Ô) ≤ 0,01`.
+2. **Acurácia do usuário do estrato forte** (comissão = 1 − U): meia-largura do
+   IC de 95% **≤ ±0,10**.
+3. **Mínimo de 100 casos** por estrato de mudança.
+4. **Omissão e recall:** estimados e reportados com IC, **sem meta declarada**.
+
+**O que foi verificado e o que não foi** (a pesquisa foi feita com o Consensus
+só para achar os artigos; cada afirmação abaixo foi conferida fora dele):
+
+- **Lido no texto completo:** Reinosch et al. (2024), *Forestry*,
+  doi `10.1093/forestry/cpae038` — validação de mapas de perturbação florestal
+  por Sentinel-2 na Alemanha. Declara `S(Ô)` "defined as 0.01", acurácias do
+  usuário esperadas de 90% (perturbado), 75% (borda) e 95% (não perturbado),
+  "a minimum of 100 samples in each stratum" seguindo Olofsson, **11 019**
+  pontos no total. Os intérpretes não conheciam a predição do produto. **Não
+  relata dupla interpretação nem estatística de concordância.**
+- **Conferido por aritmética, artigo não aberto:** Stehman & Foody (2019),
+  doi `10.1016/j.rse.2019.05.018`, fórmula `n = z²p(1−p)/d²` para a acurácia do
+  usuário: `p = 0,80`, `d = 0,05` dá 246 e `p = 0,5` dá 384 (reproduzidos à
+  mão). A mesma fonte diz que a fórmula "does not normally apply" à acurácia do
+  produtor, porque as classes de referência não podem estratificar.
+- **Lido na Phase 5 sessão 1:** Olofsson et al. (2014), doi
+  `10.1016/j.rse.2014.02.015`.
+- **NÃO verificado, não citar como fato:** os números de PRODES (Adami et al.
+  2017), de Potapov et al. (2026) e de qualquer linha da tabela do Consensus
+  que ele não fundamenta com citação — só se leu o resumo. Tang et al. (2019),
+  doi `10.1016/j.rse.2019.02.003`, sugere que sistemas de alerta quase em tempo
+  real pedem um arcabouço que mede **atraso de detecção e tamanho mínimo
+  detectável**; só o resumo foi lido. **A sessão de execução deve ler o artigo
+  e registrar se isso se aplica a este sistema**, porque muda o que um revisor
+  de periódico vai cobrar.
+- **Resultados negativos:** nenhuma fonte achada declara meta para omissão, e
+  nenhuma traz referência para a fração de dupla revisão. Os 20% herdados do
+  piloto 2A.3 são uma escolha, não um padrão da literatura.
+
+### 3. O achado: o plano de amostra de 2026-09-17 não alcança o `S(Ô)` que o dimensiona
+
+**Isto é uma conta à mão, feita nesta data. A sessão de execução tem de
+reproduzi-la com `src/validation/accuracy.py` antes de gravar qualquer número
+no protocolo.**
+
+`scripts/plan_phase5_sample.py` (rodado a partir da `origin/main`, em cópia
+fora do repositório) imprime, para o desenho B (forte / fraco / sem mudança) e
+`S(Ô) ≤ 0,01`: `n = 507`, alocado **75 / 75 / 357**. A Eq. (13) dimensiona `n`
+supondo a alocação ótima (Neyman); a regra de 50–100 por estrato do §5.1.2
+**não** é essa alocação. A variância de `Ô` sob uma alocação dada é
+`Σ W_i² · U_i(1−U_i) / n_i`, com os pesos `W` e as acurácias conjecturadas `U`
+do próprio script (`W = 0,0589 / 0,2912 / 0,6499`, `U = 0,70 / 0,30 / 0,99`):
+
+| alocação (forte / fraco / sem mudança) | n | `S(Ô)` | meia-largura de `U` do forte |
+| --- | --- | --- | --- |
+| 75 / 75 / 357 (saída do script) | 507 | **≈ 0,016** | ±0,104 |
+| 100 / 100 / 307 (banda no limite) | 507 | ≈ 0,014 | ±0,090 |
+| 100 / 285 / 138 | 523 | **≈ 0,0100** | ±0,090 |
+| ≈ 61 / 300 / 146 (Neyman exato da Eq. 13) | 507 | ≈ 0,0100 | ±0,12 |
+
+A causa é o estrato fraco: pesa 29% do extent e tem `U` conjecturada de 0,30,
+então domina a variância. **A conjectura vem da sessão 1 (34,5% das detecções do
+conjunto completo caem em terra que o MapBiomas chama de farming), não de uma
+medida.** Com `U` do fraco em 0,50, a alocação 100 / 285 / 138 dá `S(Ô) ≈
+0,0106`: a conclusão resiste a ela, o número exato não.
+
+**O que acontece se a regra de 50–100 por estrato tiver prioridade.**
+`allocate_sample` já recusa `per_change_stratum` fora de 50–100, de propósito
+("a decisão pertence a um registro"). Com 100 por estrato de mudança, **`S(Ô)`
+não desce de ≈ 0,014 por maior que seja o resto da amostra** (a linha 2 da
+tabela já está perto desse piso). Então são duas saídas, e a escolha tem de constar
+no relatório:
+
+- **A (recomendada):** manter `S(Ô) ≤ 0,01` e **sair da banda** só no estrato
+  fraco (≈ 285), registrando a razão: a banda é recomendação do artigo, e o
+  estrato fraco é heterogêneo por construção (conjunto completo menos o forte).
+  Custo: 523 casos, ≈ 630 casos-revisor com os 20% de dupla revisão, contra ≈
+  608 do plano antigo.
+- **B:** manter a banda e **afrouxar a meta global** para `S(Ô) ≤ 0,015` — o
+  que 100 / 100 / ≈ 106 (≈ 306 casos) alcançaria, também a ser reproduzido. A
+  acurácia do usuário do estrato forte continua em ±0,09.
+
+A recomendação é A. O dono delegou a escolha da meta; **a escolha entre A e B
+é da sessão de execução, com o registro do motivo**, e ela volta ao dono se a
+reprodução em código discordar desta tabela. Independentemente de A ou B,
+**refazer `n` depois de uma primeira rodada pequena** (as `U` conjecturadas
+trocadas pelas medidas) é a forma de parar de depender da conjectura.
+
+### 4. O que continua pendente do dono
+
+Nenhum item abaixo bloqueia o **desenho** (quadro, tamanho, pacote):
+
+- a resposta à pergunta de **ética institucional** e o **vínculo institucional**
+  dos revisores, com o autor correspondente (§0-bis c) — antes de instruir
+  revisores ou escrever o artigo;
+- **onde fica a tabela nome↔ID** dos revisores (fora do git) e o consentimento
+  deles para o crédito no artigo — antes de os revisores receberem o pacote;
+- o **destino citável** da release (Zenodo ou equivalente, §0-ter) — antes do
+  relatório.
 
 ---
 
@@ -348,6 +471,10 @@ esta leitura adicional:
 **Recomendação, a validar na revisão: opção 3 como quadro primário**, com a
 opção 1 como estrato auxiliar e o drone entrando como na alínea b.
 
+> **Decidido em 2026-10-31:** a recomendação foi aceita (opção 3 primária,
+> opção 1 auxiliar, unidade pixel/área). O drone **não** entra (alínea b). Ver o
+> bloco datado de 2026-10-31.
+
 ### b. O drone — o que ele sustenta, e o que ele não sustenta
 
 Verdade de campo por drone é uma vantagem real e rara neste tipo de estudo.
@@ -381,6 +508,10 @@ terreno, e o fato de que a extensão monitorada inclui a APA e arredores — a
 área alcançável por drone é uma fração dela, e **isso é um limite de
 generalização a declarar no artigo**, não um detalhe operacional.
 
+> **Decidido em 2026-10-31:** o drone fica de fora por enquanto ("Vamos deixar o
+> drone de fora por enquanto."). Sem estrato e sem análise de calibração; esta
+> alínea fica como o desenho a retomar se houver orçamento de voos.
+
 ### c. Autoria e anonimato são incompatíveis como estão
 
 O protocolo do 2A.3 exige **ID pseudônimo** de revisor, e a regra
@@ -401,6 +532,11 @@ Registrar também: se há vínculo institucional, quem é o autor correspondente
 se alguma instituição exige aprovação ética para trabalho com intérpretes
 humanos. Não é pesquisa com sujeitos humanos, mas a pergunta deve ser feita e a
 resposta registrada.
+
+> **Decidido em 2026-10-31: caminho 1.** Pseudônimo no dado e no git, nome só no
+> artigo. O dono chegou a escolher "nome no dado" e reverteu na mesma conversa
+> (ver o bloco datado de 2026-10-31, §1): o repositório é público. A pergunta
+> de ética e o vínculo institucional **seguem sem resposta**.
 
 ## 0-ter. A consequência que chega até a Phase 6
 
@@ -663,6 +799,14 @@ os números que tornam a sua revisão mais fácil. O que não anda é a decisão
 amostra, e é a que decide o resto. As respostas abaixo são as de 2026-09-08 e
 foram mantidas como o registro daquela sessão; os fatos atualizados estão no
 bloco datado.*
+
+*Nota de 2026-10-31: o portão abriu. As três decisões foram tomadas (quadro
+amostral recomendado, drone de fora por enquanto, pseudônimo no dado e nome só
+no artigo) e a meta de precisão foi adotada; o registro está no bloco datado de
+2026-10-31, no topo, e o briefing da sessão de execução está em
+`PACKAGE_P5_EXECUTION_PROMPT.md`. O que segue depende de você: a pergunta de
+ética, o vínculo dos revisores, onde guardar a tabela de nomes e o destino
+citável da release.*
 
 Por que o portão passou a existir: você disse que quer que a Fase 5 termine
 **válida para uma publicação científica**, que **já tem as pessoas** que vão
