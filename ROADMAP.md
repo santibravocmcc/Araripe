@@ -5,6 +5,29 @@
 **Planning branch:** `codex/technical-review-roadmap`
 **Primary evidence:** `TECHNICAL_REVIEW.md` and `TECHNICAL_REVIEW_SUMMARY.md`
 
+> ## Estado em 2026-10-31 — Phase 5: o portão do dono abriu
+>
+> Bloco acrescentado sem reescrever nada abaixo. A Phase 5 **não começou a
+> medir acurácia**: só a primeira sessão (o instrumento) foi feita. O dono
+> decidiu em 2026-10-31 as três decisões que seguravam o portão e a meta de
+> precisão; registro completo, com as palavras dele, em
+> [`docs/operations/PACKAGE_P5_PROTOCOL_PROMPT.md`](docs/operations/PACKAGE_P5_PROTOCOL_PROMPT.md)
+> (bloco datado de 2026-10-31).
+>
+> | passo | estado | registro |
+> | --- | --- | --- |
+> | Phase 5 — sessão 1: referência canônica, estimadores, população do candidato, plano amostral | feita 2026-09-17 | `docs/implementation/PHASE_5_2026-09-17.md` |
+> | Phase 5 — decisões (a) quadro amostral, (b) drone, (c) identidade dos revisores | **decididas 2026-10-31**: opção 3 primária com opção 1 auxiliar; drone fora por enquanto; pseudônimo no git e nome só no artigo | briefing do protocolo, bloco de 2026-10-31 |
+> | Phase 5 — meta de precisão | **adotada 2026-10-31**: `S(Ô) ≤ 0,01`; ±0,10 (IC 95%) na acurácia do usuário do estrato forte; mínimo de 100 por estrato de mudança | idem §2 |
+> | Phase 5 — sessão de execução (quadro amostral, pacote de rotulagem) | **não aberta**; não depende do C6 | `docs/operations/PACKAGE_P5_EXECUTION_PROMPT.md` |
+>
+> **Ainda de pé:** a Phase 5 segue sendo a condição de qualquer afirmação de
+> acurácia, e não é portão das Fases 6 e 7. Pendências do dono que não
+> bloqueiam o desenho: ética institucional, vínculo dos revisores, destino
+> citável da release. A conta de alocação do plano de 2026-09-17 (75/75/357) foi
+> refeita à mão e **não alcança** o `S(Ô)` que a dimensiona; a sessão de
+> execução a reproduz em código antes de gravar o `n`.
+
 > ## Estado em 2026-10-27 — a virada da Phase 6 está feita
 >
 > Bloco acrescentado sem reescrever nada abaixo (nem o bloco de 2026-09-18,
