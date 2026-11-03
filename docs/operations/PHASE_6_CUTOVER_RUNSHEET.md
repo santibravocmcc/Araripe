@@ -678,6 +678,23 @@ Cada passo desta fase **para e pergunta** antes de agir.
 
 ### C6. Duas semanas de vigia
 
+> **Feito em 2026-11-03 (encurtado por decisão do dono: 2 de 4 rodadas; as
+> outras no C6B).** Nas palavras dele, em 2026-11-02: *"Eu gostaria de fechar
+> o C6 hoje, em vez de esperar ate dia 10/11. E montar uma nova etapa de
+> vigilia chamada C6B."* O "Depois" abaixo **não** foi cumprido por inteiro:
+> duas rodadas, não quatro. Qui 2026-10-29: depósito `40873112583` (a única
+> aquisição recusada pela cobertura), publicação `40874313204`, seq. 24 → 25,
+> `deploy(verde)` `aa39e2d`. Seg 2026-11-02: depósito `41466713190`,
+> publicação `41468241310`, seq. 25 → 26 `rel-g3-79eef163…`, `deploy(verde)`
+> `6a200cd` 4 h 16 min depois da promoção (o GitHub pulou passadas do
+> reconciliador). Os sete status de 10-27 a 11-02 com as sete linhas `ok`; o
+> robô de 10-30 só `chuva`, sem alerta no git. Ao vivo em 2026-11-03:
+> `current.json` e `built-from.json` no mesmo `rel-g3-79eef163…`. As rodadas
+> de 11-05, 11-09, 11-12 e 11-16 e as superfícies novas do site (Monitor,
+> jogo, Clima, robô do CAR) ficam no C6B,
+> [`PACKAGE_P6_WATCH_B_PROMPT.md`](PACKAGE_P6_WATCH_B_PROMPT.md). Registro:
+> [`PHASE_6ZP_2026-11-03.md`](../implementation/PHASE_6ZP_2026-11-03.md).
+
 - **Quem:** agente lê; dono recebe os e-mails de falha.
 - **Aprovação:** nenhuma.
 - **Antes:** C5.

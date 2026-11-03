@@ -5,6 +5,20 @@
 **Planning branch:** `codex/technical-review-roadmap`
 **Primary evidence:** `TECHNICAL_REVIEW.md` and `TECHNICAL_REVIEW_SUMMARY.md`
 
+> ## Estado em 2026-11-03 — a Phase 6 fechou
+>
+> Bloco acrescentado sem reescrever nada abaixo (nem as linhas
+> `Implementation status`).
+>
+> | fase / passo | estado | registro |
+> | --- | --- | --- |
+> | **Phase 6 fechada em 2026-11-03 (C6 encurtado; vigia continua no C6B)** | duas rodadas de quatro (2026-10-29 e 11-02, ponteiro seq. 26), sete status `ok`, por decisão do dono de 2026-11-02 — **não** o critério de quatro rodadas da folha | `docs/implementation/PHASE_6ZP_2026-11-03.md` |
+> | Phase 6 — C6B, a vigia que continua | rodadas de 11-05, 11-09, 11-12 e 11-16, mais as superfícies novas do site (Monitor, jogo, Clima, robô do CAR); abre 2026-11-17 | `docs/operations/PACKAGE_P6_WATCH_B_PROMPT.md` |
+> | D4 — a série temporal verde | pacote seguinte; a aba "Séries" segue parada em 2026-09-07 | `docs/operations/PACKAGE_D4_GREEN_TIMESERIES_PROMPT.md` |
+>
+> O parágrafo "A Phase 6 ainda não fechou" do bloco de 2026-10-27 descreve o
+> presente dele e fica como está.
+
 > ## Estado em 2026-10-31 — Phase 5: o portão do dono abriu
 >
 > Bloco acrescentado sem reescrever nada abaixo. A Phase 5 **não começou a
