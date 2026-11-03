@@ -77,6 +77,7 @@ GREEN_SCRIPTS = (
     "write_green_heartbeat.py",
     "publish_green_context.py",
     "green_status.py",
+    "green_timeseries.py",
 )
 
 
