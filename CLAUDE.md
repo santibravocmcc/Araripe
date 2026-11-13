@@ -9,8 +9,8 @@ For green control-plane work, Claude may only dispatch the reviewed
 only with an operation already present in its fixed choice list. The protected
 GitHub Environment owns the token; Claude must not try to read it.
 
-Treat every production identifier as read-only until the explicitly approved
-Phase 6 cutover. If a task would touch production, change the broker itself,
+Treat every production identifier as read-only unless a human has explicitly
+approved the change. If a task would touch production, change the broker itself,
 or require an operation not already allowlisted, stop and use the
 `araripe-safe-handoff` skill.
 
