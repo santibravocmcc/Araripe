@@ -5,6 +5,17 @@
 **Planning branch:** `codex/technical-review-roadmap`
 **Primary evidence:** `TECHNICAL_REVIEW.md` and `TECHNICAL_REVIEW_SUMMARY.md`
 
+> ## Estado em 2026-11-17 — o C6B fechou sem falha
+>
+> Bloco acrescentado sem reescrever nada abaixo (nem as linhas
+> `Implementation status`).
+>
+> | fase / passo | estado | registro |
+> | --- | --- | --- |
+> | **Phase 6 — C6B, a vigia que continua** | **feito 2026-11-17**: rodadas de 11-05, 11-09, 11-12 e 11-16 (ponteiro seq. 26 → 30), catorze status com as sete linhas `ok`, robôs do site sem alerta no git, Monitor/jogo/CAR conferidos. Com o C6, seis rodadas seguidas sem `late` nem `broken` | `docs/implementation/PHASE_6ZQ_2026-11-17.md` |
+> | Phase 6 — a espera do reconciliador do site | medida no C6B: 4 h 17 min a 6 h 42 min entre a promoção e o `deploy(verde)`; o GitHub inicia 3 das 8 passadas diárias. Pacote proposto, decisão do dono | `docs/operations/PACKAGE_P6_RECONCILER_WAIT_PROMPT.md` |
+> | D4B — a série verde ligada às lanes | o C6B não segura mais o job `deposit` | `docs/operations/PACKAGE_D4B_GREEN_TIMESERIES_LANE_PROMPT.md` |
+
 > ## Estado em 2026-11-03 — a Phase 6 fechou
 >
 > Bloco acrescentado sem reescrever nada abaixo (nem as linhas
