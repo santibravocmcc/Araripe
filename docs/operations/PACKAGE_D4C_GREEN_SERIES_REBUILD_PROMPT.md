@@ -45,6 +45,9 @@ merge (segunda ou quinta, 06:00 UTC, que o GitHub costuma atrasar horas).
 - Os 29 membros da release viva em 2026-11-17 não têm documento `series/`;
   até a reconstrução, `v2_green_timeseries.yml` **falha por desenho** a cada
   publicação (buraco recusa).
+- Com só as aceitas, o gráfico do replay local começa em 2026-02-11: as cinco
+  aquisições até 02-01 são todas `rejected_quality` (registro §6-bis). Confira
+  o mesmo na cadeia viva e diga ao dono a primeira data do gráfico.
 - O portão da promoção exige os jobs `detect`, `deposit`, `heartbeat`; a D4B
   os manteve (teste amarra).
 
@@ -119,7 +122,9 @@ desde janeiro e publicar no site.
 
 ### Tem algo preocupante?
 
-Não. Medimos que as imagens baixadas de novo saem idênticas às de setembro e
+Não. Um aviso só: com "só as imagens aceitas", o gráfico deve começar em
+fevereiro, porque todas as imagens de janeiro foram recusadas pelo controle de
+qualidade; os dados de janeiro ficam guardados. Medimos que as imagens baixadas de novo saem idênticas às de setembro e
 às da rotina automática; se alguma de outubro não sair, a reconstrução para
 sozinha e a decisão volta para você.
 
