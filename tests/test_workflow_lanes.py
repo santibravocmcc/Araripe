@@ -47,6 +47,11 @@ GREEN_GROUPS = {
     # writes sources/ and sources/current.json only, and `apply` refuses a
     # document for a release or context that is no longer live.
     "v2_green_sources.yml": "araripe-green-sources",
+    # The green series (D4B): its own groups. The series lane writes only
+    # data/timeseries/ through a PR, never an object; the rebuild writes only
+    # series/<run-id>/ with put_if_absent, never runs/ or a pointer.
+    "v2_green_timeseries.yml": "araripe-green-series",
+    "v2_green_series_rebuild.yml": "araripe-green-series-rebuild",
 }
 # The blue detection cadence is load-bearing (ROADMAP.md §6); pin it so a
 # schedule change has to be deliberate.
@@ -71,6 +76,9 @@ EXPECTED_UNATTENDED_TRIGGERS = {
     "v2_green_deposit_lane.yml": {"schedule"},
     "v2_green_status.yml": {"schedule"},
     "v2_operational_publish.yml": {"workflow_run"},
+    # D4B: the series follows a finished publication, as the publication
+    # follows the deposit.
+    "v2_green_timeseries.yml": {"workflow_run"},
 }
 
 

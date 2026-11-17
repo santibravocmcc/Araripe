@@ -90,6 +90,10 @@ HEARTBEAT_SCHEMA = "araripe.green.heartbeat/1"
 #: closed on a prefix nobody has classified yet.
 RELEASES_ROOT = "releases/"
 RUNS_ROOT = "runs/"
+#: A run's time-series rows (D4B), beside the run and never under it.
+#: Private: the page reads the series from the published database, not from
+#: the bucket, and these documents include runs that were never promoted.
+SERIES_ROOT = "series/"
 VERIFICATION_ROOTS = (
     "green-isolation-proof/",
     "promotion-identity-probe/",
@@ -296,6 +300,8 @@ def classify_key(
         return Exposure(key, PRIVATE, "context_not_live")
     if key.startswith(RUNS_ROOT):
         return Exposure(key, PRIVATE, "processing_input")
+    if key.startswith(SERIES_ROOT):
+        return Exposure(key, PRIVATE, "series_rows")
     for root in VERIFICATION_ROOTS:
         if key.startswith(root):
             return Exposure(key, PRIVATE, "verification_artifact")

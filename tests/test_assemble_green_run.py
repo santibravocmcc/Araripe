@@ -78,6 +78,8 @@ GREEN_SCRIPTS = (
     "publish_green_context.py",
     "green_status.py",
     "green_timeseries.py",
+    "deposit_green_series.py",
+    "build_green_series.py",
 )
 
 
