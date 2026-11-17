@@ -584,6 +584,17 @@ def classify(
             "the loss of run.json was accepted explicitly",
         )
 
+    if key.startswith(db.SERIES_ROOT):
+        # D4B: the detect job measures a run's series rows from composites
+        # that die with the runner; this document is the only copy, and
+        # re-measuring it means pulling every composite again from Earth
+        # Engine (PHASE_D4B_2026-11-17.md).
+        return Disposition(
+            key, item.size, "series_rows", RETAIN, "series_rows_are_the_only_copy",
+            "a run's time-series rows, measured from composites no store keeps; "
+            "the published series is rebuilt from these documents",
+        )
+
     if key.startswith(ph.HISTORY_ROOT):
         if ph.sequence_of(key) is None:
             return Disposition(

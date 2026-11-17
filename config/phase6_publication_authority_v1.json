@@ -254,6 +254,34 @@
   ],
   "other_jobs_holding_an_identity": [
     {
+      "workflow": "v2_green_timeseries.yml",
+      "job": "build",
+      "environment": "v2-staging",
+      "moves_the_pointer": false,
+      "note": "added 2026-11-17 with D4B (PHASE_D4B_2026-11-17.md): reads the pointer, the live chain release and series/<run-id>/ through a ReadOnlyStore and builds the series database on the runner. Writes nothing to the bucket. The job that publishes it by pull request (publish) holds no Environment and no bucket identity."
+    },
+    {
+      "workflow": "v2_green_series_rebuild.yml",
+      "job": "plan",
+      "environment": "v2-staging",
+      "moves_the_pointer": false,
+      "note": "added 2026-11-17 with D4B: lists the chain runs without series rows and fetches their ledgers through a ReadOnlyStore. Writes nothing."
+    },
+    {
+      "workflow": "v2_green_series_rebuild.yml",
+      "job": "measure",
+      "environment": "v2-staging",
+      "moves_the_pointer": false,
+      "note": "added 2026-11-17 with D4B: Earth Engine as the green account only (GEE_GREEN_SA_KEY); no R2 secret in any step. Pulls composites again and binds them to the ledgers' sealed hashes."
+    },
+    {
+      "workflow": "v2_green_series_rebuild.yml",
+      "job": "write",
+      "environment": "v2-staging",
+      "moves_the_pointer": false,
+      "note": "added 2026-11-17 with D4B: the candidate identity writes series/<run-id>/timeseries_rows.json with put_if_absent; never runs/, a release or a pointer."
+    },
+    {
       "workflow": "v2_candidate_replay.yml",
       "job": "green-isolation-probe",
       "environment": "v2-staging",

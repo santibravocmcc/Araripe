@@ -1,0 +1,169 @@
+name: v2 green time series (build the live release's series, publish it by pull request)
+
+# Package D4B (docs/implementation/PHASE_D4B_2026-11-17.md). The green series
+# that replaces the blue time-series lane stopped at C1.
+#
+# Two jobs, two authorities, nothing shared but an artifact:
+#
+#   build    Environment v2-staging, the CANDIDATE identity through a
+#            ReadOnlyStore: no write is expressible. Pointer -> the live chain
+#            release -> its members' rows documents at series/<run-id>/ ->
+#            a clean-schema database built from empty, and its signal. It
+#            refuses a member with no rows document instead of publishing a
+#            series with a hole (until v2_green_series_rebuild.yml has filled
+#            every run deposited before D4B, this job fails, by design), and
+#            says changed=false when the release and the database bytes are
+#            the ones main already holds.
+#   publish  NO Environment, NO secret but the workflow's own GITHUB_TOKEN:
+#            the time-series PR lane of PENDING_CAPABILITIES.md §6 -- a
+#            throwaway branch auto/timeseries-<run id>, a refusal to stage
+#            anything outside data/timeseries/, and a squash merge (the
+#            ruleset requires zero approvals). `shell: bash` and no explicit
+#            `exit 0` (§6.1). It never pushes to main.
+#
+# Trigger: the publication lane's completion. Its conclusion is NOT the
+# answer -- a run whose gate declined to promote also concludes success -- so
+# the build reads the pointer and compares; nothing changed, nothing opens.
+# A dispatch builds from the pointer as it is now.
+#
+# Never: a pointer move, a bucket write, a Cloudflare credential, a blue
+# workflow, or the legacy names timeseries.db and RELEASE.json (quarantined by
+# Package 2A.2, and the blue signal the site still validates).
+
+on:
+  workflow_run:
+    # v2_operational_publish.yml's `name:`, exactly.
+    workflows: ["v2 green operational publication (candidate then promotion)"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One series publication at a time: two PRs racing for data/timeseries/
+# would make the second rebase fail. Never cancelled mid-merge.
+concurrency:
+  group: araripe-green-series
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: (github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')) && github.repository == 'santibravocmcc/Araripe'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: v2-staging
+    outputs:
+      changed: ${{ steps.build.outputs.changed }}
+    env:
+      R2_STAGING_BUCKET: ${{ vars.R2_STAGING_BUCKET }}
+      R2_ENDPOINT_URL: ${{ vars.R2_ENDPOINT_URL }}
+
+    steps:
+      - name: Fail closed unless the target is exactly the approved staging bucket
+        run: |
+          set -euo pipefail
+          test "$R2_STAGING_BUCKET" = "araripe-v2-staging" || {
+            echo "::error::refusing: R2_STAGING_BUCKET is not araripe-v2-staging" >&2; exit 1; }
+          test "$R2_ENDPOINT_URL" = "https://9416750169311ee4afc18a8ff3c771d4.r2.cloudflarestorage.com" || {
+            echo "::error::refusing: R2_ENDPOINT_URL is not the approved account endpoint" >&2; exit 1; }
+
+      - name: Check out main, for the code and the published signal
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+
+      - name: Install the dependencies the reader needs
+        # The deposit job's floor: botocore <1.36 cannot express If-Match.
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet --disable-pip-version-check \
+            'jsonschema>=4.23.0' 'boto3>=1.36.0' 'botocore>=1.36.0'
+
+      - name: Build the live release's series, reading only
+        id: build
+        env:
+          R2_STAGING_ACCESS_KEY_ID: ${{ secrets.R2_STAGING_ACCESS_KEY_ID }}
+          R2_STAGING_SECRET_ACCESS_KEY: ${{ secrets.R2_STAGING_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+        run: |
+          set -euo pipefail
+          python3 scripts/build_green_series.py build --out-dir "$RUNNER_TEMP/series" \
+            --previous data/timeseries/GREEN_SERIES.json
+
+      - name: Hand the series to the publication job
+        if: steps.build.outputs.changed == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: green-series-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/series/green_series.db
+            ${{ runner.temp }}/series/GREEN_SERIES.json
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: build
+    if: needs.build.outputs.changed == 'true' && github.repository == 'santibravocmcc/Araripe'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Check out main
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+
+      - name: Receive the series
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: green-series-${{ github.run_id }}
+          path: ${{ runner.temp }}/series
+
+      - name: Publish the green series through a pull request
+        # The PR lane of PENDING_CAPABILITIES.md §6, for the green names only.
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SERIES: ${{ runner.temp }}/series
+        run: |
+          set -euo pipefail
+          cp "$SERIES/green_series.db" data/timeseries/green_series.db
+          cp "$SERIES/GREEN_SERIES.json" data/timeseries/GREEN_SERIES.json
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/timeseries/green_series.db data/timeseries/GREEN_SERIES.json
+          if git diff --staged --quiet; then
+            echo "green series unchanged; nothing to publish"
+          else
+            unexpected="$(git diff --staged --name-only | grep -v '^data/timeseries/' || true)"
+            if [ -n "$unexpected" ]; then
+              echo "::error::refusing to open a PR touching paths outside data/timeseries/"
+              echo "$unexpected"
+              exit 1
+            fi
+            git commit -m "chore: update green time-series $(date -u +%Y-%m-%d)"
+            branch="auto/timeseries-${GITHUB_RUN_ID}"
+            git push origin "HEAD:refs/heads/${branch}"
+            pr_url="$(gh pr create --base main --head "${branch}" \
+              --title "chore: update green time-series $(date -u +%Y-%m-%d)" \
+              --body "Automated green series from ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}. Only \`data/timeseries/green_series.db\` and \`GREEN_SERIES.json\` change.")"
+            echo "opened ${pr_url}"
+            merged=0
+            for attempt in 1 2 3 4 5; do
+              if gh pr merge "${pr_url}" --squash --delete-branch; then
+                merged=1
+                break
+              fi
+              echo "merge not ready yet (attempt ${attempt}); retrying in 15s"
+              sleep 15
+            done
+            if [ "$merged" -ne 1 ]; then
+              echo "::error::${pr_url} was opened but not merged automatically; merge it by hand"
+              exit 1
+            fi
+            echo "merged ${pr_url}"
+          fi

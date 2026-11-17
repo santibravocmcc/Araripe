@@ -1,0 +1,194 @@
+name: v2 green series rebuild (re-measure the rows of runs deposited before D4B)
+
+# Package D4B, the owner's decision of 2026-11-05: the green series starts in
+# January (option a of PHASE_D4_2026-11-03.md §7). Every chain run deposited
+# before the detect job measured rows has no series/<run-id>/ document, and
+# v2_green_timeseries.yml refuses to publish a series with a hole. This fills
+# them, oldest first, a bounded number of runs per dispatch; dispatch again
+# until `missing` reports nothing.
+#
+# Three jobs, one authority each -- the deposit lane's split:
+#
+#   plan     Environment v2-staging, the candidate identity through a
+#            ReadOnlyStore: the chain from its root, which runs lack rows, and
+#            those runs' ledgers. Writes nothing.
+#   measure  Earth Engine as the GREEN account only (GEE_GREEN_SA_KEY; no R2
+#            identity in any step, because the detection modules import
+#            config.settings). Pulls again each composite a row needs, exactly
+#            as the detection pulled it, and binds it to the ledger's sealed
+#            artifact_sha256 -- or fails, and the decision goes back to the
+#            owner (PHASE_D4B_2026-11-17.md §2). Re-seals and re-detects
+#            nothing.
+#   write    The candidate identity: deposit_green_series.py, put_if_absent
+#            at series/<run-id>/, never under runs/.
+#
+# Manual only: no schedule, no workflow_run. It moves no pointer, writes no
+# release, touches no blue workflow and no Cloudflare credential.
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_runs:
+        description: "How many runs without rows to rebuild in this dispatch, oldest first (1-12)"
+        required: true
+        default: "6"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: araripe-green-series-rebuild
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    if: github.event_name == 'workflow_dispatch' && github.repository == 'santibravocmcc/Araripe'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: v2-staging
+    outputs:
+      count: ${{ steps.missing.outputs.count }}
+      remaining: ${{ steps.missing.outputs.remaining }}
+    env:
+      R2_STAGING_BUCKET: ${{ vars.R2_STAGING_BUCKET }}
+      R2_ENDPOINT_URL: ${{ vars.R2_ENDPOINT_URL }}
+
+    steps:
+      - name: Fail closed unless the target is exactly the approved staging bucket
+        env:
+          MAX_RUNS: ${{ github.event.inputs.max_runs }}
+        run: |
+          set -euo pipefail
+          test "$R2_STAGING_BUCKET" = "araripe-v2-staging" || {
+            echo "::error::refusing: R2_STAGING_BUCKET is not araripe-v2-staging" >&2; exit 1; }
+          test "$R2_ENDPOINT_URL" = "https://9416750169311ee4afc18a8ff3c771d4.r2.cloudflarestorage.com" || {
+            echo "::error::refusing: R2_ENDPOINT_URL is not the approved account endpoint" >&2; exit 1; }
+          case "$MAX_RUNS" in
+            [1-9]|1[0-2]) ;;
+            *) echo "::error::max_runs must be 1 to 12" >&2; exit 1 ;;
+          esac
+
+      - name: Check out the lane code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Install the dependencies the reader needs
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet --disable-pip-version-check \
+            'jsonschema>=4.23.0' 'boto3>=1.36.0' 'botocore>=1.36.0'
+
+      - name: List the chain runs without rows, and fetch their ledgers, reading only
+        id: missing
+        env:
+          R2_STAGING_ACCESS_KEY_ID: ${{ secrets.R2_STAGING_ACCESS_KEY_ID }}
+          R2_STAGING_SECRET_ACCESS_KEY: ${{ secrets.R2_STAGING_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          MAX_RUNS: ${{ github.event.inputs.max_runs }}
+        run: |
+          set -euo pipefail
+          python3 scripts/build_green_series.py missing --out-dir "$RUNNER_TEMP/plan" \
+            --max-runs "$MAX_RUNS"
+
+      - name: Hand the plan to the measurement
+        if: steps.missing.outputs.count != '0'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: series-plan-${{ github.run_id }}
+          path: ${{ runner.temp }}/plan/
+          if-no-files-found: error
+          retention-days: 7
+
+  measure:
+    needs: plan
+    if: needs.plan.outputs.count != '0' && github.repository == 'santibravocmcc/Araripe'
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    environment: v2-staging
+
+    steps:
+      - name: Check out the lane code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Set up the detection's Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.11"
+
+      - name: Install the pinned detection environment
+        run: |
+          set -euo pipefail
+          python -m pip install --quiet --disable-pip-version-check -r requirements-green-detect.txt
+
+      - name: Receive the plan
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: series-plan-${{ github.run_id }}
+          path: ${{ runner.temp }}/plan
+
+      - name: Pull again and measure, as the green account, binding each composite to its ledger
+        env:
+          GEE_GREEN_SA_KEY: ${{ secrets.GEE_GREEN_SA_KEY }}
+        run: |
+          set -euo pipefail
+          python scripts/rebuild_green_series.py --service-account \
+            --plan-dir "$RUNNER_TEMP/plan" --out-dir "$RUNNER_TEMP/rows"
+
+      - name: Hand the rows to the write job
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: series-rows-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/rows/*/timeseries_rows.json
+            ${{ runner.temp }}/rows/*/ledger.json
+          if-no-files-found: error
+          retention-days: 7
+
+  write:
+    needs: [plan, measure]
+    if: needs.plan.outputs.count != '0' && github.repository == 'santibravocmcc/Araripe'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: v2-staging
+    env:
+      R2_STAGING_BUCKET: ${{ vars.R2_STAGING_BUCKET }}
+      R2_ENDPOINT_URL: ${{ vars.R2_ENDPOINT_URL }}
+
+    steps:
+      - name: Fail closed unless the target is exactly the approved staging bucket
+        run: |
+          set -euo pipefail
+          test "$R2_STAGING_BUCKET" = "araripe-v2-staging" || {
+            echo "::error::refusing: R2_STAGING_BUCKET is not araripe-v2-staging" >&2; exit 1; }
+          test "$R2_ENDPOINT_URL" = "https://9416750169311ee4afc18a8ff3c771d4.r2.cloudflarestorage.com" || {
+            echo "::error::refusing: R2_ENDPOINT_URL is not the approved account endpoint" >&2; exit 1; }
+
+      - name: Check out the lane code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Install the dependencies the writer needs
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet --disable-pip-version-check \
+            'jsonschema>=4.23.0' 'boto3>=1.36.0' 'botocore>=1.36.0'
+
+      - name: Receive the rows
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: series-rows-${{ github.run_id }}
+          path: ${{ runner.temp }}/rows
+
+      - name: Deposit each run's rows at series/<run-id>/ with the candidate identity
+        env:
+          R2_STAGING_ACCESS_KEY_ID: ${{ secrets.R2_STAGING_ACCESS_KEY_ID }}
+          R2_STAGING_SECRET_ACCESS_KEY: ${{ secrets.R2_STAGING_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          ROWS: ${{ runner.temp }}/rows
+          REMAINING: ${{ needs.plan.outputs.remaining }}
+        run: |
+          set -euo pipefail
+          for dir in "$ROWS"/*/; do
+            run_id="$(basename "$dir")"
+            python3 scripts/deposit_green_series.py --run "$run_id" \
+              --rows "$dir/timeseries_rows.json" --ledger "$dir/ledger.json"
+          done
+          echo "runs still without rows after this dispatch: $REMAINING"

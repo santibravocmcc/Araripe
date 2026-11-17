@@ -52,6 +52,8 @@ GREEN_WORKFLOWS = (
     "v2_green_context.yml",
     "v2_green_sources.yml",
     "v2_green_status.yml",
+    "v2_green_timeseries.yml",
+    "v2_green_series_rebuild.yml",
     "cloudflare_green_control.yml",
 )
 

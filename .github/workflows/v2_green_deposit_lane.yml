@@ -16,7 +16,9 @@ name: v2 green deposit lane (detect a window, deposit runs/<run-id>/)
 #            with scripts/baseline_v2_staging.py, which never imports config.
 #   deposit  R2_STAGING_* only: assemble_green_run.py apply writes
 #            runs/<run-id>/ with put_if_absent, run.json last, then
-#            stage_green_run.py re-reads the prefix and writes nothing.
+#            stage_green_run.py re-reads the prefix and writes nothing; then
+#            deposit_green_series.py writes the series rows the detect job
+#            measured at series/<run-id>/ (D4B, PHASE_D4B_2026-11-17.md).
 #   heartbeat  R2_STAGING_* only, after both and under always(): records
 #            this attempt -- deposited, nothing to do, no acquisition, failed,
 #            cancelled -- in status/green/heartbeat.json by compare-and-swap
@@ -348,6 +350,20 @@ jobs:
             --state-path "$REPLAY_DIR/persistence_state.geojson" \
             --batch-start "$START" --batch-end "$END"
 
+      - name: Measure the series rows from the pulled composites, with no credential
+        # D4B: the composites die with this runner, so the series is measured
+        # here or never (PHASE_D4_2026-11-03.md §2). green_timeseries.py
+        # imports no config, reads only the run's ledger, its regimes record
+        # and its composites, and refuses an accepted composite whose bytes
+        # are not the ones the ledger sealed. A refusal fails the detection:
+        # a run is deposited with its rows or not at all.
+        if: steps.enumerated.outputs.deposit == 'true'
+        run: |
+          set -euo pipefail
+          REPLAY_DIR="$RUNNER_TEMP/replay"
+          python scripts/green_timeseries.py rows --out-dir "$REPLAY_DIR" \
+            --output "$REPLAY_DIR/timeseries_rows.json"
+
       - name: Assemble the run prefix locally, with no credential
         if: steps.enumerated.outputs.deposit == 'true'
         env:
@@ -371,6 +387,7 @@ jobs:
             ${{ runner.temp }}/replay/ledger.json
             ${{ runner.temp }}/replay/persistence_state.geojson
             ${{ runner.temp }}/replay/predecessor.json
+            ${{ runner.temp }}/replay/timeseries_rows.json
             ${{ runner.temp }}/replay/alerts/
           if-no-files-found: error
           retention-days: 7
@@ -455,6 +472,23 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/stage_green_run.py --run "$RUN_ID"
+
+      - name: Deposit the run's series rows beside it, at series/<run-id>/
+        # D4B. After the prefix validated, never under runs/ (the head
+        # resolution reads every runs/<id>/, and run.json is a closed schema).
+        # put_if_absent: re-running only this job with the same artifact is
+        # `unchanged`. A failure here fails the deposit job, so the chained
+        # promotion waits; the run prefix itself is already valid and is the
+        # next run's predecessor, and re-running this job completes it.
+        env:
+          R2_STAGING_ACCESS_KEY_ID: ${{ secrets.R2_STAGING_ACCESS_KEY_ID }}
+          R2_STAGING_SECRET_ACCESS_KEY: ${{ secrets.R2_STAGING_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          DETECTION: ${{ runner.temp }}/detection
+        run: |
+          set -euo pipefail
+          python3 scripts/deposit_green_series.py --run "$RUN_ID" \
+            --rows "$DETECTION/timeseries_rows.json" --ledger "$DETECTION/ledger.json"
 
   heartbeat:
     needs: [detect, deposit]
