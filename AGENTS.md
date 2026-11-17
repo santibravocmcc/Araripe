@@ -29,6 +29,12 @@ Its decision-baseline is 2026-08-11 and the `Implementation status` lines were
 deliberately not rewritten; a dated block at the top of the file records what
 closed since.
 
+What is open right now — which session to run next, whose turn it is, and what
+closed recently across both repositories — is mapped in
+`docs/operations/ESTADO_DAS_FRENTES.md`. Read it from `origin/main` and
+re-check each line with its command before acting; update it in the PR that
+opens or closes a front.
+
 ## Orient before editing
 
 Do this first, every session — the shared `../AGENTS.md` has the full protocol:
