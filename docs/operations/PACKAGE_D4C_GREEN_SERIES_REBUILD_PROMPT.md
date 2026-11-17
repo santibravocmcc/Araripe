@@ -38,8 +38,10 @@ merge (segunda ou quinta, 06:00 UTC, que o GitHub costuma atrasar horas).
 - **Bytes do Earth Engine:** 2026-06-06 puxado em 2026-11-17 = puxado em
   2026-09-09 = hash selado; 2026-11-13 puxado num Mac = hash que o CI selou
   com a conta verde. Não depende de tempo, máquina nem conta (§2 do registro).
-  **Não medido:** um hash de outubro da cadeia viva, nem meses de janeiro a
-  abril. A reconstrução mede isso de fato.
+  Março (S2C) e abril (S2A) também batem. **Não medido:** um hash de outubro
+  da cadeia viva, nem janeiro e fevereiro. A reconstrução mede isso de fato.
+- A junção membro ↔ documento (`ledger_id` + `run_manifest_id`) foi conferida
+  com o ponteiro e a release /3 reais (registro §6-ter).
 - Os ledgers dos membros **não** são legíveis pela rota pública; só o índice da
   release /3. Nenhuma sessão tem credencial de bucket: tudo pelas lanes.
 - Os 29 membros da release viva em 2026-11-17 não têm documento `series/`;
