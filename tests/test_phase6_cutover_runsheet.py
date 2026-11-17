@@ -23,7 +23,8 @@ BROKER = ROOT / "scripts" / "cloudflare_green_control.py"
 WORKFLOWS = ROOT / ".github" / "workflows"
 
 FIELDS = ("Quem", "Aprovação", "Antes", "Faz", "Depois", "Volta")
-STEP = re.compile(r"^### ([ABC]\d+)(?: \([^)]*\))?\. ", re.M)
+#: `C6B` (a vigia que continua, 2026-11-17) é passo próprio, com os seis campos.
+STEP = re.compile(r"^### ([ABC]\d+B?)(?: \([^)]*\))?\. ", re.M)
 OWNER = "dono, explícita"
 #: Verbos de "Faz" que mudam produção, credencial ou o painel: o passo tem de
 #: pedir o dono. Mesclar na `main` do site é deploy.

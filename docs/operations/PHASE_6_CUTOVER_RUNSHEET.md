@@ -702,6 +702,33 @@ Cada passo desta fase **para e pergunta** antes de agir.
 - **Depois:** quatro rodadas seguidas sem `late` nem `broken`; a primeira que falhar vira pacote, nunca remendo direto.
 - **Volta:** a tabela de volta da §7.
 
+### C6B. A vigia que continua, com o site novo
+
+> **Feito em 2026-11-17, sem falha.** Quatro rodadas de quatro, cada uma
+> lida pelo log: qui 11-05 (depósito `42042128336`, publicação
+> `42043840040`, seq. 26 → 27, `deploy(verde)` `3394db3`), seg 11-09
+> (`42644557490`, a única aquisição recusada pela cobertura; `42645922591`,
+> seq. 28; `e670290`), qui 11-12 (`43240398004`; `43242230079`, seq. 29;
+> `71951ad`) e seg 11-16 (`43891838856`; `43893562035`, seq. 30
+> `rel-g3-a955dc07…`; `26e9d95`). Catorze status, de 11-03 a 11-16, cada um
+> com as sete linhas `ok`. Chuva e clima sem alerta no git; a primeira
+> previsão (11-15) e o primeiro instantâneo do CAR (11-04, sem trava)
+> publicados; o Monitor absorveu Alertas e `/alertas.html#alerta-<id>` abre a
+> ficha no Monitor. Com as duas rodadas do C6, são seis seguidas: o "Depois"
+> do C6 fica cumprido em 2026-11-16. A espera entre a promoção e o
+> `deploy(verde)` foi de 4 h 17 min a 6 h 42 min (o GitHub iniciou 3 das 8
+> passadas diárias do reconciliador): risco medido, não falha, e assunto do
+> pacote seguinte,
+> [`PACKAGE_P6_RECONCILER_WAIT_PROMPT.md`](PACKAGE_P6_RECONCILER_WAIT_PROMPT.md).
+> Registro: [`PHASE_6ZQ_2026-11-17.md`](../implementation/PHASE_6ZQ_2026-11-17.md).
+
+- **Quem:** agente lê; dono recebe os e-mails de falha.
+- **Aprovação:** nenhuma.
+- **Antes:** C6 (encurtado).
+- **Faz:** lê as rodadas de 11-05 a 11-16, os status diários, os robôs do site e as superfícies novas (Monitor, jogo, Clima, CAR).
+- **Depois:** as quatro rodadas sem `late` nem `broken`; a primeira que falhar vira pacote, nunca remendo direto.
+- **Volta:** nada a desfazer; só leitura.
+
 ## 7. Os caminhos de volta, numa tabela
 
 | depois de | para voltar | quem | tempo |
